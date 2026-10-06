@@ -412,6 +412,7 @@
         if (grid) grid.innerHTML = '<div class="col-span-full py-8 text-center text-red-500 font-bold text-xs">កំហុសទាញយកទំនិញ៖ ' + err.message + '</div>';
       }
     }
+   
 
     // ២. ទាញយកការកំណត់ (Settings) ពី Supabase
     async function loadStoreSettings() {
@@ -421,6 +422,9 @@
 
         var s = {};
         data.forEach(function(r) { s[r.key] = r.value; });
+         telegramConfig.token = s.Telegram_Token || "";
+        telegramConfig.chatId = s.Telegram_ChatID || "";
+        telegramConfig.status = s.Telegram_Alert_Status || "ON";
 
         // Delivery
         storeDeliveryConfig.standardFee = parseFloat(s.Delivery_Fee_Standard || 0);
@@ -527,6 +531,37 @@
         }]);
 
         if (error) throw error;
+        // 🔔 បាញ់សារដំណឹង Telegram ទៅកាន់រោងចក្រភ្លាមៗ
+        try {
+          if (telegramConfig.token && telegramConfig.chatId && telegramConfig.status !== 'OFF') {
+            var tgItemLines = itemsSummaryList.map(function(item) { return "  • " + item; }).join("\n");
+            var timeStr = new Date().toLocaleTimeString('km-KH', { hour: '2-digit', minute: '2-digit' });
+            
+            var tgMsg = "🔔 <b>[KC WATER - ការកុម្ម៉ង់ទឹកថ្មីតាម WEBSITE!]</b>\n\n" +
+                        "🆔 <b>កូដ៖</b> <code>" + orderId + "</code>\n" +
+                        "👤 <b>អតិថិជន៖</b> " + name + "\n" +
+                        "📞 <b>ទូរស័ព្ទ៖</b> " + phone + "\n" +
+                        "📦 <b>ទំនិញកុម្ម៉ង់៖</b>\n" + tgItemLines + "\n" +
+                        "🛢️ <b>សំបកធុង៖</b> <b>" + (isNoSwap ? ('ទិញសំបកថ្មី ' + total20LBarrels + ' ធុង') : 'មានសំបកដូរ') + "</b>\n" +
+                        "💰 <b>តម្លៃសរុប៖</b> <b>៛ " + Number(grandTotal).toLocaleString() + "</b>\n" +
+                        "💳 <b>វិធីបង់ប្រាក់៖</b> " + (payVal === 'ABA' ? 'ស្កេន ABA KHQR' : 'លុយសុទ្ធពេលដល់ (COD)') + "\n" +
+                        (mapUrl ? "🗺️ <b>ផែនទីផ្ទះភ្ញៀវ៖</b> <a href='" + mapUrl + "'>ចុចបើក Google Maps នាំផ្លូវ</a>\n" : "") +
+                        (address ? "📝 <b>ចំណាំទីតាំង៖</b> " + address + "\n" : "") +
+                        "🕒 <b>ម៉ោង៖</b> " + timeStr;
+
+            fetch("https://api.telegram.org/bot" + telegramConfig.token + "/sendMessage", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                chat_id: telegramConfig.chatId,
+                text: tgMsg,
+                parse_mode: "HTML"
+              })
+            }).catch(function(err){ console.error("Telegram send error:", err); });
+          }
+        } catch(tgErr) {
+          console.error("Telegram error:", tgErr);
+        }
 
         // ចងចាំទិន្នន័យ
         localStorage.setItem('kc_order_name', name);
