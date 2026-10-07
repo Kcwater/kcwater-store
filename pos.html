@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>KC WATER - POS System (Supabase Cloud)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Battambang:wght@400;700;900&display=swap" rel="stylesheet">
+  <!-- 🔑 Supabase JS SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    * { 
+      font-family: 'Battambang', sans-serif; 
+      box-sizing: border-box; 
+      -webkit-tap-highlight-color: transparent; 
+    }
+    body { 
+      background: radial-gradient(circle at top right, #f1f5f9 0%, #e2e8f0 100%);
+      margin: 0; 
+      color: #1e293b;
+      min-height: 100vh;
+    }
+    #loginPage {
+      background: radial-gradient(circle at center, #f0fdf4 0%, #dcfce7 40%, #e2e8f0 100%);
+    }
+    #loginPage > div {
+      box-shadow: 0 25px 50px -12px rgba(22, 163, 74, 0.22), 
+                  0 10px 20px -5px rgba(0, 0, 0, 0.05);
+      border-radius: 2rem;
+      border-top: 8px solid #15803d;
+    }
+    .card { 
+      background: #ffffff; 
+      border-radius: 1.5rem; 
+      padding: 1.5rem; 
+      margin-bottom: 1.25rem; 
+      border: 1px solid rgba(226, 232, 240, 0.9);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.06);
+    }
+    .btn-green { 
+      background: linear-gradient(180deg, #22c55e 0%, #16a34a 100%);
+      color: white; 
+      padding: 14px 20px; 
+      border-radius: 1.1rem; 
+      font-weight: 700; 
+      width: 100%; 
+      border: none; 
+      cursor: pointer; 
+      box-shadow: 0 5px 0 #15803d, 0 12px 20px rgba(22, 163, 74, 0.35);
+      transition: all 0.15s ease;
+    }
+    .btn-green:active { 
+      transform: translateY(4px) scale(0.98); 
+      box-shadow: 0 1px 0 #15803d;
+    }
+    .sidebar { 
+      left: 0 !important; top: 0 !important; bottom: 0 !important;
+      position: fixed !important; z-index: 2000 !important; 
+      height: 100vh !important; width: 275px; 
+      background: linear-gradient(180deg, #14532d 0%, #166534 55%, #15803d 100%); 
+      color: white; overflow-y: auto !important;
+      padding-top: 75px; padding-bottom: 120px !important;
+      box-shadow: 12px 0 40px rgba(0, 0, 0, 0.35);
+      transform: translateX(0);
+      transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    }
+    .hidden-sidebar { transform: translateX(-100%) !important; box-shadow: none !important; }
+    #sidebarBackdrop { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55); z-index: 1999; display: none; }
+    #sidebarBackdrop.active { display: block !important; backdrop-filter: blur(8px); }
+    @media (min-width: 1024px) { 
+      #mainApp { padding-left: 275px; } 
+      .sidebar { position: fixed; } 
+      .hidden-sidebar { left: 0 !important; } 
+      #sidebarBackdrop { display: none !important; }
+    }
+  </style>
+</head>
+<body class="bg-gray-100 overflow-x-hidden">
+
+  <!-- ១. ផ្ទាំង LOGIN (ភ្ជាប់ SUPABASE) -->
+  <div id="loginPage" class="flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-sm text-center border-t-8 border-green-700">
+      <div class="w-16 h-16 mx-auto mb-3 rounded-2xl bg-green-100 text-green-700 flex items-center justify-center text-3xl shadow-inner">
+        <i class="fas fa-droplet"></i>
+      </div>
+      <h2 class="text-2xl font-black text-green-800 mb-1 uppercase tracking-wider">KC WATER POS</h2>
+      <p class="text-xs text-gray-500 mb-6 font-bold">ប្រព័ន្ធគ្រប់គ្រងរោងចក្រទឹក (Supabase Cloud)</p>
+      
+      <div class="space-y-4">
+        <input type="text" id="user" placeholder="ឈ្មោះអ្នកប្រើប្រាស់ (Username)" onkeyup="if(event.key==='Enter') document.getElementById('pass').focus()" class="w-full border-2 border-gray-200 rounded-2xl p-3 outline-none focus:border-green-600 focus:bg-green-50/50 font-bold text-sm">
+        <input type="password" id="pass" placeholder="លេខកូដសម្ងាត់ (Password)" onkeyup="if(event.key==='Enter') login()" class="w-full border-2 border-gray-200 rounded-2xl p-3 outline-none focus:border-green-600 focus:bg-green-50/50 font-bold text-sm">
+        
+        <div class="flex items-center text-left text-gray-600 text-sm">
+          <input type="checkbox" id="rememberMe" class="mr-2 w-4 h-4 accent-green-600 cursor-pointer">
+          <label for="rememberMe" class="cursor-pointer font-bold text-xs select-none">ចងចាំខ្ញុំ (Remember Me)</label>
+        </div>
+        
+        <button onclick="login()" id="loginBtn" class="btn-green shadow-xl active:scale-95 transition flex items-center justify-center gap-2">
+          <span>ចូលប្រើប្រាស់</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ២. ផ្ទាំងធំ MAIN APP -->
+  <div id="mainApp" class="hidden flex flex-col min-h-screen">
+    <!-- Navbar ខាងលើ -->
+    <nav class="bg-green-700 text-white p-3.5 sm:p-4 flex justify-between items-center shadow-lg sticky top-0 z-[1000]">
+      <div class="flex items-center">
+        <button onclick="toggleSidebar()" class="text-2xl mr-3 sm:mr-4 px-2 hover:bg-green-800 rounded transition active:scale-90" aria-label="បើកម៉ឺនុយ">
+          <i class="fas fa-bars"></i>
+        </button>
+        <span class="font-black tracking-tight text-base sm:text-lg flex items-center gap-1.5">
+          <i class="fas fa-droplet text-green-300"></i> KC WATER
+        </span>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <!-- ប៊ូតុងដំណឹងកុម្ម៉ង់ Online លើក្បាលទំព័រ -->
+        <button type="button" id="navOnlineOrdersBtn" onclick="showToast('មុខងារនេះនឹងរៀបចំនៅជំហានបន្ទាប់', 'info')" class="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full text-xs font-black bg-amber-400 hover:bg-amber-300 text-amber-950 shadow-md flex items-center gap-1.5 active:scale-95 transition border border-amber-300">
+          <i class="fas fa-truck-fast text-xs text-amber-900"></i>
+          <span class="hidden sm:inline">កុម្ម៉ង់ Online</span>
+          <span id="navOnlineOrdersCount" class="w-5 h-5 rounded-full bg-red-600 text-white text-[10px] flex items-center justify-center font-black animate-pulse">0</span>
+        </button>
+
+        <div id="userInfo" class="text-[10px] bg-green-800 px-3 py-1.5 rounded-full border border-green-600 font-bold uppercase shadow-inner">Admin KC WATER</div>
+      </div>
+    </nav>
+
+    <!-- តួខ្លួន Sidebar + Content -->
+    <div class="flex flex-1 relative">
+      <aside id="sidebar" class="sidebar shadow-2xl hidden-sidebar overflow-y-auto">
+        <nav class="p-4 space-y-2" id="sidebarMenuContainer"></nav>
+      </aside>
+      <main class="flex-1 p-3 sm:p-4 overflow-x-hidden" id="contentArea">
+        <div class="p-8 text-center text-gray-400 font-bold text-sm">
+          <i class="fas fa-circle-check text-green-600 text-2xl mb-2 block"></i>
+          បានតភ្ជាប់ Supabase ជោគជ័យ! រង់ចាំការបន្ថែមផ្ទាំង Dashboard និង POS...
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- ៣. Toast Notification -->
+  <div id="toast" class="fixed bottom-5 right-5 z-[9999] transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+    <div id="toastContent" class="bg-white border-l-4 p-4 shadow-2xl rounded-r-2xl flex items-center min-w-[260px] pointer-events-auto border-green-600">
+      <span id="toastIcon" class="mr-3 text-xl text-green-600"><i class="fas fa-check-circle"></i></span>
+      <span id="toastMsg" class="font-bold text-xs sm:text-sm text-gray-800"></span>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT: SUPABASE ENGINE & AUTHENTICATION -->
+  <script>
+    // 🔑 SUPABASE CLIENT CONFIGURATION
+    const SUPABASE_URL = "https://ntftdylkcnkxsytptket.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_58qNd6IpyWqlvuI5BpuHRw__pTm7g7v";
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    var currentUser = {};
+
+    function showToast(msg, type) {
+      type = type || 'success';
+      var toast = document.getElementById('toast'), msgEl = document.getElementById('toastMsg'), iconEl = document.getElementById('toastIcon'), content = document.getElementById('toastContent');
+      if (!toast || !msgEl) return;
+      msgEl.innerText = msg;
+      content.className = 'bg-white border-l-4 p-4 shadow-2xl rounded-r-2xl flex items-center min-w-[260px] pointer-events-auto ' + (type === 'success' ? 'border-green-600' : 'border-red-500');
+      iconEl.innerHTML = type === 'success' ? '<i class="fas fa-check-circle text-green-600"></i>' : '<i class="fas fa-exclamation-circle text-red-500"></i>';
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      setTimeout(function() { toast.classList.add('translate-y-20', 'opacity-0'); }, 3000);
+    }
+
+    function toggleSidebar() {
+      var sb = document.getElementById('sidebar');
+      var bd = document.getElementById('sidebarBackdrop');
+      if (!bd) {
+        bd = document.createElement('div');
+        bd.id = 'sidebarBackdrop';
+        bd.onclick = closeSidebar;
+        document.body.appendChild(bd);
+      }
+      if (sb) {
+        if (sb.classList.contains('hidden-sidebar')) {
+          sb.classList.remove('hidden-sidebar');
+          if (window.innerWidth < 1024) bd.classList.add('active');
+        } else {
+          closeSidebar();
+        }
+      }
+    }
+
+    function closeSidebar() {
+      var sb = document.getElementById('sidebar');
+      var bd = document.getElementById('sidebarBackdrop');
+      if (sb) sb.classList.add('hidden-sidebar');
+      if (bd) bd.classList.remove('active');
+    }
+
+    // ✅ មុខងារ LOGIN ផ្ទៀងផ្ទាត់ដោយផ្ទាល់ជាមួយ Supabase (លឿន និងសុវត្ថិភាព)
+    async function login() {
+      var userEl = document.getElementById('user');
+      var passEl = document.getElementById('pass');
+      var btnEl = document.getElementById('loginBtn');
+      var remEl = document.getElementById('rememberMe');
+      if (!userEl || !passEl) return;
+
+      var u = userEl.value.trim();
+      var p = passEl.value.trim();
+      if (!u || !p) { showToast("សូមបញ្ចូល Username និង Password!", "error"); return; }
+
+      btnEl.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i> កំពុងផ្ទៀងផ្ទាត់...';
+      btnEl.disabled = true;
+
+      try {
+        const { data, error } = await supabaseClient
+          .from('users')
+          .select('*')
+          .eq('username', u)
+          .eq('password', p)
+          .maybeSingle();
+
+        if (error) throw error;
+
+        if (data) {
+          currentUser = {
+            id: data.id,
+            username: data.username,
+            fullName: data.full_name,
+            role: data.role,
+            type: data.type,
+            phone: data.phone,
+            linkedBoss: data.linked_boss || ""
+          };
+
+          if (remEl && remEl.checked) {
+            localStorage.setItem('kc_pos_user', u);
+            localStorage.setItem('kc_pos_pass', p);
+          } else {
+            localStorage.removeItem('kc_pos_user');
+            localStorage.removeItem('kc_pos_pass');
+          }
+
+          document.getElementById('loginPage').style.display = 'none';
+          document.getElementById('mainApp').classList.remove('hidden');
+          document.getElementById('userInfo').innerText = currentUser.role + "៖ " + currentUser.fullName;
+
+          renderSidebarMenu();
+          showToast("ចូលប្រើប្រាស់ជោគជ័យ! សួស្តី " + currentUser.fullName, "success");
+        } else {
+          showToast("ឈ្មោះ ឬលេខសម្ងាត់មិនត្រឹមត្រូវឡើយ!", "error");
+        }
+      } catch (err) {
+        showToast("កំហុសតភ្ជាប់៖ " + err.message, "error");
+      } finally {
+        btnEl.innerHTML = '<span>ចូលប្រើប្រាស់</span>';
+        btnEl.disabled = false;
+      }
+    }
+
+    function renderSidebarMenu() {
+      var sNav = document.getElementById('sidebarMenuContainer');
+      if (!sNav) return;
+      var html = '';
+
+      if (currentUser.role === 'Admin') {
+        html += '<button onclick="closeSidebar()" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold"><i class="fas fa-chart-pie mr-3 w-5 text-center"></i>Dashboard</button>';
+        html += '<div class="text-[10px] font-bold text-green-300 uppercase px-3 pt-3 pb-1 opacity-80 tracking-wider">ការលក់ & ទូទាត់</div>';
+        html += '<button onclick="closeSidebar()" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold"><i class="fas fa-shopping-cart mr-3 w-5 text-center"></i>ផ្ទាំងលក់ (POS)</button>';
+        html += '<button onclick="closeSidebar()" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold"><i class="fas fa-calculator mr-3 w-5 text-center"></i>ទូទាត់លុយ</button>';
+        html += '<div class="text-[10px] font-bold text-green-300 uppercase px-3 pt-3 pb-1 opacity-80 tracking-wider">ឃ្លាំង & ស្តុក</div>';
+        html += '<button onclick="closeSidebar()" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold"><i class="fas fa-box mr-3 w-5 text-center"></i>គ្រប់គ្រងស្តុក</button>';
+        html += '<button onclick="closeSidebar()" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold"><i class="fas fa-dolly mr-3 w-5 text-center"></i>ភ្ញៀវខ្ចីធុង</button>';
+      } else {
+        html += '<button onclick="closeSidebar()" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold"><i class="fas fa-shopping-cart mr-3 w-5 text-center"></i>ផ្ទាំងលក់ (POS)</button>';
+      }
+
+      html += '<hr class="border-green-800 my-3">';
+      html += '<button onclick="logout()" class="w-full text-left p-3 text-red-300 hover:bg-red-800 rounded-xl transition flex items-center font-bold"><i class="fas fa-sign-out-alt mr-3 w-5 text-center"></i>ចាកចេញ</button>';
+      sNav.innerHTML = html;
+    }
+
+    function logout() {
+      localStorage.removeItem('kc_pos_user');
+      localStorage.removeItem('kc_pos_pass');
+      currentUser = {};
+      document.getElementById('mainApp').classList.add('hidden');
+      document.getElementById('loginPage').style.display = 'flex';
+      closeSidebar();
+      showToast("បានចាកចេញពីប្រព័ន្ធ!", "info");
+    }
+
+    // Auto-login បើមាន Remember Me
+    window.addEventListener('load', function() {
+      var savedU = localStorage.getItem('kc_pos_user');
+      var savedP = localStorage.getItem('kc_pos_pass');
+      if (savedU && savedP) {
+        document.getElementById('user').value = savedU;
+        document.getElementById('pass').value = savedP;
+        document.getElementById('rememberMe').checked = true;
+        login();
+      }
+    });
+  </script>
+</body>
+</html>
