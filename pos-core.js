@@ -127,23 +127,144 @@ function loadModule(name) {
 }
 
 // ==========================================
-// 📊 ២. ផ្ទាំង DASHBOARD (ទាញទិន្នន័យពី SUPABASE)
+// 📊 ២. ផ្ទាំង DASHBOARD (ទាញទិន្នន័យពី SUPABASE ពេញលេញ ១០០%)
 // ==========================================
 async function renderDashboardModule() {
   var area = document.getElementById('contentArea');
   area.innerHTML = '<div class="max-w-5xl mx-auto space-y-4">' +
+    // ១. ក្បាលទំព័រ
     '<div class="flex justify-between items-center bg-white p-4 rounded-2xl border shadow-sm">' +
-      '<div><h2 class="text-base sm:text-xl font-extrabold text-green-900 flex items-center gap-2"><i class="fas fa-chart-pie text-green-600"></i>ផ្ទាំងសង្ខេបអាជីវកម្ម KC WATER (Supabase)</h2><p class="text-xs text-gray-500 mt-0.5">ទិដ្ឋភាពទូទៅនៃការលក់ សាច់ប្រាក់ និងស្តុកទំនិញ Realtime</p></div>' +
-      '<button onclick="renderDashboardModule()" class="px-3.5 py-2 bg-green-50 hover:bg-green-100 text-green-700 rounded-xl text-xs font-bold border border-green-200 active:scale-95 transition flex items-center gap-1.5 shadow-2xs"><i class="fas fa-sync-alt"></i> Refresh</button>' +
+      '<div>' +
+        '<h2 class="text-base sm:text-xl font-extrabold text-green-900 flex items-center gap-2">' +
+          '<i class="fas fa-chart-pie text-green-600"></i>ផ្ទាំងសង្ខេបអាជីវកម្ម KC WATER' +
+        '</h2>' +
+        '<p class="text-xs text-gray-500 mt-0.5">ទិដ្ឋភាពទូទៅនៃការលក់ សាច់ប្រាក់ ចំណាយ និងប្រាក់ចំណេញសុទ្ធ</p>' +
+      '</div>' +
+      '<button onclick="renderDashboardModule()" class="px-3.5 py-2 bg-green-50 hover:bg-green-100 text-green-700 rounded-xl text-xs font-bold border border-green-200 active:scale-95 transition flex items-center gap-1.5 shadow-2xs">' +
+        '<i class="fas fa-sync-alt"></i> Refresh' +
+      '</button>' +
     '</div>' +
+
+    // ២. កាតស្ថិតិទាំង ៦ (Today Sales, Cash in Hand/ABA, Debt, Month Sales, Month Exp, Net Profit)
     '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">' +
-      '<div class="dash-card border-l-4 border-blue-500 p-4 bg-white rounded-2xl"><div class="text-gray-500 text-xs font-bold uppercase">លក់បានថ្ងៃនេះ</div><div id="dashTodaySales" class="mt-2 font-black text-blue-800 text-lg">0 ៛</div></div>' +
-      '<div class="dash-card border-l-4 border-green-600 p-4 bg-white rounded-2xl"><div class="text-gray-500 text-xs font-bold uppercase">សាច់ប្រាក់ប្រមូលបាន</div><div id="dashTodayCash" class="mt-2 font-black text-green-800 text-lg">0 ៛</div></div>' +
-      '<div class="dash-card border-l-4 border-red-500 p-4 bg-white rounded-2xl cursor-pointer hover:bg-red-50/50 transition" onclick="loadModule(\'Settlement\')"><div class="text-gray-500 text-xs font-bold uppercase flex justify-between"><span>បំណុលគេជំពាក់សរុប</span><i class="fas fa-chevron-right text-xs text-red-400"></i></div><div id="dashTotalDebt" class="mt-2 font-black text-red-700 text-lg">0 ៛</div></div>' +
+      '<div class="dash-card border-l-4 border-blue-500 p-4 bg-white rounded-2xl">' +
+        '<div class="text-gray-500 text-xs font-bold uppercase">លក់បានថ្ងៃនេះ</div>' +
+        '<div id="dashTodaySales" class="mt-2 font-black text-blue-800 text-base sm:text-lg">0 ៛</div>' +
+      '</div>' +
+
+      '<div class="dash-card border-l-4 border-green-600 p-4 bg-white rounded-2xl space-y-1">' +
+        '<div class="text-gray-500 text-xs font-bold uppercase flex justify-between">' +
+          '<span>សាច់ប្រាក់ប្រមូលបាន</span>' +
+          '<span id="dashTodayCashTotal" class="font-black text-green-800 text-sm">0 ៛</span>' +
+        '</div>' +
+        '<div class="border-t border-green-200 pt-1 text-[11px] text-gray-600 flex justify-between">' +
+          '<span>💵 លុយសុទ្ធក្នុងថត៖</span><b id="dashTodayCashInHand" class="text-gray-900">0 ៛</b>' +
+        '</div>' +
+        '<div class="text-[11px] text-blue-700 flex justify-between">' +
+          '<span>📱 ចូលកុង ABA៖</span><b id="dashTodayBankAba" class="text-blue-900">0 ៛</b>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="dash-card border-l-4 border-red-500 p-4 bg-white rounded-2xl cursor-pointer hover:bg-red-50/50 transition" onclick="loadModule(\'Settlement\')">' +
+        '<div class="text-gray-500 text-xs font-bold uppercase flex justify-between">' +
+          '<span>បំណុលគេជំពាក់សរុប</span><i class="fas fa-chevron-right text-xs text-red-400"></i>' +
+        '</div>' +
+        '<div id="dashTotalDebt" class="mt-2 font-black text-red-700 text-base sm:text-lg">0 ៛</div>' +
+      '</div>' +
+
+      '<div class="dash-card border-l-4 border-purple-600 p-4 bg-white rounded-2xl">' +
+        '<div class="text-gray-500 text-xs font-bold uppercase">ចំណូលលក់ខែនេះ</div>' +
+        '<div id="dashMonthSales" class="mt-2 font-black text-purple-800 text-base sm:text-lg">0 ៛</div>' +
+      '</div>' +
+
+      '<div class="dash-card border-l-4 border-orange-500 p-4 bg-white rounded-2xl">' +
+        '<div class="text-gray-500 text-xs font-bold uppercase">ចំណាយសរុបខែនេះ</div>' +
+        '<div id="dashMonthExpenses" class="mt-2 font-black text-orange-700 text-base sm:text-lg">0 ៛</div>' +
+        '<div id="dashMonthExpDetail" class="text-[10px] text-gray-400 font-bold mt-0.5"></div>' +
+      '</div>' +
+
+      '<div class="dash-card border-l-4 border-emerald-600 p-4 bg-emerald-50/70 rounded-2xl border border-emerald-300">' +
+        '<div class="text-emerald-900 text-xs font-black uppercase">ប្រាក់ចំណេញសុទ្ធខែនេះ</div>' +
+        '<div id="dashNetProfit" class="mt-2 font-black text-emerald-800 text-base sm:text-lg">0 ៛</div>' +
+        '<div class="text-[10px] text-gray-500 font-bold mt-0.5">គិតតាមអត្រា $1=4,100៛ | 1฿=115៛</div>' +
+      '</div>' +
     '</div>' +
+
+    // ៣. បរិមាណទឹកដកថ្ងៃនេះ & ស្តុកទំនិញ
     '<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">' +
-      '<div class="card p-5 border-t-4 border-blue-600 shadow-lg mb-0"><h3 class="font-bold text-gray-800 text-sm mb-3 flex items-center gap-2"><i class="fas fa-boxes text-blue-600"></i>ចំនួនទឹកដកលក់ថ្ងៃនេះ</h3><div id="dashProductQtyArea" class="space-y-2 text-xs">កំពុងគណនា...</div></div>' +
-      '<div class="card p-5 border-t-4 border-orange-500 shadow-lg mb-0"><h3 class="font-bold text-gray-800 text-sm mb-3 flex items-center gap-2"><i class="fas fa-boxes-stacked text-orange-500"></i>ស្តុកទំនិញក្នុងឃ្លាំង & ដំណឹងជិតអស់</h3><div id="dashStockAlertArea" class="space-y-2 text-xs">កំពុងឆែកមើលស្តុក...</div></div>' +
+      '<div class="card p-5 border-t-4 border-blue-600 shadow-lg mb-0">' +
+        '<h3 class="font-bold text-gray-800 text-sm mb-3 flex items-center gap-2">' +
+          '<i class="fas fa-boxes text-blue-600"></i>ចំនួនទឹក/ទំនិញដកលក់ថ្ងៃនេះ' +
+        '</h3>' +
+        '<div id="dashProductQtyArea" class="space-y-2 text-xs">កំពុងគណនា...</div>' +
+      '</div>' +
+
+      '<div class="card p-5 border-t-4 border-orange-500 shadow-lg mb-0">' +
+        '<div class="flex justify-between items-center mb-3">' +
+          '<h3 class="font-bold text-gray-800 text-xs sm:text-sm flex items-center gap-2">' +
+            '<i class="fas fa-boxes-stacked text-orange-500 text-base"></i> ស្តុកទំនិញក្នុងឃ្លាំង & ដំណឹងជិតអស់' +
+          '</h3>' +
+          '<button onclick="loadModule(\'StockRep\')" class="px-2.5 py-1 bg-orange-50 hover:bg-orange-100 text-orange-700 rounded-xl text-xs font-bold border border-orange-200 active:scale-95 transition flex items-center gap-1 shadow-2xs">' +
+            '<i class="fas fa-arrow-up-right-from-square text-[10px]"></i> របាយការណ៍ស្តុក' +
+          '</button>' +
+        '</div>' +
+        '<div id="dashStockAlertArea" class="space-y-2 text-xs">កំពុងឆែកមើលស្តុក...</div>' +
+      '</div>' +
+    '</div>' +
+
+    // ៤. តារាងប្រតិបត្តិការដកទំនិញថ្ងៃនេះ (ពេញមួយថ្ងៃ)
+    '<div class="card p-5 border-t-4 border-gray-700 shadow-lg mb-0">' +
+      '<div class="flex justify-between items-center mb-3">' +
+        '<h3 class="font-extrabold text-gray-800 text-xs sm:text-sm flex items-center gap-2">' +
+          '<i class="fas fa-clock-rotate-left text-blue-600 text-base"></i> ប្រតិបត្តិការដកទំនិញថ្ងៃនេះ (ពេញមួយថ្ងៃ)' +
+        '</h3>' +
+        '<span id="dashRecentCountBadge" class="bg-blue-100 text-blue-800 text-[11px] px-2.5 py-0.5 rounded-full font-bold">0 លើក</span>' +
+      '</div>' +
+      '<div class="overflow-x-auto max-h-[250px] overflow-y-auto rounded-xl border border-gray-200 shadow-inner">' +
+        '<table class="w-full text-left text-xs border-collapse">' +
+          '<thead class="sticky top-0 bg-gray-100 text-gray-700 font-bold border-b z-10 shadow-2xs">' +
+            '<tr>' +
+              '<th class="p-2.5">ម៉ោង</th>' +
+              '<th class="p-2.5">អតិថិជន</th>' +
+              '<th class="p-2.5">ទំនិញ</th>' +
+              '<th class="p-2.5 text-center">ចំនួន</th>' +
+              '<th class="p-2.5 text-right">សរុប</th>' +
+              '<th class="p-2.5 text-center">ស្ថានភាព</th>' +
+            '</tr>' +
+          '</thead>' +
+          '<tbody id="dashRecentTbody">' +
+            '<tr><td colspan="6" class="p-4 text-center text-gray-400 italic">កំពុងទាញទិន្នន័យ...</td></tr>' +
+          '</tbody>' +
+        '</table>' +
+      '</div>' +
+    '</div>' +
+
+    // ៥. Modal បញ្ចូលស្តុកបន្ទាន់ (Quick Restock Popup)
+    '<div id="quickRestockModal" class="fixed inset-0 z-[7500] flex items-center justify-center p-4 hidden">' +
+      '<div class="absolute inset-0 bg-black/60 backdrop-blur-xs" onclick="closeQuickRestockModal()"></div>' +
+      '<div class="bg-white rounded-3xl shadow-2xl z-10 w-full max-w-sm overflow-hidden p-5 text-center relative border border-gray-100 space-y-3.5">' +
+        '<div class="w-14 h-14 mx-auto rounded-2xl flex items-center justify-center text-2xl bg-green-100 text-green-700">' +
+          '<i class="fas fa-boxes-packing"></i>' +
+        '</div>' +
+        '<div>' +
+          '<h3 class="font-black text-gray-900 text-base">បញ្ចូលស្តុកថ្មីភ្លាមៗ</h3>' +
+          '<p id="qrProdTitle" class="text-xs text-blue-700 font-bold mt-0.5"></p>' +
+        '</div>' +
+        '<div class="space-y-2.5 text-left">' +
+          '<div>' +
+            '<label class="text-[10px] font-bold text-gray-600 uppercase block">១. ចំនួនទិញចូលបន្ថែម (*ឯកតា)</label>' +
+            '<input type="number" id="qrQtyInput" placeholder="ឧ៖ 50" class="w-full text-center text-xl font-black text-green-800 bg-gray-50 border-2 border-green-300 focus:border-green-600 rounded-xl p-2.5 outline-none">' +
+          '</div>' +
+          '<div>' +
+            '<label class="text-[10px] font-bold text-gray-600 uppercase block">២. ថ្លៃដើមទិញចូលលើកនេះ (បើតម្លៃប្រែប្រួល)</label>' +
+            '<input type="number" id="qrCostInput" placeholder="ថ្លៃដើមថ្មី" class="w-full text-center text-lg font-black text-blue-900 bg-white border-2 border-blue-200 focus:border-blue-600 rounded-xl p-2.5 outline-none">' +
+          '</div>' +
+        '</div>' +
+        '<div class="grid grid-cols-2 gap-2 pt-1">' +
+          '<button type="button" onclick="closeQuickRestockModal()" class="py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold rounded-xl text-xs active:scale-95 transition">បោះបង់</button>' +
+          '<button type="button" onclick="confirmQuickRestockSubmit()" class="py-2.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl text-xs shadow-md active:scale-95 transition">យល់ព្រមបញ្ចូល</button>' +
+        '</div>' +
+      '</div>' +
     '</div>' +
   '</div>';
 
@@ -152,57 +273,225 @@ async function renderDashboardModule() {
 
 async function loadDashboardData() {
   try {
-    var today = new Date().toISOString().split('T')[0];
-    const { data: trans } = await supabaseClient
+    var now = new Date();
+    var todayStr = now.toISOString().split('T')[0];
+    var firstDayMonthStr = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+
+    // ១. ទាញទិន្នន័យ Transactions ក្នុងខែនេះ
+    const { data: monthTrans } = await supabaseClient
       .from('transactions')
       .select('*')
-      .gte('created_at', today + 'T00:00:00Z');
-    
-    var todaySalesKHR = 0;
-    var todayCashKHR = 0;
-    var prodQty = {};
+      .gte('created_at', firstDayMonthStr + 'T00:00:00Z')
+      .order('created_at', { ascending: false });
 
-    if (trans) {
-      trans.forEach(function(t) {
-        todaySalesKHR += parseFloat(t.total || 0);
-        todayCashKHR += parseFloat(t.paid_khr || 0);
-        if (t.product_name) {
-          prodQty[t.product_name] = (prodQty[t.product_name] || 0) + parseFloat(t.qty || 0);
-        }
-      });
-    }
+    // ២. ទាញទិន្នន័យ Settlements ថ្ងៃនេះ (គិតលុយសុទ្ធ & ABA)
+    const { data: todaySettles } = await supabaseClient
+      .from('settlements')
+      .select('*')
+      .gte('settled_at', todayStr + 'T00:00:00Z');
 
-    document.getElementById('dashTodaySales').innerText = '៛ ' + todaySalesKHR.toLocaleString();
-    document.getElementById('dashTodayCash').innerText = '៛ ' + todayCashKHR.toLocaleString();
+    // ៣. ទាញទិន្នន័យ Expenses ក្នុងខែនេះ
+    const { data: monthExpenses } = await supabaseClient
+      .from('expenses')
+      .select('*')
+      .gte('created_at', firstDayMonthStr + 'T00:00:00Z');
 
+    // ៤. ទាញបំណុលសរុប (Unpaid transactions)
     const { data: unpaids } = await supabaseClient
       .from('transactions')
       .select('total')
       .eq('status', 'Unpaid');
 
-    var debtTotal = 0;
-    if (unpaids) unpaids.forEach(function(u) { debtTotal += parseFloat(u.total || 0); });
-    document.getElementById('dashTotalDebt').innerText = '៛ ' + debtTotal.toLocaleString();
+    var todaySalesKHR = 0;
+    var todayCashInHand = 0;
+    var todayBankAba = 0;
+    var monthSalesKHR = 0;
+    var monthCOGS = 0;
+    var todayProdQty = {};
+    var todayRecentSales = [];
 
+    // គណនាពី Transactions
+    (monthTrans || []).forEach(function(t) {
+      var isToday = String(t.created_at).startsWith(todayStr);
+      var tot = parseFloat(t.total || 0);
+      var qty = parseFloat(t.qty || 0);
+
+      monthSalesKHR += tot;
+
+      // គណនាថ្លៃដើម COGS (ទំនិញទិញគេ)
+      var pObj = allProducts.find(function(p){ return p.name === t.product_name; });
+      if (pObj && pObj.type === 'ទិញគេ' && pObj.cost > 0) {
+        monthCOGS += (qty * parseFloat(pObj.cost));
+      }
+
+      if (isToday) {
+        todaySalesKHR += tot;
+
+        var paid = parseFloat(t.paid_khr || 0);
+        if (t.payment_method === 'ABA') {
+          todayBankAba += paid;
+        } else {
+          todayCashInHand += paid;
+        }
+
+        if (t.product_name) {
+          todayProdQty[t.product_name] = (todayProdQty[t.product_name] || 0) + qty;
+        }
+
+        todayRecentSales.push(t);
+      }
+    });
+
+    // បូកបញ្ចូលប្រាក់ទូទាត់ពី Settlements ថ្ងៃនេះ
+    (todaySettles || []).forEach(function(s) {
+      todayCashInHand += parseFloat(s.cash_khr || 0);
+      todayBankAba += parseFloat(s.scan_khr || 0);
+    });
+
+    var todayTotalCash = todayCashInHand + todayBankAba;
+
+    // គណនាពី Expenses ខែនេះ
+    var monthOperatingExpKHR = 0;
+    (monthExpenses || []).forEach(function(e) {
+      var amt = parseFloat(e.amount || 0);
+      if (e.currency === 'USD') monthOperatingExpKHR += (amt * 4100);
+      else if (e.currency === 'THB') monthOperatingExpKHR += (amt * 115);
+      else monthOperatingExpKHR += amt;
+    });
+
+    var totalMonthExpensesKHR = monthOperatingExpKHR + monthCOGS;
+    var netProfitKHR = monthSalesKHR - totalMonthExpensesKHR;
+
+    // គណនាបំណុលសរុប
+    var totalDebtKHR = 0;
+    (unpaids || []).forEach(function(u) { totalDebtKHR += parseFloat(u.total || 0); });
+
+    // បង្ហាញលើកាតស្ថិតិ
+    document.getElementById('dashTodaySales').innerText = '៛ ' + todaySalesKHR.toLocaleString();
+    document.getElementById('dashTodayCashTotal').innerText = '៛ ' + todayTotalCash.toLocaleString();
+    document.getElementById('dashTodayCashInHand').innerText = '៛ ' + todayCashInHand.toLocaleString();
+    document.getElementById('dashTodayBankAba').innerText = '៛ ' + todayBankAba.toLocaleString();
+    document.getElementById('dashTotalDebt').innerText = '៛ ' + totalDebtKHR.toLocaleString();
+    document.getElementById('dashMonthSales').innerText = '៛ ' + monthSalesKHR.toLocaleString();
+    document.getElementById('dashMonthExpenses').innerText = '៛ ' + totalMonthExpensesKHR.toLocaleString();
+    document.getElementById('dashMonthExpDetail').innerText = '(ប្រតិបត្តិការ: ៛ ' + Math.round(monthOperatingExpKHR).toLocaleString() + (monthCOGS > 0 ? ' | ដើមទឹកយួរ: ៛ ' + Math.round(monthCOGS).toLocaleString() : '') + ')';
+
+    var netEl = document.getElementById('dashNetProfit');
+    var isPositive = netProfitKHR >= 0;
+    netEl.innerText = (isPositive ? '+ ៛ ' : '- ៛ ') + Math.abs(Math.round(netProfitKHR)).toLocaleString();
+    netEl.className = 'mt-2 font-black text-base sm:text-lg ' + (isPositive ? 'text-emerald-700' : 'text-red-600');
+
+    // បរិមាណទឹកលក់ថ្ងៃនេះ
     var pqArea = document.getElementById('dashProductQtyArea');
     var pqHtml = "";
-    for (var p in prodQty) {
-      pqHtml += '<div class="flex justify-between items-center p-2.5 bg-gray-50 rounded-xl border"><span class="font-bold text-gray-800">' + p + '</span><span class="px-3 py-1 bg-blue-100 text-blue-800 font-black rounded-lg">' + prodQty[p] + '</span></div>';
+    for (var p in todayProdQty) {
+      pqHtml += '<div class="flex justify-between items-center p-2.5 bg-gray-50 rounded-xl border">' +
+        '<span class="font-bold text-gray-800">' + p + '</span>' +
+        '<span class="px-3 py-1 bg-blue-100 text-blue-800 font-black rounded-lg">' + todayProdQty[p] + '</span>' +
+      '</div>';
     }
-    pqArea.innerHTML = pqHtml || '<p class="text-gray-400 italic text-center py-4">មិនទាន់មានការលក់ថ្ងៃនេះនៅឡើយទេ</p>';
+    pqArea.innerHTML = pqHtml || '<p class="text-gray-400 italic text-center py-4">មិនទាន់មានការដកលក់ថ្ងៃនេះនៅឡើយទេ</p>';
 
+    // ស្តុកទំនិញ & ដំណឹងជិតអស់ + ប៊ូតុង «+ បញ្ចូល»
     var alertArea = document.getElementById('dashStockAlertArea');
     var saHtml = "";
     allProducts.forEach(function(prod) {
+      var isZero = parseFloat(prod.stock || 0) <= 0;
       var isLow = parseFloat(prod.stock || 0) <= parseFloat(prod.min_stock || 5);
-      saHtml += '<div class="flex justify-between items-center p-2.5 bg-gray-50 rounded-xl border"><span><b>' + prod.name + '</b></span><span class="px-2.5 py-1 font-black rounded-lg ' + (isLow ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700') + '">' + prod.stock + ' ឯកតា</span></div>';
+
+      saHtml += '<div class="flex justify-between items-center p-2.5 rounded-xl border ' + (isZero ? 'bg-red-50 border-red-200' : (isLow ? 'bg-orange-50 border-orange-200' : 'bg-gray-50 border-gray-100')) + '">' +
+        '<div>' +
+          '<b class="' + (isZero ? 'text-red-900' : (isLow ? 'text-orange-900' : 'text-gray-800')) + '">' + prod.name + '</b>' +
+          '<div class="text-[10px] text-gray-400 font-bold">កម្រិតកំណត់៖ ' + (prod.min_stock || 5) + '</div>' +
+        '</div>' +
+        '<div class="flex items-center gap-1.5">' +
+          '<span class="px-2.5 py-1 font-black rounded-lg text-xs ' + (isZero ? 'bg-red-600 text-white' : (isLow ? 'bg-orange-500 text-white' : 'bg-blue-100 text-blue-800')) + '">' +
+            (isZero ? 'អស់ (០)' : 'សល់ ' + prod.stock) +
+          '</span>' +
+          (prod.type === 'ទិញគេ' ? 
+          '<button type="button" onclick="openQuickRestockModal(\'' + prod.id + '\', \'' + prod.name.replace(/'/g, "\\'") + '\', ' + (prod.cost || 0) + ')" class="px-2.5 py-1 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-black shadow-2xs active:scale-95 transition flex items-center gap-1">' +
+            '<i class="fas fa-plus"></i> បញ្ចូល' +
+          '</button>' : '') +
+        '</div>' +
+      '</div>';
     });
     alertArea.innerHTML = saHtml || '<p class="text-gray-400 italic text-center py-4">គ្មានទិន្នន័យស្តុក</p>';
+
+    // ប្រតិបត្តិការដកទំនិញថ្ងៃនេះពេញមួយថ្ងៃ
+    var tbodyRecent = document.getElementById('dashRecentTbody');
+    var badgeCount = document.getElementById('dashRecentCountBadge');
+    if (badgeCount) badgeCount.innerText = todayRecentSales.length + " លើក";
+
+    if (todayRecentSales.length === 0) {
+      tbodyRecent.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-gray-400 italic">មិនទាន់មានប្រតិបត្តិការដកទំនិញថ្ងៃនេះនៅឡើយ</td></tr>';
+    } else {
+      var rHtml = '';
+      todayRecentSales.forEach(function(r) {
+        var timeStr = new Date(r.created_at).toLocaleTimeString('km-KH', { hour: '2-digit', minute: '2-digit' });
+        var isPaid = (r.status === 'Paid');
+
+        rHtml += '<tr class="border-b hover:bg-gray-50">' +
+          '<td class="p-2.5 text-gray-500 whitespace-nowrap text-[10px]">' + timeStr + '</td>' +
+          '<td class="p-2.5 font-bold text-gray-800">' + r.customer_name + '</td>' +
+          '<td class="p-2.5">' + r.product_name + '</td>' +
+          '<td class="p-2.5 text-center font-bold text-blue-700">' + r.qty + '</td>' +
+          '<td class="p-2.5 text-right font-black text-green-700 whitespace-nowrap">៛ ' + Number(r.total).toLocaleString() + '</td>' +
+          '<td class="p-2.5 text-center"><span class="px-2 py-0.5 rounded-full text-[9px] font-bold ' + (isPaid ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800 border border-orange-200') + '">' + (isPaid ? 'បង់រួច' : 'ជំពាក់') + '</span></td>' +
+        '</tr>';
+      });
+      tbodyRecent.innerHTML = rHtml;
+    }
   } catch(e) {
-    console.error("Dashboard load error:", e);
+    console.error("Dashboard calculation error:", e);
   }
 }
 
+// 📦 មុខងារ POPUP បញ្ចូលស្តុកបន្ទាន់ (QUICK RESTOCK)
+var activeQuickRestockProdId = null;
+
+function openQuickRestockModal(prodId, prodName, currentCost) {
+  activeQuickRestockProdId = prodId;
+  document.getElementById('qrProdTitle').innerText = "ទំនិញ៖ [" + prodName + "]";
+  document.getElementById('qrQtyInput').value = 50;
+  document.getElementById('qrCostInput').value = currentCost > 0 ? currentCost : "";
+  document.getElementById('quickRestockModal').classList.remove('hidden');
+}
+
+function closeQuickRestockModal() {
+  document.getElementById('quickRestockModal').classList.add('hidden');
+  activeQuickRestockProdId = null;
+}
+
+async function confirmQuickRestockSubmit() {
+  if (!activeQuickRestockProdId) return;
+  var qty = parseFloat(document.getElementById('qrQtyInput').value || 0);
+  var cost = parseFloat(document.getElementById('qrCostInput').value || 0);
+
+  if (qty <= 0) { showToast("សូមបញ្ចូលចំនួនទិញចូលធំជាង ០!", "error"); return; }
+  var prod = allProducts.find(function(p){ return p.id === activeQuickRestockProdId; });
+
+  try {
+    var newStock = parseFloat(prod.stock || 0) + qty;
+    var updateObj = { stock: newStock };
+    if (cost > 0) updateObj.cost = cost;
+
+    await supabaseClient.from('products').update(updateObj).eq('id', activeQuickRestockProdId);
+    await supabaseClient.from('stock_in').insert([{
+      product_id: activeQuickRestockProdId,
+      product_name: prod ? prod.name : "",
+      qty: qty,
+      cost: cost > 0 ? cost : (prod ? prod.cost : 0),
+      admin_name: currentUser.fullName || "Admin"
+    }]);
+
+    closeQuickRestockModal();
+    showToast("បានបញ្ចូលស្តុក +" + qty + " ជោគជ័យ!", "success");
+    await fetchInitialPOSData();
+    await loadDashboardData();
+  } catch(err) {
+    showToast("កំហុស៖ " + err.message, "error");
+  }
+}
 // ==========================================
 // 🛒 ៣. ផ្ទាំងលក់ POS & កាត់ស្តុក
 // ==========================================
