@@ -61,7 +61,7 @@
       </div>
 
       <div class="flex items-center gap-2">
-        <button type="button" id="navOnlineOrdersBtn" onclick="showToast('មុខងារនេះនឹងរៀបចំនៅជំហានបន្ទាប់', 'info')" class="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full text-xs font-black bg-amber-400 hover:bg-amber-300 text-amber-950 shadow-md flex items-center gap-1.5 active:scale-95 transition border border-amber-300">
+        <button type="button" id="navOnlineOrdersBtn" onclick="openOnlineOrdersModal()" class="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full text-xs font-black bg-amber-400 hover:bg-amber-300 text-amber-950 shadow-md flex items-center gap-1.5 active:scale-95 transition border border-amber-300">
           <i class="fas fa-truck-fast text-xs text-amber-900"></i>
           <span class="hidden sm:inline">កុម្ម៉ង់ Online</span>
           <span id="navOnlineOrdersCount" class="w-5 h-5 rounded-full bg-red-600 text-white text-[10px] flex items-center justify-center font-black animate-pulse">0</span>
@@ -168,5 +168,6 @@
   <script src="pos-config.js"></script>
   <script src="pos-core.js"></script>
   <script src="pos-settlement.js"></script>
+  <script src="pos-orders.js"></script>
 </body>
 </html>
