@@ -128,7 +128,7 @@
       </div>
 
       <div class="flex items-center gap-2">
-        <button type="button" id="navOnlineOrdersBtn" onclick="openOnlineOrdersModal()" class="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full text-xs font-black bg-amber-400 hover:bg-amber-300 text-amber-950 shadow-md flex items-center gap-1.5 active:scale-95 transition border border-amber-300">
+        <button type="button" id="navOnlineOrdersBtn" onclick="showToast('មុខងារនេះនឹងរៀបចំនៅជំហានបន្ទាប់', 'info')" class="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full text-xs font-black bg-amber-400 hover:bg-amber-300 text-amber-950 shadow-md flex items-center gap-1.5 active:scale-95 transition border border-amber-300">
           <i class="fas fa-truck-fast text-xs text-amber-900"></i>
           <span class="hidden sm:inline">កុម្ម៉ង់ Online</span>
           <span id="navOnlineOrdersCount" class="w-5 h-5 rounded-full bg-red-600 text-white text-[10px] flex items-center justify-center font-black animate-pulse">0</span>
@@ -155,7 +155,7 @@
     </div>
   </div>
 
-  <!-- ៤. Modal រើសចំនួន & តម្លៃទំនិញចូលកន្ត្រក -->
+  <!-- ៤. Modal រើសចំនួន & តម្លៃទំនិញចូលកន្ត្រក POS -->
   <div id="productSelectModal" class="fixed inset-0 z-[4000] flex items-center justify-center p-4 hidden">
     <div class="absolute inset-0 bg-black/60 backdrop-blur-xs" onclick="closeProductModal()"></div>
     <div class="bg-white rounded-3xl shadow-2xl z-10 w-full max-w-sm overflow-hidden p-5 space-y-3 text-center relative border">
@@ -167,12 +167,10 @@
         <h3 id="modalProdTitle" class="font-extrabold text-gray-800 text-base leading-snug"></h3>
         <span id="modalStockStatusBadge" class="inline-block mt-0.5 text-[10px] px-2 py-0.5 bg-green-100 text-green-800 font-bold rounded-full"></span>
       </div>
-      
       <div class="p-3 bg-blue-50/70 rounded-2xl border border-blue-200 text-left space-y-1">
         <label class="text-[10px] font-black text-blue-900 uppercase block">តម្លៃលក់ក្នុងមួយឯកតា (៛)</label>
         <input type="number" id="modalPriceInput" oninput="updateModalSubtotal()" class="w-full text-center text-xl font-black bg-white py-2 rounded-xl border border-blue-300 text-blue-900 outline-none">
       </div>
-
       <div class="bg-green-50/70 p-2.5 rounded-2xl border border-green-200 space-y-1">
         <label class="text-[10px] font-bold text-gray-600 uppercase block">ចំនួនទំនិញ</label>
         <div class="flex items-center justify-center gap-3">
@@ -181,12 +179,10 @@
           <button onclick="changeModalQty(1)" class="w-11 h-10 bg-green-600 text-white rounded-xl text-xl font-bold shadow-md active:scale-90">+</button>
         </div>
       </div>
-
       <div class="text-xs font-bold text-gray-600 flex justify-between px-2">
         <span>សរុបមុខទំនិញនេះ៖</span>
         <span id="modalSubtotalText" class="font-black text-base text-blue-700">0 ៛</span>
       </div>
-
       <button onclick="confirmAddToCart()" class="w-full py-3.5 btn-green shadow-md text-xs flex items-center justify-center gap-1.5 active:scale-95 transition">
         <i class="fas fa-cart-plus"></i> បញ្ចូលកន្ត្រក
       </button>
@@ -212,12 +208,12 @@
     </div>
   </div>
 
-  <!-- ៦. Modal វិក្កយបត្រលក់ជោគជ័យ -->
+  <!-- ៦. Modal វិក្កយបត្រ (លក់ POS & ទូទាត់លុយ) -->
   <div id="posSaleReceiptModal" class="fixed inset-0 z-[5000] flex items-center justify-center p-4 hidden">
     <div class="absolute inset-0 bg-black/60 backdrop-blur-xs" onclick="closePOSReceiptModal()"></div>
     <div class="bg-white rounded-3xl shadow-2xl z-10 w-full max-w-sm overflow-hidden p-5 space-y-3 text-center relative border">
       <h3 class="font-extrabold text-green-800 text-base flex items-center justify-center gap-2">
-        <i class="fas fa-check-circle text-green-600 text-xl"></i>រក្សាទុកការលក់ជោគជ័យ!
+        <i class="fas fa-check-circle text-green-600 text-xl"></i>ប្រតិបត្តិការជោគជ័យ!
       </h3>
       <div class="max-h-72 overflow-y-auto rounded-2xl border p-1 bg-gray-50 shadow-inner">
         <img id="posModalReceiptImg" src="" class="w-full rounded-xl">
@@ -226,14 +222,14 @@
         <button onclick="sharePOSReceiptImage()" class="py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs shadow flex items-center justify-center gap-1.5 active:scale-95 transition"><i class="fas fa-share-nodes"></i> ផ្ញើ Telegram</button>
         <a id="posModalReceiptDownloadBtn" href="" download="Receipt.png" class="py-2.5 bg-gray-800 hover:bg-gray-900 text-white rounded-xl font-bold text-xs shadow flex items-center justify-center gap-1.5 active:scale-95 transition" style="text-decoration:none;"><i class="fas fa-download"></i> ទាញយក PNG</a>
       </div>
-      <button onclick="closePOSReceiptModal()" class="w-full py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold rounded-xl text-xs active:scale-95 transition">បន្តការលក់ថ្មី</button>
+      <button onclick="closePOSReceiptModal()" class="w-full py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold rounded-xl text-xs active:scale-95 transition">បិទ (រួចរាល់)</button>
     </div>
   </div>
 
-  <!-- កន្លែងលាក់សម្រាប់បង្កើតរូបវិក្កយបត្រ -->
+  <!-- កន្លែងលាក់សម្រាប់ថតវិក្កយបត្រ -->
   <div id="hidden_receipt_canvas" style="position:absolute; left:-9999px; top:-9999px;"></div>
 
-  <!-- JAVASCRIPT: SUPABASE LOGIC & POS ENGINE -->
+  <!-- JAVASCRIPT: SUPABASE & FULL POS LOGIC -->
   <script>
     // 🔑 SUPABASE CLIENT CONFIGURATION
     const SUPABASE_URL = "https://ntftdylkcnkxsytptket.supabase.co";
@@ -248,6 +244,12 @@
     var currentPosCategoryFilter = 'ALL';
     var currentPosPayMethod = 'Cash';
     var telegramConfig = { token: "", chatId: "", status: "ON" };
+
+    // ទិន្នន័យសម្រាប់ Settlement
+    var currentSettlementCustomer = "";
+    var currentSettlementItems = [];
+    var currentSettlementPayMode = "Cash";
+    var currentSettlementOldDebt = 0;
 
     function showToast(msg, type) {
       type = type || 'success';
@@ -381,6 +383,7 @@
         html += '<button onclick="loadModule(\'Dashboard\')" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold"><i class="fas fa-chart-pie mr-3 w-5 text-center"></i>Dashboard</button>';
         html += '<div class="text-[10px] font-bold text-green-300 uppercase px-3 pt-3 pb-1 opacity-80 tracking-wider">ការលក់ & ទូទាត់</div>';
         html += '<button onclick="loadModule(\'POS\')" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold"><i class="fas fa-shopping-cart mr-3 w-5 text-center"></i>ផ្ទាំងលក់ (POS)</button>';
+        html += '<button onclick="loadModule(\'Settlement\')" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold"><i class="fas fa-calculator mr-3 w-5 text-center"></i>ទូទាត់លុយ (Settlement)</button>';
       } else {
         html += '<button onclick="loadModule(\'POS\')" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold"><i class="fas fa-shopping-cart mr-3 w-5 text-center"></i>ផ្ទាំងលក់ (POS)</button>';
       }
@@ -413,10 +416,11 @@
       closeSidebar();
       if (name === 'Dashboard') renderDashboardModule();
       else if (name === 'POS') renderPOSModule();
+      else if (name === 'Settlement') renderSettlementModule();
     }
 
     // ==========================================
-    // 📊 ផ្ទាំង DASHBOARD (ទាញទិន្នន័យជាក់ស្តែងពី Supabase)
+    // 📊 ផ្ទាំង DASHBOARD (ទាញទិន្នន័យជាក់ស្តែង)
     // ==========================================
     async function renderDashboardModule() {
       var area = document.getElementById('contentArea');
@@ -428,7 +432,7 @@
         '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">' +
           '<div class="dash-card border-l-4 border-blue-500 p-4 bg-white rounded-2xl"><div class="text-gray-500 text-xs font-bold uppercase">លក់បានថ្ងៃនេះ</div><div id="dashTodaySales" class="mt-2 font-black text-blue-800 text-lg">0 ៛</div></div>' +
           '<div class="dash-card border-l-4 border-green-600 p-4 bg-white rounded-2xl"><div class="text-gray-500 text-xs font-bold uppercase">សាច់ប្រាក់ប្រមូលបាន</div><div id="dashTodayCash" class="mt-2 font-black text-green-800 text-lg">0 ៛</div></div>' +
-          '<div class="dash-card border-l-4 border-red-500 p-4 bg-white rounded-2xl"><div class="text-gray-500 text-xs font-bold uppercase">បំណុលគេជំពាក់សរុប</div><div id="dashTotalDebt" class="mt-2 font-black text-red-700 text-lg">0 ៛</div></div>' +
+          '<div class="dash-card border-l-4 border-red-500 p-4 bg-white rounded-2xl cursor-pointer hover:bg-red-50/50 transition" onclick="loadModule(\'Settlement\')"><div class="text-gray-500 text-xs font-bold uppercase flex justify-between"><span>បំណុលគេជំពាក់សរុប</span><i class="fas fa-chevron-right text-xs text-red-400"></i></div><div id="dashTotalDebt" class="mt-2 font-black text-red-700 text-lg">0 ៛</div></div>' +
         '</div>' +
         '<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">' +
           '<div class="card p-5 border-t-4 border-blue-600 shadow-lg mb-0"><h3 class="font-bold text-gray-800 text-sm mb-3 flex items-center gap-2"><i class="fas fa-boxes text-blue-600"></i>ចំនួនទឹកដកលក់ថ្ងៃនេះ</h3><div id="dashProductQtyArea" class="space-y-2 text-xs">កំពុងគណនា...</div></div>' +
@@ -484,7 +488,7 @@
     }
 
     // ==========================================
-    // 🛒 ផ្ទាំងលក់ POS & កាត់ស្តុក SUPABASE
+    // 🛒 ផ្ទាំងលក់ POS & កាត់ស្តុក
     // ==========================================
     function renderPOSModule() {
       var area = document.getElementById('contentArea');
@@ -553,7 +557,7 @@
       var html = '';
 
       var filtered = allProducts.filter(function(p) {
-        if (p.channel === 'ONLINE') return false; // លាក់ទំនិញ ONLINE តែមួយគត់
+        if (p.channel === 'ONLINE') return false;
         var nameLower = (p.name || '').toLowerCase();
         if (currentPosCategoryFilter === 'BARREL') return (nameLower.indexOf('ធុង') !== -1 || nameLower.indexOf('20l') !== -1);
         if (currentPosCategoryFilter === 'PACK') return (nameLower.indexOf('យួរ') !== -1 || nameLower.indexOf('ដប') !== -1);
@@ -719,7 +723,7 @@
     function closePOSKHQR() { document.getElementById('posKhqrModal').classList.add('hidden'); }
 
     // ==========================================
-    // 💾 រក្សាទុកការលក់ (SUBMIT SALE ទៅ SUPABASE + កាត់ស្តុក)
+    // 💾 រក្សាទុកការលក់ (SUBMIT SALE ទៅ SUPABASE)
     // ==========================================
     var isSubmittingSaleLock = false;
 
@@ -757,11 +761,9 @@
           });
         });
 
-        // ១. កត់ត្រាចូល transactions table ក្នុង Supabase
         const { error: insErr } = await supabaseClient.from('transactions').insert(rowsToInsert);
         if (insErr) throw insErr;
 
-        // ២. កាត់ស្តុកទំនិញក្នុង products table
         for (var i = 0; i < cart.length; i++) {
           var item = cart[i];
           var prodObj = allProducts.find(function(p){ return p.id === item.id; });
@@ -772,7 +774,6 @@
           }
         }
 
-        // ៣. បាញ់ Telegram Alert
         try {
           var itemSummary = cart.map(function(item){ return "  • " + item.name + " x " + item.qty + " = ៛ " + (item.qty * item.price).toLocaleString(); }).join("\n");
           var tgMsg = "💧 <b>[KC WATER - លក់នៅកន្លែង POS]</b>\n\n" +
@@ -787,8 +788,7 @@
           sendTelegramAlert(tgMsg);
         } catch(e) {}
 
-        // ៤. បង្កើតវិក្កយបត្ររូបភាព (Receipt PNG)
-        generateReceiptImage(tid, custName, total, paid, cart);
+        generateReceiptImage(tid, custName, total, paid, cart, "វិក្កយបត្រលក់ទំនិញ (RECEIPT)");
 
         cart = [];
         rC();
@@ -806,33 +806,330 @@
       }
     }
 
-    function generateReceiptImage(tid, cust, total, paid, items) {
+    // ==========================================
+    // 💳 ផ្ទាំងទូទាត់លុយ SETTLEMENT (SUPABASE REALTIME)
+    // ==========================================
+    async function renderSettlementModule() {
+      var area = document.getElementById('contentArea');
+      currentSettlementCustomer = "";
+      currentSettlementItems = [];
+      currentSettlementPayMode = "Cash";
+
+      area.innerHTML = '<div class="max-w-4xl mx-auto space-y-4">' +
+        '<div class="flex justify-between items-center bg-white p-4 rounded-2xl border shadow-sm">' +
+          '<div><h2 class="text-base sm:text-xl font-extrabold text-blue-900 flex items-center gap-2"><i class="fas fa-calculator text-blue-600"></i>ប្រព័ន្ធទូទាត់ប្រាក់ និងជម្រះបញ្ជីជំពាក់ (Settlement)</h2><p class="text-xs text-gray-500 mt-0.5">ពិនិត្យជើងទឹកជំពាក់ និងចេញវិក្កយបត្រជូនអតិថិជន Realtime</p></div>' +
+          '<button onclick="renderSettlementModule()" class="px-3.5 py-2 bg-blue-50 text-blue-700 rounded-xl text-xs font-bold border border-blue-200 active:scale-95 transition flex items-center gap-1.5 shadow-2xs"><i class="fas fa-sync-alt"></i> Refresh</button>' +
+        '</div>' +
+
+        '<div class="card border-t-4 border-orange-500 shadow-md p-4 mb-0">' +
+          '<h3 class="font-bold text-gray-800 text-xs sm:text-sm mb-2 flex items-center gap-1.5"><i class="fas fa-users text-orange-600"></i> ជ្រើសរើសឈ្មោះម៉ូយជំពាក់ដើម្បីទូទាត់៖</h3>' +
+          '<div id="settleDebtorsBadgesContainer" class="flex flex-wrap gap-2 pt-1 text-xs"><i class="fas fa-spinner fa-spin text-orange-600"></i> កំពុងឆែកបញ្ជីជំពាក់...</div>' +
+        '</div>' +
+
+        '<div id="settlementDetailCard" class="card border-t-4 border-blue-600 shadow-xl p-5 mb-0 hidden">' +
+          '<div class="flex justify-between items-center border-b pb-3 mb-3">' +
+            '<div><span class="text-[10px] text-gray-400 uppercase font-bold block">អតិថិជនកំពុងទូទាត់</span><h3 id="settleTargetCustName" class="text-base sm:text-lg font-black text-blue-900"></h3></div>' +
+            '<span id="settleSelectedCountBadge" class="bg-blue-100 text-blue-800 text-xs px-2.5 py-0.5 rounded-full font-bold">0 ជើងទឹក</span>' +
+          '</div>' +
+
+          '<div class="overflow-x-auto max-h-60 overflow-y-auto rounded-xl border mb-3"><table class="w-full text-left text-xs border-collapse"><thead class="sticky top-0 bg-gray-100 text-gray-700 font-bold border-b"><tr><th class="p-2.5 text-center w-10"><input type="checkbox" id="settleSelectAllCb" onchange="toggleSelectAllSettle(this.checked)" checked class="w-4 h-4 accent-green-600 cursor-pointer"></th><th class="p-2.5 text-[10px]">កាលបរិច្ឆេទ</th><th class="p-2.5">មុខទំនិញ</th><th class="p-2.5 text-center">ចំនួន</th><th class="p-2.5 text-right">តម្លៃរាយ</th><th class="p-2.5 text-right">សរុប</th></tr></thead><tbody id="settleItemsTableBody"></tbody></table></div>' +
+
+          '<div class="p-3 bg-orange-50 rounded-2xl border border-orange-200 text-xs space-y-1 mb-3 text-orange-950 font-bold">' +
+            '<div class="flex justify-between"><span>សរុបទំនិញដែលបានធីក (+)៖</span><b id="settleSelectedSubtotal" class="text-sm text-blue-900">0 ៛</b></div>' +
+            '<div id="settleOldDebtRow" class="flex justify-between border-t border-orange-200 pt-1"><span>បំណុលចាស់ពីមុន៖</span><b id="settleOldDebtVal" class="text-orange-700">0 ៛</b></div>' +
+            '<div class="flex justify-between text-sm sm:text-base font-black text-orange-950 border-t border-orange-300 pt-1.5 mt-1"><span>សរុបត្រូវបង់លើកនេះ (=)៖</span><span id="settleTotalDueText" class="text-base sm:text-lg text-orange-800">0 ៛</span></div>' +
+          '</div>' +
+
+          '<div class="bg-blue-50/70 p-4 rounded-2xl border border-blue-200 space-y-3">' +
+            '<div class="flex justify-between items-center"><label class="text-xs font-bold text-blue-900 uppercase">វិធីទូទាត់ប្រាក់</label><button onclick="fillExactSettlementPay()" class="px-3 py-1 bg-white text-blue-700 text-xs font-bold rounded-lg border border-blue-300 shadow-2xs active:scale-95 transition">លុយគ្រប់</button></div>' +
+            '<div class="grid grid-cols-2 gap-2 p-1 bg-white rounded-xl border">' +
+              '<button type="button" id="btnSettleCash" onclick="setSettlePayMode(\'Cash\')" class="py-2.5 rounded-lg text-xs font-bold bg-green-700 text-white shadow"><i class="fas fa-money-bill-wave mr-1"></i> លុយសុទ្ធ</button>' +
+              '<button type="button" id="btnSettleAba" onclick="setSettlePayMode(\'ABA\')" class="py-2.5 rounded-lg text-xs font-bold bg-gray-100 text-gray-600 hover:bg-gray-200"><i class="fas fa-qrcode mr-1"></i> ស្កេន ABA</button>' +
+            '</div>' +
+            '<div class="space-y-1"><label class="text-[10px] font-bold text-gray-500 uppercase">ប្រាក់បានបង់ជាក់ស្តែង (៛)</label><input type="number" id="settlePaidInput" oninput="calcSettleChange()" placeholder="0" class="w-full text-center text-xl font-black text-blue-900 bg-white border-2 border-blue-200 focus:border-blue-600 rounded-xl p-2.5 outline-none"></div>' +
+            '<div id="settleChangeArea" class="rounded-xl transition-all duration-200 hidden"></div>' +
+          '</div>' +
+
+          '<button onclick="submitSettlementPayment()" id="btnSubmitSettlement" class="btn-green shadow-xl py-4 text-base font-black flex items-center justify-center gap-2 active:scale-95 transition mt-3">' +
+            '<i class="fas fa-file-invoice-dollar text-xl"></i> ទូទាត់ & ចេញវិក្កយបត្រ (Save Settlement)' +
+          '</button>' +
+        '</div>' +
+      '</div>';
+
+      await loadSettlementDebtorsList();
+    }
+
+    async function loadSettlementDebtorsList() {
+      var badgesContainer = document.getElementById('settleDebtorsBadgesContainer');
+      if (!badgesContainer) return;
+
+      try {
+        const { data: unpaids } = await supabaseClient
+          .from('transactions')
+          .select('customer_name, total')
+          .eq('status', 'Unpaid');
+
+        if (!unpaids || unpaids.length === 0) {
+          badgesContainer.innerHTML = '<span class="text-green-600 font-bold text-xs"><i class="fas fa-check-circle mr-1"></i> អបអរសាទរ! គ្មានអតិថិជនណាជំពាក់ប្រាក់ឡើយ</span>';
+          return;
+        }
+
+        var custMap = {};
+        unpaids.forEach(function(u) {
+          var cName = (u.customer_name || "").trim();
+          if (cName && cName !== "Walk-in") {
+            custMap[cName] = (custMap[cName] || 0) + parseFloat(u.total || 0);
+          }
+        });
+
+        var html = '';
+        for (var name in custMap) {
+          html += '<button onclick="selectCustomerForSettlement(\'' + name.replace(/'/g, "\\'") + '\')" class="px-3.5 py-2 bg-white hover:bg-blue-50 text-blue-900 rounded-xl border border-blue-200 font-bold shadow-2xs active:scale-95 transition flex items-center gap-1.5">' +
+            '<i class="fas fa-user text-blue-600"></i> ' + name + ' <span class="text-[10px] bg-red-100 text-red-700 px-2 py-0.2 rounded-full font-black">៛ ' + custMap[name].toLocaleString() + '</span>' +
+          '</button>';
+        }
+
+        badgesContainer.innerHTML = html || '<span class="text-green-600 font-bold text-xs">គ្មានអតិថិជនជំពាក់ឡើយ</span>';
+      } catch(e) {}
+    }
+
+    async function selectCustomerForSettlement(custName) {
+      currentSettlementCustomer = custName;
+      document.getElementById('settleTargetCustName').innerText = custName;
+      document.getElementById('settlementDetailCard').classList.remove('hidden');
+
+      var tbody = document.getElementById('settleItemsTableBody');
+      tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-gray-400 italic"><i class="fas fa-spinner fa-spin mr-1"></i> កំពុងទាញជើងទឹក...</td></tr>';
+
+      try {
+        const { data: items } = await supabaseClient
+          .from('transactions')
+          .select('*')
+          .eq('customer_name', custName)
+          .eq('status', 'Unpaid')
+          .order('id', { ascending: true });
+
+        currentSettlementItems = items || [];
+
+        const { data: lastSet } = await supabaseClient
+          .from('settlements')
+          .select('balance_khr')
+          .eq('customer_name', custName)
+          .order('id', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        currentSettlementOldDebt = lastSet ? parseFloat(lastSet.balance_khr || 0) : 0;
+        document.getElementById('settleOldDebtVal').innerText = '៛ ' + currentSettlementOldDebt.toLocaleString();
+
+        var html = '';
+        currentSettlementItems.forEach(function(item, idx) {
+          var dateStr = new Date(item.created_at).toLocaleString('km-KH', { dateStyle: 'short', timeStyle: 'short' });
+          html += '<tr class="border-b hover:bg-blue-50/40 transition">' +
+            '<td class="p-2 text-center"><input type="checkbox" class="settle-item-cb w-4 h-4 accent-green-600 cursor-pointer" data-id="' + item.id + '" data-total="' + item.total + '" onchange="recalcSettlementCalculation()" checked></td>' +
+            '<td class="p-2 text-gray-500 text-[10px] whitespace-nowrap">' + dateStr + '</td>' +
+            '<td class="p-2 font-bold text-gray-800">' + item.product_name + '</td>' +
+            '<td class="p-2 text-center font-bold text-blue-700">' + item.qty + '</td>' +
+            '<td class="p-2 text-right">' + Number(item.price).toLocaleString() + '</td>' +
+            '<td class="p-2 text-right font-black text-green-700 whitespace-nowrap">' + Number(item.total).toLocaleString() + ' ៛</td>' +
+          '</tr>';
+        });
+
+        tbody.innerHTML = html || '<tr><td colspan="6" class="p-4 text-center text-gray-400 italic">គ្មានទំនិញជំពាក់</td></tr>';
+        recalcSettlementCalculation();
+        fillExactSettlementPay();
+
+      } catch(err) {
+        tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-red-500 font-bold">កំហុស៖ ' + err.message + '</td></tr>';
+      }
+    }
+
+    function toggleSelectAllSettle(isChecked) {
+      document.querySelectorAll('.settle-item-cb').forEach(function(cb) { cb.checked = isChecked; });
+      recalcSettlementCalculation();
+      fillExactSettlementPay();
+    }
+
+    function getSelectedSettlementTotal() {
+      var sum = 0;
+      document.querySelectorAll('.settle-item-cb:checked').forEach(function(cb) {
+        sum += parseFloat(cb.getAttribute('data-total') || 0);
+      });
+      return sum;
+    }
+
+    function recalcSettlementCalculation() {
+      var sub = getSelectedSettlementTotal();
+      var count = document.querySelectorAll('.settle-item-cb:checked').length;
+      var totalDue = sub + currentSettlementOldDebt;
+
+      document.getElementById('settleSelectedCountBadge').innerText = count + ' ជើងទឹក';
+      document.getElementById('settleSelectedSubtotal').innerText = '៛ ' + sub.toLocaleString();
+      document.getElementById('settleTotalDueText').innerText = '៛ ' + totalDue.toLocaleString();
+
+      calcSettleChange();
+    }
+
+    function fillExactSettlementPay() {
+      var sub = getSelectedSettlementTotal();
+      var totalDue = sub + currentSettlementOldDebt;
+      document.getElementById('settlePaidInput').value = totalDue > 0 ? totalDue : "";
+      calcSettleChange();
+    }
+
+    function calcSettleChange() {
+      var area = document.getElementById('settleChangeArea');
+      if (!area) return;
+
+      var sub = getSelectedSettlementTotal();
+      var totalDue = sub + currentSettlementOldDebt;
+      var paid = parseFloat(document.getElementById('settlePaidInput').value || 0);
+
+      if (paid === 0 || totalDue === 0) { area.classList.add('hidden'); return; }
+      var diff = paid - totalDue;
+
+      if (diff > 0) {
+        area.className = 'p-3 rounded-xl font-bold text-center border-2 bg-green-100 text-green-900 border-green-400';
+        area.innerHTML = '<div class="text-[11px] uppercase text-green-700 font-bold mb-0.5">ប្រាក់អាប់ជូនវិញ</div><div class="text-lg font-black text-green-800">៛ ' + diff.toLocaleString() + '</div>';
+        area.classList.remove('hidden');
+      } else if (diff < 0) {
+        area.className = 'p-3 rounded-xl font-bold text-center border-2 bg-orange-100 text-orange-900 border-orange-400';
+        area.innerHTML = '<div class="text-[11px] uppercase text-orange-700 font-bold mb-0.5">នៅជំពាក់សល់</div><div class="text-lg font-black text-orange-800">៛ ' + Math.abs(diff).toLocaleString() + '</div>';
+        area.classList.remove('hidden');
+      } else {
+        area.className = 'p-2.5 rounded-xl font-bold text-center border-2 bg-blue-100 text-blue-900 border-blue-300';
+        area.innerHTML = '<i class="fas fa-check-circle text-blue-600 mr-1.5"></i> បង់លុយគ្រប់ចំនួន (គ្មានជំពាក់សល់)';
+        area.classList.remove('hidden');
+      }
+    }
+
+    function setSettlePayMode(mode) {
+      currentSettlementPayMode = mode;
+      var btnCash = document.getElementById('btnSettleCash'), btnAba = document.getElementById('btnSettleAba');
+      if (mode === 'Cash') {
+        btnCash.className = "py-2.5 rounded-lg text-xs font-bold bg-green-700 text-white shadow";
+        btnAba.className = "py-2.5 rounded-lg text-xs font-bold bg-gray-100 text-gray-600 hover:bg-gray-200";
+      } else {
+        btnAba.className = "py-2.5 rounded-lg text-xs font-bold bg-blue-700 text-white shadow";
+        btnCash.className = "py-2.5 rounded-lg text-xs font-bold bg-gray-100 text-gray-600 hover:bg-gray-200";
+      }
+    }
+
+    // ==========================================
+    // 💾 បញ្ជាក់ការទូទាត់លុយ (SUBMIT SETTLEMENT ទៅ SUPABASE)
+    // ==========================================
+    var isSubmittingSettleLock = false;
+
+    async function submitSettlementPayment() {
+      if (isSubmittingSettleLock) return;
+
+      var checkedCbs = document.querySelectorAll('.settle-item-cb:checked');
+      var selectedIds = [];
+      checkedCbs.forEach(function(cb) { selectedIds.push(parseInt(cb.getAttribute('data-id'))); });
+
+      var sub = getSelectedSettlementTotal();
+      var totalDue = sub + currentSettlementOldDebt;
+      var paid = parseFloat(document.getElementById('settlePaidInput').value || 0);
+
+      if (selectedIds.length === 0 && currentSettlementOldDebt === 0) {
+        showToast("សូមធីកជ្រើសរើសយ៉ាងហោចណាស់ ១ ជួរដើម្បីទូទាត់!", "error"); return;
+      }
+      if (paid === 0) {
+        showToast("សូមបញ្ចូលចំនួនប្រាក់ដែលបានបង់!", "error"); return;
+      }
+
+      var remainingBalance = Math.max(0, totalDue - paid);
+      var btn = document.getElementById('btnSubmitSettlement');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i> កំពុងទូទាត់ប្រាក់...';
+      isSubmittingSettleLock = true;
+
+      try {
+        // ១. ប្តូរ status ទៅ 'Paid' ក្នុង transactions table
+        if (selectedIds.length > 0) {
+          const { error: updErr } = await supabaseClient
+            .from('transactions')
+            .update({ status: 'Paid' })
+            .in('id', selectedIds);
+          if (updErr) throw updErr;
+        }
+
+        // ២. កត់ត្រាចូល settlements table ក្នុង Supabase
+        const { error: setErr } = await supabaseClient.from('settlements').insert([{
+          customer_name: currentSettlementCustomer,
+          total_due_khr: totalDue,
+          paid_khr: Math.min(paid, totalDue),
+          balance_khr: remainingBalance,
+          admin_name: currentUser.fullName || "Admin",
+          pay_method: currentSettlementPayMode,
+          cash_khr: (currentSettlementPayMode === 'Cash') ? paid : 0,
+          scan_khr: (currentSettlementPayMode === 'ABA') ? paid : 0
+        }]);
+        if (setErr) throw setErr;
+
+        // ៣. បាញ់ Telegram Alert
+        try {
+          var tgMsg = "🙏 <b>[KC WATER - ទូទាត់ប្រាក់ជោគជ័យ]</b>\n\n" +
+                      "👤 <b>អតិថិជន៖</b> " + currentSettlementCustomer + "\n" +
+                      "💳 <b>វិធីទូទាត់៖</b> " + (currentSettlementPayMode === 'ABA' ? '📱 ស្កេន ABA' : '💵 លុយសុទ្ធ') + "\n" +
+                      "💰 <b>សរុបត្រូវបង់៖</b> <b>៛ " + totalDue.toLocaleString() + "</b>\n" +
+                      "✅ <b>ប្រាក់បានបង់៖</b> <b>៛ " + paid.toLocaleString() + "</b>\n" +
+                      "⚠️ <b>នៅជំពាក់សល់៖</b> <b>៛ " + remainingBalance.toLocaleString() + "</b>\n" +
+                      "✍️ <b>អ្នកទទួល៖</b> " + (currentUser.fullName || "Admin") + "\n" +
+                      "🕒 <b>ម៉ោង៖</b> " + new Date().toLocaleTimeString('km-KH');
+          sendTelegramAlert(tgMsg);
+        } catch(e) {}
+
+        // ៤. បង្កើតវិក្កយបត្ររូបភាព (Receipt PNG)
+        var receiptItems = currentSettlementItems.filter(function(i){ return selectedIds.indexOf(i.id) !== -1; });
+        generateReceiptImage("SET-" + new Date().getTime(), currentSettlementCustomer, totalDue, paid, receiptItems, "វិក្កយបត្រទូទាត់ប្រាក់ (SETTLEMENT)");
+
+        showToast("បានទូទាត់ប្រាក់ និងជម្រះបញ្ជីជោគជ័យ!", "success");
+        confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
+
+        // Refresh ឡើងវិញ
+        document.getElementById('settlementDetailCard').classList.add('hidden');
+        await loadSettlementDebtorsList();
+
+      } catch(err) {
+        showToast("កំហុសទូទាត់ប្រាក់៖ " + err.message, "error");
+      } finally {
+        isSubmittingSettleLock = false;
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-file-invoice-dollar text-xl"></i> ទូទាត់ & ចេញវិក្កយបត្រ (Save Settlement)';
+      }
+    }
+
+    // មុខងារបង្កើតរូបវិក្កយបត្រ (កែសម្រួលគាំទ្រទាំង Sale & Settlement)
+    function generateReceiptImage(tid, cust, total, paid, items, titleText) {
       var dateStr = new Date().toLocaleString('km-KH');
       var change = Math.max(0, paid - total);
 
       var itemsHtml = '';
-      items.forEach(function(i) {
+      (items || []).forEach(function(i) {
+        var pName = i.name || i.product_name || "ទំនិញ";
+        var tot = (i.qty * i.price);
         itemsHtml += '<tr style="border-bottom:1px dashed #cbd5e1;">' +
-          '<td style="padding:6px 4px;">' + i.name + '</td>' +
+          '<td style="padding:6px 4px;">' + pName + '</td>' +
           '<td align="center" style="padding:6px 4px; font-weight:bold; color:#1d4ed8;">' + i.qty + '</td>' +
-          '<td align="right" style="padding:6px 4px; font-weight:bold;">' + (i.qty * i.price).toLocaleString() + ' ៛</td>' +
+          '<td align="right" style="padding:6px 4px; font-weight:bold;">' + tot.toLocaleString() + ' ៛</td>' +
         '</tr>';
       });
 
       var h = '<div id="pos-canvas-box" style="width:360px; padding:20px; background:white; color:#0f172a; font-family:\'Battambang\', sans-serif; border-radius:12px;">' +
         '<div style="text-align:center; border-bottom:2px dashed #16a34a; padding-bottom:8px; margin-bottom:10px;">' +
           '<b style="font-size:16px; color:#15803d;">KC WATER</b><br>' +
-          '<span style="font-size:11px; color:#64748b; font-weight:bold;">វិក្កយបត្រលក់ទំនិញ (RECEIPT)</span>' +
+          '<span style="font-size:11px; color:#64748b; font-weight:bold;">' + (titleText || 'វិក្កយបត្រ (RECEIPT)') + '</span>' +
         '</div>' +
         '<div style="font-size:10.5px; line-height:1.6; margin-bottom:10px; color:#334155;">' +
           'លេខកូដ៖ <b>' + tid + '</b><br>' +
           'អតិថិជន៖ <b>' + cust + '</b><br>' +
           'កាលបរិច្ឆេទ៖ ' + dateStr + '<br>' +
-          'អ្នកគិតលុយ៖ <b>' + (currentUser.fullName || "Admin") + '</b>' +
+          'អ្នកទទួល/គិតលុយ៖ <b>' + (currentUser.fullName || "Admin") + '</b>' +
         '</div>' +
         '<table style="width:100%; font-size:11px; border-collapse:collapse; margin-bottom:10px;">' +
           '<tr style="background:#f1f5f9; color:#475569; border-bottom:1px solid #cbd5e1;"><th align="left" style="padding:5px 4px;">ទំនិញ</th><th align="center" style="padding:5px 4px;">ចំនួន</th><th align="right" style="padding:5px 4px;">សរុប</th></tr>' +
-          itemsHtml +
+          (itemsHtml || '<tr><td colspan="3" align="center" style="padding:10px; color:#94a3b8;">ទូទាត់បំណុលចាស់</td></tr>') +
         '</table>' +
         '<div style="background:#f0fdf4; padding:10px; border-radius:8px; font-size:11px; line-height:1.7; border:1px solid #bbf7d0;">' +
           '<div style="display:flex; justify-content:space-between; font-weight:bold;"><span>សរុបត្រូវបង់៖</span><b>៛ ' + total.toLocaleString() + '</b></div>' +
