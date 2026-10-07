@@ -402,14 +402,16 @@ async function delExpenseFromSupabase(id) {
 }
 
 // ==========================================
-// 👥 ៤. គ្រប់គ្រងគណនី & តម្លៃពិសេស (CUSTOMERS & PRICES)
+// 👥 ៤. គ្រប់គ្រងគណនី & តម្លៃពិសេស (CUSTOMERS & MONTHLY PRICES)
 // ==========================================
 function renderCustomersModule() {
   var area = document.getElementById('contentArea');
+  
   var custOptions = '<option value="">-- រើសអតិថិជន / ម៉ូយ --</option>';
   allCustomers.forEach(function(c) {
     if (c.role !== 'Admin' && c.full_name !== 'Walk-in') {
-      custOptions += '<option value="' + c.full_name + '">' + c.full_name + '</option>';
+      var tag = (c.type === 'Monthly') ? ' [ប្រចាំខែ]' : ' [អ្នកលក់បន្ត]';
+      custOptions += '<option value="' + c.full_name + '">' + c.full_name + tag + '</option>';
     }
   });
 
@@ -418,61 +420,176 @@ function renderCustomersModule() {
     prodOptions += '<option value="' + p.name + '">' + p.name + '</option>';
   });
 
+  // ស្រង់ឈ្មោះមេសម្រាប់កូនចៅដកទឹក
+  var bossOptions = '<option value="">-- សូមជ្រើសរើសឈ្មោះមេ --</option>';
+  allCustomers.forEach(function(c) {
+    if (c.role === 'Customer' || c.type === 'Regular' || c.type === 'Monthly') {
+      bossOptions += '<option value="' + c.full_name + '">' + c.full_name + '</option>';
+    }
+  });
+
   area.innerHTML = '<div class="max-w-3xl mx-auto space-y-4">' +
-    // បង្កើតគណនី
+    // ១. កាតបង្កើតគណនី (គ្រប់ប្រភេទ)
     '<div class="card border-t-4 border-blue-600 shadow-xl p-5 mb-0">' +
-      '<h2 class="font-extrabold text-blue-900 text-base mb-3 flex items-center gap-2"><i class="fas fa-user-plus text-blue-600"></i>បង្កើតគណនី Admin / អ្នកដឹក / ម៉ូយ</h2>' +
+      '<h2 class="font-extrabold text-blue-900 text-base mb-3 flex items-center gap-2">' +
+        '<i class="fas fa-user-plus text-blue-600"></i>បង្កើតគណនី Admin / អ្នកដឹក / អតិថិជនប្រចាំខែ' +
+      '</h2>' +
       '<div class="space-y-3">' +
+        '<div>' +
+          '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">ប្រភេទគណនីដែលត្រូវបង្កើត</label>' +
+          '<select id="mem_role_type" onchange="toggleCustTypeFields()" class="font-bold border-2 border-blue-200 p-2.5 rounded-xl w-full bg-white">' +
+            '<option value="MONTHLY">🏢 អតិថិជនប្រចាំខែ (Monthly Customer - ទិញតាមកុងត្រា)</option>' +
+            '<option value="RESELLER">🚚 អតិថិជនប្រចាំ - អ្នកលក់បន្ត (Regular Reseller)</option>' +
+            '<option value="DRIVER">🛵 កូនចៅ/អ្នកដឹក (Driver - ដកទឹកជំនួសមេ)</option>' +
+            '<option value="COMPANY_DRIVER">🚚 អ្នកដឹកជញ្ជូនរោងចក្រ (Company Driver)</option>' +
+            '<option value="SELLER">🛒 បុគ្គលិកលក់នៅកន្លែង (Seller / Cashier)</option>' +
+            '<option value="ADMIN">👑 Admin អ្នកគ្រប់គ្រង (Admin)</option>' +
+          '</select>' +
+        '</div>' +
+
+        // ប្រអប់រើសឈ្មោះមេ (បង្ហាញតែពេលរើសជា «កូនចៅដកទឹកជំនួសមេ»)
+        '<div id="driverBossContainer" class="p-3 bg-amber-50 rounded-2xl border border-amber-300 space-y-1 hidden">' +
+          '<label class="text-[10px] font-black text-amber-950 uppercase block">ជ្រើសរើសឈ្មោះមេ (អតិថិជនដែលត្រូវដកទឹកជំនួស) *</label>' +
+          '<select id="mem_boss_select" class="font-bold text-amber-950 border border-amber-300 bg-white rounded-xl p-2.5 w-full text-xs">' +
+            bossOptions +
+          '</select>' +
+        '</div>' +
+
         '<div class="grid grid-cols-2 gap-2">' +
-          '<input type="text" id="mem_name" placeholder="*ឈ្មោះពេញ (ឧ៖ តារា - អ្នកដឹក)" class="font-bold border p-2.5 rounded-xl">' +
+          '<input type="text" id="mem_name" placeholder="*ឈ្មោះពេញ (ឧ៖ ក្រុមហ៊ុន A ឬ តារា)" class="font-bold border p-2.5 rounded-xl">' +
           '<input type="text" id="mem_phone" placeholder="លេខទូរស័ព្ទ" class="border p-2.5 rounded-xl">' +
         '</div>' +
         '<div class="grid grid-cols-2 gap-2">' +
           '<input type="text" id="mem_user" placeholder="*Username ចូលប្រើ" class="font-bold border p-2.5 rounded-xl">' +
           '<input type="text" id="mem_pass" placeholder="*Password លេខសម្ងាត់" class="font-bold border p-2.5 rounded-xl">' +
         '</div>' +
-        '<div class="grid grid-cols-2 gap-2">' +
-          '<select id="mem_role" class="font-bold border p-2.5 rounded-xl">' +
-            '<option value="Driver">🚚 អ្នកដឹកជញ្ជូនរោងចក្រ (Driver)</option>' +
-            '<option value="Customer">🏢 អតិថិជន / ម៉ូយប្រចាំ (Customer)</option>' +
-            '<option value="Seller">🛒 បុគ្គលិកលក់នៅកន្លែង (Seller)</option>' +
-            '<option value="Admin">👑 Admin អ្នកគ្រប់គ្រង (Admin)</option>' +
-          '</select>' +
-          '<input type="text" id="mem_boss" placeholder="ឈ្មោះមេ (បើជាកូនចៅម៉ូយ)" class="border p-2.5 rounded-xl text-xs">' +
-        '</div>' +
         '<button onclick="saveUserToSupabase()" class="btn-green shadow-lg py-3 text-sm font-bold">រក្សាទុកគណនី (Save Account)</button>' +
       '</div>' +
     '</div>' +
 
-    // កំណត់តម្លៃពិសេស (CustomerPrices)
+    // ២. កាតកំណត់តម្លៃពិសេស (សម្រាប់អតិថិជន Monthly & Reseller)
     '<div class="card border-t-4 border-orange-500 shadow-xl p-5 mb-0">' +
-      '<h3 class="font-extrabold text-orange-900 text-base mb-1 flex items-center gap-2"><i class="fas fa-tags text-orange-600"></i>កំណត់តម្លៃពិសេសសម្រាប់អតិថិជន</h3>' +
-      '<p class="text-[11px] text-gray-500 mb-3">*តម្លៃពិសេសដែលបានកំណត់នឹងយកមកគិតលុយអូតូពេលលក់ឱ្យម៉ូយនោះ</p>' +
+      '<h3 class="font-extrabold text-orange-900 text-base mb-1 flex items-center gap-2">' +
+        '<i class="fas fa-tags text-orange-600"></i>កំណត់តម្លៃពិសេសសម្រាប់អតិថិជន (Contract Prices)' +
+      '</h3>' +
+      '<p class="text-[11px] text-gray-500 mb-3 leading-relaxed">' +
+        '💡 <b>ចំណាំសម្រាប់អតិថិជន Monthly៖</b> ទាល់តែកំណត់មុខទំនិញ និងតម្លៃនៅទីនេះ ទើបទំនិញនោះបង្ហាញលើផ្ទាំង POS របស់គាត់ (ទំនិញក្រៅកុងត្រានឹងមិនបង្ហាញឡើយ)។' +
+      '</p>' +
       '<div class="space-y-3">' +
-        '<select id="spCustSelect" class="w-full font-bold border p-2.5 rounded-xl bg-white">' + custOptions + '</select>' +
+        '<div>' +
+          '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">១. ជ្រើសរើសម៉ូយ</label>' +
+          '<select id="spCustSelect" class="w-full font-bold border p-2.5 rounded-xl bg-white">' + custOptions + '</select>' +
+        '</div>' +
         '<div class="grid grid-cols-2 gap-2">' +
-          '<select id="spProdSelect" class="font-bold border p-2.5 rounded-xl bg-white">' + prodOptions + '</select>' +
-          '<input type="number" id="spPriceInput" placeholder="តម្លៃពិសេស (៛)" class="font-black text-orange-700 border p-2.5 rounded-xl text-center">' +
+          '<div>' +
+            '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">២. ជ្រើសរើសទំនិញ</label>' +
+            '<select id="spProdSelect" class="font-bold border p-2.5 rounded-xl bg-white w-full">' + prodOptions + '</select>' +
+          '</div>' +
+          '<div>' +
+            '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">៣. តម្លៃពិសេស (៛)</label>' +
+            '<input type="number" id="spPriceInput" placeholder="ឧ៖ ៥០០" class="font-black text-orange-700 border p-2.5 rounded-xl text-center w-full">' +
+          '</div>' +
         '</div>' +
         '<button onclick="saveSpecialPriceToSupabase()" class="btn-green bg-orange-600 hover:bg-orange-700 py-3 text-sm font-bold">រក្សាទុកតម្លៃពិសេស (Save Price)</button>' +
       '</div>' +
     '</div>' +
 
-    // តារាងតម្លៃពិសេស
+    // ៣. តារាងតម្លៃពិសេសដែលបានកំណត់
     '<div class="card border-t-4 border-orange-400 shadow-lg p-5 mb-0">' +
       '<h4 class="font-bold text-gray-800 text-sm mb-2"><i class="fas fa-list-check text-orange-600 mr-1.5"></i>បញ្ជីតម្លៃពិសេសដែលបានកំណត់</h4>' +
       '<div class="overflow-x-auto rounded-xl border"><table class="w-full text-left text-xs border-collapse"><thead><tr class="bg-gray-100 text-gray-700 font-bold border-b"><th class="p-2.5">អតិថិជន</th><th class="p-2.5">មុខទំនិញ</th><th class="p-2.5 text-right">តម្លៃពិសេស</th><th class="p-2.5 text-center">លុប</th></tr></thead><tbody id="specialPricesTableBody"></tbody></table></div>' +
     '</div>' +
 
-    // តារាងគណនី
+    // ៤. តារាងគណនីទាំងអស់
     '<div class="card border-t-4 border-gray-700 shadow-xl p-5 mb-0">' +
       '<h3 class="font-bold text-gray-800 text-sm mb-3 flex items-center gap-2"><i class="fas fa-users"></i>បញ្ជីគណនីទាំងអស់</h3>' +
-      '<div class="overflow-x-auto rounded-xl border"><table class="w-full text-left text-xs border-collapse"><thead><tr class="bg-gray-100 text-gray-700 font-bold border-b"><th class="p-2.5">ឈ្មោះ</th><th class="p-2.5">Username / Pass</th><th class="p-2.5 text-center">តួនាទី</th><th class="p-2.5 text-center">លុប</th></tr></thead><tbody id="usersModuleTableBody"></tbody></table></div>' +
+      '<div class="overflow-x-auto rounded-xl border"><table class="w-full text-left text-xs border-collapse"><thead><tr class="bg-gray-100 text-gray-700 font-bold border-b"><th class="p-2.5">ឈ្មោះ</th><th class="p-2.5">Username / Pass</th><th class="p-2.5 text-center">តួនាទី / ប្រភេទ</th><th class="p-2.5 text-center">លុប</th></tr></thead><tbody id="usersModuleTableBody"></tbody></table></div>' +
     '</div>' +
   '</div>';
 
+  toggleCustTypeFields();
   fetchUsersModuleTable();
   fetchSpecialPricesTable();
+}
+
+function toggleCustTypeFields() {
+  var roleType = document.getElementById('mem_role_type') ? document.getElementById('mem_role_type').value : '';
+  var bossBox = document.getElementById('driverBossContainer');
+  if (!bossBox) return;
+
+  if (roleType === 'DRIVER') {
+    bossBox.classList.remove('hidden');
+  } else {
+    bossBox.classList.add('hidden');
+  }
+}
+
+async function saveUserToSupabase() {
+  var name = document.getElementById('mem_name').value.trim();
+  var user = document.getElementById('mem_user').value.trim();
+  var pass = document.getElementById('mem_pass').value.trim();
+  var roleType = document.getElementById('mem_role_type').value;
+  var phone = document.getElementById('mem_phone').value.trim();
+  var boss = document.getElementById('mem_boss_select') ? document.getElementById('mem_boss_select').value : '';
+
+  if (!name || !user || !pass) { 
+    showToast("សូមបំពេញឈ្មោះ, Username, និង Password!", "error"); 
+    return; 
+  }
+
+  var role = "Customer";
+  var type = "Regular";
+  var linkedBoss = "";
+
+  if (roleType === 'MONTHLY') {
+    role = 'Customer';
+    type = 'Monthly';
+  } else if (roleType === 'RESELLER') {
+    role = 'Customer';
+    type = 'Regular';
+  } else if (roleType === 'DRIVER') {
+    role = 'Driver';
+    type = 'Driver';
+    linkedBoss = boss;
+    if (!linkedBoss) {
+      showToast("សូមជ្រើសរើសឈ្មោះមេរបស់កូនចៅ!", "error");
+      return;
+    }
+  } else if (roleType === 'COMPANY_DRIVER') {
+    role = 'Driver';
+    type = 'CompanyDriver';
+    linkedBoss = 'KC WATER';
+  } else if (roleType === 'SELLER') {
+    role = 'Seller';
+    type = 'Retail';
+  } else if (roleType === 'ADMIN') {
+    role = 'Admin';
+    type = 'Admin';
+  }
+
+  try {
+    const { error } = await supabaseClient.from('users').insert([{
+      full_name: name,
+      username: user,
+      password: pass,
+      role: role,
+      type: type,
+      phone: phone,
+      linked_boss: linkedBoss
+    }]);
+
+    if (error) throw error;
+
+    showToast("បានបង្កើតគណនីជោគជ័យ!", "success");
+    document.getElementById('mem_name').value = "";
+    document.getElementById('mem_user').value = "";
+    document.getElementById('mem_pass').value = "";
+    document.getElementById('mem_phone').value = "";
+    await fetchInitialPOSData();
+    renderCustomersModule();
+  } catch(err) {
+    showToast("កំហុស៖ " + err.message, "error");
+  }
 }
 
 async function fetchUsersModuleTable() {
@@ -485,10 +602,25 @@ async function fetchUsersModuleTable() {
 
     var html = '';
     users.forEach(function(u) {
+      var badgeHtml = '';
+      if (u.type === 'Monthly') {
+        badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-orange-100 text-orange-800 border border-orange-300">🏢 ប្រចាំខែ</span>';
+      } else if (u.type === 'CompanyDriver') {
+        badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-emerald-100 text-emerald-900 border border-emerald-300">🚚 អ្នកដឹក KC WATER</span>';
+      } else if (u.type === 'Driver') {
+        badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-amber-100 text-amber-900 border border-amber-300">🛵 កូនចៅដកទឹក (មេ: ' + (u.linked_boss || '-') + ')</span>';
+      } else if (u.role === 'Admin') {
+        badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-purple-100 text-purple-900">👑 Admin</span>';
+      } else if (u.role === 'Seller') {
+        badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-blue-100 text-blue-900">🛒 បុគ្គលិកលក់</span>';
+      } else {
+        badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-green-100 text-green-800">🚚 អ្នកលក់បន្ត</span>';
+      }
+
       html += '<tr class="border-b hover:bg-gray-50">' +
         '<td class="p-2.5 font-bold text-gray-800">' + u.full_name + '<br><small class="text-gray-400 font-normal">' + (u.phone || '-') + '</small></td>' +
         '<td class="p-2.5 font-mono text-xs"><b>' + u.username + '</b> / ' + u.password + '</td>' +
-        '<td class="p-2.5 text-center"><span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-blue-100 text-blue-800">' + u.role + '</span></td>' +
+        '<td class="p-2.5 text-center">' + badgeHtml + '</td>' +
         '<td class="p-2.5 text-center"><button onclick="delUserFromSupabase(' + u.id + ')" class="text-red-400 hover:text-red-600"><i class="fas fa-trash-can"></i></button></td>' +
       '</tr>';
     });
@@ -525,7 +657,10 @@ async function saveSpecialPriceToSupabase() {
   var prod = document.getElementById('spProdSelect').value;
   var price = parseFloat(document.getElementById('spPriceInput').value || 0);
 
-  if (!cust || !prod || price <= 0) { showToast("សូមជ្រើសរើសម៉ូយ ទំនិញ និងតម្លៃពិសេស!", "error"); return; }
+  if (!cust || !prod || price <= 0) { 
+    showToast("សូមជ្រើសរើសម៉ូយ ទំនិញ និងតម្លៃពិសេស!", "error"); 
+    return; 
+  }
 
   try {
     await supabaseClient.from('customer_prices').upsert([{
@@ -554,6 +689,17 @@ async function delSpecialPriceFromSupabase(id) {
   }
 }
 
+async function delUserFromSupabase(id) {
+  if (!confirm("តើអ្នកពិតជាចង់លុបគណនីនេះមែនទេ?")) return;
+  try {
+    await supabaseClient.from('users').delete().eq('id', id);
+    showToast("បានលុបគណនីជោគជ័យ!", "success");
+    await fetchInitialPOSData();
+    renderCustomersModule();
+  } catch(err) {
+    showToast("កំហុស៖ " + err.message, "error");
+  }
+}
 async function saveUserToSupabase() {
   var name = document.getElementById('mem_name').value.trim();
   var user = document.getElementById('mem_user').value.trim();
