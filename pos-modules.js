@@ -1,6 +1,6 @@
 /** ==========================================================================
  *  KC WATER POS SYSTEM - ALL MODULES ENGINE (pos-modules.js)
- *  (Stock, Bottle Loans, Expenses, Customers & Settings)
+ *  (Stock, Bottle Loans, Expenses, Customers, Special Prices & Settings)
  *  ========================================================================== */
 
 // ==========================================
@@ -402,11 +402,24 @@ async function delExpenseFromSupabase(id) {
 }
 
 // ==========================================
-// 👥 ៤. គ្រប់គ្រងគណនីអតិថិជន & តម្លៃពិសេស (CUSTOMERS)
+// 👥 ៤. គ្រប់គ្រងគណនី & តម្លៃពិសេស (CUSTOMERS & PRICES)
 // ==========================================
 function renderCustomersModule() {
   var area = document.getElementById('contentArea');
+  var custOptions = '<option value="">-- រើសអតិថិជន / ម៉ូយ --</option>';
+  allCustomers.forEach(function(c) {
+    if (c.role !== 'Admin' && c.full_name !== 'Walk-in') {
+      custOptions += '<option value="' + c.full_name + '">' + c.full_name + '</option>';
+    }
+  });
+
+  var prodOptions = '<option value="">-- រើសទំនិញ --</option>';
+  allProducts.forEach(function(p) {
+    prodOptions += '<option value="' + p.name + '">' + p.name + '</option>';
+  });
+
   area.innerHTML = '<div class="max-w-3xl mx-auto space-y-4">' +
+    // បង្កើតគណនី
     '<div class="card border-t-4 border-blue-600 shadow-xl p-5 mb-0">' +
       '<h2 class="font-extrabold text-blue-900 text-base mb-3 flex items-center gap-2"><i class="fas fa-user-plus text-blue-600"></i>បង្កើតគណនី Admin / អ្នកដឹក / ម៉ូយ</h2>' +
       '<div class="space-y-3">' +
@@ -430,6 +443,28 @@ function renderCustomersModule() {
         '<button onclick="saveUserToSupabase()" class="btn-green shadow-lg py-3 text-sm font-bold">រក្សាទុកគណនី (Save Account)</button>' +
       '</div>' +
     '</div>' +
+
+    // កំណត់តម្លៃពិសេស (CustomerPrices)
+    '<div class="card border-t-4 border-orange-500 shadow-xl p-5 mb-0">' +
+      '<h3 class="font-extrabold text-orange-900 text-base mb-1 flex items-center gap-2"><i class="fas fa-tags text-orange-600"></i>កំណត់តម្លៃពិសេសសម្រាប់អតិថិជន</h3>' +
+      '<p class="text-[11px] text-gray-500 mb-3">*តម្លៃពិសេសដែលបានកំណត់នឹងយកមកគិតលុយអូតូពេលលក់ឱ្យម៉ូយនោះ</p>' +
+      '<div class="space-y-3">' +
+        '<select id="spCustSelect" class="w-full font-bold border p-2.5 rounded-xl bg-white">' + custOptions + '</select>' +
+        '<div class="grid grid-cols-2 gap-2">' +
+          '<select id="spProdSelect" class="font-bold border p-2.5 rounded-xl bg-white">' + prodOptions + '</select>' +
+          '<input type="number" id="spPriceInput" placeholder="តម្លៃពិសេស (៛)" class="font-black text-orange-700 border p-2.5 rounded-xl text-center">' +
+        '</div>' +
+        '<button onclick="saveSpecialPriceToSupabase()" class="btn-green bg-orange-600 hover:bg-orange-700 py-3 text-sm font-bold">រក្សាទុកតម្លៃពិសេស (Save Price)</button>' +
+      '</div>' +
+    '</div>' +
+
+    // តារាងតម្លៃពិសេស
+    '<div class="card border-t-4 border-orange-400 shadow-lg p-5 mb-0">' +
+      '<h4 class="font-bold text-gray-800 text-sm mb-2"><i class="fas fa-list-check text-orange-600 mr-1.5"></i>បញ្ជីតម្លៃពិសេសដែលបានកំណត់</h4>' +
+      '<div class="overflow-x-auto rounded-xl border"><table class="w-full text-left text-xs border-collapse"><thead><tr class="bg-gray-100 text-gray-700 font-bold border-b"><th class="p-2.5">អតិថិជន</th><th class="p-2.5">មុខទំនិញ</th><th class="p-2.5 text-right">តម្លៃពិសេស</th><th class="p-2.5 text-center">លុប</th></tr></thead><tbody id="specialPricesTableBody"></tbody></table></div>' +
+    '</div>' +
+
+    // តារាងគណនី
     '<div class="card border-t-4 border-gray-700 shadow-xl p-5 mb-0">' +
       '<h3 class="font-bold text-gray-800 text-sm mb-3 flex items-center gap-2"><i class="fas fa-users"></i>បញ្ជីគណនីទាំងអស់</h3>' +
       '<div class="overflow-x-auto rounded-xl border"><table class="w-full text-left text-xs border-collapse"><thead><tr class="bg-gray-100 text-gray-700 font-bold border-b"><th class="p-2.5">ឈ្មោះ</th><th class="p-2.5">Username / Pass</th><th class="p-2.5 text-center">តួនាទី</th><th class="p-2.5 text-center">លុប</th></tr></thead><tbody id="usersModuleTableBody"></tbody></table></div>' +
@@ -437,6 +472,7 @@ function renderCustomersModule() {
   '</div>';
 
   fetchUsersModuleTable();
+  fetchSpecialPricesTable();
 }
 
 async function fetchUsersModuleTable() {
@@ -458,6 +494,64 @@ async function fetchUsersModuleTable() {
     });
     tbody.innerHTML = html;
   } catch(e) {}
+}
+
+async function fetchSpecialPricesTable() {
+  var tbody = document.getElementById('specialPricesTableBody');
+  if (!tbody) return;
+
+  try {
+    const { data: list } = await supabaseClient.from('customer_prices').select('*').order('id', { ascending: true });
+    if (!list || list.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-400 italic">មិនទាន់មានតម្លៃពិសេសនៅឡើយ</td></tr>';
+      return;
+    }
+
+    var html = '';
+    list.forEach(function(sp) {
+      html += '<tr class="border-b hover:bg-gray-50">' +
+        '<td class="p-2.5 font-bold text-gray-800">' + sp.customer_name + '</td>' +
+        '<td class="p-2.5">' + sp.product_name + '</td>' +
+        '<td class="p-2.5 text-right font-black text-orange-700">៛ ' + Number(sp.price).toLocaleString() + '</td>' +
+        '<td class="p-2.5 text-center"><button onclick="delSpecialPriceFromSupabase(' + sp.id + ')" class="text-red-400 hover:text-red-600"><i class="fas fa-trash-can"></i></button></td>' +
+      '</tr>';
+    });
+    tbody.innerHTML = html;
+  } catch(e) {}
+}
+
+async function saveSpecialPriceToSupabase() {
+  var cust = document.getElementById('spCustSelect').value;
+  var prod = document.getElementById('spProdSelect').value;
+  var price = parseFloat(document.getElementById('spPriceInput').value || 0);
+
+  if (!cust || !prod || price <= 0) { showToast("សូមជ្រើសរើសម៉ូយ ទំនិញ និងតម្លៃពិសេស!", "error"); return; }
+
+  try {
+    await supabaseClient.from('customer_prices').upsert([{
+      customer_name: cust,
+      product_name: prod,
+      price: price,
+      currency: "KHR"
+    }]);
+
+    showToast("បានរក្សាទុកតម្លៃពិសេសជោគជ័យ!", "success");
+    document.getElementById('spPriceInput').value = "";
+    fetchSpecialPricesTable();
+  } catch(err) {
+    showToast("កំហុស៖ " + err.message, "error");
+  }
+}
+
+async function delSpecialPriceFromSupabase(id) {
+  if (!confirm("តើអ្នកចង់លុបតម្លៃពិសេសនេះមែនទេ?")) return;
+  try {
+    await supabaseClient.from('customer_prices').delete().eq('id', id);
+    showToast("បានលុបតម្លៃពិសេសជោគជ័យ!", "success");
+    fetchSpecialPricesTable();
+  } catch(err) {
+    showToast("កំហុស៖ " + err.message, "error");
+  }
 }
 
 async function saveUserToSupabase() {
@@ -506,26 +600,56 @@ async function delUserFromSupabase(id) {
 }
 
 // ==========================================
-// ⚙️ ៥. ការកំណត់ប្រព័ន្ធ (SETTINGS)
+// ⚙️ ៥. ការកំណត់ប្រព័ន្ធ & PROMOTION (SETTINGS)
 // ==========================================
 function renderSettingsModule() {
   var area = document.getElementById('contentArea');
+  var prodOptions = '<option value="ALL">🔄 គ្រប់មុខទំនិញទាំងអស់ (All Products)</option>';
+  allProducts.forEach(function(p) {
+    prodOptions += '<option value="' + p.name + '">📦 ' + p.name + '</option>';
+  });
+
   area.innerHTML = '<div class="max-w-2xl mx-auto space-y-4">' +
+    // ម៉ោងធ្វើការ & សេវាដឹក
     '<div class="card border-t-4 border-indigo-600 shadow-xl p-5 mb-0 space-y-3">' +
-      '<h2 class="font-extrabold text-indigo-950 text-base flex items-center gap-2"><i class="fas fa-cog text-indigo-600"></i>ការកំណត់ប្រព័ន្ធ KC WATER (Settings)</h2>' +
+      '<h2 class="font-extrabold text-indigo-950 text-base flex items-center gap-2"><i class="fas fa-clock text-indigo-600"></i>ម៉ោងទទួលកុម្ម៉ង់ & សេវាដឹក (Store Rules)</h2>' +
       '<div class="grid grid-cols-2 gap-2 text-xs">' +
-        '<div><label class="font-bold text-gray-500 uppercase block">ម៉ោងបើកទទួលកុម្ម៉ង់ (Open)</label><input type="time" id="set_open_time" class="font-black border p-2 rounded-xl w-full text-center"></div>' +
-        '<div><label class="font-bold text-gray-500 uppercase block">ម៉ោងបិទទទួលកុម្ម៉ង់ (Close)</label><input type="time" id="set_close_time" class="font-black border p-2 rounded-xl w-full text-center"></div>' +
+        '<div><label class="font-bold text-gray-500 uppercase block">ម៉ោងបើក (Open)</label><input type="time" id="set_open_time" class="font-black border p-2 rounded-xl w-full text-center"></div>' +
+        '<div><label class="font-bold text-gray-500 uppercase block">ម៉ោងបិទ (Close)</label><input type="time" id="set_close_time" class="font-black border p-2 rounded-xl w-full text-center"></div>' +
       '</div>' +
       '<div class="grid grid-cols-2 gap-2 text-xs">' +
         '<div><label class="font-bold text-gray-500 uppercase block">ថ្លៃដឹកធម្មតា (៛)</label><input type="number" id="set_del_fee" class="font-black border p-2 rounded-xl w-full text-center"></div>' +
         '<div><label class="font-bold text-gray-500 uppercase block">កុម្ម៉ង់ចាប់ពី (X ធុង) ដឹក FREE</label><input type="number" id="set_del_min" class="font-black border p-2 rounded-xl w-full text-center"></div>' +
       '</div>' +
-      '<div class="space-y-1 text-xs">' +
-        '<label class="font-bold text-gray-500 uppercase block">Telegram Bot Token</label><input type="text" id="set_tg_token" class="border p-2 rounded-xl w-full font-mono text-xs">' +
-        '<label class="font-bold text-gray-500 uppercase block">Telegram Chat ID</label><input type="text" id="set_tg_chatid" class="border p-2 rounded-xl w-full font-mono text-xs">' +
+    '</div>' +
+
+    // ប្រព័ន្ធ Promotion លើ Web
+    '<div class="card border-t-4 border-amber-500 shadow-xl p-5 mb-0 space-y-3">' +
+      '<div class="flex justify-between items-center">' +
+        '<h3 class="font-extrabold text-amber-950 text-base flex items-center gap-2"><i class="fas fa-gift text-amber-600"></i>ប្រព័ន្ធ Promotion លើ Website</h3>' +
+        '<select id="set_promo_status" class="text-xs font-bold border border-amber-300 rounded-xl p-1.5"><option value="OFF">🔕 បិទ (OFF)</option><option value="ON">🔔 បើក (ON)</option></select>' +
       '</div>' +
-      '<button onclick="saveSettingsToSupabase()" class="btn-green py-3 text-sm font-bold">រក្សាទុកការកំណត់</button>' +
+      '<div class="space-y-2 text-xs">' +
+        '<select id="set_promo_product" class="w-full font-bold border border-amber-300 rounded-xl p-2 bg-white">' + prodOptions + '</select>' +
+        '<div class="grid grid-cols-2 gap-2">' +
+          '<input type="number" id="set_promo_buy_qty" placeholder="ទិញគ្រប់ (X ធុង)" class="border border-amber-300 p-2 rounded-xl text-center font-bold">' +
+          '<input type="number" id="set_promo_free_qty" placeholder="ថែម Free (Y ធុង)" class="border border-emerald-300 p-2 rounded-xl text-center font-bold text-emerald-800">' +
+        '</div>' +
+        '<input type="text" id="set_promo_banner" placeholder="ពាក្យផ្សាយ Promotion លើក្បាលទំព័រ..." class="border p-2 rounded-xl w-full font-bold">' +
+      '</div>' +
+    '</div>' +
+
+    // Telegram Bot
+    '<div class="card border-t-4 border-green-600 shadow-xl p-5 mb-0 space-y-3">' +
+      '<div class="flex justify-between items-center">' +
+        '<h3 class="font-extrabold text-green-950 text-base flex items-center gap-2"><i class="fab fa-telegram text-blue-500"></i>Telegram Bot Alert</h3>' +
+        '<button type="button" onclick="testTelegramAlertNow()" class="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold rounded-xl border border-blue-200">🔔 តេស្តផ្ញើសារ</button>' +
+      '</div>' +
+      '<div class="space-y-2 text-xs">' +
+        '<input type="text" id="set_tg_token" placeholder="Telegram Bot Token" class="border p-2 rounded-xl w-full font-mono">' +
+        '<input type="text" id="set_tg_chatid" placeholder="Telegram Chat ID" class="border p-2 rounded-xl w-full font-mono">' +
+      '</div>' +
+      '<button onclick="saveSettingsToSupabase()" class="btn-green py-3 text-sm font-bold">រក្សាទុកការកំណត់ទាំងអស់</button>' +
     '</div>' +
   '</div>';
 
@@ -543,6 +667,11 @@ async function loadSettingsForm() {
       if (r.key === 'Delivery_Free_Min_Qty') document.getElementById('set_del_min').value = r.value;
       if (r.key === 'Telegram_Token') document.getElementById('set_tg_token').value = r.value;
       if (r.key === 'Telegram_ChatID') document.getElementById('set_tg_chatid').value = r.value;
+      if (r.key === 'Promo_Status') document.getElementById('set_promo_status').value = r.value;
+      if (r.key === 'Promo_Target_Product') document.getElementById('set_promo_product').value = r.value;
+      if (r.key === 'Promo_Buy_Qty') document.getElementById('set_promo_buy_qty').value = r.value;
+      if (r.key === 'Promo_Free_Qty') document.getElementById('set_promo_free_qty').value = r.value;
+      if (r.key === 'Promo_Banner_Text') document.getElementById('set_promo_banner').value = r.value;
     });
   } catch(e) {}
 }
@@ -554,7 +683,12 @@ async function saveSettingsToSupabase() {
     { key: 'Delivery_Fee_Standard', value: document.getElementById('set_del_fee').value || "2000" },
     { key: 'Delivery_Free_Min_Qty', value: document.getElementById('set_del_min').value || "2" },
     { key: 'Telegram_Token', value: document.getElementById('set_tg_token').value.trim() },
-    { key: 'Telegram_ChatID', value: document.getElementById('set_tg_chatid').value.trim() }
+    { key: 'Telegram_ChatID', value: document.getElementById('set_tg_chatid').value.trim() },
+    { key: 'Promo_Status', value: document.getElementById('set_promo_status').value },
+    { key: 'Promo_Target_Product', value: document.getElementById('set_promo_product').value },
+    { key: 'Promo_Buy_Qty', value: document.getElementById('set_promo_buy_qty').value || "5" },
+    { key: 'Promo_Free_Qty', value: document.getElementById('set_promo_free_qty').value || "1" },
+    { key: 'Promo_Banner_Text', value: document.getElementById('set_promo_banner').value.trim() }
   ];
 
   try {
@@ -564,4 +698,9 @@ async function saveSettingsToSupabase() {
   } catch(err) {
     showToast("កំហុស៖ " + err.message, "error");
   }
+}
+
+function testTelegramAlertNow() {
+  sendTelegramAlert("🔔 <b>[KC WATER - តេស្តប្រព័ន្ធ]</b>\n\nTelegram Bot បានតភ្ជាប់ជាមួយប្រព័ន្ធ Vercel + Supabase ជោគជ័យ ១០០% ហើយ!\n🕒 ម៉ោង៖ " + new Date().toLocaleTimeString('km-KH'));
+  showToast("បានផ្ញើសារតេស្តទៅ Telegram!", "success");
 }
