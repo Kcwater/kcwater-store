@@ -400,7 +400,6 @@ async function delExpenseFromSupabase(id) {
     showToast("កំហុស៖ " + err.message, "error");
   }
 }
-
 // ==========================================
 // 👥 ៤. គ្រប់គ្រងគណនី & តម្លៃពិសេស (CUSTOMERS & MONTHLY PRICES)
 // ==========================================
@@ -421,7 +420,7 @@ function renderCustomersModule() {
   });
 
   // ស្រង់ឈ្មោះមេសម្រាប់កូនចៅដកទឹក
-  var bossOptions = '<option value="">-- សូមជ្រើសរើសឈ្មោះមេ --</option>';
+  var bossOptions = '<option value="">-- ជ្រើសរើសពីបញ្ជីម៉ូយ ឬវាយខាងក្រោម --</option>';
   allCustomers.forEach(function(c) {
     if (c.role === 'Customer' || c.type === 'Regular' || c.type === 'Monthly') {
       bossOptions += '<option value="' + c.full_name + '">' + c.full_name + '</option>';
@@ -429,17 +428,17 @@ function renderCustomersModule() {
   });
 
   area.innerHTML = '<div class="max-w-3xl mx-auto space-y-4">' +
-    // ១. កាតបង្កើតគណនី (គ្រប់ប្រភេទ)
+    // ១. កាតបង្កើតគណនី
     '<div class="card border-t-4 border-blue-600 shadow-xl p-5 mb-0">' +
       '<h2 class="font-extrabold text-blue-900 text-base mb-3 flex items-center gap-2">' +
-        '<i class="fas fa-user-plus text-blue-600"></i>បង្កើតគណនី Admin / អ្នកដឹក / អតិថិជនប្រចាំខែ' +
+        '<i class="fas fa-user-plus text-blue-600"></i>បង្កើតគណនី Admin / អ្នកដឹក / អតិថិជន' +
       '</h2>' +
       '<div class="space-y-3">' +
         '<div>' +
           '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">ប្រភេទគណនីដែលត្រូវបង្កើត</label>' +
           '<select id="mem_role_type" onchange="toggleCustTypeFields()" class="font-bold border-2 border-blue-200 p-2.5 rounded-xl w-full bg-white">' +
-            '<option value="MONTHLY">🏢 អតិថិជនប្រចាំខែ (Monthly Customer - ទិញតាមកុងត្រា)</option>' +
-            '<option value="RESELLER">🚚 អតិថិជនប្រចាំ - អ្នកលក់បន្ត (Regular Reseller)</option>' +
+            '<option value="MONTHLY">🏢 អតិថិជនប្រចាំខែ (Monthly - គ្មាន Login, Admin បញ្ចូលឱ្យ)</option>' +
+            '<option value="RESELLER">🚚 អតិថិជនប្រចាំ - អ្នកលក់បន្ត (Reseller - មាន Login)</option>' +
             '<option value="DRIVER">🛵 កូនចៅ/អ្នកដឹក (Driver - ដកទឹកជំនួសមេ)</option>' +
             '<option value="COMPANY_DRIVER">🚚 អ្នកដឹកជញ្ជូនរោងចក្រ (Company Driver)</option>' +
             '<option value="SELLER">🛒 បុគ្គលិកលក់នៅកន្លែង (Seller / Cashier)</option>' +
@@ -447,23 +446,34 @@ function renderCustomersModule() {
           '</select>' +
         '</div>' +
 
-        // ប្រអប់រើសឈ្មោះមេ (បង្ហាញតែពេលរើសជា «កូនចៅដកទឹកជំនួសមេ»)
-        '<div id="driverBossContainer" class="p-3 bg-amber-50 rounded-2xl border border-amber-300 space-y-1 hidden">' +
-          '<label class="text-[10px] font-black text-amber-950 uppercase block">ជ្រើសរើសឈ្មោះមេ (អតិថិជនដែលត្រូវដកទឹកជំនួស) *</label>' +
-          '<select id="mem_boss_select" class="font-bold text-amber-950 border border-amber-300 bg-white rounded-xl p-2.5 w-full text-xs">' +
-            bossOptions +
-          '</select>' +
-        '</div>' +
-
+        // ព័ត៌មានឈ្មោះ និងលេខទូរស័ព្ទ
         '<div class="grid grid-cols-2 gap-2">' +
           '<input type="text" id="mem_name" placeholder="*ឈ្មោះពេញ (ឧ៖ ក្រុមហ៊ុន A ឬ តារា)" class="font-bold border p-2.5 rounded-xl">' +
           '<input type="text" id="mem_phone" placeholder="លេខទូរស័ព្ទ" class="border p-2.5 rounded-xl">' +
         '</div>' +
-        '<div class="grid grid-cols-2 gap-2">' +
-          '<input type="text" id="mem_user" placeholder="*Username ចូលប្រើ" class="font-bold border p-2.5 rounded-xl">' +
-          '<input type="text" id="mem_pass" placeholder="*Password លេខសម្ងាត់" class="font-bold border p-2.5 rounded-xl">' +
+
+        // ប្រអប់រើសឈ្មោះមេ (សម្រាប់កូនចៅដកទឹកជំនួសមេ)
+        '<div id="driverBossContainer" class="p-3 bg-amber-50 rounded-2xl border border-amber-300 space-y-1.5 hidden">' +
+          '<label class="text-[10px] font-black text-amber-950 uppercase block">ឈ្មោះមេ (អតិថិជនដែលកូនចៅនេះមកដកទឹកជំនួស) *</label>' +
+          '<select id="mem_boss_select" onchange="document.getElementById(\'mem_boss_custom\').value=this.value" class="font-bold text-amber-950 border border-amber-300 bg-white rounded-xl p-2 w-full text-xs">' +
+            bossOptions +
+          '</select>' +
+          '<input type="text" id="mem_boss_custom" placeholder="ឬវាយឈ្មោះមេនៅទីនេះ (បើមិនទាន់មានក្នុងបញ្ជី)..." class="font-bold border border-amber-300 bg-white rounded-xl p-2 w-full text-xs">' +
         '</div>' +
-        '<button onclick="saveUserToSupabase()" class="btn-green shadow-lg py-3 text-sm font-bold">រក្សាទុកគណនី (Save Account)</button>' +
+
+        // ប្រអប់ Username & Password (លាក់ចោលតែពេលរើស MONTHLY មួយគត់!)
+        '<div id="loginCredsContainer" class="grid grid-cols-2 gap-2 p-3 bg-blue-50/60 rounded-2xl border border-blue-200 hidden">' +
+          '<div>' +
+            '<label class="text-[9.5px] font-bold text-blue-900 uppercase block mb-1">Username ចូលប្រើ *</label>' +
+            '<input type="text" id="mem_user" placeholder="ឧ៖ dara_seller" class="font-bold border p-2 rounded-xl w-full bg-white text-xs">' +
+          '</div>' +
+          '<div>' +
+            '<label class="text-[9.5px] font-bold text-blue-900 uppercase block mb-1">Password លេខសម្ងាត់ *</label>' +
+            '<input type="text" id="mem_pass" placeholder="លេខសម្ងាត់" class="font-bold border p-2 rounded-xl w-full bg-white text-xs">' +
+          '</div>' +
+        '</div>' +
+
+        '<button onclick="saveUserToSupabase()" id="btnSaveUserAction" class="btn-green shadow-lg py-3 text-sm font-bold">រក្សាទុកគណនី (Save Account)</button>' +
       '</div>' +
     '</div>' +
 
@@ -473,7 +483,7 @@ function renderCustomersModule() {
         '<i class="fas fa-tags text-orange-600"></i>កំណត់តម្លៃពិសេសសម្រាប់អតិថិជន (Contract Prices)' +
       '</h3>' +
       '<p class="text-[11px] text-gray-500 mb-3 leading-relaxed">' +
-        '💡 <b>ចំណាំសម្រាប់អតិថិជន Monthly៖</b> ទាល់តែកំណត់មុខទំនិញ និងតម្លៃនៅទីនេះ ទើបទំនិញនោះបង្ហាញលើផ្ទាំង POS របស់គាត់ (ទំនិញក្រៅកុងត្រានឹងមិនបង្ហាញឡើយ)។' +
+        '💡 <b>ចំណាំសម្រាប់អតិថិជន Monthly៖</b> កំណត់មុខទំនិញ និងតម្លៃនៅទីនេះ ដើម្បីឱ្យទំនិញនោះបង្ហាញលើផ្ទាំង POS ពេលលក់ឱ្យគាត់ (ទំនិញក្រៅពីនេះនឹងមិនបង្ហាញឡើយ)។' +
       '</p>' +
       '<div class="space-y-3">' +
         '<div>' +
@@ -494,7 +504,7 @@ function renderCustomersModule() {
       '</div>' +
     '</div>' +
 
-    // ៣. តារាងតម្លៃពិសេសដែលបានកំណត់
+    // ៣. តារាងតម្លៃពិសេស
     '<div class="card border-t-4 border-orange-400 shadow-lg p-5 mb-0">' +
       '<h4 class="font-bold text-gray-800 text-sm mb-2"><i class="fas fa-list-check text-orange-600 mr-1.5"></i>បញ្ជីតម្លៃពិសេសដែលបានកំណត់</h4>' +
       '<div class="overflow-x-auto rounded-xl border"><table class="w-full text-left text-xs border-collapse"><thead><tr class="bg-gray-100 text-gray-700 font-bold border-b"><th class="p-2.5">អតិថិជន</th><th class="p-2.5">មុខទំនិញ</th><th class="p-2.5 text-right">តម្លៃពិសេស</th><th class="p-2.5 text-center">លុប</th></tr></thead><tbody id="specialPricesTableBody"></tbody></table></div>' +
@@ -503,7 +513,7 @@ function renderCustomersModule() {
     // ៤. តារាងគណនីទាំងអស់
     '<div class="card border-t-4 border-gray-700 shadow-xl p-5 mb-0">' +
       '<h3 class="font-bold text-gray-800 text-sm mb-3 flex items-center gap-2"><i class="fas fa-users"></i>បញ្ជីគណនីទាំងអស់</h3>' +
-      '<div class="overflow-x-auto rounded-xl border"><table class="w-full text-left text-xs border-collapse"><thead><tr class="bg-gray-100 text-gray-700 font-bold border-b"><th class="p-2.5">ឈ្មោះ</th><th class="p-2.5">Username / Pass</th><th class="p-2.5 text-center">តួនាទី / ប្រភេទ</th><th class="p-2.5 text-center">លុប</th></tr></thead><tbody id="usersModuleTableBody"></tbody></table></div>' +
+      '<div class="overflow-x-auto rounded-xl border"><table class="w-full text-left text-xs border-collapse"><thead><tr class="bg-gray-100 text-gray-700 font-bold border-b"><th class="p-2.5">ឈ្មោះ</th><th class="p-2.5">ព័ត៌មានគណនី</th><th class="p-2.5 text-center">តួនាទី / ប្រភេទ</th><th class="p-2.5 text-center">លុប</th></tr></thead><tbody id="usersModuleTableBody"></tbody></table></div>' +
     '</div>' +
   '</div>';
 
@@ -512,60 +522,106 @@ function renderCustomersModule() {
   fetchSpecialPricesTable();
 }
 
+// ✅ បង្ហាញ/លាក់ប្រអប់៖ លាក់តែពេលរើស MONTHLY មួយគត់!
 function toggleCustTypeFields() {
-  var roleType = document.getElementById('mem_role_type') ? document.getElementById('mem_role_type').value : '';
+  var roleType = document.getElementById('mem_role_type') ? document.getElementById('mem_role_type').value : 'MONTHLY';
   var bossBox = document.getElementById('driverBossContainer');
-  if (!bossBox) return;
+  var loginBox = document.getElementById('loginCredsContainer');
 
-  if (roleType === 'DRIVER') {
-    bossBox.classList.remove('hidden');
-  } else {
-    bossBox.classList.add('hidden');
+  // កូនចៅដកទឹក ➔ បង្ហាញប្រអប់ឈ្មោះមេ
+  if (bossBox) {
+    if (roleType === 'DRIVER') bossBox.classList.remove('hidden');
+    else bossBox.classList.add('hidden');
+  }
+
+  // Monthly មួយគត់ដែលលាក់ Username/Password
+  if (loginBox) {
+    if (roleType === 'MONTHLY') {
+      loginBox.classList.add('hidden');
+    } else {
+      loginBox.classList.remove('hidden');
+    }
   }
 }
 
+// ✅ រក្សាទុកគណនី
 async function saveUserToSupabase() {
-  var name = document.getElementById('mem_name').value.trim();
-  var user = document.getElementById('mem_user').value.trim();
-  var pass = document.getElementById('mem_pass').value.trim();
+  var nameInp = document.getElementById('mem_name');
+  var name = nameInp ? nameInp.value.trim() : '';
   var roleType = document.getElementById('mem_role_type').value;
-  var phone = document.getElementById('mem_phone').value.trim();
-  var boss = document.getElementById('mem_boss_select') ? document.getElementById('mem_boss_select').value : '';
-
-  if (!name || !user || !pass) { 
-    showToast("សូមបំពេញឈ្មោះ, Username, និង Password!", "error"); 
+  var phone = document.getElementById('mem_phone') ? document.getElementById('mem_phone').value.trim() : '';
+  
+  if (!name) { 
+    showToast("សូមបញ្ចូលឈ្មោះពេញ!", "error"); 
+    if (nameInp) nameInp.focus();
     return; 
   }
 
   var role = "Customer";
   var type = "Regular";
   var linkedBoss = "";
+  var user = null;
+  var pass = null;
 
   if (roleType === 'MONTHLY') {
     role = 'Customer';
     type = 'Monthly';
+    user = null; // ✅ គ្មាន Username
+    pass = null; // ✅ គ្មាន Password
   } else if (roleType === 'RESELLER') {
     role = 'Customer';
     type = 'Regular';
+    user = document.getElementById('mem_user').value.trim();
+    pass = document.getElementById('mem_pass').value.trim();
+    if (!user || !pass) {
+      showToast("សូមវាយ Username និង Password សម្រាប់ម៉ូយ Login!", "error");
+      return;
+    }
   } else if (roleType === 'DRIVER') {
     role = 'Driver';
     type = 'Driver';
-    linkedBoss = boss;
-    if (!linkedBoss) {
-      showToast("សូមជ្រើសរើសឈ្មោះមេរបស់កូនចៅ!", "error");
+    var customBoss = document.getElementById('mem_boss_custom') ? document.getElementById('mem_boss_custom').value.trim() : '';
+    var selectBoss = document.getElementById('mem_boss_select') ? document.getElementById('mem_boss_select').value.trim() : '';
+    linkedBoss = customBoss || selectBoss;
+
+    user = document.getElementById('mem_user').value.trim();
+    pass = document.getElementById('mem_pass').value.trim();
+    if (!user || !pass) {
+      showToast("សូមវាយ Username និង Password សម្រាប់អ្នកដឹក Login!", "error");
       return;
     }
   } else if (roleType === 'COMPANY_DRIVER') {
     role = 'Driver';
     type = 'CompanyDriver';
     linkedBoss = 'KC WATER';
+    user = document.getElementById('mem_user').value.trim();
+    pass = document.getElementById('mem_pass').value.trim();
+    if (!user || !pass) {
+      showToast("សូមវាយ Username និង Password សម្រាប់អ្នកដឹក!", "error");
+      return;
+    }
   } else if (roleType === 'SELLER') {
     role = 'Seller';
     type = 'Retail';
+    user = document.getElementById('mem_user').value.trim();
+    pass = document.getElementById('mem_pass').value.trim();
+    if (!user || !pass) {
+      showToast("សូមវាយ Username និង Password សម្រាប់បុគ្គលិកលក់!", "error");
+      return;
+    }
   } else if (roleType === 'ADMIN') {
     role = 'Admin';
     type = 'Admin';
+    user = document.getElementById('mem_user').value.trim();
+    pass = document.getElementById('mem_pass').value.trim();
+    if (!user || !pass) {
+      showToast("សូមវាយ Username និង Password សម្រាប់ Admin!", "error");
+      return;
+    }
   }
+
+  var btn = document.getElementById('btnSaveUserAction');
+  if (btn) { btn.disabled = true; btn.innerText = "កំពុងរក្សាទុក..."; }
 
   try {
     const { error } = await supabaseClient.from('users').insert([{
@@ -580,15 +636,19 @@ async function saveUserToSupabase() {
 
     if (error) throw error;
 
-    showToast("បានបង្កើតគណនីជោគជ័យ!", "success");
-    document.getElementById('mem_name').value = "";
-    document.getElementById('mem_user').value = "";
-    document.getElementById('mem_pass').value = "";
-    document.getElementById('mem_phone').value = "";
+    showToast("បានបង្កើត [" + name + "] ជោគជ័យ!", "success");
+    if (nameInp) nameInp.value = "";
+    if (document.getElementById('mem_phone')) document.getElementById('mem_phone').value = "";
+    if (document.getElementById('mem_user')) document.getElementById('mem_user').value = "";
+    if (document.getElementById('mem_pass')) document.getElementById('mem_pass').value = "";
+    if (document.getElementById('mem_boss_custom')) document.getElementById('mem_boss_custom').value = "";
+
     await fetchInitialPOSData();
     renderCustomersModule();
   } catch(err) {
     showToast("កំហុស៖ " + err.message, "error");
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerText = "រក្សាទុកគណនី (Save Account)"; }
   }
 }
 
@@ -597,7 +657,7 @@ async function fetchUsersModuleTable() {
   if (!tbody) return;
 
   try {
-    const { data: users } = await supabaseClient.from('users').select('*').order('id', { ascending: true });
+    const { data: users } = await supabaseClient.from('users').select('*').order('id', { ascending: false });
     if (!users) return;
 
     var html = '';
@@ -617,9 +677,13 @@ async function fetchUsersModuleTable() {
         badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-green-100 text-green-800">🚚 អ្នកលក់បន្ត</span>';
       }
 
+      var credsText = (u.type === 'Monthly') ? 
+        '<span class="text-gray-400 text-[11px] italic">ម៉ូយប្រចាំខែ (គ្មាន Login)</span>' : 
+        ('<span class="font-mono text-xs"><b>' + (u.username || '-') + '</b> / ' + (u.password || '-') + '</span>');
+
       html += '<tr class="border-b hover:bg-gray-50">' +
         '<td class="p-2.5 font-bold text-gray-800">' + u.full_name + '<br><small class="text-gray-400 font-normal">' + (u.phone || '-') + '</small></td>' +
-        '<td class="p-2.5 font-mono text-xs"><b>' + u.username + '</b> / ' + u.password + '</td>' +
+        '<td class="p-2.5">' + credsText + '</td>' +
         '<td class="p-2.5 text-center">' + badgeHtml + '</td>' +
         '<td class="p-2.5 text-center"><button onclick="delUserFromSupabase(' + u.id + ')" class="text-red-400 hover:text-red-600"><i class="fas fa-trash-can"></i></button></td>' +
       '</tr>';
@@ -633,7 +697,7 @@ async function fetchSpecialPricesTable() {
   if (!tbody) return;
 
   try {
-    const { data: list } = await supabaseClient.from('customer_prices').select('*').order('id', { ascending: true });
+    const { data: list } = await supabaseClient.from('customer_prices').select('*').order('id', { ascending: false });
     if (!list || list.length === 0) {
       tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-400 italic">មិនទាន់មានតម្លៃពិសេសនៅឡើយ</td></tr>';
       return;
