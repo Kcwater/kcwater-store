@@ -1,75 +1,132 @@
-/** ==========================================================================
- *  KC WATER POS SYSTEM - ALL MODULES ENGINE (pos-modules.js)
- *  (Stock, Bottle Loans, Expenses, Customers, Special Prices & Settings)
- *  ========================================================================== */
+// ==========================================
+// 📦 ១. គ្រប់គ្រងស្តុក (STOCK MANAGEMENT, EDIT & RESTOCK)
+// ==========================================
+var editingProductId = null;
 
-// ==========================================
-// 📦 ១. គ្រប់គ្រងស្តុក (STOCK MANAGEMENT & RESTOCK)
-// ==========================================
 function renderStockModule() {
   var area = document.getElementById('contentArea');
+  if (!area) return;
   var aid = "P-" + Math.floor(Math.random() * 9000 + 1000);
+  editingProductId = null;
 
   area.innerHTML = '<div class="max-w-3xl mx-auto space-y-4">' +
+    // ១. Form បង្កើត & កែសម្រួលទំនិញ
     '<div class="card border-t-4 border-green-700 shadow-xl">' +
-      '<h2 id="sT" class="font-bold text-center mb-4 text-green-900 text-base sm:text-lg flex items-center justify-center gap-2">' +
-        '<i class="fas fa-boxes-stacked text-green-600"></i>គ្រប់គ្រងទំនិញ (Products)' +
-      '</h2>' +
+      '<div class="flex justify-between items-center mb-4 border-b pb-2">' +
+        '<h2 id="prodFormTitle" class="font-extrabold text-green-900 text-base sm:text-lg flex items-center gap-2">' +
+          '<i class="fas fa-boxes-stacked text-green-600"></i>គ្រប់គ្រងទំនិញ (Products)' +
+        '</h2>' +
+        '<button type="button" id="btnCancelEditProd" onclick="cancelEditProduct()" class="text-xs font-bold text-gray-500 hover:text-red-600 hidden">' +
+          '<i class="fas fa-times mr-1"></i>បោះបង់ការកែប្រែ' +
+        '</button>' +
+      '</div>' +
+
       '<div class="grid gap-3">' +
-        '<input type="text" id="pI" value="' + aid + '" readonly class="bg-gray-100 font-bold text-blue-600 text-sm border p-2.5 rounded-xl">' +
-        '<input type="text" id="pN" placeholder="ឈ្មោះទំនិញ (*)" class="font-bold border p-2.5 rounded-xl">' +
         '<div class="grid grid-cols-2 gap-2">' +
-          '<select id="pTy" onchange="tCF()" class="border p-2.5 rounded-xl font-bold">' +
-            '<option value="ផលិតឯង">ផលិតខ្លួនឯង</option>' +
-            '<option value="ទិញគេ">ទិញគេមកលក់បន្ត</option>' +
+          '<input type="text" id="pI" value="' + aid + '" readonly class="bg-gray-100 font-bold text-blue-600 text-xs border p-2.5 rounded-xl">' +
+          '<input type="text" id="pN" placeholder="*ឈ្មោះទំនិញ (ឧ៖ ទឹកធុង ២០L)" class="font-bold border p-2.5 rounded-xl text-xs">' +
+        '</div>' +
+
+        '<div class="grid grid-cols-2 gap-2">' +
+          '<select id="pTy" onchange="tCF()" class="border p-2.5 rounded-xl font-bold text-xs bg-white">' +
+            '<option value="ផលិតឯង">ផលិតខ្លួនឯង (ទឹកធុង)</option>' +
+            '<option value="ទិញគេ">ទិញគេមកលក់បន្ត (ទឹកយួរ/បរិក្ខារ)</option>' +
           '</select>' +
-          '<select id="pCu" class="border p-2.5 rounded-xl font-bold">' +
+          '<select id="pCu" class="border p-2.5 rounded-xl font-bold text-xs bg-white">' +
             '<option value="KHR">KHR (៛)</option>' +
             '<option value="THB">THB (฿)</option>' +
             '<option value="USD">USD ($)</option>' +
           '</select>' +
         '</div>' +
+
+        // ប្រអប់ថ្លៃដើម (បង្ហាញតែពេលរើស «ទិញគេមកលក់បន្ត»)
         '<div id="cSec" style="display:none">' +
-          '<input type="number" id="pCo" placeholder="ថ្លៃដើមទិញចូល (Cost)" class="border p-2.5 rounded-xl font-bold w-full">' +
+          '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">ថ្លៃដើមទិញចូល (Cost)</label>' +
+          '<input type="number" id="pCo" placeholder="ថ្លៃដើម (ឧ៖ ៤,០០០)" class="border p-2.5 rounded-xl font-bold w-full text-xs">' +
         '</div>' +
+
+        // តម្លៃ ២ ជាន់ (ដេប៉ូ & Web)
         '<div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 bg-emerald-50/60 p-3 rounded-2xl border border-emerald-200">' +
           '<div>' +
             '<label class="text-[10px] font-extrabold text-amber-900 uppercase block mb-1">🚚 តម្លៃបោះដុំដេប៉ូ (POS) *</label>' +
-            '<input type="number" id="pPr" placeholder="ឧ៖ ៦០០" class="font-black text-amber-900 bg-white border border-amber-300 rounded-xl p-2.5 w-full outline-none">' +
+            '<input type="number" id="pPr" placeholder="ឧ៖ ៦០០" class="font-black text-amber-900 bg-white border border-amber-300 rounded-xl p-2.5 w-full outline-none text-sm">' +
           '</div>' +
           '<div>' +
             '<label class="text-[10px] font-extrabold text-emerald-900 uppercase block mb-1">🌐 តម្លៃលក់លើ Web តាមផ្ទះ *</label>' +
-            '<input type="number" id="pOnlinePr" placeholder="ឧ៖ ១៥០០" class="font-black text-emerald-800 bg-white border border-emerald-300 rounded-xl p-2.5 w-full outline-none">' +
+            '<input type="number" id="pOnlinePr" placeholder="ឧ៖ ១៥០០" class="font-black text-emerald-800 bg-white border border-emerald-300 rounded-xl p-2.5 w-full outline-none text-sm">' +
           '</div>' +
         '</div>' +
+
         '<div class="grid grid-cols-2 gap-2">' +
-          '<input type="number" id="pMin" placeholder="កម្រិតដំណឹងស្តុកទាប (ឧ៖ 5)" class="border p-2.5 rounded-xl font-bold">' +
-          '<select id="pChannel" class="border p-2.5 rounded-xl font-bold">' +
-            '<option value="ALL">🔄 លក់ទាំងសងខាង (POS + Web)</option>' +
-            '<option value="ONLINE">🌐 លក់តែលើ Web</option>' +
-            '<option value="POS">🚚 លក់តែលើ POS ដេប៉ូ</option>' +
-          '</select>' +
+          '<div>' +
+            '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">កម្រិតដំណឹងស្តុកទាប</label>' +
+            '<input type="number" id="pMin" placeholder="ឧ៖ 5" value="5" class="border p-2.5 rounded-xl font-bold w-full text-xs text-center">' +
+          '</div>' +
+          '<div>' +
+            '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">ប៉ុស្តិ៍លក់ (Channel)</label>' +
+            '<select id="pChannel" class="border p-2.5 rounded-xl font-bold w-full text-xs bg-white">' +
+              '<option value="ALL">🔄 លក់ទាំងសងខាង (POS + Web)</option>' +
+              '<option value="ONLINE">🌐 លក់តែលើ Web</option>' +
+              '<option value="POS">🚚 លក់តែលើ POS ដេប៉ូ</option>' +
+            '</select>' +
+          '</div>' +
         '</div>' +
-        '<input type="text" id="pImgUrl" placeholder="Link រូបភាពទំនិញ (URL)" class="border p-2.5 rounded-xl text-xs">' +
-        '<button onclick="saveProductToSupabase()" id="bP" class="btn-green">រក្សាទុកទំនិញ</button>' +
+
+        // 📷 ផ្នែកជ្រើសរើសរូបភាព ឬថតរូបពីទូរស័ព្ទ
+        '<div class="p-3 bg-gray-50 border-2 border-dashed border-green-300 rounded-2xl text-center space-y-2">' +
+          '<div class="w-20 h-20 mx-auto rounded-xl bg-white border flex items-center justify-center overflow-hidden shadow-inner">' +
+            '<img id="pImgPreview" src="https://cdn-icons-png.flaticon.com/512/3100/3100566.png" class="max-w-full max-h-full object-contain">' +
+          '</div>' +
+          '<div>' +
+            '<label class="cursor-pointer px-4 py-2 bg-green-700 hover:bg-green-800 text-white font-bold rounded-xl text-xs shadow-md inline-flex items-center gap-1.5 active:scale-95 transition">' +
+              '<i class="fas fa-camera"></i> 📷 ជ្រើសរើសរូបភាព / ថតរូប' +
+              '<input type="file" id="pImgFileInput" accept="image/*" onchange="previewProductImageFile(this)" class="hidden">' +
+            '</label>' +
+            '<input type="hidden" id="pImgBase64" value="">' +
+            '<p id="pImgNote" class="text-[10px] text-gray-400 mt-1">អាចថតរូប ឬជ្រើសរូបភាពពីទូរស័ព្ទ</p>' +
+          '</div>' +
+        '</div>' +
+
+        '<button onclick="saveProductToSupabase()" id="btnSaveProdAction" class="btn-green py-3 text-sm font-bold shadow-md">' +
+          'រក្សាទុកទំនិញ (Save Product)' +
+        '</button>' +
       '</div>' +
     '</div>' +
 
+    // ២. កាតបញ្ចូលស្តុកថ្មី (Restock In)
     '<div class="card border-t-4 border-blue-500 shadow-lg">' +
-      '<h3 class="font-bold text-blue-800 mb-3 text-sm flex items-center gap-1.5"><i class="fas fa-plus-square"></i>បញ្ចូលស្តុកថ្មី (Restock In)</h3>' +
+      '<h3 class="font-bold text-blue-900 mb-3 text-sm flex items-center gap-1.5"><i class="fas fa-plus-square text-blue-600"></i>បញ្ចូលស្តុកថ្មី (Restock In)</h3>' +
       '<div class="grid grid-cols-2 gap-3">' +
-        '<select id="si_prod" class="text-xs font-bold border p-2.5 rounded-xl"><option value="">-- រើសទំនិញ --</option></select>' +
-        '<input type="number" id="si_qty" placeholder="ចំនួនទិញចូល (*)" class="border p-2.5 rounded-xl font-bold text-center">' +
+        '<div>' +
+          '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">ជ្រើសរើសទំនិញទិញចូល</label>' +
+          '<select id="si_prod" onchange="onStockInProductSelected()" class="text-xs font-bold border p-2.5 rounded-xl w-full bg-white"><option value="">-- រើសទំនិញ --</option></select>' +
+        '</div>' +
+        '<div>' +
+          '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">ចំនួនទិញចូលបន្ថែម (*)</label>' +
+          '<input type="number" id="si_qty" placeholder="ឧ៖ 50" class="border p-2.5 rounded-xl font-bold text-center w-full text-sm">' +
+        '</div>' +
       '</div>' +
-      '<div class="mt-2">' +
-        '<input type="number" id="si_cost" placeholder="ថ្លៃដើមថ្មី (បើតម្លៃប្រែប្រួល)" class="border p-2.5 rounded-xl font-bold w-full text-xs">' +
+      '<div class="mt-2.5">' +
+        '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">ថ្លៃដើមទិញចូលលើកនេះ (បើតម្លៃប្រែប្រួល)</label>' +
+        '<input type="number" id="si_cost" placeholder="ថ្លៃដើមថ្មី" class="border p-2.5 rounded-xl font-bold w-full text-xs bg-white">' +
+        '<p id="si_cost_hint" class="text-[10px] text-blue-600 font-bold mt-1"></p>' +
       '</div>' +
-      '<button onclick="saveStockInToSupabase()" class="btn-green bg-blue-600 mt-3 font-bold">យល់ព្រមបញ្ចូលស្តុក</button>' +
+      '<button onclick="saveStockInToSupabase()" id="btnSaveStockInAction" class="btn-green bg-blue-600 hover:bg-blue-700 mt-3 font-bold py-3 text-xs">យល់ព្រមបញ្ចូលស្តុក</button>' +
     '</div>' +
 
+    // ៣. តារាងបញ្ជីទំនិញទាំងអស់
     '<div class="card p-0 overflow-x-auto shadow-lg rounded-2xl border">' +
       '<table class="w-full text-left text-xs border-collapse">' +
-        '<thead><tr class="bg-gray-100 text-gray-700 font-bold border-b"><th class="p-3">រូប</th><th class="p-3">ឈ្មោះទំនិញ</th><th class="p-3 text-center">តម្លៃដេប៉ូ / Web</th><th class="p-3 text-center">ស្តុក</th><th class="p-3 text-center">សកម្មភាព</th></tr></thead>' +
+        '<thead>' +
+          '<tr class="bg-gray-100 text-gray-700 font-bold border-b">' +
+            '<th class="p-3">រូប</th>' +
+            '<th class="p-3">ឈ្មោះទំនិញ</th>' +
+            '<th class="p-3 text-center">ប៉ុស្តិ៍លក់</th>' +
+            '<th class="p-3 text-center">តម្លៃដេប៉ូ / Web</th>' +
+            '<th class="p-3 text-center">ស្តុក</th>' +
+            '<th class="p-3 text-center">សកម្មភាព</th>' +
+          '</tr>' +
+        '</thead>' +
         '<tbody id="stockModuleTableBody"></tbody>' +
       '</table>' +
     '</div>' +
@@ -95,6 +152,54 @@ function initStockModuleDropdowns() {
   });
 }
 
+function onStockInProductSelected() {
+  var id = document.getElementById('si_prod') ? document.getElementById('si_prod').value : '';
+  var costInp = document.getElementById('si_cost');
+  var hint = document.getElementById('si_cost_hint');
+  if (!id || !costInp) return;
+
+  var prod = allProducts.find(p => p.id === id);
+  if (prod) {
+    costInp.value = prod.cost || '';
+    if (hint) {
+      hint.innerText = '*ថ្លៃដើមបច្ចុប្បន្ន៖ ' + Number(prod.cost || 0).toLocaleString() + ' ៛ (អាចកែប្រែបានបើតម្លៃឡើង/ចុះ)';
+    }
+  }
+}
+
+// 📷 មុខងារបំប្លែងរូបថតពីទូរស័ព្ទ (Resize & Base64)
+function previewProductImageFile(input) {
+  if (input.files && input.files[0]) {
+    var file = input.files[0];
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var img = new Image();
+      img.onload = function() {
+        var canvas = document.createElement('canvas');
+        var maxDim = 400;
+        var w = img.width, h = img.height;
+        if (w > h) {
+          if (w > maxDim) { h = Math.round((h * maxDim) / w); w = maxDim; }
+        } else {
+          if (h > maxDim) { w = Math.round((w * maxDim) / h); h = maxDim; }
+        }
+        canvas.width = w;
+        canvas.height = h;
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        var base64 = canvas.toDataURL('image/jpeg', 0.8);
+
+        document.getElementById('pImgPreview').src = base64;
+        document.getElementById('pImgBase64').value = base64;
+        document.getElementById('pImgNote').innerHTML = '<span class="text-green-600 font-bold">✔️ រូបភាពបានរួចរាល់</span>';
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+// 📋 បង្ហាញតារាងទំនិញ (មានប៊ូតុងកែប្រែ & លុប)
 function renderStockTableRows() {
   var tbody = document.getElementById('stockModuleTableBody');
   if (!tbody) return;
@@ -105,23 +210,86 @@ function renderStockTableRows() {
     var prWholesale = Number(p.price || 0).toLocaleString() + ' ៛';
     var prOnline = Number(p.online_price || p.price || 0).toLocaleString() + ' ៛';
 
+    var ch = String(p.channel || 'ALL').toUpperCase();
+    var chBadge = (ch === 'ONLINE') ? '<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-sky-100 text-sky-800 border border-sky-300">🌐 Web</span>' :
+                  (ch === 'POS') ? '<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-900 border border-amber-300">🚚 ដេប៉ូ</span>' :
+                  '<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">🔄 ទាំងពីរ</span>';
+
+    var stockDisplay = (p.type === 'ផលិតឯង') ? '<span class="text-blue-700 font-bold text-xs">-</span>' : 
+      ('<span class="font-black ' + (parseFloat(p.stock || 0) <= parseFloat(p.min_stock || 5) ? 'text-red-600' : 'text-blue-800') + '">' + p.stock + '</span>');
+
     html += '<tr class="border-b hover:bg-gray-50">' +
-      '<td class="p-2.5"><img src="' + imgUrl + '" class="w-8 h-8 object-contain rounded border"></td>' +
+      '<td class="p-2.5"><img src="' + imgUrl + '" class="w-9 h-9 object-contain rounded border"></td>' +
       '<td class="p-2.5 font-bold text-gray-800">' + p.name + '<br><span class="text-[9px] text-gray-400 font-normal">' + p.type + '</span></td>' +
+      '<td class="p-2.5 text-center">' + chBadge + '</td>' +
       '<td class="p-2.5 text-center text-[10px]">🚚 ' + prWholesale + '<br><span class="text-emerald-700 font-bold">🌐 ' + prOnline + '</span></td>' +
-      '<td class="p-2.5 text-center font-black ' + (parseFloat(p.stock || 0) <= parseFloat(p.min_stock || 5) ? 'text-red-600' : 'text-blue-800') + '">' + p.stock + '</td>' +
-      '<td class="p-2.5 text-center">' +
-        '<button onclick="delProductFromSupabase(\'' + p.id + '\')" class="text-red-500 hover:text-red-700 p-1"><i class="fas fa-trash-can"></i></button>' +
-      '</td>' +
+      '<td class="p-2.5 text-center">' + stockDisplay + '</td>' +
+      '<td class="p-2.5 text-center"><div class="flex items-center justify-center gap-2">' +
+        '<button onclick="prepareEditProduct(\'' + p.id + '\')" class="text-blue-600 hover:text-blue-800 p-1" title="កែប្រែ"><i class="fas fa-edit text-xs"></i></button>' +
+        '<button onclick="delProductFromSupabase(\'' + p.id + '\')" class="text-red-500 hover:text-red-700 p-1" title="លុប"><i class="fas fa-trash-can text-xs"></i></button>' +
+      '</div></td>' +
     '</tr>';
   });
 
-  tbody.innerHTML = html || '<tr><td colspan="5" class="p-4 text-center text-gray-400 italic">គ្មានទំនិញ</td></tr>';
+  tbody.innerHTML = html || '<tr><td colspan="6" class="p-4 text-center text-gray-400 italic">គ្មានទំនិញ</td></tr>';
 }
 
+// ✏️ មុខងារចុចកែសម្រួលទំនិញ (ទាញទិន្នន័យមកបំពេញលើ Form អូតូ)
+function prepareEditProduct(id) {
+  var p = allProducts.find(item => item.id === id);
+  if (!p) return;
+  editingProductId = p.id;
+
+  document.getElementById('prodFormTitle').innerHTML = '<i class="fas fa-edit text-blue-600"></i>កែសម្រួលទំនិញ៖ ' + p.name;
+  document.getElementById('btnCancelEditProd').classList.remove('hidden');
+
+  var btn = document.getElementById('btnSaveProdAction');
+  btn.innerText = 'ធ្វើបច្ចុប្បន្នភាពទំនិញ (Update)';
+  btn.className = 'btn-green bg-blue-600 hover:bg-blue-700 py-3 text-sm font-bold shadow-md';
+
+  document.getElementById('pI').value = p.id;
+  document.getElementById('pN').value = p.name;
+  document.getElementById('pTy').value = p.type;
+  document.getElementById('pCu').value = p.currency || 'KHR';
+  if (document.getElementById('pCo')) document.getElementById('pCo').value = p.cost || 0;
+  document.getElementById('pPr').value = p.price || 0;
+  document.getElementById('pOnlinePr').value = p.online_price || p.price || 0;
+  document.getElementById('pMin').value = p.min_stock || 5;
+  document.getElementById('pChannel').value = p.channel || 'ALL';
+
+  var preview = document.getElementById('pImgPreview');
+  if (preview) preview.src = p.img || 'https://cdn-icons-png.flaticon.com/512/3100/3100566.png';
+  document.getElementById('pImgBase64').value = p.img || '';
+
+  tCF();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function cancelEditProduct() {
+  editingProductId = null;
+  document.getElementById('prodFormTitle').innerHTML = '<i class="fas fa-boxes-stacked text-green-600"></i>គ្រប់គ្រងទំនិញ (Products)';
+  document.getElementById('btnCancelEditProd').classList.add('hidden');
+
+  var btn = document.getElementById('btnSaveProdAction');
+  btn.innerText = 'រក្សាទុកទំនិញ (Save Product)';
+  btn.className = 'btn-green py-3 text-sm font-bold shadow-md';
+
+  document.getElementById('pI').value = 'P-' + Math.floor(Math.random() * 9000 + 1000);
+  document.getElementById('pN').value = '';
+  document.getElementById('pPr').value = '';
+  document.getElementById('pOnlinePr').value = '';
+  document.getElementById('pImgPreview').src = 'https://cdn-icons-png.flaticon.com/512/3100/3100566.png';
+  document.getElementById('pImgBase64').value = '';
+  document.getElementById('pImgNote').innerText = 'អាចថតរូប ឬជ្រើសរូបភាពពីទូរស័ព្ទ';
+  tCF();
+}
+
+// 💾 រក្សាទុក ឬធ្វើបច្ចុប្បន្នភាពទំនិញចូល Supabase
 async function saveProductToSupabase() {
   var name = document.getElementById('pN').value.trim();
   if (!name) { showToast("សូមបញ្ចូលឈ្មោះទំនិញ!", "error"); return; }
+
+  var imgData = document.getElementById('pImgBase64').value || "https://cdn-icons-png.flaticon.com/512/3100/3100566.png";
 
   var payload = {
     id: document.getElementById('pI').value,
@@ -133,28 +301,43 @@ async function saveProductToSupabase() {
     online_price: parseFloat(document.getElementById('pOnlinePr').value || 0),
     min_stock: parseFloat(document.getElementById('pMin').value || 5),
     channel: document.getElementById('pChannel').value,
-    img: document.getElementById('pImgUrl').value.trim() || "https://cdn-icons-png.flaticon.com/512/3100/3100566.png",
-    stock: 100
+    img: imgData
   };
+
+  if (!editingProductId) {
+    payload.stock = (payload.type === 'ផលិតឯង') ? 500 : 50;
+  }
+
+  var btn = document.getElementById('btnSaveProdAction');
+  btn.disabled = true;
 
   try {
     const { error } = await supabaseClient.from('products').upsert([payload]);
     if (error) throw error;
-    showToast("បានរក្សាទុកទំនិញជោគជ័យ!", "success");
+
+    showToast(editingProductId ? "បានកែប្រែទំនិញជោគជ័យ!" : "បានបន្ថែមទំនិញថ្មីជោគជ័យ!", "success");
+    cancelEditProduct();
     await fetchInitialPOSData();
-    renderStockModule();
+    renderStockTableRows();
+    initStockModuleDropdowns();
   } catch(err) {
     showToast("កំហុស៖ " + err.message, "error");
+  } finally {
+    btn.disabled = false;
   }
 }
 
+// ➕ បញ្ចូលស្តុកថ្មី (Restock In)
 async function saveStockInToSupabase() {
   var id = document.getElementById('si_prod').value;
   var qty = parseFloat(document.getElementById('si_qty').value || 0);
   var cost = parseFloat(document.getElementById('si_cost').value || 0);
 
   if (!id || qty <= 0) { showToast("សូមជ្រើសរើសទំនិញ និងបញ្ចូលចំនួនទិញចូល!", "error"); return; }
-  var prod = allProducts.find(function(p){ return p.id === id; });
+  var prod = allProducts.find(p => p.id === id);
+
+  var btn = document.getElementById('btnSaveStockInAction');
+  btn.disabled = true;
 
   try {
     var newStock = parseFloat(prod.stock || 0) + qty;
@@ -170,11 +353,29 @@ async function saveStockInToSupabase() {
       admin_name: currentUser.fullName || "Admin"
     }]);
 
+    // ផ្ញើសារដំណឹង Telegram
+    try {
+      var tgMsg = "📦 <b>[KC WATER - បញ្ចូលស្តុកថ្មី]</b>\n\n" +
+                  "• ទំនិញ៖ <b>" + (prod ? prod.name : '') + "</b>\n" +
+                  "• ចំនួនទិញចូល៖ <b>+" + qty + "</b>\n" +
+                  (cost > 0 ? "• ថ្លៃដើមថ្មី៖ <b>៛ " + Number(cost).toLocaleString() + "</b>\n" : "") +
+                  "• ស្តុកសរុបបច្ចុប្បន្ន៖ <b>" + newStock + "</b>\n" +
+                  "• អ្នកកត់ត្រា៖ " + (currentUser.fullName || "Admin") + "\n" +
+                  "🕒 ម៉ោង៖ " + new Date().toLocaleTimeString('km-KH');
+      sendTelegramAlert(tgMsg);
+    } catch(e) {}
+
     showToast("បានបញ្ចូលស្តុកចំនួន +" + qty + " រួចរាល់!", "success");
+    document.getElementById('si_qty').value = '';
+    document.getElementById('si_cost').value = '';
+    document.getElementById('si_cost_hint').innerText = '';
+
     await fetchInitialPOSData();
-    renderStockModule();
+    renderStockTableRows();
   } catch(err) {
     showToast("កំហុស៖ " + err.message, "error");
+  } finally {
+    btn.disabled = false;
   }
 }
 
@@ -185,11 +386,11 @@ async function delProductFromSupabase(id) {
     showToast("បានលុបទំនិញជោគជ័យ!", "success");
     await fetchInitialPOSData();
     renderStockTableRows();
+    initStockModuleDropdowns();
   } catch(err) {
     showToast("កំហុស៖ " + err.message, "error");
   }
 }
-
 // ==========================================
 // 🛢️ ២. ភ្ញៀវខ្ចីធុង / បរិក្ខារ (BOTTLE LOANS)
 // ==========================================
