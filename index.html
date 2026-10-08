@@ -61,6 +61,22 @@
     }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    /* 🛵 ចលនាម៉ូតូរត់ញ័រៗ & ពន្លឺដំណាក់កាល */
+    @keyframes scooterDrive {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      25% { transform: translateY(-3px) rotate(-3deg); }
+      75% { transform: translateY(-1px) rotate(2deg); }
+    }
+    .animate-scooter {
+      animation: scooterDrive 0.75s ease-in-out infinite;
+    }
+    @keyframes linePulse {
+      0%, 100% { opacity: 0.6; }
+      50% { opacity: 1; }
+    }
+    .animate-line-pulse {
+      animation: linePulse 1.5s ease-in-out infinite;
+    }
   </style>
 </head>
 <body class="pb-36 antialiased select-none">
@@ -589,11 +605,14 @@
       }
     }
 
-    // ៤. តាមដានស្ថានភាពការកុម្ម៉ង់ផ្ទាល់ពី Supabase
+    // ៤. តាមដានស្ថានភាពការកុម្ម៉ង់ផ្ទាល់ ៤ ជំហាន (ANIMATED 4-STEP DELIVERY TRACKER)
     async function checkActiveOrderLiveStatus() {
       var orderId = currentTrackingOrderId || localStorage.getItem('kc_active_order_id');
       var cardBox = document.getElementById('activeOrderCardBox');
-      if (!orderId || !cardBox) { if (cardBox) cardBox.classList.add('hidden'); return; }
+      if (!orderId || !cardBox) { 
+        if (cardBox) cardBox.classList.add('hidden'); 
+        return; 
+      }
 
       var refreshIcon = document.getElementById('trackingRefreshIcon');
       if (refreshIcon) refreshIcon.classList.add('fa-spin');
@@ -607,44 +626,161 @@
 
         if (refreshIcon) refreshIcon.classList.remove('fa-spin');
 
-        if (!data || data.status === "Delivered" || data.status === "Cancelled") {
+        if (!data || data.status === "Cancelled") {
           cardBox.classList.add('hidden');
           clearInterval(trackingPollTimer);
           return;
         }
 
-        var isPending = (data.status === "Pending");
-        var statusBadge = isPending ? 
-          '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300">⏳ រង់ចាំរោងចក្រពិនិត្យ</span>' : 
-          '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300 animate-pulse">🚚 អ្នកដឹកកំពុងធ្វើដំណើរ</span>';
+        // 🎯 កំណត់ដំណាក់កាលទាំង ៤ តាម Status ជាក់ស្តែង
+        var step = 1; // 1: ទទួលកុម្ម៉ង់, 2: រៀបចំទឹក, 3: កំពុងធ្វើដំណើរ, 4: ដឹកដល់
+        var progressWidth = "12%";
+        var statusHintText = "រោងចក្របានទទួលការកុម្ម៉ង់ហើយ កំពុងពិនិត្យទំនិញ...";
 
-        var driverInfoHtml = '';
-        if (data.driver_name && !isPending) {
-          var phoneToCall = data.driver_phone || '077934748';
+        if (data.status === "Pending") {
+          step = 1;
+          progressWidth = "15%";
+          statusHintText = "រោងចក្របានទទួលការកុម្ម៉ង់ហើយ កំពុងរង់ចាំចាត់ចែងអ្នកដឹក...";
+        } else if (data.status === "Assigned") {
+          step = 3; // មានអ្នកដឹកហើយ ➔ ម៉ូតូកំពុងធ្វើដំណើរ
+          progressWidth = "72%";
+          statusHintText = "អ្នកដឹកកំពុងធ្វើដំណើរលើផ្លូវឆ្ពោះទៅផ្ទះរបស់អ្នក! សូមត្រៀមទទួលទឹក...";
+        } else if (data.status === "Delivered") {
+          step = 4;
+          progressWidth = "100%";
+          statusHintText = "ទឹកត្រូវបានដឹកជញ្ជូន និងប្រគល់ដល់ផ្ទះរួចរាល់! សូមអរគុណ! 🙏";
+        }
+
+        // 🎨 រៀបចំ Node Icon ដំណាក់កាលទាំង ៤
+        function getNodeHtml(nodeStep, icon, label) {
+          var isDone = step > nodeStep;
+          var isCurrent = step === nodeStep;
+          
+          var circleClass = "";
+          var iconContent = "";
+
+          if (isDone) {
+            circleClass = "bg-emerald-600 text-white shadow-md border-2 border-emerald-600";
+            iconContent = '<i class="fas fa-check text-xs"></i>';
+          } else if (isCurrent) {
+            if (nodeStep === 3) {
+              // 🛵 ម៉ូតូមានចលនាញ័រៗរត់លើផ្លូវ
+              circleClass = "bg-gradient-to-tr from-amber-500 to-orange-500 text-white shadow-lg shadow-orange-500/40 border-2 border-amber-300 animate-scooter scale-110";
+              iconContent = '<i class="fas fa-motorcycle text-sm"></i>';
+            } else if (nodeStep === 4) {
+              circleClass = "bg-emerald-600 text-white shadow-lg border-2 border-emerald-300 scale-110";
+              iconContent = '<i class="fas fa-house-chimney text-xs"></i>';
+            } else {
+              circleClass = "bg-emerald-600 text-white shadow-lg border-2 border-emerald-300 scale-110";
+              iconContent = '<i class="' + icon + ' text-xs animate-pulse"></i>';
+            }
+          } else {
+            circleClass = "bg-slate-100 text-slate-400 border-2 border-slate-200";
+            iconContent = '<i class="' + icon + ' text-xs"></i>';
+          }
+
+          var labelColor = isCurrent ? "text-emerald-950 font-black" : (isDone ? "text-emerald-700 font-bold" : "text-slate-400 font-medium");
+
+          return '<div class="flex flex-col items-center text-center relative z-10 w-16">' +
+            '<div class="w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 ' + circleClass + '">' +
+              iconContent +
+            '</div>' +
+            '<span class="text-[9.5px] mt-1.5 leading-tight ' + labelColor + '">' + label + '</span>' +
+          '</div>';
+        }
+
+        // ព័ត៌មានអ្នកដឹក (បង្ហាញពេល Assigned)
+        var driverCardHtml = "";
+        if (data.driver_name && step >= 2 && data.status !== "Delivered") {
+          var phoneToCall = data.driver_phone || "077934748";
           var cleanPhone = String(phoneToCall).replace(/[^0-9]/g, '');
 
-          driverInfoHtml = '<div class="p-3 bg-emerald-50/90 rounded-2xl border border-emerald-300 space-y-2">' +
-            '<div class="flex justify-between items-center text-xs">' +
-              '<div><span class="text-[10px] text-emerald-800 font-bold block">អ្នកដឹកជញ្ជូនរោងចក្រ៖</span><b class="text-slate-900 text-sm"><i class="fas fa-motorcycle text-emerald-600 mr-1"></i>' + data.driver_name + '</b>' + (data.driver_phone ? '<div class="text-[11px] text-emerald-900 font-black mt-0.5">📞 ' + data.driver_phone + '</div>' : '') + '</div>' +
-              '<a href="tel:' + cleanPhone + '" class="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl font-black text-xs shadow-md flex items-center gap-1.5 active:scale-95 transition"><i class="fas fa-phone text-xs"></i> ខលទៅអ្នកដឹក</a>' +
-            '</div></div>';
+          driverCardHtml = '<div class="p-3 bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 rounded-2xl border-2 border-emerald-300 flex justify-between items-center shadow-xs animate-in zoom-in duration-200">' +
+            '<div class="flex items-center gap-2.5">' +
+              '<div class="w-10 h-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center text-base shadow-xs animate-scooter">' +
+                '<i class="fas fa-motorcycle"></i>' +
+              '</div>' +
+              '<div>' +
+                '<span class="text-[9.5px] text-emerald-800 font-bold block uppercase tracking-wider">អ្នកដឹកជញ្ជូន KC WATER</span>' +
+                '<b class="text-slate-900 text-xs sm:text-sm">' + data.driver_name + '</b>' +
+                (data.driver_phone ? '<div class="text-[10.5px] text-emerald-900 font-black mt-0.5">📞 ' + data.driver_phone + '</div>' : '') +
+              '</div>' +
+            '</div>' +
+            '<a href="tel:' + cleanPhone + '" class="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl font-black text-xs shadow-md flex items-center gap-1.5 active:scale-95 transition" style="text-decoration:none;">' +
+              '<i class="fas fa-phone text-xs"></i> ខលទៅអ្នកដឹក' +
+            '</a>' +
+          '</div>';
         }
 
         var tgMsgText = encodeURIComponent("សួស្តី KC WATER! ខ្ញុំបានផ្ញើប្រាក់សម្រាប់ការកុម្ម៉ង់លេខកូដ [" + orderId + "] ចំនួន ៛ " + Number(data.total || 0).toLocaleString() + " រួចរាល់ហើយ។ នេះជារូបភាពបង្កាន់ដៃ (Slip) របស់ខ្ញុំ៖");
         var tgSlipLink = "https://t.me/KcWater?text=" + tgMsgText;
 
-        var telegramSlipButtonHtml = '<div class="pt-1"><a href="' + tgSlipLink + '" target="_blank" class="w-full py-2.5 px-3 bg-gradient-to-r from-blue-600 to-sky-600 hover:from-blue-700 text-white rounded-xl text-xs font-black shadow-xs flex items-center justify-center gap-2 active:scale-95 transition"><i class="fab fa-telegram text-sm"></i> 📲 ផ្ញើបង្កាន់ដៃ (Slip ABA) ទៅ Telegram រោងចក្រ</a></div>';
+        cardBox.innerHTML = '<div class="p-4 rounded-3xl bg-white border-2 border-emerald-400 shadow-xl space-y-3 animate-in zoom-in duration-200">' +
+          
+          // ក្បាលកាត
+          '<div class="flex justify-between items-center border-b border-slate-100 pb-2.5">' +
+            '<div>' +
+              '<div class="flex items-center gap-1.5">' +
+                '<span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>' +
+                '<b class="text-xs text-slate-900 font-black">ស្ថានភាពដឹកទឹកផ្ទាល់ (Live Tracking)</b>' +
+              '</div>' +
+              '<div class="text-[10px] text-slate-400 font-mono mt-0.5">កូដ៖ <code>' + orderId + '</code></div>' +
+            '</div>' +
+            '<button type="button" onclick="checkActiveOrderLiveStatus()" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-[10px] font-bold flex items-center gap-1 active:scale-95 transition">' +
+              '<i id="trackingRefreshIcon" class="fas fa-rotate text-[10px]"></i> Refresh' +
+            '</button>' +
+          '</div>' +
 
-        cardBox.innerHTML = '<div class="p-4 rounded-3xl bg-white border-2 border-emerald-400 shadow-md space-y-2.5 animate-in zoom-in duration-200">' +
-          '<div class="flex justify-between items-center border-b border-slate-100 pb-2"><div><div class="flex items-center gap-2"><b class="text-xs text-slate-900 font-black">📦 ស្ថានភាពការកុម្ម៉ង់ទឹករបស់អ្នក</b><button type="button" onclick="checkActiveOrderLiveStatus()" class="px-2 py-0.5 bg-slate-100 rounded-lg text-[10px] font-bold flex items-center gap-1"><i id="trackingRefreshIcon" class="fas fa-rotate text-[10px]"></i> Refresh</button></div><div class="text-[10px] text-slate-400 font-mono mt-0.5">កូដ៖ ' + orderId + '</div></div><div>' + statusBadge + '</div></div>' +
-          driverInfoHtml + telegramSlipButtonHtml +
-          '<div class="flex justify-between items-center text-[11px] pt-1 text-slate-700 font-bold"><span>សរុបទឹកប្រាក់៖ <b class="text-emerald-800 font-black text-xs">៛ ' + Number(data.total || 0).toLocaleString() + '</b></span><span class="text-slate-400 text-[10px]">KC WATER Poipet</span></div>' +
+          // 🛵 របារដំណើរការ ៤ ជំហាន (ANIMATED TIMELINE)
+          '<div class="py-2 px-1 relative">' +
+            // បន្ទាត់ផ្លូវរត់ខាងក្រោយ
+            '<div class="absolute top-6 left-6 right-6 h-1.5 bg-slate-100 rounded-full z-0"></div>' +
+            // បន្ទាត់ផ្លូវរត់ពណ៌បៃតងរំកិលតាម %
+            '<div class="absolute top-6 left-6 h-1.5 bg-gradient-to-r from-emerald-500 to-amber-500 rounded-full z-0 transition-all duration-700 animate-line-pulse" style="width:' + progressWidth + '"></div>' +
+            // ចំណុច Node ទាំង ៤
+            '<div class="flex justify-between items-start relative z-10">' +
+              getNodeHtml(1, "fa-receipt", "ទទួលកុម្ម៉ង់") +
+              getNodeHtml(2, "fa-boxes-packing", "រៀបចំទឹក") +
+              getNodeHtml(3, "fa-motorcycle", "កំពុងដឹក") +
+              getNodeHtml(4, "fa-house-chimney", "ដឹកដល់") +
+            '</div>' +
+          '</div>' +
+
+          // សារជូនដំណឹងដំណាក់កាលបច្ចុប្បន្ន
+          '<div class="p-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-center text-xs font-bold text-slate-700 leading-snug">' +
+            '<i class="fas fa-info-circle text-emerald-600 mr-1.5"></i>' + statusHintText +
+          '</div>' +
+
+          // កាតអ្នកដឹក
+          driverCardHtml +
+
+          // ប៊ូតុងផ្ញើ Slip ABA ទៅ Telegram
+          '<div class="pt-0.5">' +
+            '<a href="' + tgSlipLink + '" target="_blank" class="w-full py-2.5 px-3 bg-gradient-to-r from-blue-600 to-sky-600 hover:from-blue-700 text-white rounded-xl text-xs font-black shadow-xs flex items-center justify-center gap-2 active:scale-95 transition" style="text-decoration:none;">' +
+              '<i class="fab fa-telegram text-sm"></i> 📲 ផ្ញើបង្កាន់ដៃ (Slip ABA) ទៅ Telegram រោងចក្រ' +
+            '</a>' +
+          '</div>' +
+
+          // ជើងកាត (សរុបលុយ)
+          '<div class="flex justify-between items-center text-[11px] pt-1 border-t border-slate-100 text-slate-700 font-bold">' +
+            '<span>ទឹកប្រាក់សរុប៖ <b class="text-emerald-800 font-black text-xs">៛ ' + Number(data.total || 0).toLocaleString() + '</b></span>' +
+            (data.location_url ? '<button type="button" onclick="openOrderMap(\'' + data.location_url.replace(/'/g, "\\'") + '\')" class="text-blue-600 text-[10px] underline font-bold"><i class="fas fa-location-dot"></i> ផែនទីផ្ទះ</button>' : '') +
+          '</div>' +
+
         '</div>';
 
         cardBox.classList.remove('hidden');
-      } catch (e) {}
-    }
 
+        // បើដឹកដល់ហើយ បាញ់កាំជ្រួចអបអរសាទរ
+        if (data.status === "Delivered" && !localStorage.getItem('kc_celebrated_' + orderId)) {
+          if (typeof confetti === 'function') confetti({ particleCount: 100, spread: 70 });
+          localStorage.setItem('kc_celebrated_' + orderId, 'true');
+        }
+
+      } catch (e) {
+        console.error("Tracking error:", e);
+      }
+    }
     // ៥. មុខងារជំនួយទូទៅ (UI & Calculations)
     function renderCatalogGrid(filterCat) {
       filterCat = filterCat || 'ALL';
