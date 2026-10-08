@@ -100,15 +100,28 @@ function logout() {
   showToast("បានចាកចេញពីប្រព័ន្ធ!", "info");
 }
 
-// 📱 បែងចែកម៉ឺនុយ SIDEBAR តាមតួនាទីជាក់ស្តែង
+// 📱 បែងចែកម៉ឺនុយ SIDEBAR & លាក់ប៊ូតុង ONLINE ចេញពី RESELLER
 function renderSidebarMenu() {
   var sNav = document.getElementById('sidebarMenuContainer');
   if (!sNav) return;
   var html = '';
 
+  var isAdminOrSeller = (currentUser && (currentUser.role === 'Admin' || currentUser.role === 'Seller'));
   var isReseller = (currentUser.role === 'Customer' || currentUser.type === 'Regular' || currentUser.type === 'Monthly');
   var isCompanyDriver = (currentUser.type === 'CompanyDriver');
   var isDriver = (currentUser.role === 'Driver');
+
+  // 🚫 ពិនិត្យសិទ្ធិ៖ បង្ហាញប៊ូតុង «កុម្ម៉ង់ Online» លើក្បាលទំព័រតែសម្រាប់ Admin & Seller ប៉ុណ្ណោះ (លាក់ចេញពី Reseller ជាដាច់ខាត!)
+  var navOrderBtn = document.getElementById('navOnlineOrdersBtn');
+  if (navOrderBtn) {
+    if (isAdminOrSeller) {
+      navOrderBtn.classList.remove('hidden');
+      navOrderBtn.style.setProperty('display', 'inline-flex', 'important');
+    } else {
+      navOrderBtn.classList.add('hidden');
+      navOrderBtn.style.setProperty('display', 'none', 'important');
+    }
+  }
 
   // ១. សម្រាប់ ADMIN
   if (currentUser.role === 'Admin') {
@@ -128,7 +141,7 @@ function renderSidebarMenu() {
     html += '<div class="text-[10px] font-bold text-green-300 uppercase px-3 pt-3 pb-1 opacity-80 tracking-wider">ការកំណត់ប្រព័ន្ធ</div>';
     html += '<button onclick="loadModule(\'Settings\')" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold text-yellow-300"><i class="fas fa-cog mr-3 w-5 text-center"></i>ការកំណត់ (Settings)</button>';
 
-  // ២. 🚚 សម្រាប់អ្នកលក់បន្ត (RESELLER / CUSTOMER) - បង្ហាញតែ ៤ មុខងារផ្ទាល់ខ្លួន
+  // ២. 🚚 សម្រាប់អ្នកលក់បន្ត (RESELLER / CUSTOMER)
   } else if (isReseller) {
     html += '<div class="text-[10px] font-bold text-green-300 uppercase px-3 pt-2 pb-1 opacity-80 tracking-wider">គណនីម៉ូយប្រចាំ</div>';
     html += '<button onclick="loadModule(\'CustPortal\')" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold text-white"><i class="fas fa-house mr-3 w-5 text-center text-emerald-300"></i>ទំព័រដើមរបស់ខ្ញុំ</button>';
@@ -155,7 +168,6 @@ function renderSidebarMenu() {
   html += '<button onclick="logout()" class="w-full text-left p-3 text-red-300 hover:bg-red-800 rounded-xl transition flex items-center font-bold"><i class="fas fa-sign-out-alt mr-3 w-5 text-center"></i>ចាកចេញ</button>';
   sNav.innerHTML = html;
 }
-
 function loadModule(name) {
   closeSidebar();
   
