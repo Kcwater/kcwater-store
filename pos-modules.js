@@ -773,61 +773,6 @@ async function delUserFromSupabase(id) {
     showToast("កំហុស៖ " + err.message, "error");
   }
 }
-async function delUserFromSupabase(id) {
-  if (!confirm("តើអ្នកពិតជាចង់លុបគណនីនេះមែនទេ?")) return;
-  try {
-    await supabaseClient.from('users').delete().eq('id', id);
-    showToast("បានលុបគណនីជោគជ័យ!", "success");
-    await fetchInitialPOSData();
-    renderCustomersModule();
-  } catch(err) {
-    showToast("កំហុស៖ " + err.message, "error");
-  }
-}
-async function saveUserToSupabase() {
-  var name = document.getElementById('mem_name').value.trim();
-  var user = document.getElementById('mem_user').value.trim();
-  var pass = document.getElementById('mem_pass').value.trim();
-  var role = document.getElementById('mem_role').value;
-  var phone = document.getElementById('mem_phone').value.trim();
-  var boss = document.getElementById('mem_boss').value.trim();
-
-  if (!name || !user || !pass) { showToast("សូមបំពេញឈ្មោះ, Username, និង Password!", "error"); return; }
-
-  try {
-    await supabaseClient.from('users').insert([{
-      full_name: name,
-      username: user,
-      password: pass,
-      role: role,
-      type: role === 'Driver' ? 'CompanyDriver' : 'Regular',
-      phone: phone,
-      linked_boss: boss
-    }]);
-
-    showToast("បានបង្កើតគណនីជោគជ័យ!", "success");
-    document.getElementById('mem_name').value = "";
-    document.getElementById('mem_user').value = "";
-    document.getElementById('mem_pass').value = "";
-    document.getElementById('mem_phone').value = "";
-    await fetchInitialPOSData();
-    fetchUsersModuleTable();
-  } catch(err) {
-    showToast("កំហុស៖ " + err.message, "error");
-  }
-}
-
-async function delUserFromSupabase(id) {
-  if (!confirm("តើអ្នកពិតជាចង់លុបគណនីនេះមែនទេ?")) return;
-  try {
-    await supabaseClient.from('users').delete().eq('id', id);
-    showToast("បានលុបគណនីជោគជ័យ!", "success");
-    await fetchInitialPOSData();
-    fetchUsersModuleTable();
-  } catch(err) {
-    showToast("កំហុស៖ " + err.message, "error");
-  }
-}
 
 // ==========================================
 // ⚙️ ៥. ការកំណត់ប្រព័ន្ធ & PROMOTION (SETTINGS)
