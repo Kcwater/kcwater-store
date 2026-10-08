@@ -543,16 +543,21 @@ function toggleCustTypeFields() {
   }
 }
 
-// មុខងាររក្សាទុកគណនី (ដំណើរការ ១០០% គ្មានគាំង)
+// 🛠️ មុខងារជំនួយអានតម្លៃ Input ដោយសុវត្ថិភាព (គ្មានថ្ងៃគាំង null.value ទៀតឡើយ)
+function getElVal(id) {
+  var el = document.getElementById(id);
+  return el ? (el.value || '').trim() : '';
+}
+
+// ✅ មុខងាររក្សាទុកគណនី (ដំណើរការជោគជ័យ ១០០% គ្រប់ប្រភេទគណនី)
 async function saveUserToSupabase() {
-  var nameInp = document.getElementById('mem_name');
-  var name = nameInp ? nameInp.value.trim() : '';
-  var roleTypeEl = document.getElementById('mem_role_type');
-  var roleType = roleTypeEl ? roleTypeEl.value : 'MONTHLY';
-  var phone = document.getElementById('mem_phone') ? document.getElementById('mem_phone').value.trim() : '';
+  var name = getElVal('mem_name');
+  var roleType = getElVal('mem_role_type') || getElVal('mem_role') || 'MONTHLY';
+  var phone = getElVal('mem_phone');
   
   if (!name) { 
     showToast("សូមបញ្ចូលឈ្មោះពេញ!", "error"); 
+    var nameInp = document.getElementById('mem_name');
     if (nameInp) nameInp.focus();
     return; 
   }
@@ -560,63 +565,62 @@ async function saveUserToSupabase() {
   var role = "Customer";
   var type = "Regular";
   var linkedBoss = "";
-  var user = null;
-  var pass = null;
+  var user = getElVal('mem_user');
+  var pass = getElVal('mem_pass');
 
+  // ១. អតិថិជនប្រចាំខែ (Monthly តែមួយគត់ដែលគ្មាន Username & Password)
   if (roleType === 'MONTHLY') {
     role = 'Customer';
     type = 'Monthly';
-    user = null; // ✅ អតិថិជនប្រចាំខែ គ្មាន Username & Password ឡើយ
-    pass = null;
+    // បង្កើតកូដសម្គាល់ក្នុង Database អូតូ (ភ្ញៀវមិនបាច់វាយឡើយ)
+    user = "monthly_" + (phone ? phone.replace(/[^0-9]/g, '') : "") + "_" + Date.now();
+    pass = "1234";
+
+  // ២. អតិថិជនប្រចាំ - អ្នកលក់បន្ត (Reseller - មាន Login ដូចក្នុងរូបភាពរបស់បង)
   } else if (roleType === 'RESELLER') {
     role = 'Customer';
     type = 'Regular';
-    user = document.getElementById('mem_user') ? document.getElementById('mem_user').value.trim() : '';
-    pass = document.getElementById('mem_pass') ? document.getElementById('mem_pass').value.trim() : '';
     if (!user || !pass) {
       showToast("សូមវាយ Username និង Password សម្រាប់ម៉ូយ Login!", "error");
       return;
     }
+
+  // ៣. កូនចៅ/អ្នកដឹកដកទឹកជំនួសមេ
   } else if (roleType === 'DRIVER') {
     role = 'Driver';
     type = 'Driver';
-    var customBoss = document.getElementById('mem_boss_custom') ? document.getElementById('mem_boss_custom').value.trim() : '';
-    var selectBoss = document.getElementById('mem_boss_select') ? document.getElementById('mem_boss_select').value.trim() : '';
+    var customBoss = getElVal('mem_boss_custom') || getElVal('mem_boss');
+    var selectBoss = getElVal('mem_boss_select') || getElVal('driverBossSel');
     linkedBoss = customBoss || selectBoss;
 
-    user = document.getElementById('mem_user') ? document.getElementById('mem_user').value.trim() : '';
-    pass = document.getElementById('mem_pass') ? document.getElementById('mem_pass').value.trim() : '';
     if (!user || !pass) {
       showToast("សូមវាយ Username និង Password សម្រាប់អ្នកដឹក Login!", "error");
       return;
     }
+
+  // ៤. អ្នកដឹកជញ្ជូនរោងចក្រ (Company Driver)
   } else if (roleType === 'COMPANY_DRIVER') {
     role = 'Driver';
     type = 'CompanyDriver';
     linkedBoss = 'KC WATER';
-
-    user = document.getElementById('mem_user') ? document.getElementById('mem_user').value.trim() : '';
-    pass = document.getElementById('mem_pass') ? document.getElementById('mem_pass').value.trim() : '';
     if (!user || !pass) {
       showToast("សូមវាយ Username និង Password សម្រាប់អ្នកដឹក!", "error");
       return;
     }
+
+  // ៥. បុគ្គលិកលក់នៅកន្លែង (Seller)
   } else if (roleType === 'SELLER') {
     role = 'Seller';
     type = 'Retail';
-
-    user = document.getElementById('mem_user') ? document.getElementById('mem_user').value.trim() : '';
-    pass = document.getElementById('mem_pass') ? document.getElementById('mem_pass').value.trim() : '';
     if (!user || !pass) {
       showToast("សូមវាយ Username និង Password សម្រាប់បុគ្គលិកលក់!", "error");
       return;
     }
+
+  // ៦. Admin អ្នកគ្រប់គ្រង
   } else if (roleType === 'ADMIN') {
     role = 'Admin';
     type = 'Admin';
-
-    user = document.getElementById('mem_user') ? document.getElementById('mem_user').value.trim() : '';
-    pass = document.getElementById('mem_pass') ? document.getElementById('mem_pass').value.trim() : '';
     if (!user || !pass) {
       showToast("សូមវាយ Username និង Password សម្រាប់ Admin!", "error");
       return;
@@ -627,29 +631,30 @@ async function saveUserToSupabase() {
   if (btn) { btn.disabled = true; btn.innerText = "កំពុងរក្សាទុក..."; }
 
   try {
-    var insertPayload = {
+    const { error } = await supabaseClient.from('users').insert([{
       full_name: name,
+      username: user,
+      password: pass,
       role: role,
       type: type,
       phone: phone,
       linked_boss: linkedBoss
-    };
+    }]);
 
-    if (user !== null && user !== '') insertPayload.username = user;
-    if (pass !== null && pass !== '') insertPayload.password = pass;
-
-    const { error } = await supabaseClient.from('users').insert([insertPayload]);
     if (error) throw error;
 
     showToast("បានបង្កើត [" + name + "] ជោគជ័យ!", "success");
-    if (nameInp) nameInp.value = "";
-    if (document.getElementById('mem_phone')) document.getElementById('mem_phone').value = "";
-    if (document.getElementById('mem_user')) document.getElementById('mem_user').value = "";
-    if (document.getElementById('mem_pass')) document.getElementById('mem_pass').value = "";
-    if (document.getElementById('mem_boss_custom')) document.getElementById('mem_boss_custom').value = "";
+
+    // សម្អាតប្រអប់
+    var elName = document.getElementById('mem_name'); if (elName) elName.value = "";
+    var elPhone = document.getElementById('mem_phone'); if (elPhone) elPhone.value = "";
+    var elUser = document.getElementById('mem_user'); if (elUser) elUser.value = "";
+    var elPass = document.getElementById('mem_pass'); if (elPass) elPass.value = "";
+    var elBoss = document.getElementById('mem_boss_custom'); if (elBoss) elBoss.value = "";
 
     await fetchInitialPOSData();
     renderCustomersModule();
+
   } catch(err) {
     console.error("Save user error:", err);
     showToast("កំហុស៖ " + (err.message || err), "error");
@@ -657,7 +662,6 @@ async function saveUserToSupabase() {
     if (btn) { btn.disabled = false; btn.innerText = "រក្សាទុកគណនី (Save Account)"; }
   }
 }
-
 async function fetchUsersModuleTable() {
   var tbody = document.getElementById('usersModuleTableBody');
   if (!tbody) return;
