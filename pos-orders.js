@@ -35,6 +35,14 @@ async function checkPendingOnlineOrdersBadge() {
   var badge = document.getElementById('navOnlineOrdersCount');
   if (!btn || !badge) return;
 
+  // 🚫 បើមិនមែន Admin ឬ Seller ទេ ➔ លាក់ប៊ូតុងនេះចោលជាដាច់ខាត និងមិនឱ្យបន្លឺសំឡេងរោទ៍ឡើយ!
+  var isAdminOrSeller = (currentUser && (currentUser.role === 'Admin' || currentUser.role === 'Seller'));
+  if (!isAdminOrSeller) {
+    btn.classList.add('hidden');
+    btn.style.setProperty('display', 'none', 'important');
+    return;
+  }
+
   try {
     const { count, error } = await supabaseClient
       .from('orders')
@@ -43,6 +51,9 @@ async function checkPendingOnlineOrdersBadge() {
 
     if (error) throw error;
     var c = count || 0;
+
+    btn.classList.remove('hidden');
+    btn.style.setProperty('display', 'inline-flex', 'important');
 
     badge.innerText = c;
     if (c > 0) {
@@ -59,7 +70,6 @@ async function checkPendingOnlineOrdersBadge() {
     lastKnownPendingOrderCount = c;
   } catch(e) {}
 }
-
 // ⚡ REALTIME LISTENER (ស្តាប់ការកុម្ម៉ង់ផ្ទាល់ពី SUPABASE)
 function initOrdersRealtimeListener() {
   try {
