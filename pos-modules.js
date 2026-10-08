@@ -883,3 +883,490 @@ function testTelegramAlertNow() {
   sendTelegramAlert("🔔 <b>[KC WATER - តេស្តប្រព័ន្ធ]</b>\n\nTelegram Bot បានតភ្ជាប់ជាមួយប្រព័ន្ធ Vercel + Supabase ជោគជ័យ ១០០% ហើយ!\n🕒 ម៉ោង៖ " + new Date().toLocaleTimeString('km-KH'));
   showToast("បានផ្ញើសារតេស្តទៅ Telegram!", "success");
 }
+// ==========================================
+// 🏠 ៦. ទំព័រដើមគណនីម៉ូយប្រចាំ (CUSTOMER PORTAL - CUSTPORTAL)
+// ==========================================
+var custPortalDataCache = null;
+
+async function renderCustomerPortalHome() {
+  var area = document.getElementById('contentArea');
+  if (!area) return;
+
+  area.innerHTML = '<div class="max-w-2xl mx-auto space-y-4">' +
+    // ១. កាតស្វាគមន៍ & ព័ត៌មានម៉ូយ
+    '<div class="card border-t-4 border-green-600 bg-gradient-to-r from-green-800 to-green-700 text-white p-5 shadow-xl rounded-3xl">' +
+      '<div class="flex justify-between items-start">' +
+        '<div>' +
+          '<span id="cpBadgeType" class="text-[10px] bg-green-900/80 px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider border border-green-400/40">គណនីម៉ូយប្រចាំ KC WATER</span>' +
+          '<h2 class="text-xl sm:text-2xl font-black mt-1">👋 សួស្តី, ' + currentUser.fullName + '</h2>' +
+          '<p class="text-[11px] text-green-100 mt-0.5">ប្រព័ន្ធត្រួតពិនិត្យការដកទឹក តម្លៃ និងទូទាត់ប្រាក់</p>' +
+        '</div>' +
+        '<div class="flex gap-1.5">' +
+          '<button onclick="openChangePasswordModal()" title="ប្តូរលេខសម្ងាត់" class="w-9 h-9 rounded-xl bg-white/20 hover:bg-white/30 text-white flex items-center justify-center text-sm active:scale-95 transition shadow-sm"><i class="fas fa-key"></i></button>' +
+          '<button onclick="openContactEnterpriseModal()" title="ទាក់ទងរោងចក្រ" class="w-9 h-9 rounded-xl bg-white/20 hover:bg-white/30 text-white flex items-center justify-center text-sm active:scale-95 transition shadow-sm"><i class="fas fa-phone"></i></button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-green-600/60">' +
+        '<button onclick="openMyPricesModal()" class="py-2 px-3 bg-white/15 hover:bg-white/25 rounded-xl text-xs font-bold text-white flex items-center justify-center gap-1.5 active:scale-95 transition"><i class="fas fa-tags text-yellow-300"></i> តម្លៃទឹករបស់ខ្ញុំ</button>' +
+        '<button onclick="viewMyMonthlyStatement()" class="py-2 px-3 bg-white/15 hover:bg-white/25 rounded-xl text-xs font-bold text-white flex items-center justify-center gap-1.5 active:scale-95 transition"><i class="fas fa-file-invoice text-emerald-300"></i> កាតគ្រីខែនេះ</button>' +
+      '</div>' +
+    '</div>' +
+
+    // ២. កាតស្ថិតិ ៣ (ដកទឹកថ្ងៃនេះ, បំណុលចាស់, សំបកធុងខ្ចី)
+    '<div class="grid grid-cols-1 sm:grid-cols-3 gap-3">' +
+      '<div class="dash-card border-l-4 border-blue-500 shadow-md p-4 bg-white rounded-2xl"><div class="text-xs font-bold text-gray-500 uppercase">ដកទឹកថ្ងៃនេះ</div><div id="cpTodayTotal" class="mt-2 text-base sm:text-lg font-black text-blue-900">0 ៛</div></div>' +
+      '<div class="dash-card border-l-4 border-orange-500 shadow-md p-4 bg-white rounded-2xl"><div class="text-xs font-bold text-gray-500 uppercase">បំណុលចាស់ពីមុន</div><div id="cpOldDebt" class="mt-2 text-base sm:text-lg font-black text-orange-700">0 ៛</div></div>' +
+      '<div onclick="loadModule(\'CustBottles\')" class="dash-card border-l-4 border-purple-500 shadow-md p-4 bg-white rounded-2xl cursor-pointer hover:bg-purple-50/50 transition active:scale-95"><div class="text-xs font-bold text-gray-500 uppercase flex justify-between items-center"><span>សំបកធុងកំពុងខ្ចី</span><i class="fas fa-chevron-right text-gray-400 text-xs"></i></div><div id="cpBorrowedBottles" class="mt-2 text-base sm:text-lg font-black text-purple-800">0 ធុង</div></div>' +
+    '</div>' +
+
+    // ៣. កាតបំណុលសរុប & ប៊ូតុងបង់លុយ
+    '<div class="card border-t-4 border-emerald-600 bg-emerald-50/70 p-5 rounded-3xl border border-emerald-200 text-center space-y-3 shadow-lg">' +
+      '<div class="text-xs font-bold text-emerald-900 uppercase tracking-wider">សរុបទឹកប្រាក់ត្រូវទូទាត់ទាំងអស់</div>' +
+      '<div id="cpGrandTotalDue" class="text-2xl sm:text-3xl font-black text-emerald-800">0 ៛</div>' +
+      '<div class="grid grid-cols-2 gap-2.5 pt-1">' +
+        '<button type="button" onclick="submitQuickPaymentRequest(\'CASH\')" class="py-3 px-2 bg-gradient-to-r from-emerald-600 to-green-700 hover:from-emerald-700 text-white rounded-2xl font-black text-xs shadow-md flex items-center justify-center gap-1.5 active:scale-95 transition">' +
+          '<i class="fas fa-money-bill-wave text-base"></i> 💵 បង់លុយសុទ្ធ (ជូនអ្នកដឹក)' +
+        '</button>' +
+        '<button type="button" onclick="openCustomerAbaModal()" class="py-3 px-2 bg-gradient-to-r from-red-600 via-pink-600 to-blue-700 text-white rounded-2xl font-black text-xs shadow-md flex items-center justify-center gap-1.5 active:scale-95 transition">' +
+          '<i class="fas fa-qrcode text-base"></i> 📱 ស្កេន ABA KHQR' +
+        '</button>' +
+      '</div>' +
+    '</div>' +
+
+    // ៤. តារាងទឹកដកថ្ងៃនេះ
+    '<div class="card border-t-4 border-blue-600 shadow-xl p-5 mb-0">' +
+      '<div class="flex justify-between items-center mb-3">' +
+        '<h3 class="font-extrabold text-gray-800 text-sm sm:text-base flex items-center gap-2"><i class="fas fa-boxes text-blue-600"></i>ទំនិញដកថ្ងៃនេះ (មិនទាន់ទូទាត់)</h3>' +
+        '<button onclick="loadModule(\'CustHistory\')" class="text-xs font-bold text-blue-600 hover:underline">មើលប្រវត្តិដកទំនិញ ➔</button>' +
+      '</div>' +
+      '<div class="overflow-x-auto rounded-xl border"><table class="w-full text-left text-xs border-collapse"><thead><tr class="bg-gray-100 text-gray-700 font-bold border-b"><th class="p-2.5">ម៉ោង</th><th class="p-2.5">មុខទំនិញ</th><th class="p-2.5 text-center">ចំនួន</th><th class="p-2.5 text-right">សរុប</th></tr></thead><tbody id="cpTodayItemsTbody"><tr><td colspan="4" class="p-4 text-center text-gray-400 italic">កំពុងទាញទិន្នន័យ...</td></tr></tbody></table></div>' +
+    '</div>' +
+  '</div>';
+
+  await fetchCustomerPortalData();
+}
+
+async function fetchCustomerPortalData() {
+  try {
+    var todayStr = new Date().toISOString().split('T')[0];
+
+    // ១. ជើងទឹកដកទាំងអស់របស់គាត់
+    const { data: trans } = await supabaseClient
+      .from('transactions')
+      .select('*')
+      .eq('customer_name', currentUser.fullName)
+      .eq('status', 'Unpaid')
+      .order('created_at', { ascending: false });
+
+    // ២. បំណុលចាស់ពី settlements
+    const { data: lastSet } = await supabaseClient
+      .from('settlements')
+      .select('balance_khr')
+      .eq('customer_name', currentUser.fullName)
+      .order('id', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    var oldDebt = lastSet ? parseFloat(lastSet.balance_khr || 0) : 0;
+    var todayTotal = 0;
+    var prevUnpaid = 0;
+    var todayItems = [];
+
+    (trans || []).forEach(function(t) {
+      var tot = parseFloat(t.total || 0);
+      var isToday = String(t.created_at).startsWith(todayStr);
+      if (isToday) {
+        todayTotal += tot;
+        todayItems.push(t);
+      } else {
+        prevUnpaid += tot;
+      }
+    });
+
+    var grandOldDebt = oldDebt + prevUnpaid;
+    var grandTotalDue = grandOldDebt + todayTotal;
+
+    // ៣. សំបកធុងខ្ចី
+    const { data: loans } = await supabaseClient
+      .from('bottle_loans')
+      .select('borrowed_qty, returned_qty')
+      .eq('status', 'Borrowing')
+      .ilike('customer_name', '%' + currentUser.fullName + '%');
+
+    var totalBottles = 0;
+    (loans || []).forEach(function(l) {
+      totalBottles += Math.max(0, parseFloat(l.borrowed_qty || 0) - parseFloat(l.returned_qty || 0));
+    });
+
+    custPortalDataCache = {
+      todayTotal: todayTotal,
+      oldDebt: grandOldDebt,
+      grandTotalDue: grandTotalDue,
+      borrowedBottles: totalBottles,
+      todayItems: todayItems
+    };
+
+    document.getElementById('cpTodayTotal').innerText = '៛ ' + todayTotal.toLocaleString();
+    document.getElementById('cpOldDebt').innerText = '៛ ' + grandOldDebt.toLocaleString();
+    document.getElementById('cpGrandTotalDue').innerText = '៛ ' + grandTotalDue.toLocaleString();
+    document.getElementById('cpBorrowedBottles').innerText = totalBottles + ' ធុង';
+
+    var tbody = document.getElementById('cpTodayItemsTbody');
+    if (tbody) {
+      if (todayItems.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-400 italic">មិនទាន់មានការដកទំនិញថ្ងៃនេះទេ</td></tr>';
+      } else {
+        var html = '';
+        todayItems.forEach(function(i) {
+          var timeStr = new Date(i.created_at).toLocaleTimeString('km-KH', { hour: '2-digit', minute: '2-digit' });
+          html += '<tr class="border-b hover:bg-gray-50">' +
+            '<td class="p-2.5 text-gray-500 text-[10px]">' + timeStr + '</td>' +
+            '<td class="p-2.5 font-bold text-gray-800">' + i.product_name + '</td>' +
+            '<td class="p-2.5 text-center font-bold text-blue-700">' + i.qty + '</td>' +
+            '<td class="p-2.5 text-right font-black text-green-700">៛ ' + Number(i.total).toLocaleString() + '</td>' +
+          '</tr>';
+        });
+        tbody.innerHTML = html;
+      }
+    }
+  } catch(e) {
+    console.error("Portal error:", e);
+  }
+}
+
+// ==========================================
+// 📜 ៧. ផ្ទាំងប្រវត្តិដកទំនិញ (CUSTHISTORY)
+// ==========================================
+function renderCustomerHistoryModule() {
+  var area = document.getElementById('contentArea');
+  if (!area) return;
+
+  var now = new Date();
+  var thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000)).toISOString().split('T')[0];
+  var today = now.toISOString().split('T')[0];
+
+  area.innerHTML = '<div class="max-w-3xl mx-auto space-y-4">' +
+    '<div class="flex bg-white p-1.5 rounded-2xl border shadow-sm gap-1.5">' +
+      '<button id="chTabBtnUnpaid" onclick="switchCustHistoryTab(\'unpaid\')" class="flex-1 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition bg-orange-600 text-white shadow flex items-center justify-center gap-1.5"><i class="fas fa-list-check"></i> ពិនិត្យទឹកជំពាក់ទាំងអស់</button>' +
+      '<button id="chTabBtnItems" onclick="switchCustHistoryTab(\'items\')" class="flex-1 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition bg-gray-100 text-gray-600 hover:bg-gray-200 flex items-center justify-center gap-1.5"><i class="fas fa-calendar-days"></i> ប្រវត្តិដកតាមថ្ងៃ</button>' +
+      '<button id="chTabBtnPayments" onclick="switchCustHistoryTab(\'payments\')" class="flex-1 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition bg-gray-100 text-gray-600 hover:bg-gray-200 flex items-center justify-center gap-1.5"><i class="fas fa-receipt"></i> ប្រវត្តិបង់ប្រាក់</button>' +
+    '</div>' +
+
+    // Tab 1: ជើងទឹកជំពាក់ទាំងអស់
+    '<div id="chSecUnpaid" class="space-y-3">' +
+      '<div class="card border-t-4 border-orange-600 shadow-xl p-5 mb-0">' +
+        '<h4 class="font-black text-orange-950 text-sm mb-3 flex items-center gap-1.5"><i class="fas fa-file-invoice-dollar text-orange-600"></i> បញ្ជីមុខទឹកជំពាក់ទាំងអស់ (មិនទាន់ទូទាត់)</h4>' +
+        '<div class="overflow-x-auto max-h-[450px] overflow-y-auto rounded-2xl border"><table class="w-full text-left text-xs border-collapse"><thead class="sticky top-0 bg-gray-100 text-gray-700 font-bold border-b"><tr><th class="p-2.5 text-[10px]">ថ្ងៃ/ម៉ោងដក</th><th class="p-2.5">មុខទំនិញ</th><th class="p-2.5 text-center">ចំនួន</th><th class="p-2.5 text-right">តម្លៃរាយ</th><th class="p-2.5 text-right">តម្លៃសរុប</th><th class="p-2.5 text-center">ស្ថានភាព</th></tr></thead><tbody id="chAllUnpaidTbody"><tr><td colspan="6" class="p-4 text-center text-gray-400 italic">កំពុងទាញទិន្នន័យ...</td></tr></tbody></table></div>' +
+      '</div>' +
+    '</div>' +
+
+    // Tab 2: ប្រវត្តិដកតាមថ្ងៃ
+    '<div id="chSecItems" class="space-y-3 hidden">' +
+      '<div class="card border-t-4 border-blue-600 shadow-xl p-5 mb-0">' +
+        '<div class="grid grid-cols-2 gap-2 mb-2"><div><label class="text-[10px] font-bold text-gray-500 uppercase">ចាប់ពីថ្ងៃ</label><input type="date" id="ch_sd" value="' + thirtyDaysAgo + '" class="font-bold border p-2 rounded-xl w-full text-xs"></div><div><label class="text-[10px] font-bold text-gray-500 uppercase">ដល់ថ្ងៃ</label><input type="date" id="ch_ed" value="' + today + '" class="font-bold border p-2 rounded-xl w-full text-xs"></div></div>' +
+        '<button onclick="fetchCustomHistoryByDate()" class="btn-green bg-blue-600 hover:bg-blue-700 py-2.5 text-xs font-bold">ស្វែងរកតាមថ្ងៃ</button>' +
+        '<div class="overflow-x-auto max-h-80 overflow-y-auto rounded-2xl border mt-3"><table class="w-full text-left text-xs border-collapse"><thead class="sticky top-0 bg-gray-100 text-gray-700 font-bold border-b"><tr><th class="p-2.5 text-[10px]">ថ្ងៃ/ម៉ោង</th><th class="p-2.5">មុខទំនិញ</th><th class="p-2.5 text-center">ចំនួន</th><th class="p-2.5 text-right">សរុប</th><th class="p-2.5 text-center">ស្ថានភាព</th></tr></thead><tbody id="chItemsByDateTbody"></tbody></table></div>' +
+      '</div>' +
+    '</div>' +
+
+    // Tab 3: ប្រវត្តិបង់ប្រាក់
+    '<div id="chSecPayments" class="space-y-3 hidden">' +
+      '<div class="card border-t-4 border-green-600 shadow-xl p-5 mb-0">' +
+        '<h4 class="font-black text-green-950 text-sm mb-3 flex items-center gap-1.5"><i class="fas fa-receipt text-green-600"></i> ប្រវត្តិប្រាក់បានបង់សងរោងចក្រ</h4>' +
+        '<div class="overflow-x-auto max-h-80 overflow-y-auto rounded-2xl border"><table class="w-full text-left text-xs border-collapse"><thead class="sticky top-0 bg-gray-100 text-gray-700 font-bold border-b"><tr><th class="p-2.5 text-[10px]">កាលបរិច្ឆេទ</th><th class="p-2.5 text-right">ប្រាក់បានបង់</th><th class="p-2.5 text-center">វិធីបង់</th><th class="p-2.5 text-center">អ្នកទទួល</th></tr></thead><tbody id="chPaymentsHistoryTbody"></tbody></table></div>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+
+  loadAllUnpaidHistory();
+}
+
+function switchCustHistoryTab(tab) {
+  document.getElementById('chSecUnpaid').classList.add('hidden');
+  document.getElementById('chSecItems').classList.add('hidden');
+  document.getElementById('chSecPayments').classList.add('hidden');
+
+  document.getElementById('chTabBtnUnpaid').className = 'flex-1 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition bg-gray-100 text-gray-600 hover:bg-gray-200 flex items-center justify-center gap-1.5';
+  document.getElementById('chTabBtnItems').className = 'flex-1 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition bg-gray-100 text-gray-600 hover:bg-gray-200 flex items-center justify-center gap-1.5';
+  document.getElementById('chTabBtnPayments').className = 'flex-1 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition bg-gray-100 text-gray-600 hover:bg-gray-200 flex items-center justify-center gap-1.5';
+
+  if (tab === 'unpaid') {
+    document.getElementById('chSecUnpaid').classList.remove('hidden');
+    document.getElementById('chTabBtnUnpaid').className = 'flex-1 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition bg-orange-600 text-white shadow flex items-center justify-center gap-1.5';
+    loadAllUnpaidHistory();
+  } else if (tab === 'items') {
+    document.getElementById('chSecItems').classList.remove('hidden');
+    document.getElementById('chTabBtnItems').className = 'flex-1 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition bg-blue-600 text-white shadow flex items-center justify-center gap-1.5';
+    fetchCustomHistoryByDate();
+  } else {
+    document.getElementById('chSecPayments').classList.remove('hidden');
+    document.getElementById('chTabBtnPayments').className = 'flex-1 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition bg-green-600 text-white shadow flex items-center justify-center gap-1.5';
+    loadPaymentsHistory();
+  }
+}
+
+async function loadAllUnpaidHistory() {
+  var tbody = document.getElementById('chAllUnpaidTbody');
+  if (!tbody) return;
+
+  try {
+    const { data: unpaids } = await supabaseClient
+      .from('transactions')
+      .select('*')
+      .eq('customer_name', currentUser.fullName)
+      .eq('status', 'Unpaid')
+      .order('created_at', { ascending: false });
+
+    if (!unpaids || unpaids.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-green-600 font-bold"><i class="fas fa-check-circle mr-1"></i> អបអរសាទរ! អ្នកមិនមានទឹកជំពាក់ឡើយ</td></tr>';
+      return;
+    }
+
+    var html = '';
+    unpaids.forEach(function(i) {
+      var dateStr = new Date(i.created_at).toLocaleString('km-KH', { dateStyle: 'short', timeStyle: 'short' });
+      html += '<tr class="border-b hover:bg-orange-50/40">' +
+        '<td class="p-2.5 text-gray-500 text-[10px] whitespace-nowrap">' + dateStr + '</td>' +
+        '<td class="p-2.5 font-bold text-gray-800">' + i.product_name + '</td>' +
+        '<td class="p-2.5 text-center font-bold text-blue-700">' + i.qty + '</td>' +
+        '<td class="p-2.5 text-right">' + Number(i.price).toLocaleString() + '</td>' +
+        '<td class="p-2.5 text-right font-black text-orange-700 whitespace-nowrap">៛ ' + Number(i.total).toLocaleString() + '</td>' +
+        '<td class="p-2.5 text-center"><span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-orange-100 text-orange-800 border border-orange-200">⚠️ ជំពាក់</span></td>' +
+      '</tr>';
+    });
+    tbody.innerHTML = html;
+  } catch(e) {}
+}
+
+async function fetchCustomHistoryByDate() {
+  var sd = document.getElementById('ch_sd').value;
+  var ed = document.getElementById('ch_ed').value;
+  var tbody = document.getElementById('chItemsByDateTbody');
+  if (!tbody) return;
+
+  try {
+    const { data: list } = await supabaseClient
+      .from('transactions')
+      .select('*')
+      .eq('customer_name', currentUser.fullName)
+      .gte('created_at', sd + 'T00:00:00Z')
+      .lte('created_at', ed + 'T23:59:59Z')
+      .order('created_at', { ascending: false });
+
+    if (!list || list.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-400 italic">គ្មានទិន្នន័យដកក្នុងចន្លោះថ្ងៃនេះ</td></tr>';
+      return;
+    }
+
+    var html = '';
+    list.forEach(function(i) {
+      var dateStr = new Date(i.created_at).toLocaleString('km-KH', { dateStyle: 'short', timeStyle: 'short' });
+      html += '<tr class="border-b hover:bg-gray-50">' +
+        '<td class="p-2.5 text-gray-500 text-[10px]">' + dateStr + '</td>' +
+        '<td class="p-2.5 font-bold text-gray-800">' + i.product_name + '</td>' +
+        '<td class="p-2.5 text-center font-bold text-blue-700">' + i.qty + '</td>' +
+        '<td class="p-2.5 text-right font-black text-green-700">៛ ' + Number(i.total).toLocaleString() + '</td>' +
+        '<td class="p-2.5 text-center"><span class="px-2 py-0.5 rounded-full text-[9px] font-bold ' + (i.status === 'Paid' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800') + '">' + (i.status === 'Paid' ? 'បង់រួច' : 'ជំពាក់') + '</span></td>' +
+      '</tr>';
+    });
+    tbody.innerHTML = html;
+  } catch(e) {}
+}
+
+async function loadPaymentsHistory() {
+  var tbody = document.getElementById('chPaymentsHistoryTbody');
+  if (!tbody) return;
+
+  try {
+    const { data: payments } = await supabaseClient
+      .from('settlements')
+      .select('*')
+      .eq('customer_name', currentUser.fullName)
+      .order('settled_at', { ascending: false });
+
+    if (!payments || payments.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-400 italic">មិនទាន់មានប្រវត្តិបង់ប្រាក់នៅឡើយ</td></tr>';
+      return;
+    }
+
+    var html = '';
+    payments.forEach(function(p) {
+      var dateStr = new Date(p.settled_at).toLocaleString('km-KH', { dateStyle: 'short', timeStyle: 'short' });
+      html += '<tr class="border-b hover:bg-gray-50">' +
+        '<td class="p-2.5 text-gray-500 text-[10px]">' + dateStr + '</td>' +
+        '<td class="p-2.5 text-right font-black text-green-700">៛ ' + Number(p.paid_khr).toLocaleString() + '</td>' +
+        '<td class="p-2.5 text-center text-xs font-bold text-blue-800">' + p.pay_method + '</td>' +
+        '<td class="p-2.5 text-center text-xs text-gray-600">' + p.admin_name + '</td>' +
+      '</tr>';
+    });
+    tbody.innerHTML = html;
+  } catch(e) {}
+}
+
+// ==========================================
+// 🛢️ ៨. ផ្ទាំងសំបកធុងកំពុងខ្ចី (CUSTBOTTLES)
+// ==========================================
+async function renderCustomerBottlesModule() {
+  var area = document.getElementById('contentArea');
+  if (!area) return;
+
+  area.innerHTML = '<div class="max-w-2xl mx-auto space-y-4">' +
+    '<div class="card border-t-4 border-purple-600 shadow-xl p-5 mb-0">' +
+      '<h3 class="font-extrabold text-purple-900 text-base mb-3 flex items-center gap-2"><i class="fas fa-boxes-packing text-purple-600"></i>សំបកធុង និងឧបករណ៍ដែលខ្ញុំកំពុងខ្ចី</h3>' +
+      '<div class="overflow-x-auto rounded-xl border"><table class="w-full text-left text-xs border-collapse"><thead><tr class="bg-gray-100 text-gray-700 font-bold border-b"><th class="p-2.5">ថ្ងៃខ្ចី</th><th class="p-2.5">មុខទំនិញ/ឧបករណ៍</th><th class="p-2.5 text-center">ខ្ចី</th><th class="p-2.5 text-center">បានសង</th><th class="p-2.5 text-center">នៅខ្វះ</th></tr></thead><tbody id="cbBottlesTbody"><tr><td colspan="5" class="p-4 text-center text-gray-400 italic">កំពុងទាញទិន្នន័យ...</td></tr></tbody></table></div>' +
+    '</div>' +
+  '</div>';
+
+  try {
+    const { data: list } = await supabaseClient
+      .from('bottle_loans')
+      .select('*')
+      .eq('status', 'Borrowing')
+      .ilike('customer_name', '%' + currentUser.fullName + '%');
+
+    var tbody = document.getElementById('cbBottlesTbody');
+    if (!tbody) return;
+
+    if (!list || list.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="p-6 text-center text-green-600 font-bold"><i class="fas fa-check-circle mr-1"></i> អ្នកមិនមានជំពាក់សំបកធុង ឬឧបករណ៍ណាមួយឡើយ</td></tr>';
+      return;
+    }
+
+    var html = '';
+    list.forEach(function(b) {
+      var remaining = Math.max(0, parseFloat(b.borrowed_qty || 0) - parseFloat(b.returned_qty || 0));
+      var dateStr = new Date(b.created_at).toLocaleDateString('km-KH');
+      html += '<tr class="border-b hover:bg-gray-50">' +
+        '<td class="p-2.5 text-gray-500 text-[10px]">' + dateStr + '</td>' +
+        '<td class="p-2.5 font-bold text-gray-800">' + b.item_name + '</td>' +
+        '<td class="p-2.5 text-center font-bold text-blue-700">' + b.borrowed_qty + '</td>' +
+        '<td class="p-2.5 text-center font-bold text-green-700">' + b.returned_qty + '</td>' +
+        '<td class="p-2.5 text-center font-black text-orange-700">' + remaining + '</td>' +
+      '</tr>';
+    });
+    tbody.innerHTML = html;
+  } catch(e) {}
+}
+
+// ==========================================
+// 💡 ៩. MODALS ជំនួយសម្រាប់ម៉ូយ (PRICES, PASSWORD, CONTACT)
+// ==========================================
+async function openMyPricesModal() {
+  try {
+    const { data: list } = await supabaseClient.from('customer_prices').select('*').eq('customer_name', currentUser.fullName);
+    var rows = '';
+    if (!list || list.length === 0) {
+      rows = '<tr><td colspan="2" class="p-4 text-center text-gray-400 italic">តម្លៃធម្មតាតាមតម្លៃបោះដុំរោងចក្រ</td></tr>';
+    } else {
+      list.forEach(function(item) {
+        rows += '<tr class="border-b"><td class="p-2.5 font-bold text-gray-800">' + item.product_name + '</td><td class="p-2.5 text-right font-black text-green-700">៛ ' + Number(item.price).toLocaleString() + '</td></tr>';
+      });
+    }
+
+    var html = '<div id="myPricesModal" class="fixed inset-0 z-[7500] flex items-center justify-center p-4">' +
+      '<div class="absolute inset-0 bg-black/60 backdrop-blur-xs" onclick="document.getElementById(\'myPricesModal\').remove()"></div>' +
+      '<div class="bg-white rounded-3xl shadow-2xl z-10 w-full max-w-sm p-5 space-y-3 relative border text-center">' +
+        '<div class="flex justify-between items-center border-b pb-2"><h3 class="font-black text-blue-900 text-base"><i class="fas fa-tags text-yellow-500 mr-1"></i> តម្លៃទឹករបស់ខ្ញុំ</h3><button onclick="document.getElementById(\'myPricesModal\').remove()" class="text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button></div>' +
+        '<div class="overflow-x-auto max-h-60 overflow-y-auto rounded-xl border"><table class="w-full text-left text-xs border-collapse"><thead class="bg-gray-100 font-bold text-gray-600"><tr><th class="p-2.5">មុខទំនិញ</th><th class="p-2.5 text-right">តម្លៃព្រមព្រៀង</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+        '<button onclick="document.getElementById(\'myPricesModal\').remove()" class="w-full py-2.5 bg-gray-100 text-gray-700 font-bold rounded-xl text-xs active:scale-95 transition">រួចរាល់</button>' +
+      '</div></div>';
+
+    document.body.insertAdjacentHTML('beforeend', html);
+  } catch(e) {}
+}
+
+function openChangePasswordModal() {
+  var html = '<div id="changePassModal" class="fixed inset-0 z-[7500] flex items-center justify-center p-4">' +
+    '<div class="absolute inset-0 bg-black/60 backdrop-blur-xs" onclick="document.getElementById(\'changePassModal\').remove()"></div>' +
+    '<div class="bg-white rounded-3xl shadow-2xl z-10 w-full max-w-sm p-5 space-y-3 relative border text-center">' +
+      '<div class="flex justify-between items-center border-b pb-2"><h3 class="font-black text-gray-800 text-base"><i class="fas fa-key text-blue-600 mr-1"></i> ប្តូរលេខសម្ងាត់ផ្ទាល់ខ្លួន</h3><button onclick="document.getElementById(\'changePassModal\').remove()" class="text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button></div>' +
+      '<div class="space-y-2 text-left">' +
+        '<div><label class="text-[10px] font-bold text-gray-500 uppercase">លេខសម្ងាត់ចាស់</label><input type="password" id="cp_old_pass" placeholder="លេខសម្ងាត់បច្ចុប្បន្ន" class="text-xs border p-2 rounded-xl w-full font-bold"></div>' +
+        '<div><label class="text-[10px] font-bold text-gray-500 uppercase">លេខសម្ងាត់ថ្មី</label><input type="password" id="cp_new_pass" placeholder="លេខសម្ងាត់ថ្មី" class="text-xs border p-2 rounded-xl w-full font-bold"></div>' +
+      '</div>' +
+      '<div class="grid grid-cols-2 gap-2 pt-2"><button onclick="document.getElementById(\'changePassModal\').remove()" class="py-2.5 bg-gray-200 text-gray-700 font-bold rounded-xl text-xs">បោះបង់</button><button onclick="submitChangePassword()" class="py-2.5 bg-blue-600 text-white font-bold rounded-xl text-xs shadow">យល់ព្រមប្តូរ</button></div>' +
+    '</div></div>';
+
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+async function submitChangePassword() {
+  var oldP = document.getElementById('cp_old_pass').value.trim();
+  var newP = document.getElementById('cp_new_pass').value.trim();
+  if (!oldP || !newP) { showToast("សូមបំពេញលេខសម្ងាត់ចាស់ និងថ្មី!", "error"); return; }
+
+  try {
+    const { data: user } = await supabaseClient.from('users').select('password').eq('id', currentUser.id).single();
+    if (!user || user.password !== oldP) {
+      showToast("លេខសម្ងាត់ចាស់មិនត្រឹមត្រូវឡើយ!", "error");
+      return;
+    }
+
+    await supabaseClient.from('users').update({ password: newP }).eq('id', currentUser.id);
+    showToast("បានប្តូរលេខសម្ងាត់ថ្មីជោគជ័យ!", "success");
+    document.getElementById('changePassModal').remove();
+  } catch(err) {
+    showToast("កំហុស៖ " + err.message, "error");
+  }
+}
+
+function openContactEnterpriseModal() {
+  var html = '<div id="contactEnterpriseModal" class="fixed inset-0 z-[7500] flex items-center justify-center p-4">' +
+    '<div class="absolute inset-0 bg-black/60 backdrop-blur-xs" onclick="document.getElementById(\'contactEnterpriseModal\').remove()"></div>' +
+    '<div class="bg-white rounded-3xl shadow-2xl z-10 w-full max-w-sm p-5 space-y-3.5 relative border text-center">' +
+      '<div class="flex justify-between items-center border-b pb-2"><h3 class="font-black text-green-950 text-base"><i class="fas fa-headset text-green-600 mr-1"></i> ទំនាក់ទំនងរោងចក្រ KC WATER</h3><button onclick="document.getElementById(\'contactEnterpriseModal\').remove()" class="text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button></div>' +
+      '<div class="p-3 bg-green-50 rounded-2xl border border-green-200 text-left space-y-2">' +
+        '<div class="text-[10px] text-green-700 font-bold uppercase">លេខទូរស័ព្ទរោងចក្រ</div>' +
+        '<div class="flex justify-between items-center"><b class="text-xs text-green-900">077 934 748, 066 934 748</b><a href="tel:077934748" class="px-3 py-1 bg-green-600 text-white rounded-lg text-xs font-bold shadow"><i class="fas fa-phone"></i> ខល</a></div>' +
+      '</div>' +
+      '<div class="p-3 bg-blue-50 rounded-2xl border border-blue-200 flex items-center justify-between">' +
+        '<div><div class="text-[10px] text-blue-700 font-bold uppercase">Telegram ផ្លូវការ</div><b class="text-xs text-blue-950">@KcWater</b></div>' +
+        '<a href="http://t.me/KcWater" target="_blank" class="px-3 py-1.5 bg-blue-600 text-white rounded-xl text-xs font-bold shadow flex items-center gap-1"><i class="fab fa-telegram"></i> ឆាត</a>' +
+      '</div>' +
+      '<button onclick="document.getElementById(\'contactEnterpriseModal\').remove()" class="w-full py-2 bg-gray-100 text-gray-700 font-bold rounded-xl text-xs">បិទ</button>' +
+    '</div></div>';
+
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+// 💵 សំណើបង់លុយសុទ្ធ (ជូនដំណឹងទៅ Admin)
+async function submitQuickPaymentRequest(method) {
+  var due = custPortalDataCache ? custPortalDataCache.grandTotalDue : 0;
+  if (due <= 0) { showToast("អ្នកមិនមានបំណុលត្រូវទូទាត់ឡើយ!", "info"); return; }
+  if (!confirm("តើអ្នកចង់ផ្ញើសំណើទូទាត់ប្រាក់សុទ្ធចំនួន ៛ " + due.toLocaleString() + " ជូនអ្នកដឹកមែនទេ?")) return;
+
+  try {
+    await supabaseClient.from('pending_payments').insert([{
+      id: "PAY-" + new Date().getTime(),
+      customer_name: currentUser.fullName,
+      method: "CASH (លុយសុទ្ធទាំងអស់)",
+      khr_total: due,
+      status: "Pending"
+    }]);
+
+    showToast("បានផ្ញើសំណើទូទាត់ទៅកាន់រោងចក្ររួចរាល់!", "success");
+    sendTelegramAlert("🔔 <b>[KC WATER - សំណើទូទាត់ប្រាក់សុទ្ធ]</b>\n\n👤 <b>អតិថិជន៖</b> " + currentUser.fullName + "\n💵 <b>ទឹកប្រាក់៖</b> <b>៛ " + due.toLocaleString() + "</b> (បង់លុយសុទ្ធជូនអ្នកដឹក)\n🕒 <b>ម៉ោង៖</b> " + new Date().toLocaleTimeString('km-KH'));
+  } catch(e) {
+    showToast("កំហុស៖ " + e.message, "error");
+  }
+}
+
+// 📱 បើក ABA Modal សម្រាប់ម៉ូយស្កេនបង់លុយ
+function openCustomerAbaModal() {
+  var due = custPortalDataCache ? custPortalDataCache.grandTotalDue : 0;
+  if (due <= 0) { showToast("អ្នកមិនមានបំណុលត្រូវទូទាត់ឡើយ!", "info"); return; }
+  document.getElementById('posKhqrAmountText').innerText = "៛ " + due.toLocaleString();
+  document.getElementById('posKhqrModal').classList.remove('hidden');
+}
+
+function viewMyMonthlyStatement() {
+  loadModule('MonthlyRep');
+  setTimeout(function() {
+    switchRepTab('customer');
+    var drop = document.getElementById('custSelectDropdown');
+    if (drop) { drop.value = currentUser.fullName; }
+    var inp = document.getElementById('custSearchInp');
+    if (inp) { inp.value = currentUser.fullName; }
+    fetchFullStatementFromSupabase();
+  }, 300);
+}
