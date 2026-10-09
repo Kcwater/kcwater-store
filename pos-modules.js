@@ -914,8 +914,10 @@ async function delUserFromSupabase(id) {
 }
 
 // ==========================================
-// ⚙️ ៥. ការកំណត់ប្រព័ន្ធ & PROMOTION (SETTINGS)
+// ⚙️ ៥. ការកំណត់ប្រព័ន្ធ & TELEGRAM TOGGLE (SETTINGS)
 // ==========================================
+var currentTelegramAlertStatus = "ON";
+
 function renderSettingsModule() {
   var area = document.getElementById('contentArea');
   var prodOptions = '<option value="ALL">🔄 គ្រប់មុខទំនិញទាំងអស់ (All Products)</option>';
@@ -924,6 +926,7 @@ function renderSettingsModule() {
   });
 
   area.innerHTML = '<div class="max-w-2xl mx-auto space-y-4">' +
+    // ម៉ោងធ្វើការ & សេវាដឹក
     '<div class="card border-t-4 border-indigo-600 shadow-xl p-5 mb-0 space-y-3">' +
       '<h2 class="font-extrabold text-indigo-950 text-base flex items-center gap-2"><i class="fas fa-clock text-indigo-600"></i>ម៉ោងទទួលកុម្ម៉ង់ & សេវាដឹក (Store Rules)</h2>' +
       '<div class="grid grid-cols-2 gap-2 text-xs">' +
@@ -936,6 +939,7 @@ function renderSettingsModule() {
       '</div>' +
     '</div>' +
 
+    // ប្រព័ន្ធ Promotion លើ Web
     '<div class="card border-t-4 border-amber-500 shadow-xl p-5 mb-0 space-y-3">' +
       '<div class="flex justify-between items-center">' +
         '<h3 class="font-extrabold text-amber-950 text-base flex items-center gap-2"><i class="fas fa-gift text-amber-600"></i>ប្រព័ន្ធ Promotion លើ Website</h3>' +
@@ -951,11 +955,17 @@ function renderSettingsModule() {
       '</div>' +
     '</div>' +
 
+    // 🔔 កាត TELEGRAM BOT ALERT (មានប៊ូតុង បិទ/បើក ភ្លាមៗ)
     '<div class="card border-t-4 border-green-600 shadow-xl p-5 mb-0 space-y-3">' +
       '<div class="flex justify-between items-center">' +
         '<h3 class="font-extrabold text-green-950 text-base flex items-center gap-2"><i class="fab fa-telegram text-blue-500"></i>Telegram Bot Alert</h3>' +
-        '<button type="button" onclick="testTelegramAlertNow()" class="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold rounded-xl border border-blue-200">🔔 តេស្តផ្ញើសារ</button>' +
+        '<div class="flex items-center gap-1.5">' +
+          // 🔘 ប៊ូតុង Toggle បិទ / បើក Telegram
+          '<button type="button" id="btnToggleTelegramStatus" onclick="toggleTelegramAlertStatusLive()" class="px-3 py-1.5 rounded-xl text-xs font-black shadow-xs active:scale-95 transition flex items-center gap-1.5"></button>' +
+          '<button type="button" onclick="testTelegramAlertNow()" class="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold rounded-xl border border-blue-200">🔔 តេស្ត</button>' +
+        '</div>' +
       '</div>' +
+      '<p class="text-[11px] text-gray-500">*ចុចប៊ូតុងខាងលើដើម្បី <b>បិទ (OFF)</b> កុំឱ្យរំខានពេលកំពុងសាកល្បងកូដ ឬ <b>បើក (ON)</b> ពេលដំណើរការលក់ជាក់ស្តែង។</p>' +
       '<div class="space-y-2 text-xs">' +
         '<input type="text" id="set_tg_token" placeholder="Telegram Bot Token" class="border p-2 rounded-xl w-full font-mono">' +
         '<input type="text" id="set_tg_chatid" placeholder="Telegram Chat ID" class="border p-2 rounded-xl w-full font-mono">' +
@@ -967,10 +977,42 @@ function renderSettingsModule() {
   loadSettingsForm();
 }
 
+// 🎨 មុខងារបង្ហាញប៊ូតុង បិទ/បើក Telegram (ក្រហម ឬ បៃតង)
+function updateTelegramButtonUI(status) {
+  currentTelegramAlertStatus = (String(status).toUpperCase() === "OFF") ? "OFF" : "ON";
+  var btn = document.getElementById('btnToggleTelegramStatus');
+  if (!btn) return;
+
+  if (currentTelegramAlertStatus === "ON") {
+    btn.className = "px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-xs active:scale-95 transition flex items-center gap-1.5";
+    btn.innerHTML = '<span class="w-2 h-2 rounded-full bg-white animate-pulse"></span> 🔔 បើក (ON)';
+  } else {
+    btn.className = "px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 border-2 border-red-300 rounded-xl text-xs font-black shadow-xs active:scale-95 transition flex items-center gap-1.5";
+    btn.innerHTML = '<span class="w-2 h-2 rounded-full bg-red-500"></span> 🔕 បិទ (OFF)';
+  }
+}
+
+// ⚡ ចុចប្តូរភ្លាម Save ចូល Supabase ភ្លាម (មិនបាច់រង់ចាំចុច Save)
+async function toggleTelegramAlertStatusLive() {
+  var nextStatus = (currentTelegramAlertStatus === "ON") ? "OFF" : "ON";
+  updateTelegramButtonUI(nextStatus);
+
+  try {
+    await supabaseClient.from('settings').upsert([{ key: 'Telegram_Alert_Status', value: nextStatus }]);
+    telegramConfig.status = nextStatus;
+    showToast("បានកំណត់ Telegram៖ " + (nextStatus === "ON" ? "🔔 បើកដំណើរការ (ON)" : "🔕 បិទសារដំណឹង (OFF)"), "info");
+  } catch(e) {
+    showToast("កំហុសប្តូរស្ថានភាព Telegram៖ " + e.message, "error");
+    updateTelegramButtonUI(currentTelegramAlertStatus);
+  }
+}
+
 async function loadSettingsForm() {
   try {
     const { data } = await supabaseClient.from('settings').select('*');
     if (!data) return;
+    var tgStatus = "ON";
+
     data.forEach(function(r) {
       if (r.key === 'Store_Open_Time') document.getElementById('set_open_time').value = r.value;
       if (r.key === 'Store_Close_Time') document.getElementById('set_close_time').value = r.value;
@@ -978,12 +1020,15 @@ async function loadSettingsForm() {
       if (r.key === 'Delivery_Free_Min_Qty') document.getElementById('set_del_min').value = r.value;
       if (r.key === 'Telegram_Token') document.getElementById('set_tg_token').value = r.value;
       if (r.key === 'Telegram_ChatID') document.getElementById('set_tg_chatid').value = r.value;
+      if (r.key === 'Telegram_Alert_Status') tgStatus = r.value;
       if (r.key === 'Promo_Status') document.getElementById('set_promo_status').value = r.value;
       if (r.key === 'Promo_Target_Product') document.getElementById('set_promo_product').value = r.value;
       if (r.key === 'Promo_Buy_Qty') document.getElementById('set_promo_buy_qty').value = r.value;
       if (r.key === 'Promo_Free_Qty') document.getElementById('set_promo_free_qty').value = r.value;
       if (r.key === 'Promo_Banner_Text') document.getElementById('set_promo_banner').value = r.value;
     });
+
+    updateTelegramButtonUI(tgStatus);
   } catch(e) {}
 }
 
@@ -995,6 +1040,7 @@ async function saveSettingsToSupabase() {
     { key: 'Delivery_Free_Min_Qty', value: document.getElementById('set_del_min').value || "2" },
     { key: 'Telegram_Token', value: document.getElementById('set_tg_token').value.trim() },
     { key: 'Telegram_ChatID', value: document.getElementById('set_tg_chatid').value.trim() },
+    { key: 'Telegram_Alert_Status', value: currentTelegramAlertStatus },
     { key: 'Promo_Status', value: document.getElementById('set_promo_status').value },
     { key: 'Promo_Target_Product', value: document.getElementById('set_promo_product').value },
     { key: 'Promo_Buy_Qty', value: document.getElementById('set_promo_buy_qty').value || "5" },
@@ -1012,6 +1058,10 @@ async function saveSettingsToSupabase() {
 }
 
 function testTelegramAlertNow() {
+  if (currentTelegramAlertStatus === "OFF") {
+    showToast("⚠️ ប្រព័ន្ធ Telegram កំពុងបិទ (OFF)! សូមចុចបើក (ON) ជាមុនសិន", "warning");
+    return;
+  }
   sendTelegramAlert("🔔 <b>[KC WATER - តេស្តប្រព័ន្ធ]</b>\n\nTelegram Bot បានតភ្ជាប់ជាមួយប្រព័ន្ធ Vercel + Supabase ជោគជ័យ ១០០% ហើយ!\n🕒 ម៉ោង៖ " + new Date().toLocaleTimeString('km-KH'));
   showToast("បានផ្ញើសារតេស្តទៅ Telegram!", "success");
 }
