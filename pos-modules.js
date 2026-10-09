@@ -979,7 +979,11 @@ function renderSettingsModule() {
 
 // 🎨 មុខងារបង្ហាញប៊ូតុង បិទ/បើក Telegram (ក្រហម ឬ បៃតង)
 function updateTelegramButtonUI(status) {
-  currentTelegramAlertStatus = (String(status).toUpperCase() === "OFF") ? "OFF" : "ON";
+  currentTelegramAlertStatus = (String(status).trim().toUpperCase() === "OFF") ? "OFF" : "ON";
+  // ✅ បញ្ជាបិទក្នុង Memory ភ្លាមៗកុំឱ្យនៅសល់
+  telegramConfig.status = currentTelegramAlertStatus;
+  localStorage.setItem('kc_telegram_status', currentTelegramAlertStatus);
+
   var btn = document.getElementById('btnToggleTelegramStatus');
   if (!btn) return;
 
@@ -992,7 +996,7 @@ function updateTelegramButtonUI(status) {
   }
 }
 
-// ⚡ ចុចប្តូរភ្លាម Save ចូល Supabase ភ្លាម (មិនបាច់រង់ចាំចុច Save)
+// ⚡ ចុចប្តូរភ្លាម បិទសោរភ្លាមៗ និង Save ចូល Supabase
 async function toggleTelegramAlertStatusLive() {
   var nextStatus = (currentTelegramAlertStatus === "ON") ? "OFF" : "ON";
   updateTelegramButtonUI(nextStatus);
@@ -1000,13 +1004,13 @@ async function toggleTelegramAlertStatusLive() {
   try {
     await supabaseClient.from('settings').upsert([{ key: 'Telegram_Alert_Status', value: nextStatus }]);
     telegramConfig.status = nextStatus;
+    localStorage.setItem('kc_telegram_status', nextStatus);
     showToast("បានកំណត់ Telegram៖ " + (nextStatus === "ON" ? "🔔 បើកដំណើរការ (ON)" : "🔕 បិទសារដំណឹង (OFF)"), "info");
   } catch(e) {
     showToast("កំហុសប្តូរស្ថានភាព Telegram៖ " + e.message, "error");
     updateTelegramButtonUI(currentTelegramAlertStatus);
   }
 }
-
 async function loadSettingsForm() {
   try {
     const { data } = await supabaseClient.from('settings').select('*');
