@@ -1,19 +1,28 @@
 /** ==========================================================================
  *  KC WATER POS SYSTEM - SETTLEMENT ENGINE (pos-settlement.js)
- *  (Debt Settlement, Split Payment, Pending Approval Banner & Invoicing)
+ *  (Full Overview, Today Unpaid Table, Split Payments, Debtors & Invoicing)
  *  ========================================================================== */
 
 var currentActivePendingPaymentId = null;
 
 // ==========================================
-// 💳 ១. ផ្ទាំងទូទាត់លុយ SETTLEMENT UI
+// 💳 ១. ផ្ទាំងទូទាត់លុយ SETTLEMENT UI ពេញលេញ ១០០%
 // ==========================================
 async function renderSettlementModule() {
   var area = document.getElementById('contentArea');
+  if (!area) return;
+
   currentSettlementCustomer = "";
   currentSettlementItems = [];
   currentSettlementPayMode = "Cash";
   currentActivePendingPaymentId = null;
+
+  var custOptions = '<option value="">-- សូមជ្រើសរើសឈ្មោះម៉ូយ --</option><option value="Walk-in">🛒 -- លក់នៅកន្លែង (Walk-in) --</option>';
+  allCustomers.forEach(function(c) {
+    if (c.role !== 'Admin' && c.full_name !== 'Walk-in') {
+      custOptions += '<option value="' + c.full_name + '">' + c.full_name + '</option>';
+    }
+  });
 
   area.innerHTML = '<div class="max-w-4xl mx-auto space-y-4">' +
     // ក្បាលទំព័រ
@@ -29,7 +38,7 @@ async function renderSettlementModule() {
       '</button>' +
     '</div>' +
 
-    // 🔔 បដាសំណើទូទាត់រង់ចាំពីម៉ូយ (PENDING APPROVAL BANNER)
+    // 🔔 បដាសំណើទូទាត់រង់ចាំពីម៉ូយ (Pending Approval Banner)
     '<div id="pendingPaymentsBanner" class="hidden card border-t-4 border-yellow-500 bg-yellow-50/80 p-4 shadow-md mb-0 space-y-2">' +
       '<div class="flex justify-between items-center">' +
         '<h3 class="font-extrabold text-yellow-950 text-xs sm:text-sm flex items-center gap-2">' +
@@ -40,113 +49,226 @@ async function renderSettlementModule() {
       '<div id="pendingCardsContainer" class="space-y-2 pt-1"></div>' +
     '</div>' +
 
-    // បញ្ជីឈ្មោះម៉ូយជំពាក់
-    '<div class="card border-t-4 border-orange-500 shadow-md p-4 mb-0">' +
-      '<h3 class="font-bold text-gray-800 text-xs sm:text-sm mb-2 flex items-center gap-1.5">' +
-        '<i class="fas fa-users text-orange-600"></i> ជ្រើសរើសឈ្មោះម៉ូយជំពាក់ដើម្បីទូទាត់៖' +
-      '</h3>' +
-      '<div id="settleDebtorsBadgesContainer" class="flex flex-wrap gap-2 pt-1 text-xs">' +
-        '<i class="fas fa-spinner fa-spin text-orange-600"></i> កំពុងឆែកបញ្ជីជំពាក់...' +
+    // 📊 កាតស្ថិតិ ២ ខាងលើ (អ្នកដកថ្ងៃនេះមិនទាន់គិតលុយ & ទឹកប្រាក់សរុប)
+    '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">' +
+      '<div class="dash-card border-l-4 border-orange-500 shadow-md p-4 bg-white rounded-2xl">' +
+        '<div class="text-gray-500 text-xs font-bold uppercase flex justify-between items-center">' +
+          '<span>អ្នកដកថ្ងៃនេះមិនទាន់គិតលុយ</span><i class="fas fa-users-slash text-orange-500 text-lg"></i>' +
+        '</div>' +
+        '<div id="todayUnpaidCount" class="mt-2 font-black text-orange-800 text-lg sm:text-xl leading-tight">កំពុងឆែកមើល...</div>' +
+      '</div>' +
+      '<div class="dash-card border-l-4 border-red-500 shadow-md p-4 bg-white rounded-2xl">' +
+        '<div class="text-gray-500 text-xs font-bold uppercase flex justify-between items-center">' +
+          '<span>ទឹកប្រាក់មិនទាន់ទូទាត់ថ្ងៃនេះសរុប</span><i class="fas fa-coins text-red-500 text-lg"></i>' +
+        '</div>' +
+        '<div id="todayUnpaidTotal" class="mt-2 font-black text-red-700 text-base sm:text-lg leading-tight">កំពុងគណនា...</div>' +
       '</div>' +
     '</div>' +
 
-    // កាតលម្អិតជើងទឹកជំពាក់ & ការគិតលុយ
-    '<div id="settlementDetailCard" class="card border-t-4 border-blue-600 shadow-xl p-5 mb-0 hidden">' +
-      '<div class="flex justify-between items-center border-b pb-3 mb-3">' +
-        '<div>' +
-          '<span class="text-[10px] text-gray-400 uppercase font-bold block">អតិថិជនកំពុងទូទាត់</span>' +
-          '<h3 id="settleTargetCustName" class="text-base sm:text-lg font-black text-blue-900"></h3>' +
-        '</div>' +
-        '<span id="settleSelectedCountBadge" class="bg-blue-100 text-blue-800 text-xs px-2.5 py-0.5 rounded-full font-bold">0 ជើងទឹក</span>' +
-      '</div>' +
-
-      // តារាងជើងទឹកជំពាក់
-      '<div class="overflow-x-auto max-h-60 overflow-y-auto rounded-xl border mb-3">' +
+    // 📋 តារាងអ្នកដកទំនិញថ្ងៃនេះ (មិនទាន់ទូទាត់)
+    '<div class="card p-5 border-t-4 border-orange-500 shadow-lg mb-0">' +
+      '<h3 class="font-bold text-gray-800 text-sm mb-3 flex items-center gap-2">' +
+        '<i class="fas fa-clock text-orange-500"></i>បញ្ជីអ្នកដកទំនិញថ្ងៃនេះ (មិនទាន់ទូទាត់)' +
+      '</h3>' +
+      '<div class="overflow-x-auto max-h-64 overflow-y-auto rounded-xl border border-gray-200 shadow-inner">' +
         '<table class="w-full text-left text-xs border-collapse">' +
-          '<thead class="sticky top-0 bg-gray-100 text-gray-700 font-bold border-b z-10">' +
+          '<thead class="sticky top-0 bg-gray-100 text-gray-700 font-bold border-b z-10 shadow-xs">' +
             '<tr>' +
-              '<th class="p-2.5 text-center w-10">' +
-                '<input type="checkbox" id="settleSelectAllCb" onchange="toggleSelectAllSettle(this.checked)" checked class="w-4 h-4 accent-green-600 cursor-pointer">' +
-              '</th>' +
-              '<th class="p-2.5 text-[10px]">កាលបរិច្ឆេទ</th>' +
+              '<th class="p-2.5">ម៉ោង</th>' +
+              '<th class="p-2.5">ឈ្មោះអតិថិជន</th>' +
               '<th class="p-2.5">មុខទំនិញ</th>' +
               '<th class="p-2.5 text-center">ចំនួន</th>' +
-              '<th class="p-2.5 text-right">តម្លៃរាយ</th>' +
-              '<th class="p-2.5 text-right">សរុប</th>' +
+              '<th class="p-2.5 text-right">តម្លៃសរុប</th>' +
+              '<th class="p-2.5 text-center">សកម្មភាព</th>' +
             '</tr>' +
           '</thead>' +
-          '<tbody id="settleItemsTableBody"></tbody>' +
+          '<tbody id="todayUnpaidTbody"><tr><td colspan="6" class="p-4 text-center text-gray-400 italic">កំពុងទាញទិន្នន័យ...</td></tr></tbody>' +
         '</table>' +
       '</div>' +
+    '</div>' +
 
-      // ប្រអប់សង្ខេបបំណុល & Checkbox បំណុលចាស់
-      '<div class="p-3 bg-orange-50 rounded-2xl border border-orange-200 text-xs space-y-1.5 mb-3 text-orange-950 font-bold">' +
-        '<div class="flex justify-between">' +
-          '<span>សរុបទំនិញដែលបានធីក (+)៖</span>' +
-          '<b id="settleSelectedSubtotal" class="text-sm text-blue-900">0 ៛</b>' +
-        '</div>' +
-        '<div id="settleOldDebtRow" class="flex justify-between items-center border-t border-orange-200 pt-1.5">' +
-          '<label class="flex items-center gap-2 cursor-pointer">' +
-            '<input type="checkbox" id="cbIncludeOldDebt" onchange="recalcSettlementCalculation()" checked class="w-4 h-4 accent-orange-600 cursor-pointer">' +
-            '<span>បូកបញ្ចូលបំណុលចាស់ពីមុន៖</span>' +
-          '</label>' +
-          '<b id="settleOldDebtVal" class="text-orange-700">0 ៛</b>' +
-        '</div>' +
-        '<div class="flex justify-between text-sm sm:text-base font-black text-orange-950 border-t border-orange-300 pt-1.5 mt-1">' +
-          '<span>សរុបត្រូវបង់លើកនេះ (=)៖</span>' +
-          '<span id="settleTotalDueText" class="text-base sm:text-lg text-orange-800">0 ៛</span>' +
-        '</div>' +
+    // 👥 បញ្ជីឈ្មោះម៉ូយជំពាក់ទាំងអស់ (Badges)
+    '<div class="card border-t-4 border-blue-500 shadow-md p-4 mb-0">' +
+      '<h4 class="font-bold text-gray-800 text-xs sm:text-sm mb-2 flex items-center gap-1.5">' +
+        '<i class="fas fa-users text-blue-600"></i> ចុចរើសឈ្មោះម៉ូយជំពាក់ដើម្បីទូទាត់ភ្លាមៗ៖' +
+      '</h4>' +
+      '<div id="settleDebtorsBadgesContainer" class="flex flex-wrap gap-2 pt-1 text-xs">' +
+        '<i class="fas fa-spinner fa-spin text-blue-600"></i> កំពុងឆែកបញ្ជីជំពាក់...' +
+      '</div>' +
+    '</div>' +
+
+    // 📝 ទម្រង់គិតលុយ និងចេញវិក្កយបត្រ (បង្ហាញជានិច្ច មិនឱ្យទទេឡើយ)
+    '<div id="settlement_card" class="card border-t-4 border-blue-600 shadow-2xl p-5 sm:p-6 mb-0">' +
+      '<h3 class="font-bold text-center mb-4 text-blue-900 text-base sm:text-lg flex items-center justify-center gap-2">' +
+        '<i class="fas fa-file-invoice-dollar text-blue-600"></i>ទម្រង់គិតលុយ និងចេញវិក្កយបត្រ' +
+      '</h3>' +
+
+      // ប្រអប់ជ្រើសរើសឈ្មោះអតិថិជន
+      '<div class="mb-4">' +
+        '<label class="text-xs font-bold text-gray-500 mb-1 block">ជ្រើសរើសឈ្មោះអតិថិជន</label>' +
+        '<select id="set_c" onchange="selectCustomerForSettlement(this.value)" class="border-2 border-blue-200 focus:border-blue-600 font-bold text-gray-800 rounded-xl p-2.5 w-full bg-white outline-none">' +
+          custOptions +
+        '</select>' +
       '</div>' +
 
-      // ផ្នែកជ្រើសរើសវិធីបង់ប្រាក់ (Cash, ABA, Split)
-      '<div class="bg-blue-50/70 p-4 rounded-2xl border border-blue-200 space-y-3">' +
-        '<div class="flex justify-between items-center">' +
-          '<label class="text-xs font-bold text-blue-900 uppercase">វិធីទូទាត់ប្រាក់ជាក់ស្តែង</label>' +
-          '<button onclick="fillExactSettlementPay()" class="px-3 py-1 bg-white text-blue-700 text-xs font-bold rounded-lg border border-blue-300 shadow-2xs active:scale-95 transition">លុយគ្រប់</button>' +
+      // ផ្នែកលម្អិតជើងទឹក និងការគិតលុយ (បង្ហាញពេលរើសឈ្មោះម៉ូយ)
+      '<div id="settlement_ui" class="hidden space-y-4">' +
+        '<div class="flex justify-between items-center border-b pb-2">' +
+          '<b class="text-xs sm:text-sm text-blue-950 flex items-center gap-1.5"><i class="fas fa-boxes text-blue-600"></i>បញ្ជីជើងទឹកដកជំពាក់ជាក់ស្តែង</b>' +
+          '<span id="settleSelectedCountBadge" class="bg-blue-100 text-blue-800 text-xs px-2.5 py-0.5 rounded-full font-bold">0 ជើងទឹក</span>' +
         '</div>' +
 
-        '<div class="grid grid-cols-3 gap-1.5 p-1 bg-white rounded-xl border">' +
-          '<button type="button" id="btnSettleCash" onclick="setSettlePayMode(\'Cash\')" class="py-2.5 rounded-lg text-xs font-bold bg-green-700 text-white shadow"><i class="fas fa-money-bill-wave mr-1"></i> លុយសុទ្ធ</button>' +
-          '<button type="button" id="btnSettleAba" onclick="setSettlePayMode(\'ABA\')" class="py-2.5 rounded-lg text-xs font-bold bg-gray-100 text-gray-600 hover:bg-gray-200"><i class="fas fa-qrcode mr-1"></i> ស្កេន ABA</button>' +
-          '<button type="button" id="btnSettleSplit" onclick="setSettlePayMode(\'Split\')" class="py-2.5 rounded-lg text-xs font-bold bg-gray-100 text-gray-600 hover:bg-gray-200"><i class="fas fa-layer-group mr-1"></i> ចម្រុះ</button>' +
+        // តារាងជើងទឹកជំពាក់
+        '<div class="overflow-x-auto max-h-60 overflow-y-auto rounded-xl border mb-3">' +
+          '<table class="w-full text-left text-xs border-collapse">' +
+            '<thead class="sticky top-0 bg-gray-100 text-gray-700 font-bold border-b z-10">' +
+              '<tr>' +
+                '<th class="p-2.5 text-center w-10">' +
+                  '<input type="checkbox" id="settleSelectAllCb" onchange="toggleSelectAllSettle(this.checked)" checked class="w-4 h-4 accent-green-600 cursor-pointer">' +
+                '</th>' +
+                '<th class="p-2.5 text-[10px]">កាលបរិច្ឆេទ</th>' +
+                '<th class="p-2.5">មុខទំនិញ</th>' +
+                '<th class="p-2.5 text-center">ចំនួន</th>' +
+                '<th class="p-2.5 text-right">តម្លៃរាយ</th>' +
+                '<th class="p-2.5 text-right">សរុប</th>' +
+              '</tr>' +
+            '</thead>' +
+            '<tbody id="settleItemsTableBody"></tbody>' +
+          '</table>' +
         '</div>' +
 
-        // បង់ធម្មតា (លុយសុទ្ធ ឬ ABA)
-        '<div id="settleSingleInputArea" class="space-y-1">' +
-          '<label class="text-[10px] font-bold text-gray-500 uppercase">ប្រាក់បានបង់ជាក់ស្តែង (៛)</label>' +
-          '<input type="number" id="settlePaidInput" oninput="calcSettleChange()" placeholder="0" class="w-full text-center text-xl font-black text-blue-900 bg-white border-2 border-blue-200 focus:border-blue-600 rounded-xl p-2.5 outline-none">' +
-        '</div>' +
-
-        // 🔀 បង់ចម្រុះ (SPLIT PAYMENT: លុយសុទ្ធ + ស្កេន ABA)
-        '<div id="settleSplitInputArea" class="hidden space-y-2 bg-white p-3 rounded-2xl border border-blue-200">' +
-          '<div class="text-[11px] font-black text-blue-900 uppercase flex items-center gap-1"><i class="fas fa-layer-group text-blue-600"></i> បែងចែកការទូទាត់ចម្រុះ (៛)៖</div>' +
-          '<div class="grid grid-cols-2 gap-2">' +
-            '<div>' +
-              '<label class="text-[9.5px] font-bold text-gray-600 block mb-0.5">💵 ទទួលលុយសុទ្ធ (៛)</label>' +
-              '<input type="number" id="splitKhrCash" oninput="calcSettleChange()" placeholder="0" class="w-full text-center font-bold text-xs p-2 bg-gray-50 rounded-xl border outline-none">' +
-            '</div>' +
-            '<div>' +
-              '<label class="text-[9.5px] font-black text-blue-700 block mb-0.5">📱 ស្កេន ABA (៛)</label>' +
-              '<input type="number" id="splitKhrScan" oninput="calcSettleChange()" placeholder="0" class="w-full text-center font-black text-xs p-2 bg-white rounded-xl border-2 border-blue-300 text-blue-800 outline-none">' +
-            '</div>' +
+        // ប្រអប់សង្ខេបបំណុល & Checkbox បំណុលចាស់
+        '<div class="p-3 bg-orange-50 rounded-2xl border border-orange-200 text-xs space-y-1.5 text-orange-950 font-bold shadow-inner">' +
+          '<div class="flex justify-between">' +
+            '<span>សរុបទំនិញដែលបានធីក (+)៖</span>' +
+            '<b id="settleSelectedSubtotal" class="text-sm text-blue-900">0 ៛</b>' +
+          '</div>' +
+          '<div id="settleOldDebtRow" class="flex justify-between items-center border-t border-orange-200 pt-1.5">' +
+            '<label class="flex items-center gap-2 cursor-pointer">' +
+              '<input type="checkbox" id="cbIncludeOldDebt" onchange="recalcSettlementCalculation()" checked class="w-4 h-4 accent-orange-600 cursor-pointer">' +
+              '<span>បូកបញ្ចូលបំណុលចាស់ពីមុន៖</span>' +
+            '</label>' +
+            '<b id="settleOldDebtVal" class="text-orange-700">0 ៛</b>' +
+          '</div>' +
+          '<div class="flex justify-between text-sm sm:text-base font-black text-orange-950 border-t border-orange-300 pt-1.5 mt-1">' +
+            '<span>សរុបត្រូវបង់លើកនេះ (=)៖</span>' +
+            '<span id="settleTotalDueText" class="text-base sm:text-lg text-orange-800">0 ៛</span>' +
           '</div>' +
         '</div>' +
 
-        '<div id="settleChangeArea" class="rounded-xl transition-all duration-200 hidden"></div>' +
-      '</div>' +
+        // ផ្នែកវិធីបង់ប្រាក់
+        '<div class="bg-blue-50/70 p-4 rounded-2xl border border-blue-200 space-y-3">' +
+          '<div class="flex justify-between items-center">' +
+            '<label class="text-xs font-bold text-blue-900 uppercase">វិធីទូទាត់ប្រាក់ជាក់ស្តែង</label>' +
+            '<button onclick="fillExactSettlementPay()" class="px-3 py-1 bg-white text-blue-700 text-xs font-bold rounded-lg border border-blue-300 shadow-2xs active:scale-95 transition">លុយគ្រប់</button>' +
+          '</div>' +
 
-      '<button onclick="submitSettlementPayment()" id="btnSubmitSettlement" class="btn-green shadow-xl py-4 text-base font-black flex items-center justify-center gap-2 active:scale-95 transition mt-3">' +
-        '<i class="fas fa-file-invoice-dollar text-xl"></i> ទូទាត់ & ចេញវិក្កយបត្រ (Save Settlement)' +
-      '</button>' +
+          '<div class="grid grid-cols-3 gap-1.5 p-1 bg-white rounded-xl border">' +
+            '<button type="button" id="btnSettleCash" onclick="setSettlePayMode(\'Cash\')" class="py-2.5 rounded-lg text-xs font-bold bg-green-700 text-white shadow"><i class="fas fa-money-bill-wave mr-1"></i> លុយសុទ្ធ</button>' +
+            '<button type="button" id="btnSettleAba" onclick="setSettlePayMode(\'ABA\')" class="py-2.5 rounded-lg text-xs font-bold bg-gray-100 text-gray-600 hover:bg-gray-200"><i class="fas fa-qrcode mr-1"></i> ស្កេន ABA</button>' +
+            '<button type="button" id="btnSettleSplit" onclick="setSettlePayMode(\'Split\')" class="py-2.5 rounded-lg text-xs font-bold bg-gray-100 text-gray-600 hover:bg-gray-200"><i class="fas fa-layer-group mr-1"></i> ចម្រុះ</button>' +
+          '</div>' +
+
+          // បង់ធម្មតា
+          '<div id="settleSingleInputArea" class="space-y-1">' +
+            '<label class="text-[10px] font-bold text-gray-500 uppercase">ប្រាក់បានបង់ជាក់ស្តែង (៛)</label>' +
+            '<input type="number" id="settlePaidInput" oninput="calcSettleChange()" placeholder="0" class="w-full text-center text-xl font-black text-blue-900 bg-white border-2 border-blue-200 focus:border-blue-600 rounded-xl p-2.5 outline-none">' +
+          '</div>' +
+
+          // បង់ចម្រុះ (SPLIT)
+          '<div id="settleSplitInputArea" class="hidden space-y-2 bg-white p-3 rounded-2xl border border-blue-200">' +
+            '<div class="text-[11px] font-black text-blue-900 uppercase flex items-center gap-1"><i class="fas fa-layer-group text-blue-600"></i> បែងចែកការទូទាត់ចម្រុះ (៛)៖</div>' +
+            '<div class="grid grid-cols-2 gap-2">' +
+              '<div>' +
+                '<label class="text-[9.5px] font-bold text-gray-600 block mb-0.5">💵 ទទួលលុយសុទ្ធ (៛)</label>' +
+                '<input type="number" id="splitKhrCash" oninput="calcSettleChange()" placeholder="0" class="w-full text-center font-bold text-xs p-2 bg-gray-50 rounded-xl border outline-none">' +
+              '</div>' +
+              '<div>' +
+                '<label class="text-[9.5px] font-black text-blue-700 block mb-0.5">📱 ស្កេន ABA (៛)</label>' +
+                '<input type="number" id="splitKhrScan" oninput="calcSettleChange()" placeholder="0" class="w-full text-center font-black text-xs p-2 bg-white rounded-xl border-2 border-blue-300 text-blue-800 outline-none">' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+
+          '<div id="settleChangeArea" class="rounded-xl transition-all duration-200 hidden"></div>' +
+        '</div>' +
+
+        '<button onclick="submitSettlementPayment()" id="btnSubmitSettlement" class="btn-green shadow-xl py-4 text-base font-black flex items-center justify-center gap-2 active:scale-95 transition mt-3">' +
+          '<i class="fas fa-file-invoice-dollar text-xl"></i> ទូទាត់ & ចេញវិក្កយបត្រ (Save Settlement)' +
+        '</button>' +
+      '</div>' +
     '</div>' +
   '</div>';
 
   checkAdminPendingPayments();
+  fetchSettlementOverviewData();
   await loadSettlementDebtorsList();
 }
 
 // ==========================================
-// 🔔 ២. ឆែកមើលសំណើទូទាត់រង់ចាំពីម៉ូយ (PENDING APPROVAL)
+// 📊 ២. គណនាទិន្នន័យសង្ខេប & តារាងអ្នកដកថ្ងៃនេះ
+// ==========================================
+async function fetchSettlementOverviewData() {
+  try {
+    var todayStr = new Date().toISOString().split('T')[0];
+
+    // ទាញជើងទឹកដក Unpaid ថ្ងៃនេះ
+    const { data: todayUnpaids } = await supabaseClient
+      .from('transactions')
+      .select('*')
+      .eq('status', 'Unpaid')
+      .gte('created_at', todayStr + 'T00:00:00Z')
+      .order('created_at', { ascending: false });
+
+    var countEl = document.getElementById('todayUnpaidCount');
+    var totEl = document.getElementById('todayUnpaidTotal');
+    var tbody = document.getElementById('todayUnpaidTbody');
+
+    var custSet = new Set();
+    var todayTotalSum = 0;
+
+    (todayUnpaids || []).forEach(function(u) {
+      if (u.customer_name && u.customer_name !== "Walk-in") {
+        custSet.add(u.customer_name);
+      }
+      todayTotalSum += parseFloat(u.total || 0);
+    });
+
+    if (countEl) countEl.innerText = custSet.size + ' នាក់';
+    if (totEl) totEl.innerText = '៛ ' + todayTotalSum.toLocaleString();
+
+    if (tbody) {
+      if (!todayUnpaids || todayUnpaids.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-green-600 font-bold"><i class="fas fa-check-circle mr-1"></i> គ្មានអ្នកដកទំនិញជំពាក់ថ្ងៃនេះទេ</td></tr>';
+      } else {
+        var html = '';
+        todayUnpaids.forEach(function(item) {
+          var timeStr = new Date(item.created_at).toLocaleTimeString('km-KH', { hour: '2-digit', minute: '2-digit' });
+          var safeName = String(item.customer_name || '').replace(/'/g, "\\'");
+
+          html += '<tr class="border-b hover:bg-gray-50">' +
+            '<td class="p-2.5 text-gray-500 whitespace-nowrap text-[10px]">' + timeStr + '</td>' +
+            '<td class="p-2.5 font-bold text-gray-800">' + item.customer_name + '</td>' +
+            '<td class="p-2.5">' + item.product_name + '</td>' +
+            '<td class="p-2.5 text-center font-bold text-blue-700">' + item.qty + '</td>' +
+            '<td class="p-2.5 text-right font-bold text-orange-700 whitespace-nowrap">៛ ' + Number(item.total).toLocaleString() + '</td>' +
+            '<td class="p-2.5 text-center">' +
+              '<button onclick="selectCustomerForSettlement(\'' + safeName + '\')" class="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold text-xs shadow active:scale-95 transition flex items-center gap-1 mx-auto">' +
+                '<i class="fas fa-hand-holding-usd"></i> ចុចទូទាត់' +
+              '</button>' +
+            '</td>' +
+          '</tr>';
+        });
+        tbody.innerHTML = html;
+      }
+    }
+  } catch(e) {
+    console.error("Overview error:", e);
+  }
+}
+
+// ==========================================
+// 🔔 ៣. ឆែកមើលសំណើទូទាត់រង់ចាំពីម៉ូយ (PENDING APPROVAL)
 // ==========================================
 async function checkAdminPendingPayments() {
   var banner = document.getElementById('pendingPaymentsBanner');
@@ -212,7 +334,7 @@ async function applyPendingPaymentToSettlement(pendingId, custName, amount, meth
   document.getElementById('settlePaidInput').value = amount > 0 ? amount : "";
   calcSettleChange();
 
-  var card = document.getElementById('settlementDetailCard');
+  var card = document.getElementById('settlement_card');
   if (card) card.scrollIntoView({ behavior: 'smooth' });
 
   showToast("បានបញ្ចូលសំណើទូទាត់របស់ [" + custName + "] រួចរាល់!", "success");
@@ -228,7 +350,7 @@ async function dismissPendingCard(pendingId) {
 }
 
 // ==========================================
-// 📋 ៣. ស្រង់បញ្ជីឈ្មោះម៉ូយជំពាក់ពី SUPABASE
+// 📋 ៤. ស្រង់បញ្ជីឈ្មោះម៉ូយជំពាក់ពី SUPABASE
 // ==========================================
 async function loadSettlementDebtorsList() {
   var badgesContainer = document.getElementById('settleDebtorsBadgesContainer');
@@ -262,17 +384,25 @@ async function loadSettlementDebtorsList() {
 
     badgesContainer.innerHTML = html || '<span class="text-green-600 font-bold text-xs">គ្មានអតិថិជនជំពាក់ឡើយ</span>';
   } catch(e) {
-    console.error("Debtors list load error:", e);
+    console.error("Debtors list error:", e);
   }
 }
 
 // ==========================================
-// 🔍 ៤. ជ្រើសរើសម៉ូយ & ទាញជើងទឹកជំពាក់ជាក់ស្តែង
+// 🔍 ៥. ជ្រើសរើសម៉ូយ & ទាញជើងទឹកជំពាក់ជាក់ស្តែង
 // ==========================================
 async function selectCustomerForSettlement(custName) {
+  if (!custName) {
+    document.getElementById('settlement_ui').classList.add('hidden');
+    return;
+  }
+
   currentSettlementCustomer = custName;
-  document.getElementById('settleTargetCustName').innerText = custName;
-  document.getElementById('settlementDetailCard').classList.remove('hidden');
+
+  var sel = document.getElementById('set_c');
+  if (sel) sel.value = custName;
+
+  document.getElementById('settlement_ui').classList.remove('hidden');
 
   var tbody = document.getElementById('settleItemsTableBody');
   tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-gray-400 italic"><i class="fas fa-spinner fa-spin mr-1"></i> កំពុងទាញជើងទឹក...</td></tr>';
@@ -319,6 +449,9 @@ async function selectCustomerForSettlement(custName) {
     recalcSettlementCalculation();
     fillExactSettlementPay();
 
+    var card = document.getElementById('settlement_card');
+    if (card) card.scrollIntoView({ behavior: 'smooth' });
+
   } catch(err) {
     tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-red-500 font-bold">កំហុស៖ ' + err.message + '</td></tr>';
   }
@@ -342,7 +475,6 @@ function recalcSettlementCalculation() {
   var sub = getSelectedSettlementTotal();
   var count = document.querySelectorAll('.settle-item-cb:checked').length;
   
-  // ឆែកប្រអប់ធីកបូកបំណុលចាស់
   var cbOldDebt = document.getElementById('cbIncludeOldDebt');
   var includeOldDebt = cbOldDebt ? cbOldDebt.checked : true;
   var oldDebtAmount = includeOldDebt ? currentSettlementOldDebt : 0;
@@ -441,7 +573,7 @@ function setSettlePayMode(mode) {
 }
 
 // ==========================================
-// 💾 ៥. បញ្ជាក់ការទូទាត់លុយ (SUBMIT SETTLEMENT ទៅ SUPABASE)
+// 💾 ៦. បញ្ជាក់ការទូទាត់លុយ (SUBMIT SETTLEMENT ទៅ SUPABASE)
 // ==========================================
 var isSubmittingSettleLock = false;
 
@@ -539,8 +671,9 @@ async function submitSettlementPayment() {
     confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
 
     // Refresh ឡើងវិញ
-    document.getElementById('settlementDetailCard').classList.add('hidden');
+    document.getElementById('settlement_ui').classList.add('hidden');
     checkAdminPendingPayments();
+    fetchSettlementOverviewData();
     await loadSettlementDebtorsList();
 
   } catch(err) {
