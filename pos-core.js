@@ -282,6 +282,7 @@ async function loadDashboardData() {
         if (t.payment_method === 'ABA') todayBankAba += paid;
         else todayCashInHand += paid;
 
+        // 🎯 ទាំងផលិតឯង និងទិញគេ បង្ហាញចំនួនដែលលក់ចេញថ្ងៃនេះនៅទីនេះ!
         if (t.product_name) todayProdQty[t.product_name] = (todayProdQty[t.product_name] || 0) + qty;
         todayRecentSales.push(t);
       }
@@ -322,6 +323,7 @@ async function loadDashboardData() {
     netEl.innerText = (isPositive ? '+ ៛ ' : '- ៛ ') + Math.abs(Math.round(netProfitKHR)).toLocaleString();
     netEl.className = 'mt-2 font-black text-base sm:text-lg ' + (isPositive ? 'text-emerald-700' : 'text-red-600');
 
+    // ១. ចំនួនទឹកដកលក់ថ្ងៃនេះ (ទាំងផលិតឯង និងទិញគេ)
     var pqArea = document.getElementById('dashProductQtyArea');
     var pqHtml = "";
     for (var p in todayProdQty) {
@@ -329,15 +331,69 @@ async function loadDashboardData() {
     }
     pqArea.innerHTML = pqHtml || '<p class="text-gray-400 italic text-center py-4">មិនទាន់មានការដកលក់ថ្ងៃនេះនៅឡើយទេ</p>';
 
+    // ២. ដំណឹងស្តុក & ស្តុកឃ្លាំង (ចម្រាញ់យកតែទំនិញ «ទិញគេ» ប៉ុណ្ណោះ! ដក «ផលិតឯង» ចេញ)
     var alertArea = document.getElementById('dashStockAlertArea');
     var saHtml = "";
-    allProducts.forEach(function(prod) {
-      var isZero = parseFloat(prod.stock || 0) <= 0;
-      var isLow = parseFloat(prod.stock || 0) <= parseFloat(prod.min_stock || 5);
-      saHtml += '<div class="flex justify-between items-center p-2.5 rounded-xl border ' + (isZero ? 'bg-red-50 border-red-200' : (isLow ? 'bg-orange-50 border-orange-200' : 'bg-gray-50 border-gray-100')) + '"><div><b class="' + (isZero ? 'text-red-900' : (isLow ? 'text-orange-900' : 'text-gray-800')) + '">' + prod.name + '</b><div class="text-[10px] text-gray-400 font-bold">កម្រិតកំណត់៖ ' + (prod.min_stock || 5) + '</div></div><span class="px-2.5 py-1 font-black rounded-lg text-xs ' + (isZero ? 'bg-red-600 text-white' : (isLow ? 'bg-orange-500 text-white' : 'bg-blue-100 text-blue-800')) + '">' + (isZero ? 'អស់ (០)' : 'សល់ ' + prod.stock) + '</span></div>';
-    });
-    alertArea.innerHTML = saHtml || '<p class="text-gray-400 italic text-center py-4">គ្មានទិន្នន័យស្តុក</p>';
+    var lowStockItems = [];
+    var resaleItems = [];
 
+    allProducts.forEach(function(prod) {
+      // 🚫 បើជា «ផលិតឯង» (ទឹកធុង ២០L) មិនបាច់ដាក់ក្នុងដំណឹងស្តុកទិញចូលឡើយ
+      if (prod.type === 'ទិញគេ') {
+        var s = parseFloat(prod.stock || 0);
+        var min = parseFloat(prod.min_stock || 5);
+        resaleItems.push(prod);
+        if (s <= min) {
+          lowStockItems.push(prod);
+        }
+      }
+    });
+
+    // ក. បង្ហាញទំនិញជិតអស់ស្តុក (បើមាន)
+    if (lowStockItems.length > 0) {
+      lowStockItems.forEach(function(prod) {
+        var isZero = parseFloat(prod.stock || 0) <= 0;
+        var unitLabel = (prod.name.indexOf("យួរ") !== -1) ? "យួរ" : ((prod.name.indexOf("ធុង") !== -1) ? "ធុង" : "ឯកតា");
+
+        saHtml += '<div class="flex justify-between items-center p-2.5 rounded-xl border ' + (isZero ? 'bg-red-50 border-red-200' : 'bg-orange-50 border-orange-200') + ' mb-1.5">' +
+          '<div>' +
+            '<b class="' + (isZero ? 'text-red-900' : 'text-orange-900') + '">' + prod.name + '</b>' +
+            '<div class="text-[10px] text-gray-400 font-bold">កម្រិតកំណត់៖ ' + (prod.min_stock || 5) + ' ' + unitLabel + '</div>' +
+          '</div>' +
+          '<div class="flex items-center gap-1.5">' +
+            '<span class="px-2.5 py-1 font-black rounded-lg text-xs ' + (isZero ? 'bg-red-600 text-white' : 'bg-orange-500 text-white') + '">' +
+              (isZero ? 'អស់ (០)' : 'សល់ ' + prod.stock + ' ' + unitLabel) +
+            '</span>' +
+            '<button type="button" onclick="openQuickRestockModal(\'' + prod.id + '\', \'' + prod.name.replace(/'/g, "\\'") + '\', ' + (prod.cost || 0) + ')" class="px-2.5 py-1 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-black shadow-2xs active:scale-95 transition flex items-center gap-1">' +
+              '<i class="fas fa-plus"></i> បញ្ចូល' +
+            '</button>' +
+          '</div>' +
+        '</div>';
+      });
+    } else {
+      saHtml += '<div class="p-2.5 bg-green-50 text-green-800 rounded-xl text-xs text-center font-bold flex items-center justify-center gap-1.5 border border-green-200 mb-2">' +
+        '<i class="fas fa-check-circle text-green-600"></i> ស្តុកទំនិញទិញចូលទាំងអស់មានសុវត្ថិភាពល្អ' +
+      '</div>';
+    }
+
+    // ខ. បង្ហាញបញ្ជីស្តុកទំនិញទិញគេជាក់ស្តែងក្នុងឃ្លាំង
+    if (resaleItems.length > 0) {
+      saHtml += '<div class="pt-1 space-y-1.5">';
+      resaleItems.forEach(function(r) {
+        var uLabel = (r.name.indexOf("យួរ") !== -1) ? "យួរ" : ((r.name.indexOf("ធុង") !== -1) ? "ធុង" : "ឯកតា");
+        var isLowNow = parseFloat(r.stock || 0) <= parseFloat(r.min_stock || 5);
+
+        saHtml += '<div class="flex justify-between items-center p-2 bg-gray-50 hover:bg-gray-100 rounded-xl border border-gray-200 text-xs">' +
+          '<span><i class="fas fa-box text-blue-500 mr-1.5"></i><b>' + r.name + '</b></span>' +
+          '<span class="font-black ' + (isLowNow ? 'text-red-600' : 'text-blue-900') + '">' + Number(r.stock).toLocaleString() + ' ' + uLabel + '</span>' +
+        '</div>';
+      });
+      saHtml += '</div>';
+    }
+
+    alertArea.innerHTML = saHtml || '<p class="text-gray-400 italic text-center py-4">គ្មានទំនិញទិញគេក្នុងឃ្លាំង</p>';
+
+    // ៣. ប្រតិបត្តិការដកទំនិញថ្ងៃនេះពេញមួយថ្ងៃ
     var tbodyRecent = document.getElementById('dashRecentTbody');
     var badgeCount = document.getElementById('dashRecentCountBadge');
     if (badgeCount) badgeCount.innerText = todayRecentSales.length + " លើក";
@@ -356,7 +412,6 @@ async function loadDashboardData() {
     console.error("Dashboard error:", e);
   }
 }
-
 // ==========================================
 // 🛒 ៣. ផ្ទាំងលក់ POS (ចាក់សោតាមតួនាទី - ROLE-BASED POS)
 // ==========================================
