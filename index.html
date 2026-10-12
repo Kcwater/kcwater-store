@@ -713,7 +713,7 @@
       checkActiveOrderLiveStatus(); // Refresh Tracking labels if tracking
     }
 
-    // 📦 ២. ទាញយកទំនិញពី SUPABASE
+    // 📦 ២. ទាញយកទំនិញពី SUPABASE (កែលម្អ៖ ស្គាល់ទាំងរូប Upload ពីទូរស័ព្ទ Base64 & Link)
     async function loadStoreOnlineProducts() {
       var grid = document.getElementById('catalogGrid');
       if (grid) {
@@ -742,11 +742,15 @@
               cat = 'PACK';
             }
 
+            // ✅ ស្គាល់ទាំងរូបភាព Base64 (data:image) និងរូបភាព Link (http)
             var imgDisplay = '';
-            if (p.img && String(p.img).indexOf('http') === 0) {
-              imgDisplay = '<img src="' + p.img + '" class="h-24 object-contain rounded-2xl drop-shadow-md mx-auto" onerror="this.onerror=null; this.src=\'https://cdn-icons-png.flaticon.com/512/3100/3100566.png\';">';
+            var rawImg = (p.img || '').trim();
+
+            if (rawImg && (rawImg.startsWith('http') || rawImg.startsWith('data:image'))) {
+              imgDisplay = '<img src="' + rawImg + '" class="h-24 w-full object-contain rounded-2xl drop-shadow-md mx-auto" onerror="this.onerror=null; this.src=\'https://cdn-icons-png.flaticon.com/512/3100/3100566.png\';">';
             } else {
-              imgDisplay = '<div class="text-5xl my-2">💧</div>';
+              // បើគ្មានរូបពិត បង្ហាញរូបតំណាងដប/ធុងទឹកស្អាត (លែងចេញរូប 💧 ទៀតហើយ)
+              imgDisplay = '<img src="https://cdn-icons-png.flaticon.com/512/3100/3100566.png" class="h-20 object-contain opacity-80 mx-auto my-2 drop-shadow-sm">';
             }
 
             var onlinePrice = parseFloat(p.online_price || p.price || 0);
@@ -771,7 +775,6 @@
         if (grid) grid.innerHTML = '<div class="col-span-full py-8 text-center text-red-500 font-bold text-xs">Error: ' + err.message + '</div>';
       }
     }
-
     function renderCatalogGrid(filterCat) {
       filterCat = filterCat || 'ALL';
       var grid = document.getElementById('catalogGrid');
