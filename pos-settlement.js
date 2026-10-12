@@ -14,8 +14,8 @@ function playPaymentSuccessAudio() {
       var osc = ctx.createOscillator();
       var gain = ctx.createGain();
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(587.33, ctx.currentTime); // សំឡេង ទី ១
-      osc.frequency.setValueAtTime(880, ctx.currentTime + 0.12); // សំឡេង ទី ២
+      osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+      osc.frequency.setValueAtTime(880, ctx.currentTime + 0.12);
       gain.gain.setValueAtTime(0.3, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.7);
       osc.connect(gain);
@@ -24,6 +24,15 @@ function playPaymentSuccessAudio() {
       osc.stop(ctx.currentTime + 0.7);
     }
   } catch(e) {}
+}
+
+// មុខងារជំនួយគណនាថ្ងៃខែតាមម៉ោងកម្ពុជា (Cambodia Local Date)
+function getCambodiaDateString() {
+  var d = new Date();
+  var year = d.getFullYear();
+  var month = String(d.getMonth() + 1).padStart(2, '0');
+  var day = String(d.getDate()).padStart(2, '0');
+  return year + '-' + month + '-' + day;
 }
 
 // ==========================================
@@ -46,7 +55,6 @@ async function renderSettlementModule() {
   });
 
   area.innerHTML = '<div class="max-w-4xl mx-auto space-y-4">' +
-    // ក្បាលទំព័រ
     '<div class="flex justify-between items-center bg-white p-4 rounded-2xl border shadow-sm">' +
       '<div>' +
         '<h2 class="text-base sm:text-xl font-extrabold text-blue-900 flex items-center gap-2">' +
@@ -170,7 +178,7 @@ async function renderSettlementModule() {
           '</div>' +
         '</div>' +
 
-        // 🧠 ផ្នែកវិធីបង់ប្រាក់ឆ្លាតវៃ (SMART PAYMENT SECTION)
+        // 🧠 ផ្នែកវិធីបង់ប្រាក់ឆ្លាតវៃ
         '<div class="bg-blue-50/70 p-4 rounded-2xl border border-blue-200 space-y-3">' +
           '<div class="flex justify-between items-center">' +
             '<label class="text-xs font-bold text-blue-900 uppercase">វិធីទូទាត់ប្រាក់ជាក់ស្តែង</label>' +
@@ -183,13 +191,13 @@ async function renderSettlementModule() {
             '<button type="button" id="btnSettleSplit" onclick="setSettlePayMode(\'Split\')" class="py-2.5 rounded-lg text-xs font-bold bg-gray-100 text-gray-600 hover:bg-gray-200"><i class="fas fa-layer-group mr-1"></i> ចម្រុះ</button>' +
           '</div>' +
 
-          // បង់ធម្មតា (លុយសុទ្ធ ឬ ABA)
+          // បង់ធម្មតា
           '<div id="settleSingleInputArea" class="space-y-1">' +
             '<label class="text-[10px] font-bold text-gray-500 uppercase">ប្រាក់បានបង់ជាក់ស្តែង (៛)</label>' +
             '<input type="number" id="settlePaidInput" oninput="calcSettleChange()" placeholder="0" class="w-full text-center text-xl font-black text-blue-900 bg-white border-2 border-blue-200 focus:border-blue-600 rounded-xl p-2.5 outline-none">' +
           '</div>' +
 
-          // 🔀 បង់ចម្រុះឆ្លាតវៃ (SMART AUTO-BALANCE: វាយលុយសុទ្ធ ➔ ABA បំពេញបង្គ្រប់អូតូ)
+          // 🔀 បង់ចម្រុះឆ្លាតវៃ (Auto-Balance)
           '<div id="settleSplitInputArea" class="hidden space-y-2.5 bg-white p-3.5 rounded-2xl border border-blue-200 shadow-2xs">' +
             '<div class="text-[11px] font-black text-blue-900 uppercase flex items-center justify-between">' +
               '<span><i class="fas fa-layer-group text-blue-600 mr-1"></i> បែងចែកការទូទាត់ចម្រុះ (៛)៖</span>' +
@@ -212,7 +220,7 @@ async function renderSettlementModule() {
             '</div>' +
           '</div>' +
 
-          // 💵 ប៊ូតុងក្រដាសប្រាក់ខ្មែររហ័ស (QUICK CASH BILLS)
+          // 💵 ប៊ូតុងក្រដាសប្រាក់ខ្មែររហ័ស
           '<div class="flex gap-1.5 pt-1 text-xs">' +
             '<button type="button" onclick="setQuickCashBill(10000)" class="flex-1 py-1.5 bg-white hover:bg-green-50 text-gray-800 font-black rounded-xl border shadow-2xs active:scale-95 transition">10,000</button>' +
             '<button type="button" onclick="setQuickCashBill(20000)" class="flex-1 py-1.5 bg-white hover:bg-green-50 text-gray-800 font-black rounded-xl border shadow-2xs active:scale-95 transition">20,000</button>' +
@@ -245,7 +253,6 @@ function getTotalDueAmount() {
   return sub + (includeOldDebt ? currentSettlementOldDebt : 0);
 }
 
-// ពេល Admin វាយលុយសុទ្ធ ➔ ប្រអប់ស្កេន ABA បំពេញបង្គ្រប់អូតូភ្លាម!
 function onSplitCashInput(val) {
   var totalDue = getTotalDueAmount();
   var cash = parseFloat(val || 0);
@@ -265,7 +272,6 @@ function onSplitCashInput(val) {
   calcSettleChange();
 }
 
-// ពេល Admin វាយលេខលុយស្កេន ABA ➔ ប្រអប់លុយសុទ្ធបំពេញបង្គ្រប់អូតូភ្លាម!
 function onSplitScanInput(val) {
   var totalDue = getTotalDueAmount();
   var scan = parseFloat(val || 0);
@@ -284,7 +290,6 @@ function onSplitScanInput(val) {
   calcSettleChange();
 }
 
-// ប៊ូតុងក្រដាសប្រាក់ខ្មែររហ័ស (10K, 20K, 50K, 100K)
 function setQuickCashBill(amt) {
   if (currentSettlementPayMode === "Split") {
     var cashInp = document.getElementById('splitKhrCash');
@@ -301,7 +306,6 @@ function setQuickCashBill(amt) {
   }
 }
 
-// បើក QR Modal ជាមួយចំនួនទឹកប្រាក់ជាក់ស្តែងដែលត្រូវស្កេនក្នុង Mode Split
 function openSplitAbaQrModal() {
   var scanVal = parseFloat(document.getElementById('splitKhrScan') ? document.getElementById('splitKhrScan').value || 0 : 0);
   if (scanVal <= 0) {
@@ -317,7 +321,7 @@ function openSplitAbaQrModal() {
 // ==========================================
 async function fetchSettlementOverviewData() {
   try {
-    var todayStr = new Date().toISOString().split('T')[0];
+    var todayStr = getCambodiaDateString();
 
     const { data: todayUnpaids } = await supabaseClient
       .from('transactions')
@@ -733,7 +737,8 @@ async function submitSettlementPayment() {
       admin_name: currentUser.fullName || "Admin",
       pay_method: currentSettlementPayMode,
       cash_khr: cashKhrRecorded,
-      scan_khr: scanKhrRecorded
+      scan_khr: scanKhrRecorded,
+      settled_at: new Date().toISOString()
     }]);
     if (setErr) throw setErr;
 
@@ -759,7 +764,7 @@ async function submitSettlementPayment() {
       sendTelegramAlert(tgMsg);
     } catch(e) {}
 
-    // ៥. 🔔 បន្លឺសំឡេងរោទ៍ Chime & បាញ់កាំជ្រួចអបអរសាទរ
+    // ៥. 🔔 សំឡេងរោទ៍ Chime & បាញ់កាំជ្រួច
     playPaymentSuccessAudio();
     if (typeof confetti === 'function') confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
 
