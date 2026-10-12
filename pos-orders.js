@@ -304,6 +304,7 @@ async function cancelOnlineOrder(orderId, custName) {
   }
 }
 
+// ✅ មុខងារបញ្ចប់ការដឹកជញ្ជូន (កត់ត្រាចំណូល, កាត់ស្តុកទំនិញអូតូ & Refresh ត្រូវតាមទំព័រ)
 async function completeOnlineOrder(orderId, custName, total, itemsText, driverName, payMethod) {
   if (!confirm("តើការកុម្ម៉ង់កូដ [" + orderId + "] ត្រូវបានដឹកដល់ និងប្រមូលប្រាក់រួចរាល់ហើយមែនទេ?")) return;
 
@@ -317,7 +318,7 @@ async function completeOnlineOrder(orderId, custName, total, itemsText, driverNa
 
     // ២. កត់ត្រាចំណូលចូល Transactions
     var tid = "TR-" + new Date().getTime();
-    var isABA = (payMethod.indexOf("ABA") !== -1);
+    var isABA = (String(payMethod || '').indexOf("ABA") !== -1);
     await supabaseClient.from('transactions').insert([{
       transaction_id: tid,
       customer_name: custName,
@@ -332,10 +333,37 @@ async function completeOnlineOrder(orderId, custName, total, itemsText, driverNa
       payment_method: isABA ? "ABA" : "Cash"
     }]);
 
-    showToast("បានកត់ត្រាការដឹកដល់ និងប្រមូលប្រាក់ជោគជ័យ!", "success");
-    openOnlineOrdersModal();
+    // ៣. កាត់ស្តុកទំនិញក្នុងឃ្លាំង Supabase ដោយស្វ័យប្រវត្តិ
+    try {
+      var itemParts = String(itemsText || '').split(',');
+      for (var i = 0; i < itemParts.length; i++) {
+        var subParts = itemParts[i].split('x');
+        if (subParts.length === 2) {
+          var pName = subParts[0].trim();
+          var pQty = parseFloat(subParts[1].trim() || 0);
 
-    // ផ្ញើសារដំណឹង Telegram
+          var prodObj = allProducts.find(p => p.name.toLowerCase() === pName.toLowerCase());
+          if (prodObj && prodObj.type === 'ទិញគេ' && pQty > 0) {
+            var newStock = Math.max(0, parseFloat(prodObj.stock || 0) - pQty);
+            await supabaseClient.from('products').update({ stock: newStock }).eq('id', prodObj.id);
+            prodObj.stock = newStock;
+          }
+        }
+      }
+    } catch(stkErr) {
+      console.warn("Stock deduct error:", stkErr);
+    }
+
+    showToast("បានកត់ត្រាការដឹកដល់ និងកាត់ស្តុកជោគជ័យ!", "success");
+
+    // ៤. Refresh ទំព័រឱ្យត្រូវតាមអ្នកប្រើ (បើអ្នកដឹក Refresh ទំព័រអ្នកដឹក, បើ Admin Refresh Modal)
+    if (currentUser && currentUser.type === 'CompanyDriver') {
+      if (typeof renderCompanyDeliveriesModule === 'function') renderCompanyDeliveriesModule();
+    } else {
+      openOnlineOrdersModal();
+    }
+
+    // ៥. ផ្ញើសារដំណឹង Telegram Alert
     try {
       var tgMsg = "✅ <b>[KC WATER - ដឹកជញ្ជូនរួចរាល់ & ប្រមូលប្រាក់ជោគជ័យ!]</b>\n\n" +
                   "🆔 <b>កូដកុម្ម៉ង់៖</b> <code>" + orderId + "</code>\n" +
@@ -346,11 +374,11 @@ async function completeOnlineOrder(orderId, custName, total, itemsText, driverNa
                   "🕒 <b>ម៉ោង៖</b> " + new Date().toLocaleTimeString('km-KH');
       sendTelegramAlert(tgMsg);
     } catch(e) {}
+
   } catch(err) {
     showToast("កំហុស៖ " + err.message, "error");
   }
 }
-
 function openOrderMap(mapUrl) {
   if (!mapUrl || String(mapUrl).trim() === "") {
     showToast("មិនមានទីតាំង ឬអាសយដ្ឋានឡើយ!", "warning");
