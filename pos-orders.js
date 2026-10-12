@@ -242,9 +242,7 @@ function closeOnlineOrdersModal() {
   checkPendingOnlineOrdersBadge();
 }
 
-// ==========================================
-// 🚀 ៣. សកម្មភាពចាត់ចែងអ្នកដឹក, បោះបង់ & ដឹកដល់
-// ==========================================
+// 🚚 មុខងារចាត់ចែងអ្នកដឹក (បាញ់ព័ត៌មានលម្អិត ទឹកប្រាក់ & ផែនទី Google Maps ទៅ Telegram អូតូ)
 async function assignDriverToOnlineOrder(orderId, custName) {
   var sel = document.getElementById('driver_sel_' + orderId);
   var driverName = sel ? sel.value.trim() : "";
@@ -258,6 +256,14 @@ async function assignDriverToOnlineOrder(orderId, custName) {
   var driverPhone = selectedOpt ? selectedOpt.getAttribute('data-phone') : '';
 
   try {
+    // ១. ទាញព័ត៌មានកុម្ម៉ង់លម្អិតពី Supabase
+    const { data: orderInfo } = await supabaseClient
+      .from('orders')
+      .select('*')
+      .eq('order_id', orderId)
+      .maybeSingle();
+
+    // ២. Update ស្ថានភាពទៅជា Assigned ក្នុង Supabase
     const { error } = await supabaseClient
       .from('orders')
       .update({
@@ -272,20 +278,44 @@ async function assignDriverToOnlineOrder(orderId, custName) {
     showToast("បានចាត់ចែងទៅឱ្យ " + driverName + " ជោគជ័យ!", "success");
     openOnlineOrdersModal();
 
-    // ផ្ញើសារដំណឹង Telegram
+    // ៣. បាញ់សារ Telegram Alert ពេញលេញ (មានលេខទូរស័ព្ទ, មុខទំនិញ, តម្លៃ & ផែនទីនាំផ្លូវ)
     try {
-      var tgMsg = "🚚 <b>[KC WATER - បានចាត់ចែងអ្នកដឹកជញ្ជូន]</b>\n\n" +
+      var phoneText = orderInfo && orderInfo.phone ? orderInfo.phone : '-';
+      var itemsText = orderInfo && orderInfo.items ? orderInfo.items : '-';
+      var totalText = orderInfo && orderInfo.total ? Number(orderInfo.total).toLocaleString() : '0';
+      var payText = orderInfo && orderInfo.payment_method ? orderInfo.payment_method : 'COD';
+      var mapUrl = orderInfo ? (orderInfo.location_url || orderInfo.address || '') : '';
+
+      var mapLine = '';
+      if (mapUrl) {
+        var matchLink = mapUrl.match(/https?:\/\/[^\s]+/);
+        if (matchLink) {
+          mapLine = "🗺️ <b>ផែនទីផ្ទះភ្ញៀវ៖</b> <a href='" + matchLink[0] + "'>ចុចបើក Google Maps នាំផ្លូវ</a>\n";
+        } else {
+          var searchMap = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(mapUrl + " ប៉ោយប៉ែត");
+          mapLine = "🗺️ <b>ផែនទីផ្ទះភ្ញៀវ៖</b> <a href='" + searchMap + "'>ចុចបើក Google Maps នាំផ្លូវ</a>\n";
+        }
+      }
+
+      var tgMsg = "🚚 <b>[KC WATER - បានចាត់ចែងអ្នកដឹកជញ្ជូនរួចរាល់]</b>\n\n" +
                   "🛵 <b>អ្នកដឹក៖</b> " + driverName + (driverPhone ? " (📞 " + driverPhone + ")" : "") + "\n" +
                   "🆔 <b>កូដកុម្ម៉ង់៖</b> <code>" + orderId + "</code>\n" +
-                  "👤 <b>អតិថិជន៖</b> " + custName + "\n" +
-                  "🕒 <b>ម៉ោង៖</b> " + new Date().toLocaleTimeString('km-KH');
+                  "👤 <b>អតិថិជន៖</b> " + custName + " (📞 " + phoneText + ")\n" +
+                  "📦 <b>ទំនិញ៖</b> " + itemsText + "\n" +
+                  "💰 <b>ទឹកប្រាក់ត្រូវប្រមូល៖</b> <b>៛ " + totalText + "</b> (" + payText + ")\n" +
+                  mapLine +
+                  (orderInfo && orderInfo.address ? "📝 <b>ចំណាំទីតាំង៖</b> " + orderInfo.address + "\n" : "") +
+                  "🕒 <b>ម៉ោងចាត់ចែង៖</b> " + new Date().toLocaleTimeString('km-KH');
+
       sendTelegramAlert(tgMsg);
-    } catch(e) {}
+    } catch(tgErr) {
+      console.warn("Telegram alert error:", tgErr);
+    }
+
   } catch(err) {
     showToast("កំហុសចាត់ចែង៖ " + err.message, "error");
   }
 }
-
 async function cancelOnlineOrder(orderId, custName) {
   if (!confirm("តើអ្នកពិតជាចង់បោះបង់ការកុម្ម៉ង់កូដ [" + orderId + "] នេះមែនទេ?")) return;
 
