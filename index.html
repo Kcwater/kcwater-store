@@ -236,7 +236,31 @@
     </div>
   </div>
 
-  <!-- ៦. ផ្ទាំង CHECKOUT ពេញលេញ -->
+  <!-- 💬 ៦. ប៊ូតុងជំនួយអណ្តែត (FLOATING SUPPORT WIDGET - TELEGRAM & CALL) -->
+  <div class="fixed bottom-20 right-4 z-30 flex flex-col items-end gap-2">
+    <!-- Popup តូចពេលចុចបើកជំនួយ -->
+    <div id="supportPopupBox" class="hidden bg-white p-3 rounded-2xl shadow-2xl border border-emerald-200 text-xs space-y-2 mb-1 animate-in zoom-in duration-200 w-52 text-left">
+      <div class="flex justify-between items-center border-b pb-1.5">
+        <b class="text-slate-800 text-[11px] flex items-center gap-1"><i class="fas fa-headset text-emerald-600"></i> KC Support</b>
+        <button onclick="toggleSupportWidget()" class="text-slate-400 hover:text-slate-600 text-sm font-bold">&times;</button>
+      </div>
+      <a href="https://t.me/KcWater" target="_blank" class="flex items-center gap-2 p-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-900 font-bold transition" style="text-decoration:none;">
+        <i class="fab fa-telegram text-blue-600 text-base"></i>
+        <span>ឆាត Telegram ផ្លូវការ</span>
+      </a>
+      <a href="tel:077934748" class="flex items-center gap-2 p-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-900 font-bold transition" style="text-decoration:none;">
+        <i class="fas fa-phone text-emerald-600 text-sm"></i>
+        <span>ខល 077 934 748</span>
+      </a>
+    </div>
+
+    <!-- ប៊ូតុងរង្វង់អណ្តែត -->
+    <button type="button" onclick="toggleSupportWidget()" class="w-12 h-12 rounded-full bg-gradient-to-tr from-emerald-600 to-green-500 text-white shadow-xl flex items-center justify-center text-xl active:scale-90 transition border-2 border-white animate-pulse">
+      <i class="fas fa-comment-dots"></i>
+    </button>
+  </div>
+
+  <!-- ៧. ផ្ទាំង CHECKOUT ពេញលេញ (TIME SLOT + BUILDING/FLOOR DETAILS) -->
   <div id="checkoutModal" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
     <div class="absolute inset-0 bg-slate-950/60 backdrop-blur-xs" onclick="closeCheckoutModal()"></div>
     <div class="bg-white rounded-t-[32px] sm:rounded-[32px] shadow-2xl z-10 w-full max-w-md max-h-[92vh] overflow-y-auto p-5 space-y-3.5 relative border border-slate-100 animate-in slide-in-from-bottom duration-300 text-xs">
@@ -270,12 +294,59 @@
         </div>
       </div>
 
-      <!-- ២. ទីតាំង GPS Google Maps ផ្ទះ -->
+      <!-- ២. ⏰ ជម្រើសម៉ោងដឹកជញ្ជូន (DELIVERY TIME SLOT) -->
+      <div class="space-y-1.5 p-3 bg-emerald-50/60 rounded-2xl border border-emerald-200">
+        <div class="font-black text-emerald-950 uppercase text-[11px] flex items-center gap-1">
+          <i class="fas fa-clock text-emerald-600"></i>
+          <span id="coSectionTime">២. ម៉ោងចង់ទទួលទឹក (Delivery Time)</span>
+        </div>
+        <div class="grid grid-cols-2 gap-2 text-[11px]">
+          <label class="p-2 rounded-xl border-2 border-emerald-600 bg-white flex items-center gap-1.5 cursor-pointer font-bold text-slate-800">
+            <input type="radio" name="co_timeSlot" value="ASAP" checked onchange="onTimeSlotChanged()" class="accent-emerald-600">
+            <span id="optTimeAsap">⚡ ដឹកភ្លាមៗ (៣០-៤៥ នាទី)</span>
+          </label>
+          <label class="p-2 rounded-xl border-2 border-slate-200 bg-white flex items-center gap-1.5 cursor-pointer font-bold text-slate-800">
+            <input type="radio" name="co_timeSlot" value="SCHEDULE" onchange="onTimeSlotChanged()" class="accent-emerald-600">
+            <span id="optTimeSchedule">⏰ កំណត់ម៉ោងដឹក</span>
+          </label>
+        </div>
+        <div id="scheduleTimePickerRow" class="hidden pt-1">
+          <select id="inp_timeSlotSelect" class="w-full p-2 bg-white border border-emerald-300 rounded-xl font-bold text-xs text-slate-800 outline-none">
+            <option value="11:30 - 12:30">🕒 ថ្ងៃត្រង់ (១១:៣០ - ១២:៣០)</option>
+            <option value="14:00 - 15:30">🕒 រសៀល (១៤:០០ - ១៥:៣០)</option>
+            <option value="17:00 - 18:30">🕒 ល្ងាច (១៧:០០ - ១៨:៣០)</option>
+            <option value="ស្អែកព្រឹក (08:00 - 10:00)">🌅 ព្រឹកស្អែក (០៨:០០ - ១០:០០)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- ៣. 🏢 ប្រភេទលំនៅដ្ឋាន & ជាន់ផ្ទះ (BUILDING & FLOOR DETAILS) -->
+      <div class="space-y-1.5 p-3 bg-slate-50 rounded-2xl border border-slate-200">
+        <div class="font-black text-slate-800 uppercase text-[11px] flex items-center gap-1">
+          <i class="fas fa-building text-blue-600"></i>
+          <span id="coSectionBuilding">៣. ប្រភេទកន្លែងស្នាក់នៅ (Building Type)</span>
+        </div>
+        <div class="grid grid-cols-2 gap-2 text-[11px]">
+          <label class="p-2 rounded-xl border-2 border-slate-300 bg-white flex items-center gap-1.5 cursor-pointer font-bold text-slate-800">
+            <input type="radio" name="co_bldType" value="GROUND" checked onchange="onBuildingTypeChanged()" class="accent-blue-600">
+            <span id="optBldGround">🏠 ផ្ទះផ្ទាល់ដី</span>
+          </label>
+          <label class="p-2 rounded-xl border-2 border-slate-200 bg-white flex items-center gap-1.5 cursor-pointer font-bold text-slate-800">
+            <input type="radio" name="co_bldType" value="FLOOR" onchange="onBuildingTypeChanged()" class="accent-blue-600">
+            <span id="optBldFloor">🏢 បន្ទប់ជួល / អាគារ</span>
+          </label>
+        </div>
+        <div id="buildingFloorDetailRow" class="hidden pt-1">
+          <input type="text" id="inp_bldFloorDetail" placeholder="ឧ៖ ជាន់ទី២ បន្ទប់ ២០៤ (មានជណ្តើរយន្ត)" class="w-full p-2 bg-white border border-blue-300 rounded-xl font-bold text-xs outline-none">
+        </div>
+      </div>
+
+      <!-- ៤. ទីតាំង GPS Google Maps ផ្ទះ -->
       <div class="space-y-1.5">
         <div class="flex justify-between items-center">
           <span class="font-black text-slate-800 uppercase text-[11px] flex items-center gap-1">
             <i class="fas fa-map-location-dot text-blue-600"></i>
-            <span id="coSectionLoc">២. ទីតាំងផ្ទះនៅក្រុងប៉ោយប៉ែត</span>
+            <span id="coSectionLoc">៤. ទីតាំងផ្ទះនៅក្រុងប៉ោយប៉ែត</span>
           </span>
           <button type="button" onclick="detectGPSLocation()" class="px-2.5 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg font-bold text-[10px] flex items-center gap-1 active:scale-95 transition">
             <i class="fas fa-crosshairs text-blue-600"></i>
@@ -287,12 +358,12 @@
         <input type="text" id="inp_custAddress" placeholder="ភូមិ, សង្កាត់, ឬចំណាំទីតាំងសម្គាល់ក្បែរផ្ទះ..." class="font-bold p-2.5 rounded-xl border border-slate-300 bg-white outline-none focus:border-emerald-600 w-full">
       </div>
 
-      <!-- ៣. ជម្រើសសំបកធុង -->
+      <!-- ៥. ជម្រើសសំបកធុង -->
       <div class="p-3 bg-amber-50/90 rounded-2xl border border-amber-200 space-y-1.5">
         <div class="font-black text-amber-950 text-[11px] flex justify-between items-center">
           <span class="flex items-center gap-1">
             <i class="fas fa-recycle text-amber-700"></i>
-            <span id="coSectionSwap">៣. ការដោះដូរសំបកធុងទឹក (Empty Barrel Swap)</span>
+            <span id="coSectionSwap">៥. ការដោះដូរសំបកធុងទឹក (Empty Barrel Swap)</span>
           </span>
           <span id="barrelCountSummaryBadge" class="text-[9px] bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full font-bold"></span>
         </div>
@@ -308,11 +379,11 @@
         </div>
       </div>
 
-      <!-- ៤. វិធីទូទាត់ប្រាក់ & ABA KHQR -->
+      <!-- ៦. វិធីទូទាត់ប្រាក់ & ABA KHQR -->
       <div class="space-y-2">
         <div class="font-black text-slate-800 uppercase text-[11px] flex items-center gap-1">
           <i class="fas fa-wallet text-purple-600"></i>
-          <span id="coSectionPay">៤. វិធីទូទាត់ប្រាក់</span>
+          <span id="coSectionPay">៦. វិធីទូទាត់ប្រាក់</span>
         </div>
         <div class="grid grid-cols-2 gap-2">
           <label id="cardPayCOD" class="p-2.5 rounded-xl border-2 border-emerald-600 bg-emerald-50/70 flex items-center gap-2 cursor-pointer font-bold text-slate-900 transition">
@@ -354,10 +425,9 @@
   </div>
 
   <!-- ==============================================
-       ៧. JAVASCRIPT LOGIC (100% COMPLETE MULTILINGUAL)
+       ៨. JAVASCRIPT LOGIC (ADVANCED DELIVERY & 100% TRANSLATION)
        ============================================== -->
   <script>
-    // 🔑 ១. SUPABASE INITIALIZATION
     const SUPABASE_URL = "https://ntftdylkcnkxsytptket.supabase.co";
     const SUPABASE_KEY = "sb_publishable_58qNd6IpyWqlvuI5BpuHRw__pTm7g7v";
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -403,36 +473,40 @@
         coSecUser: "១. ព័ត៌មានអ្នកទទួលទឹក",
         phName: "ឈ្មោះអ្នកទទួល (*)",
         phPhone: "លេខទូរស័ព្ទ (*)",
-        coSecLoc: "២. ទីតាំងផ្ទះនៅក្រុងប៉ោយប៉ែត",
+        coSecTime: "២. ម៉ោងចង់ទទួលទឹក (Delivery Time)",
+        optTimeAsap: "⚡ ដឹកភ្លាមៗ (៣០-៤៥ នាទី)",
+        optTimeSchedule: "⏰ កំណត់ម៉ោងដឹក",
+        coSecBuilding: "៣. ប្រភេទកន្លែងស្នាក់នៅ (Building Type)",
+        optBldGround: "🏠 ផ្ទះផ្ទាល់ដី",
+        optBldFloor: "🏢 បន្ទប់ជួល / អាគារ",
+        phFloorDetail: "ឧ៖ ជាន់ទី២ បន្ទប់ ២០៤ (មានជណ្តើរយន្ត)",
+        coSecLoc: "៤. ទីតាំងផ្ទះនៅក្រុងប៉ោយប៉ែត",
         btnGps: "📍 ចុចចាប់ GPS ផ្ទះខ្ញុំ",
         gpsHint: "💡 ចុចប៊ូតុងខៀវខាងលើ ដើម្បីឱ្យទូរស័ព្ទចាប់កូអរដោនេផ្ទះដោយស្វ័យប្រវត្តិ",
         gpsDetecting: "កំពុងចាប់ទីតាំង GPS...",
         gpsSuccess: "✅ ចាប់បានទីតាំងជោគជ័យ!",
         gpsFail: "⚠️ មិនអាចចាប់ GPS (សូមចុច Allow ឬវាយទីតាំង)",
         phAddress: "ភូមិ, សង្កាត់, ឬចំណាំទីតាំងសម្គាល់ក្បែរផ្ទះ...",
-        coSecSwap: "៣. ការដោះដូរសំបកធុងទឹក (Empty Barrel Swap)",
+        coSecSwap: "៥. ការដោះដូរសំបកធុងទឹក (Empty Barrel Swap)",
         optSwapYes: "✅ ខ្ញុំមានសំបកធុងដូរ (មិនគិតថ្លៃសំបក)",
         optSwapNo: "🛒 គ្មានសំបកធុងដូរទេ (ទិញសំបកថ្មីដាច់ +១២,០០០៛/ធុង)",
-        coSecPay: "៤. វិធីទូទាត់ប្រាក់",
+        coSecPay: "៦. វិធីទូទាត់ប្រាក់",
         optCod: "💵 លុយសុទ្ធពេលដល់",
         optAba: "📱 ស្កេន ABA KHQR",
         abaInstruction: "ស្កេនទូទាត់រួចហើយ សូមចុចប៊ូតុងកុម្ម៉ង់ខាងក្រោម",
         coTotal: "សរុបទឹកប្រាក់ត្រូវបង់៖",
         btnOrderNow: "បញ្ជាក់ការកុម្ម៉ង់ទឹកឥឡូវនេះ (Order Now)",
         btnSubmitting: "កំពុងបញ្ជូនការកុម្ម៉ង់...",
-        // Breakdown Labels
         breakdownBarrelFee: "ថ្លៃទិញសំបកធុងថ្មីដាច់",
         breakdownDeliveryFree: "សេវាដឹកជញ្ជូនដល់ផ្ទះ",
         breakdownFreeTag: "Free (ឥតគិតថ្លៃ) 🎉",
         breakdownDeliveryFee: "សេវាដឹកជញ្ជូន",
         breakdownMinFreeHint: "កុម្ម៉ង់ចាប់ពី {min} ធុងឡើង ដឹក Free",
         breakdownPromoTag: "ប្រូម៉ូសិន",
-        // In-App Errors
         errName: "សូមបញ្ចូលឈ្មោះរបស់អ្នកទទួលទឹក!",
         errPhone: "សូមបញ្ចូលលេខទូរស័ព្ទរបស់អ្នកទទួលទឹក!",
         errAddress: "សូមចុចចាប់ GPS ឬវាយអាសយដ្ឋានផ្ទះរបស់អ្នក!",
         errEmptyCart: "កន្ត្រកទទេ! សូមជ្រើសរើសទឹកជាមុនសិន។",
-        // Live Tracking
         trackTitle: "📦 ស្ថានភាពការកុម្ម៉ង់ទឹករបស់អ្នក",
         trackRefresh: "Refresh",
         trackPending: "⏳ រង់ចាំរោងចក្រពិនិត្យ",
@@ -441,7 +515,6 @@
         trackCallDriver: "ខលទៅអ្នកដឹក",
         trackSendSlip: "📲 ផ្ញើបង្កាន់ដៃ (Slip ABA) ទៅ Telegram",
         trackTotal: "សរុបទឹកប្រាក់៖",
-        // Store Hours Banner
         closedTitle: "បច្ចុប្បន្នផុតម៉ោងដឹកជញ្ជូនហើយ!",
         closedHint: "ម៉ោងទទួលកុម្ម៉ង់៖ {open} ដល់ {close}។ លោកអ្នកនៅតែអាចកុម្ម៉ង់ទុកជាមុនបាន ហើយរោងចក្រនឹងចាត់ចែងដឹកជូននៅព្រឹកស្អែក!",
         promoBannerTag: "PROMOTION កំពុងដំណើរការ",
@@ -474,36 +547,40 @@
         coSecUser: "1. Customer Details",
         phName: "Recipient Name (*)",
         phPhone: "Phone Number (*)",
-        coSecLoc: "2. Delivery Location (Poipet)",
+        coSecTime: "2. Delivery Time Preference",
+        optTimeAsap: "⚡ ASAP (30 - 45 mins)",
+        optTimeSchedule: "⏰ Schedule Time",
+        coSecBuilding: "3. Premises / Building Type",
+        optBldGround: "🏠 Ground Floor",
+        optBldFloor: "🏢 Apartment / Building",
+        phFloorDetail: "e.g., 2nd Floor, Room 204 (Has elevator)",
+        coSecLoc: "4. Delivery Location (Poipet)",
         btnGps: "📍 Pin My GPS Location",
         gpsHint: "💡 Tap the blue button above to auto-pin your GPS delivery location",
         gpsDetecting: "Detecting GPS location...",
         gpsSuccess: "✅ GPS location pinned successfully!",
         gpsFail: "⚠️ Unable to detect GPS (Please allow access or enter address)",
         phAddress: "Village, Sangkat, or nearby landmark...",
-        coSecSwap: "3. Barrel Exchange Option",
+        coSecSwap: "5. Barrel Exchange Option",
         optSwapYes: "✅ I have empty barrels to exchange (Free)",
         optSwapNo: "🛒 No barrels to exchange (+12,000 KHR/barrel deposit)",
-        coSecPay: "4. Payment Method",
+        coSecPay: "6. Payment Method",
         optCod: "💵 Cash on Delivery",
         optAba: "📱 Scan ABA KHQR",
         abaInstruction: "After scanning payment, please click order button below",
         coTotal: "Total Amount to Pay:",
         btnOrderNow: "Confirm Water Order (Order Now)",
         btnSubmitting: "Submitting order...",
-        // Breakdown Labels
         breakdownBarrelFee: "New barrel deposit fee",
         breakdownDeliveryFree: "Home delivery fee",
         breakdownFreeTag: "Free Delivery 🎉",
         breakdownDeliveryFee: "Delivery fee",
         breakdownMinFreeHint: "Free delivery for {min}+ barrels",
         breakdownPromoTag: "Promotion",
-        // In-App Errors
         errName: "Please enter recipient name!",
         errPhone: "Please enter recipient phone number!",
         errAddress: "Please pin GPS or enter your home address!",
         errEmptyCart: "Cart is empty! Please select water items.",
-        // Live Tracking
         trackTitle: "📦 Your Order Status",
         trackRefresh: "Refresh",
         trackPending: "⏳ Awaiting Review",
@@ -512,7 +589,6 @@
         trackCallDriver: "Call Driver",
         trackSendSlip: "📲 Send Payment Slip to Telegram",
         trackTotal: "Total Amount:",
-        // Store Hours Banner
         closedTitle: "Delivery is currently closed for the day!",
         closedHint: "Ordering hours: {open} to {close}. You can still place an advance order and we will deliver it tomorrow morning!",
         promoBannerTag: "ACTIVE PROMOTION",
@@ -545,36 +621,40 @@
         coSecUser: "1. 收货人信息",
         phName: "收货人姓名 (*)",
         phPhone: "电话号码 (*)",
-        coSecLoc: "2. 波贝送货地址",
+        coSecTime: "2. 期望送水时间",
+        optTimeAsap: "⚡ 尽快送达 (30-45分钟)",
+        optTimeSchedule: "⏰ 预约时间",
+        coSecBuilding: "3. 住所建筑类型",
+        optBldGround: "🏠 一楼 / 地面平房",
+        optBldFloor: "🏢 排屋/公寓/租房",
+        phFloorDetail: "例如：2楼 204房 (有电梯/走楼梯)",
+        coSecLoc: "4. 波贝送货地址",
         btnGps: "📍 点击获取我的GPS定位",
         gpsHint: "💡 点击上方蓝色按钮自动定位您的送水住处",
         gpsDetecting: "正在定位GPS地址...",
         gpsSuccess: "✅ GPS定位成功！",
         gpsFail: "⚠️ 无法获取定位 (请允许权限或手动输入地址)",
         phAddress: "村庄、分区或住处附近地标...",
-        coSecSwap: "3. 空桶置换说明",
+        coSecSwap: "5. 空桶置换说明",
         optSwapYes: "✅ 我有空桶可交换 (免押金)",
         optSwapNo: "🛒 无空桶可换 (买桶+12,000瑞尔/桶)",
-        coSecPay: "4. 支付方式",
+        coSecPay: "6. 支付方式",
         optCod: "💵 货到付款 (现金)",
         optAba: "📱 ABA KHQR 扫码支付",
         abaInstruction: "扫码付款完成后，请点击下方确认按钮提交",
         coTotal: "应付总金额：",
         btnOrderNow: "立即提交订水 (Order Now)",
         btnSubmitting: "正在提交订单...",
-        // Breakdown Labels
         breakdownBarrelFee: "购买空桶押金费",
         breakdownDeliveryFree: "送货上门费",
         breakdownFreeTag: "免费配送 🎉",
         breakdownDeliveryFee: "配送费",
         breakdownMinFreeHint: "满 {min} 桶起免配送费",
         breakdownPromoTag: "特惠活动",
-        // In-App Errors
         errName: "请输入收货人姓名！",
         errPhone: "请输入收货人电话号码！",
         errAddress: "请定位GPS或输入您的送水地址！",
         errEmptyCart: "购物车为空！请先选购商品。",
-        // Live Tracking
         trackTitle: "📦 您的订单状态",
         trackRefresh: "刷新",
         trackPending: "⏳ 等待水厂确认",
@@ -583,7 +663,6 @@
         trackCallDriver: "拨打配送员",
         trackSendSlip: "📲 发送付款水单至 Telegram",
         trackTotal: "应付总额：",
-        // Store Hours Banner
         closedTitle: "当前已超过配送营业时间！",
         closedHint: "接单时间：{open} 至 {close}。您仍可预先提交订单，水厂将于明早优先为您安排派送！",
         promoBannerTag: "限时特惠进行中",
@@ -591,13 +670,33 @@
       }
     };
 
-    // 🌐 មុខងារបកប្រែឈ្មោះទំនិញស្វ័យប្រវត្ត (Smart Product Name Translation)
+    function toggleSupportWidget() {
+      var box = document.getElementById('supportPopupBox');
+      if (box) box.classList.toggle('hidden');
+    }
+
+    function onTimeSlotChanged() {
+      var val = document.querySelector('input[name="co_timeSlot"]:checked').value;
+      var picker = document.getElementById('scheduleTimePickerRow');
+      if (picker) {
+        if (val === 'SCHEDULE') picker.classList.remove('hidden');
+        else picker.classList.add('hidden');
+      }
+    }
+
+    function onBuildingTypeChanged() {
+      var val = document.querySelector('input[name="co_bldType"]:checked').value;
+      var row = document.getElementById('buildingFloorDetailRow');
+      if (row) {
+        if (val === 'FLOOR') row.classList.remove('hidden');
+        else row.classList.add('hidden');
+      }
+    }
+
     function getLocalizedProductName(p, lang) {
       if (!p || !p.name) return '';
       if (lang === 'km') return p.name;
-
       var n = p.name;
-      // បញ្ជីឈ្មោះផ្គូផ្គងផ្ទាល់
       var directMap = {
         'ទឹកធុង ២០L ពណ៌ស': { en: '20L White Barrel Pure Water', zh: '20L 白桶装优质纯净水' },
         'ទឹកធុង ២០L ពណ៌ខៀវ': { en: '20L Blue Barrel Pure Water', zh: '20L 蓝桶装优质纯净水' },
@@ -609,12 +708,7 @@
         'ក្បាលរ៉ូប៊ីណេ': { en: 'Water Dispenser Valve / Faucet', zh: '专用出水嘴/水龙头' },
         'ម៉ាស៊ីនទឹកក្តៅ-ត្រជាក់': { en: 'Hot & Cold Water Dispenser', zh: '立式冷热饮水机' }
       };
-
-      if (directMap[n] && directMap[n][lang]) {
-        return directMap[n][lang];
-      }
-
-      // ករណីទំនិញថ្មី បកប្រែតាម Keyword
+      if (directMap[n] && directMap[n][lang]) return directMap[n][lang];
       if (lang === 'en') {
         if (n.indexOf('ធុង') !== -1) return n.replace(/ទឹកធុង|ធុង/g, '20L Barrel Water');
         if (n.indexOf('យួរ') !== -1) return n.replace(/យួរ/g, 'Pack');
@@ -624,7 +718,6 @@
         if (n.indexOf('យួរ') !== -1) return n.replace(/យួរ/g, '提');
         if (n.indexOf('ដប') !== -1) return n.replace(/ដប/g, '瓶');
       }
-
       return n;
     }
 
@@ -641,7 +734,6 @@
         }
       });
 
-      // ១. Header & Badges
       document.getElementById('txtTopSubtitle').innerText = d.topSub;
       document.getElementById('txtBannerTag').innerText = d.bannerTag;
       document.getElementById('txtBannerTitle').innerText = d.bannerTitle;
@@ -651,13 +743,11 @@
       document.getElementById('tbSpeedSub').innerText = d.tbSpeedSub;
       document.getElementById('tbStandard').innerText = d.tbStandard;
 
-      // ២. Reorder Card
       var rTag = document.getElementById('txtReorderTag');
       var rBtn = document.getElementById('txtReorderBtn');
       if (rTag) rTag.innerText = d.reorderTag;
       if (rBtn) rBtn.innerText = d.reorderBtn;
 
-      // ៣. Categories
       document.getElementById('txtCatalogTitle').innerHTML = '<i class="fas fa-boxes-stacked text-emerald-600 mr-1.5"></i><span>' + d.catTitle + '</span>';
       document.getElementById('txtCatalogAll').innerText = d.catAll;
       document.getElementById('catBtn_ALL').innerText = d.catAll;
@@ -665,19 +755,24 @@
       document.getElementById('catBtn_PACK').innerText = d.catPack;
       document.getElementById('catBtn_EQUIP').innerText = d.catEquip;
 
-      // ៤. Modal Product Detail
       document.getElementById('modalBadge').innerText = d.modalBadge;
       document.getElementById('modalQtyLabel').innerText = d.modalQty;
-
-      // ៥. Dock
       document.getElementById('dockCheckoutLabel').innerText = d.dockCheckout;
 
-      // ៦. Checkout Form & Placeholders
       document.getElementById('coHeading').innerText = d.coHeading;
       document.getElementById('coSub').innerText = d.coSub;
       document.getElementById('coSectionUser').innerText = d.coSecUser;
       document.getElementById('inp_custName').placeholder = d.phName;
       document.getElementById('inp_custPhone').placeholder = d.phPhone;
+
+      document.getElementById('coSectionTime').innerText = d.coSecTime;
+      document.getElementById('optTimeAsap').innerText = d.optTimeAsap;
+      document.getElementById('optTimeSchedule').innerText = d.optTimeSchedule;
+
+      document.getElementById('coSectionBuilding').innerText = d.coSecBuilding;
+      document.getElementById('optBldGround').innerText = d.optBldGround;
+      document.getElementById('optBldFloor').innerText = d.optBldFloor;
+      document.getElementById('inp_bldFloorDetail').placeholder = d.phFloorDetail;
 
       document.getElementById('coSectionLoc').innerText = d.coSecLoc;
       document.getElementById('btnGpsLabel').innerText = d.btnGps;
@@ -699,7 +794,6 @@
       document.getElementById('coTotalLabel').innerText = d.coTotal;
       document.getElementById('btnSubmitOrderText').innerText = d.btnOrderNow;
 
-      // ៧. Closed Store Notice (if banner visible)
       var closedTitle = document.getElementById('storeClosedTitle');
       var closedHint = document.getElementById('storeClosedTimeHint');
       if (closedTitle) closedTitle.innerText = d.closedTitle;
@@ -710,10 +804,9 @@
       renderCatalogGrid();
       recalcCartDock();
       updateCheckoutCalculation();
-      checkActiveOrderLiveStatus(); // Refresh Tracking labels if tracking
+      checkActiveOrderLiveStatus();
     }
 
-    // 📦 ២. ទាញយកទំនិញពី SUPABASE (កែលម្អ៖ ស្គាល់ទាំងរូប Upload ពីទូរស័ព្ទ Base64 & Link)
     async function loadStoreOnlineProducts() {
       var grid = document.getElementById('catalogGrid');
       if (grid) {
@@ -742,14 +835,12 @@
               cat = 'PACK';
             }
 
-            // ✅ ស្គាល់ទាំងរូបភាព Base64 (data:image) និងរូបភាព Link (http)
             var imgDisplay = '';
             var rawImg = (p.img || '').trim();
 
             if (rawImg && (rawImg.startsWith('http') || rawImg.startsWith('data:image'))) {
               imgDisplay = '<img src="' + rawImg + '" class="h-24 w-full object-contain rounded-2xl drop-shadow-md mx-auto" onerror="this.onerror=null; this.src=\'https://cdn-icons-png.flaticon.com/512/3100/3100566.png\';">';
             } else {
-              // បើគ្មានរូបពិត បង្ហាញរូបតំណាងដប/ធុងទឹកស្អាត (លែងចេញរូប 💧 ទៀតហើយ)
               imgDisplay = '<img src="https://cdn-icons-png.flaticon.com/512/3100/3100566.png" class="h-20 object-contain opacity-80 mx-auto my-2 drop-shadow-sm">';
             }
 
@@ -775,6 +866,7 @@
         if (grid) grid.innerHTML = '<div class="col-span-full py-8 text-center text-red-500 font-bold text-xs">Error: ' + err.message + '</div>';
       }
     }
+
     function renderCatalogGrid(filterCat) {
       filterCat = filterCat || 'ALL';
       var grid = document.getElementById('catalogGrid');
@@ -960,7 +1052,6 @@
         barrelHint.innerText = total20LBarrels > 0 ? (total20LBarrels + bUnit) : (currentLang === 'km' ? 'គ្មានធុង ២០L' : (currentLang === 'zh' ? '无20L桶' : 'No 20L barrels'));
       }
 
-      // ១. គណនាថ្លៃទិញសំបកធុងដាច់
       var swapChecked = document.querySelector('input[name="co_swapOption"]:checked');
       var isNoSwap = swapChecked ? (swapChecked.value === 'NO') : false;
       var barrelFee = 0;
@@ -973,7 +1064,6 @@
         '</div>';
       }
 
-      // ២. គណនាថ្លៃសេវាដឹកជញ្ជូន
       var deliveryFee = 0;
       var stdFee = parseFloat(storeDeliveryConfig.standardFee || 0);
       var minFreeQty = parseInt(storeDeliveryConfig.freeMinQty || 2);
@@ -994,7 +1084,6 @@
         }
       }
 
-      // ៣. គណនា Promotion
       var promoDiscount = 0;
       var promoNote = '';
       if (activePromoConfig && activePromoConfig.active && eligibleQty > 0) {
@@ -1032,7 +1121,6 @@
       };
     }
 
-    // 🚀 ៣. បញ្ជាក់ការកុម្ម៉ង់ (SUBMIT ORDER ទៅ SUPABASE + TELEGRAM)
     var isSubmittingOrderLock = false;
 
     async function submitFinalWaterOrder() {
@@ -1048,6 +1136,13 @@
       var phone = phoneInp ? phoneInp.value.trim() : '';
       var address = addrInp ? addrInp.value.trim() : '';
       var mapUrl = mapUrlInp ? mapUrlInp.value.trim() : '';
+
+      // ចាប់យកព័ត៌មានម៉ោងដឹក និងព័ត៌មានអគារ/ជាន់ផ្ទះ
+      var timeSlotVal = document.querySelector('input[name="co_timeSlot"]:checked').value;
+      var timeDetail = (timeSlotVal === 'ASAP') ? '⚡ ដឹកភ្លាមៗ (ASAP)' : ('⏰ ម៉ោង៖ ' + document.getElementById('inp_timeSlotSelect').value);
+
+      var bldTypeVal = document.querySelector('input[name="co_bldType"]:checked').value;
+      var floorDetail = (bldTypeVal === 'GROUND') ? '🏠 ផ្ទះផ្ទាល់ដី' : ('🏢 ' + (document.getElementById('inp_bldFloorDetail').value.trim() || 'បន្ទប់ជួល/អគារ'));
 
       nameInp.classList.remove('border-red-500');
       phoneInp.classList.remove('border-red-500');
@@ -1127,6 +1222,9 @@
       var barrelSwapText = isNoSwap ? ('ទិញសំបកថ្មីដាច់ ' + total20LBarrels + ' ធុង') : 'មានសំបកដូរ';
       var payMethodText = (payVal === 'ABA' ? 'ស្កេន ABA KHQR' : 'លុយសុទ្ធពេលដល់ (COD)');
 
+      // បញ្ចូលព័ត៌មានលម្អិតចូលក្នុង address
+      var fullAddressNote = address + " [" + floorDetail + "] [" + timeDetail + "]";
+
       try {
         const { error: insErr } = await supabaseClient
           .from('orders')
@@ -1135,7 +1233,7 @@
             customer_name: name,
             phone: phone,
             location_url: mapUrl || address,
-            address: address,
+            address: fullAddressNote,
             items: itemsSummaryText,
             total: grandTotal,
             barrel_swap: barrelSwapText,
@@ -1147,7 +1245,7 @@
 
         if (insErr) throw insErr;
 
-        // ផ្ញើសារដំណឹង Telegram ទៅរោងចក្រ
+        // ផ្ញើសារដំណឹង Telegram ទៅរោងចក្រ និងអ្នកដឹក
         try {
           if (telegramSettings.token && telegramSettings.chatId && telegramSettings.status !== 'OFF') {
             var itemLines = items.map(function(it) {
@@ -1158,13 +1256,15 @@
                         "🆔 <b>លេខកូដ៖</b> <code>" + orderId + "</code>\n" +
                         "👤 <b>អតិថិជន៖</b> " + name + "\n" +
                         "📞 <b>ទូរស័ព្ទ៖</b> " + phone + "\n" +
+                        "⏰ <b>ម៉ោងចង់ទទួល៖</b> <b>" + timeDetail + "</b>\n" +
+                        "🏢 <b>ទីកន្លែង៖</b> <b>" + floorDetail + "</b>\n" +
                         "📦 <b>ទំនិញកុម្ម៉ង់៖</b>\n" + itemLines + "\n" +
                         "🛢️ <b>សំបកធុង៖</b> <b>" + barrelSwapText + "</b>\n" +
                         "💰 <b>តម្លៃសរុប៖</b> <b>៛ " + Number(grandTotal).toLocaleString() + "</b>\n" +
                         "💳 <b>វិធីបង់ប្រាក់៖</b> " + payMethodText + "\n" +
                         (mapUrl ? "🗺️ <b>ទីតាំងផែនទី៖</b> <a href='" + mapUrl + "'>ចុចបើក Google Maps</a>\n" : "") +
                         (address ? "📝 <b>ចំណាំទីតាំង៖</b> " + address + "\n" : "") +
-                        "🕒 <b>ម៉ោង៖</b> " + new Date().toLocaleTimeString('km-KH') + "\n\n" +
+                        "🕒 <b>ម៉ោងកុម្ម៉ង់៖</b> " + new Date().toLocaleTimeString('km-KH') + "\n\n" +
                         "👉 <i>សូម Admin ចូលទៅផ្ទាំង POS ដើម្បីចាត់ចែងអ្នកដឹកជញ្ជូន!</i>";
 
             fetch("https://api.telegram.org/bot" + telegramSettings.token + "/sendMessage", {
@@ -1253,7 +1353,7 @@
       }
     }
 
-    // 📡 ៤. តាមដានស្ថានភាពការកុម្ម៉ង់ផ្ទាល់ (មានចលនាម៉ូតូ ៤ ដំណាក់កាល 🛵 💨)
+    // 📡 តាមដានស្ថានភាពការកុម្ម៉ង់ផ្ទាល់ (មានចលនាម៉ូតូ ៤ ដំណាក់កាល 🛵 💨)
     async function checkActiveOrderLiveStatus() {
       var orderId = currentTrackingOrderId || localStorage.getItem('kc_active_order_id');
       var cardBox = document.getElementById('activeOrderCardBox');
@@ -1284,11 +1384,9 @@
         var isPending = (info.status === "Pending");
         var isAssigned = (info.status === "Assigned");
 
-        // គណនាភាគរយផ្លូវរត់របស់ម៉ូតូ (0% -> 35% -> 75% -> 100%)
         var progressPercent = isPending ? 38 : 75;
         var motoLeft = isPending ? "35%" : "72%";
 
-        // វចនានុក្រម ៤ ដំណាក់កាល
         var stepLabels = {
           km: { s1: "កុម្ម៉ង់", s2: "រៀបចំទឹក", s3: "ជិតដល់ហើយ", s4: "ដល់ផ្ទះ", badgePending: "⏳ រោងចក្រកំពុងរៀបចំទឹក", badgeAssigned: "🛵 អ្នកដឹកកំពុងធ្វើដំណើរ (ជិតដល់)" },
           en: { s1: "Ordered", s2: "Preparing", s3: "On the way", s4: "Delivered", badgePending: "⏳ Preparing your water", badgeAssigned: "🛵 Courier is on the way" },
@@ -1299,21 +1397,17 @@
           '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300 animate-pulse">' + stepLabels.badgePending + '</span>' : 
           '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300 animate-pulse">' + stepLabels.badgeAssigned + '</span>';
 
-        // 🛵 ផ្ទាំងចលនាម៉ូតូ និងគន្លងផ្លូវ ៤ ដំណាក់កាល (ANIMATED 4-STEP TRACKER)
         var deliveryTrackerHtml = '<div class="p-3 bg-gradient-to-b from-slate-50 to-emerald-50/40 rounded-2xl border border-emerald-200/80 space-y-3.5 my-2">' +
           '<div class="flex justify-between items-center text-[11px] font-black text-slate-700">' +
             '<span><i class="fas fa-stopwatch text-emerald-600 mr-1"></i> ' + (currentLang === 'km' ? 'រយៈពេលដឹកជញ្ជូនប៉ាន់ស្មាន' : (currentLang === 'zh' ? '预计送达时间' : 'Estimated Delivery')) + '</span>' +
             '<span class="text-emerald-700 font-black bg-emerald-100 px-2 py-0.5 rounded-full">30 - 45 ' + (currentLang === 'km' ? 'នាទី' : (currentLang === 'zh' ? '分钟' : 'mins')) + '</span>' +
           '</div>' +
 
-          // គន្លងផ្លូវ និងម៉ូតូរត់
           '<div class="relative pt-6 pb-2 px-2">' +
-            // គំនូសបន្ទាត់ផ្លូវ
             '<div class="h-2 w-full bg-slate-200 rounded-full overflow-hidden relative">' +
               '<div class="h-full bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 transition-all duration-1000 ease-out" style="width: ' + progressPercent + '%;"></div>' +
             '</div>' +
 
-            // 🛵 រូបម៉ូតូមានចលនារំកិលតាមផ្លូវ
             '<div class="absolute -top-1 transition-all duration-1000 ease-out transform -translate-x-1/2" style="left: ' + motoLeft + ';">' +
               '<div class="relative flex items-center justify-center">' +
                 '<span class="absolute -top-4 text-[9px] font-black bg-slate-900 text-white px-1.5 py-0.2 rounded shadow whitespace-nowrap animate-bounce">' +
@@ -1325,7 +1419,6 @@
               '</div>' +
             '</div>' +
 
-            // ចំណុចទាំង ៤ លើគន្លងផ្លូវ
             '<div class="flex justify-between items-center mt-3 text-[10px] font-black">' +
               '<div class="text-center text-emerald-700">' +
                 '<div class="w-4 h-4 mx-auto rounded-full bg-emerald-600 text-white flex items-center justify-center text-[8px] mb-1"><i class="fas fa-check"></i></div>' +
@@ -1351,7 +1444,6 @@
           '</div>' +
         '</div>';
 
-        // ព័ត៌មានអ្នកដឹកជញ្ជូន
         var driverInfoHtml = '';
         if (info.driver_name && !isPending) {
           var cleanPhone = String(info.driver_phone || '077934748').replace(/[^0-9]/g, '');
@@ -1404,7 +1496,7 @@
         cardBox.classList.remove('hidden');
       } catch(e) {}
     }
-    // 🎁 ៥. ទាញយក PROMOTION & ម៉ោងធ្វើការ & SETTINGS ពី SUPABASE
+
     async function loadStoreSettingsFromSupabase() {
       try {
         const { data: settings } = await supabaseClient.from('settings').select('*');
@@ -1441,7 +1533,6 @@
           if (banner) banner.classList.add('hidden');
         }
 
-        // Promotion
         var promoStatus = (sMap['Promo_Status'] || "OFF").toUpperCase();
         if (promoStatus === 'ON') {
           activePromoConfig = {
@@ -1480,7 +1571,6 @@
       } catch(e) {}
     }
 
-    // 🔄 ៦. មុខងារ REORDER សម្រាប់ភ្ញៀវធ្លាប់កុម្ម៉ង់
     function checkQuickReorderAvailability() {
       var cardBox = document.getElementById('quickReorderCardBox');
       var summaryText = document.getElementById('quickReorderSummaryText');
@@ -1522,11 +1612,10 @@
       } catch(e) {}
     }
 
-    // 🚀 INITIALIZE ON LOAD
     window.addEventListener('DOMContentLoaded', async function() {
       await loadStoreOnlineProducts();
       await loadStoreSettingsFromSupabase();
-      changeAppLanguage('km'); // Default Khmer
+      changeAppLanguage('km');
       checkQuickReorderAvailability();
       checkActiveOrderLiveStatus();
       trackingPollTimer = setInterval(checkActiveOrderLiveStatus, 10000);
