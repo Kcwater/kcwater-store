@@ -376,3 +376,110 @@ window.addEventListener('load', function() {
   initOrdersRealtimeListener();
   setInterval(checkPendingOnlineOrdersBadge, 15000); // Polling រៀងរាល់ ១៥ វិនាទីម្តង
 });
+// 🚚 មុខងារបង្ហាញបេសកកម្មដឹកទឹករបស់អ្នកដឹកជញ្ជូនរោងចក្រ (Company Driver Cockpit)
+async function renderCompanyDeliveriesModule() {
+  var area = document.getElementById('contentArea');
+  if (!area) return;
+
+  var driverName = (currentUser && currentUser.fullName) ? currentUser.fullName : '';
+
+  area.innerHTML = '<div class="max-w-2xl mx-auto space-y-4">' +
+    '<div class="flex justify-between items-center bg-white p-4 rounded-2xl border shadow-sm">' +
+      '<div>' +
+        '<h2 class="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">' +
+          '<i class="fas fa-motorcycle text-emerald-600"></i>' +
+          '<span>បេសកកម្មដឹកទឹករបស់ខ្ញុំថ្ងៃនេះ</span>' +
+        '</h2>' +
+        '<p class="text-[11px] text-slate-500 mt-0.5">អ្នកដឹកជញ្ជូន៖ <b class="text-emerald-800">' + driverName + '</b></p>' +
+      '</div>' +
+      '<button onclick="renderCompanyDeliveriesModule()" class="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-xl text-xs font-bold border border-emerald-200 active:scale-95 transition flex items-center gap-1.5 shadow-2xs">' +
+        '<i class="fas fa-sync-alt"></i> Refresh' +
+      '</button>' +
+    '</div>' +
+    '<div id="driverOrdersContainer" class="space-y-3">' +
+      '<div class="text-center py-10 text-slate-400 italic text-xs">' +
+        '<i class="fas fa-spinner fa-spin mr-1.5 text-emerald-600 text-base"></i> កំពុងទាញយកការងារដឹកជញ្ជូន...' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+
+  var container = document.getElementById('driverOrdersContainer');
+
+  try {
+    const { data: list, error } = await supabaseClient
+      .from('orders')
+      .select('*')
+      .eq('status', 'Assigned')
+      .eq('driver_name', driverName)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    if (!list || list.length === 0) {
+      container.innerHTML = '<div class="p-8 text-center bg-white rounded-3xl border border-slate-200 space-y-2">' +
+        '<div class="w-14 h-14 mx-auto rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-2xl shadow-inner">' +
+          '<i class="fas fa-circle-check"></i>' +
+        '</div>' +
+        '<b class="text-slate-800 text-sm block">គ្មានការងារដឹកទឹកដែលនៅសល់ឡើយ!</b>' +
+        '<p class="text-xs text-slate-400">រាល់ការកុម្ម៉ង់ដែល Admin ចាត់ចែងឱ្យអ្នក នឹងបង្ហាញនៅទីនេះ។</p>' +
+      '</div>';
+      return;
+    }
+
+    var html = '';
+    list.forEach(function(task) {
+      var cleanPhone = String(task.phone || '').replace(/[^0-9]/g, '');
+      var safeName = String(task.customer_name || '').replace(/'/g, "\\'");
+      var mapTarget = task.location_url || task.address || '';
+      var timeStr = new Date(task.created_at).toLocaleString('km-KH', { dateStyle: 'short', timeStyle: 'short' });
+
+      html += '<div class="bg-white p-4 rounded-3xl border-2 border-emerald-400 shadow-md space-y-3 animate-in zoom-in duration-200">' +
+        '<div class="flex justify-between items-start border-b border-slate-100 pb-2.5">' +
+          '<div>' +
+            '<div class="flex items-center gap-1.5">' +
+              '<b class="text-sm font-black text-slate-900"><i class="fas fa-user-circle text-emerald-600 mr-1"></i>' + task.customer_name + '</b>' +
+              '<span class="px-2 py-0.5 rounded-full text-[9px] font-black bg-blue-100 text-blue-900 border border-blue-200">🚚 កំពុងដឹក</span>' +
+            '</div>' +
+            '<div class="text-[10px] text-slate-400 font-mono mt-0.5">កូដ៖ ' + task.order_id + ' | ម៉ោង៖ ' + timeStr + '</div>' +
+          '</div>' +
+          '<div class="text-right">' +
+            '<div class="text-sm font-black text-emerald-700">៛ ' + Number(task.total || 0).toLocaleString() + '</div>' +
+            '<span class="text-[10px] font-bold text-slate-500">' + (task.payment_method || 'COD') + '</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="bg-emerald-50/60 p-3 rounded-2xl border border-emerald-200/80 space-y-1.5 text-xs text-slate-700">' +
+          '<div class="flex items-start gap-1.5">' +
+            '<span class="text-slate-400 font-bold whitespace-nowrap">📦 ទឹកត្រូវដឹក៖</span>' +
+            '<b class="text-slate-900">' + task.items + '</b>' +
+          '</div>' +
+          '<div class="flex items-center gap-1.5 text-[11px]">' +
+            '<span class="text-slate-400 font-bold whitespace-nowrap">🛢️ សំបកធុង៖</span>' +
+            '<span class="font-bold text-emerald-700">' + (task.barrel_swap || 'មានសំបកដូរ') + '</span>' +
+          '</div>' +
+          (task.address ? 
+          '<div class="flex items-start gap-1.5 pt-0.5">' +
+            '<span class="text-slate-400 font-bold whitespace-nowrap">📍 ទីតាំង៖</span>' +
+            '<span class="text-slate-700 font-bold text-[11px] line-clamp-2">' + task.address + '</span>' +
+          '</div>' : '') +
+        '</div>' +
+        '<div class="grid grid-cols-2 gap-2 pt-1">' +
+          (cleanPhone ? 
+          '<a href="tel:' + cleanPhone + '" class="py-2.5 px-3 bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-xl text-xs font-black border border-blue-200 shadow-2xs flex items-center justify-center gap-1.5" style="text-decoration:none;">' +
+            '<i class="fas fa-phone text-blue-600 text-sm"></i> ខល ' + task.phone +
+          '</a>' : '') +
+          (mapTarget ? 
+          '<button type="button" onclick="openOrderMap(\'' + mapTarget.replace(/'/g, "\\'") + '\')" class="py-2.5 px-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-xl text-xs font-black border border-emerald-200 shadow-2xs flex items-center justify-center gap-1.5 active:scale-95 transition">' +
+            '<i class="fas fa-map-location-dot text-emerald-600 text-sm"></i> បើកផែនទី' +
+          '</button>' : '') +
+        '</div>' +
+        '<button type="button" onclick="completeOnlineOrder(\'' + task.order_id + '\', \'' + safeName + '\', ' + (task.total || 0) + ', \'' + (task.items || '').replace(/'/g, "\\'") + '\', \'' + driverName.replace(/'/g, "\\'") + '\', \'' + (task.payment_method || 'COD').replace(/'/g, "\\'") + '\')" class="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-green-700 hover:from-emerald-700 hover:to-green-800 text-white rounded-2xl font-black text-xs sm:text-sm shadow-md flex items-center justify-center gap-2 active:scale-95 transition">' +
+          '<i class="fas fa-check-circle text-base"></i> ដឹកដល់ហើយ & ប្រមូលលុយរួច' +
+        '</button>' +
+      '</div>';
+    });
+
+    container.innerHTML = html;
+  } catch(e) {
+    container.innerHTML = '<div class="p-4 text-center text-red-500 font-bold text-xs">កំហុស៖ ' + e.message + '</div>';
+  }
+}
