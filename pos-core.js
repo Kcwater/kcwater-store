@@ -1,9 +1,11 @@
 /** ==========================================================================
  *  KC WATER POS SYSTEM - CORE ENGINE (pos-core.js)
- *  (Authentication, Dashboard & Role-Based POS System)
+ *  (Authentication, Dashboard, Quick Restock, POS & Discount Engine)
  *  ========================================================================== */
 
 var specialPrices = [];
+var currentPosDiscount = { type: 'NONE', value: 0 };
+var activeQuickRestockData = null;
 
 // ==========================================
 // ១. AUTHENTICATION & LOGIN (បែងចែកសិទ្ធិ ROLE-BASED)
@@ -74,7 +76,6 @@ async function login() {
       } else if (currentUser.role === 'Seller' || currentUser.role === 'Driver') {
         loadModule('POS');
       } else {
-        // 🚚 សម្រាប់អ្នកលក់បន្ត (Reseller) ➔ ចូលទំព័រដើមរបស់គាត់ផ្ទាល់
         loadModule('CustPortal');
       }
 
@@ -100,7 +101,7 @@ function logout() {
   showToast("បានចាកចេញពីប្រព័ន្ធ!", "info");
 }
 
-// 📱 បែងចែកម៉ឺនុយ SIDEBAR & លាក់ប៊ូតុង ONLINE ចេញពី RESELLER
+// 📱 បែងចែកម៉ឺនុយ SIDEBAR
 function renderSidebarMenu() {
   var sNav = document.getElementById('sidebarMenuContainer');
   if (!sNav) return;
@@ -111,7 +112,6 @@ function renderSidebarMenu() {
   var isCompanyDriver = (currentUser.type === 'CompanyDriver');
   var isDriver = (currentUser.role === 'Driver');
 
-  // 🚫 ពិនិត្យសិទ្ធិ៖ បង្ហាញប៊ូតុង «កុម្ម៉ង់ Online» លើក្បាលទំព័រតែសម្រាប់ Admin & Seller ប៉ុណ្ណោះ (លាក់ចេញពី Reseller ជាដាច់ខាត!)
   var navOrderBtn = document.getElementById('navOnlineOrdersBtn');
   if (navOrderBtn) {
     if (isAdminOrSeller) {
@@ -141,7 +141,7 @@ function renderSidebarMenu() {
     html += '<div class="text-[10px] font-bold text-green-300 uppercase px-3 pt-3 pb-1 opacity-80 tracking-wider">ការកំណត់ប្រព័ន្ធ</div>';
     html += '<button onclick="loadModule(\'Settings\')" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold text-yellow-300"><i class="fas fa-cog mr-3 w-5 text-center"></i>ការកំណត់ (Settings)</button>';
 
-  // ២. 🚚 សម្រាប់អ្នកលក់បន្ត (RESELLER / CUSTOMER)
+  // ២. សម្រាប់ RESELLER / CUSTOMER
   } else if (isReseller) {
     html += '<div class="text-[10px] font-bold text-green-300 uppercase px-3 pt-2 pb-1 opacity-80 tracking-wider">គណនីម៉ូយប្រចាំ</div>';
     html += '<button onclick="loadModule(\'CustPortal\')" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold text-white"><i class="fas fa-house mr-3 w-5 text-center text-emerald-300"></i>ទំព័រដើមរបស់ខ្ញុំ</button>';
@@ -149,12 +149,12 @@ function renderSidebarMenu() {
     html += '<button onclick="loadModule(\'CustHistory\')" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold text-white"><i class="fas fa-history mr-3 w-5 text-center text-emerald-300"></i>ប្រវត្តិដកទំនិញ</button>';
     html += '<button onclick="loadModule(\'CustBottles\')" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold text-white"><i class="fas fa-dolly mr-3 w-5 text-center text-emerald-300"></i>សំបកធុងកំពុងខ្ចី</button>';
 
-  // ៣. 🛵 សម្រាប់កូនចៅដកទឹកជំនួសមេ
+  // ៣. សម្រាប់កូនចៅដកទឹកជំនួសមេ
   } else if (isDriver) {
     html += '<div class="text-[10px] font-bold text-amber-300 uppercase px-3 pt-2 pb-1 opacity-90 tracking-wider">ដកទឹកជំនួសមេ៖ ' + (currentUser.linkedBoss || '') + '</div>';
     html += '<button onclick="loadModule(\'POS\')" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold"><i class="fas fa-truck mr-3 w-5 text-center text-amber-300"></i>ផ្ទាំងដកទំនិញ</button>';
 
-  // ៤. 🚚 សម្រាប់អ្នកដឹកជញ្ជូនរោងចក្រ
+  // ៤. សម្រាប់អ្នកដឹកជញ្ជូនរោងចក្រ
   } else if (isCompanyDriver) {
     html += '<div class="text-[10px] font-black text-emerald-300 uppercase px-3 pt-2 pb-1 opacity-90 tracking-wider">🛵 ការដឹកជញ្ជូន KC WATER</div>';
     html += '<button onclick="loadModule(\'CompanyDeliveries\')" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold text-white"><i class="fas fa-motorcycle mr-3 w-5 text-center text-emerald-300"></i>បេសកកម្មដឹកទឹកថ្ងៃនេះ</button>';
@@ -168,10 +168,10 @@ function renderSidebarMenu() {
   html += '<button onclick="logout()" class="w-full text-left p-3 text-red-300 hover:bg-red-800 rounded-xl transition flex items-center font-bold"><i class="fas fa-sign-out-alt mr-3 w-5 text-center"></i>ចាកចេញ</button>';
   sNav.innerHTML = html;
 }
+
 function loadModule(name) {
   closeSidebar();
   
-  // ការពារសិទ្ធិ៖ មិនឱ្យម៉ូយ ឬអ្នកដឹក ចូលមើល Dashboard, ទូទាត់លុយ ឬការកំណត់
   var isRestricted = (currentUser.role !== 'Admin' && currentUser.role !== 'Seller');
   if (isRestricted && (name === 'Dashboard' || name === 'Settlement' || name === 'Stock' || name === 'StockRep' || name === 'Expenses' || name === 'Customers' || name === 'MonthlyRep' || name === 'Reports' || name === 'Settings')) {
     showToast("អ្នកមិនមានសិទ្ធិចូលផ្ទាំងនេះឡើយ!", "error");
@@ -201,7 +201,7 @@ function loadModule(name) {
 }
 
 // ==========================================
-// 📊 ២. ផ្ទាំង DASHBOARD (សម្រាប់ ADMIN)
+// 📊 ២. ផ្ទាំង DASHBOARD & QUICK RESTOCK MODAL
 // ==========================================
 async function renderDashboardModule() {
   var area = document.getElementById('contentArea');
@@ -282,7 +282,6 @@ async function loadDashboardData() {
         if (t.payment_method === 'ABA') todayBankAba += paid;
         else todayCashInHand += paid;
 
-        // 🎯 ទាំងផលិតឯង និងទិញគេ បង្ហាញចំនួនដែលលក់ចេញថ្ងៃនេះនៅទីនេះ!
         if (t.product_name) todayProdQty[t.product_name] = (todayProdQty[t.product_name] || 0) + qty;
         todayRecentSales.push(t);
       }
@@ -323,7 +322,6 @@ async function loadDashboardData() {
     netEl.innerText = (isPositive ? '+ ៛ ' : '- ៛ ') + Math.abs(Math.round(netProfitKHR)).toLocaleString();
     netEl.className = 'mt-2 font-black text-base sm:text-lg ' + (isPositive ? 'text-emerald-700' : 'text-red-600');
 
-    // ១. ចំនួនទឹកដកលក់ថ្ងៃនេះ (ទាំងផលិតឯង និងទិញគេ)
     var pqArea = document.getElementById('dashProductQtyArea');
     var pqHtml = "";
     for (var p in todayProdQty) {
@@ -331,14 +329,12 @@ async function loadDashboardData() {
     }
     pqArea.innerHTML = pqHtml || '<p class="text-gray-400 italic text-center py-4">មិនទាន់មានការដកលក់ថ្ងៃនេះនៅឡើយទេ</p>';
 
-    // ២. ដំណឹងស្តុក & ស្តុកឃ្លាំង (ចម្រាញ់យកតែទំនិញ «ទិញគេ» ប៉ុណ្ណោះ! ដក «ផលិតឯង» ចេញ)
     var alertArea = document.getElementById('dashStockAlertArea');
     var saHtml = "";
     var lowStockItems = [];
     var resaleItems = [];
 
     allProducts.forEach(function(prod) {
-      // 🚫 បើជា «ផលិតឯង» (ទឹកធុង ២០L) មិនបាច់ដាក់ក្នុងដំណឹងស្តុកទិញចូលឡើយ
       if (prod.type === 'ទិញគេ') {
         var s = parseFloat(prod.stock || 0);
         var min = parseFloat(prod.min_stock || 5);
@@ -349,7 +345,6 @@ async function loadDashboardData() {
       }
     });
 
-    // ក. បង្ហាញទំនិញជិតអស់ស្តុក (បើមាន)
     if (lowStockItems.length > 0) {
       lowStockItems.forEach(function(prod) {
         var isZero = parseFloat(prod.stock || 0) <= 0;
@@ -376,7 +371,6 @@ async function loadDashboardData() {
       '</div>';
     }
 
-    // ខ. បង្ហាញបញ្ជីស្តុកទំនិញទិញគេជាក់ស្តែងក្នុងឃ្លាំង
     if (resaleItems.length > 0) {
       saHtml += '<div class="pt-1 space-y-1.5">';
       resaleItems.forEach(function(r) {
@@ -393,7 +387,6 @@ async function loadDashboardData() {
 
     alertArea.innerHTML = saHtml || '<p class="text-gray-400 italic text-center py-4">គ្មានទំនិញទិញគេក្នុងឃ្លាំង</p>';
 
-    // ៣. ប្រតិបត្តិការដកទំនិញថ្ងៃនេះពេញមួយថ្ងៃ
     var tbodyRecent = document.getElementById('dashRecentTbody');
     var badgeCount = document.getElementById('dashRecentCountBadge');
     if (badgeCount) badgeCount.innerText = todayRecentSales.length + " លើក";
@@ -412,8 +405,124 @@ async function loadDashboardData() {
     console.error("Dashboard error:", e);
   }
 }
+
+// 📦 មុខងារ QUICK RESTOCK MODAL លើ DASHBOARD
+function injectQuickRestockModal() {
+  if (document.getElementById('quickRestockModal')) return;
+  var html = '<div id="quickRestockModal" class="fixed inset-0 z-[7500] flex items-center justify-center p-4 hidden">' +
+    '<div class="absolute inset-0 bg-black/60 backdrop-blur-xs" onclick="closeQuickRestockModal()"></div>' +
+    '<div class="bg-white rounded-3xl shadow-2xl z-10 w-full max-w-sm overflow-hidden p-5 text-center relative border space-y-3.5 animate-in zoom-in duration-200">' +
+      '<div class="w-14 h-14 mx-auto rounded-2xl flex items-center justify-center text-2xl shadow-inner bg-green-100 text-green-700">' +
+        '<i class="fas fa-boxes-packing"></i>' +
+      '</div>' +
+      '<div>' +
+        '<h3 class="font-black text-gray-900 text-base">បញ្ចូលស្តុកថ្មីភ្លាមៗ</h3>' +
+        '<p id="qrProdTitle" class="text-xs text-blue-700 font-bold mt-0.5"></p>' +
+      '</div>' +
+      '<div class="space-y-2.5 text-left text-xs">' +
+        '<div>' +
+          '<label class="text-[10px] font-bold text-gray-600 uppercase block mb-1">១. ចំនួនទិញចូលបន្ថែម (*ឯកតា)</label>' +
+          '<input type="number" id="qrQtyInput" placeholder="ឧ៖ 50" class="w-full text-center text-xl font-black text-green-800 bg-gray-50 border-2 border-green-300 focus:border-green-600 rounded-xl p-2.5 outline-none">' +
+        '</div>' +
+        '<div>' +
+          '<label class="text-[10px] font-bold text-gray-600 uppercase block mb-1">២. ថ្លៃដើមទិញចូលលើកនេះ (បើតម្លៃប្រែប្រួល)</label>' +
+          '<input type="number" id="qrCostInput" placeholder="វាយថ្លៃដើមថ្មីនៅទីនេះ" class="w-full text-center text-lg font-black text-blue-900 bg-white border-2 border-blue-200 focus:border-blue-600 rounded-xl p-2.5 outline-none">' +
+          '<p id="qrCurrentCostHint" class="text-[10px] text-blue-600 font-bold mt-1 text-center"></p>' +
+        '</div>' +
+      '</div>' +
+      '<div class="grid grid-cols-2 gap-2 pt-1">' +
+        '<button type="button" onclick="closeQuickRestockModal()" class="py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold rounded-xl text-xs active:scale-95 transition">បោះបង់</button>' +
+        '<button type="button" id="qrConfirmBtn" onclick="confirmQuickRestockSubmit()" class="py-2.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl text-xs shadow-md active:scale-95 transition">យល់ព្រមបញ្ចូល</button>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+function openQuickRestockModal(prodId, prodName, currentCost) {
+  injectQuickRestockModal();
+  activeQuickRestockData = { id: prodId, name: prodName, cost: currentCost };
+
+  var titleEl = document.getElementById('qrProdTitle');
+  var qtyInp = document.getElementById('qrQtyInput');
+  var costInp = document.getElementById('qrCostInput');
+  var hintEl = document.getElementById('qrCurrentCostHint');
+  var modal = document.getElementById('quickRestockModal');
+
+  if (titleEl) titleEl.innerText = "ទំនិញ៖ [" + prodName + "]";
+  if (qtyInp) { qtyInp.value = "50"; setTimeout(() => { qtyInp.focus(); qtyInp.select(); }, 150); }
+  if (costInp) costInp.value = currentCost > 0 ? currentCost : "";
+  if (hintEl) hintEl.innerText = "*ថ្លៃដើមបច្ចុប្បន្ន៖ ៛ " + Number(currentCost).toLocaleString() + " (អាចកែប្រែបាន)";
+
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeQuickRestockModal() {
+  var modal = document.getElementById('quickRestockModal');
+  if (modal) modal.classList.add('hidden');
+  activeQuickRestockData = null;
+}
+
+async function confirmQuickRestockSubmit() {
+  if (!activeQuickRestockData || !activeQuickRestockData.id) return;
+  var qtyInp = document.getElementById('qrQtyInput');
+  var costInp = document.getElementById('qrCostInput');
+
+  var q = parseFloat(qtyInp ? qtyInp.value : 0);
+  var newCost = parseFloat(costInp && costInp.value !== "" ? costInp.value : 0);
+
+  if (isNaN(q) || q <= 0) {
+    showToast("សូមបញ្ចូលចំនួនទិញចូលធំជាង ០!", "error");
+    return;
+  }
+
+  var targetProdId = activeQuickRestockData.id;
+  var prodName = activeQuickRestockData.name;
+  var btn = document.getElementById('qrConfirmBtn');
+  btn.disabled = true;
+
+  try {
+    var prod = allProducts.find(p => p.id === targetProdId);
+    var curStock = prod ? parseFloat(prod.stock || 0) : 0;
+    var finalStock = curStock + q;
+
+    var updateObj = { stock: finalStock };
+    if (newCost > 0) updateObj.cost = newCost;
+
+    await supabaseClient.from('products').update(updateObj).eq('id', targetProdId);
+    await supabaseClient.from('stock_in').insert([{
+      product_id: targetProdId,
+      product_name: prodName,
+      qty: q,
+      cost: newCost > 0 ? newCost : activeQuickRestockData.cost,
+      admin_name: currentUser.fullName || "Admin"
+    }]);
+
+    closeQuickRestockModal();
+    showToast("បានបញ្ចូលស្តុក +" + q + " ចូលឃ្លាំងជោគជ័យ!", "success");
+    await fetchInitialPOSData();
+    renderDashboardModule();
+
+    try {
+      var tgMsg = "📦 <b>[KC WATER - បញ្ចូលស្តុកថ្មី (Dashboard)]</b>\n\n" +
+                  "• ទំនិញ៖ <b>" + prodName + "</b>\n" +
+                  "• ចំនួនទិញចូល៖ <b>+" + q + "</b>\n" +
+                  (newCost > 0 ? "• ថ្លៃដើមថ្មី៖ <b>៛ " + Number(newCost).toLocaleString() + "</b>\n" : "") +
+                  "• ស្តុកសរុបបច្ចុប្បន្ន៖ <b>" + finalStock + "</b>\n" +
+                  "• អ្នកកត់ត្រា៖ " + (currentUser.fullName || "Admin") + "\n" +
+                  "🕒 ម៉ោង៖ " + new Date().toLocaleTimeString('km-KH');
+      sendTelegramAlert(tgMsg);
+    } catch(e) {}
+
+  } catch(err) {
+    showToast("កំហុសបញ្ចូលស្តុក៖ " + err.message, "error");
+  } finally {
+    btn.disabled = false;
+  }
+}
+
 // ==========================================
-// 🛒 ៣. ផ្ទាំងលក់ POS (ចាក់សោតាមតួនាទី - ROLE-BASED POS)
+// 🛒 ៣. ផ្ទាំងលក់ POS & បញ្ចុះតម្លៃ DISCOUNT
 // ==========================================
 function renderPOSModule() {
   var area = document.getElementById('contentArea');
@@ -421,11 +530,10 @@ function renderPOSModule() {
   var isAdmin = (currentUser && currentUser.role === 'Admin');
   var isSeller = (currentUser && (currentUser.role === 'Seller' || currentUser.role === 'Cashier'));
   var isDriver = (currentUser && currentUser.role === 'Driver' && currentUser.type === 'Driver');
-  var isReseller = (!isAdmin && !isSeller && !isDriver); // ម៉ូយប្រចាំ (Reseller / Monthly)
+  var isReseller = (!isAdmin && !isSeller && !isDriver);
 
   var customerHeaderHTML = '';
 
-  // ១. បើជា ADMIN ➔ មាន Dropdown រើសឈ្មោះម៉ូយ ឬ Walk-in
   if (isAdmin) {
     var custOptions = '<option value="Walk-in">🛒 -- លក់នៅកន្លែង (Walk-in) --</option>';
     allCustomers.forEach(function(c) {
@@ -437,12 +545,11 @@ function renderPOSModule() {
     customerHeaderHTML = '<div class="card border-l-4 border-blue-500 py-3 shadow-sm mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">' +
       '<div class="flex-1 w-full sm:w-auto">' +
         '<label class="text-xs font-bold text-gray-500 block mb-1"><i class="fas fa-user-tag text-blue-600 mr-1.5"></i>ជ្រើសរើសអតិថិជន / ម៉ូយ</label>' +
-        '<select id="posCustSelect" onchange="rPG(); cart=[]; rC();" class="w-full font-bold text-gray-800 border-2 border-blue-200 rounded-xl p-2.5 bg-white outline-none">' + custOptions + '</select>' +
+        '<select id="posCustSelect" onchange="rPG(); cart=[]; currentPosDiscount={type:\'NONE\',value:0}; rC();" class="w-full font-bold text-gray-800 border-2 border-blue-200 rounded-xl p-2.5 bg-white outline-none">' + custOptions + '</select>' +
       '</div>' +
       '<button onclick="fetchInitialPOSData().then(rPG)" class="px-3 py-2 bg-green-50 text-green-700 rounded-xl text-xs font-bold border border-green-200 active:scale-95 transition flex items-center gap-1 shadow-2xs self-end sm:self-auto"><i class="fas fa-sync-alt"></i> Refresh ស្តុក</button>' +
     '</div>';
 
-  // ២. បើជាអ្នកលក់បន្ត (RESELLER) ➔ ចាក់សោជាប់ឈ្មោះគាត់តែម្នាក់គត់ (Locked)
   } else if (isReseller) {
     customerHeaderHTML = '<div class="card border-l-4 border-green-600 bg-green-50 p-3.5 mb-4 flex justify-between items-center">' +
       '<div>' +
@@ -453,7 +560,6 @@ function renderPOSModule() {
       '<button onclick="fetchInitialPOSData().then(rPG)" class="px-2.5 py-1.5 bg-white hover:bg-green-100 text-green-700 rounded-xl text-xs font-bold border border-green-200 active:scale-95 transition flex items-center gap-1 shadow-2xs"><i class="fas fa-sync-alt"></i> Refresh ស្តុក</button>' +
     '</div>';
 
-  // ៣. បើជាកូនចៅដកទឹកជំនួសមេ ➔ ចាក់សោជាប់ឈ្មោះមេគាត់
   } else if (isDriver) {
     customerHeaderHTML = '<div class="card border-l-4 border-amber-500 bg-amber-50 p-3.5 mb-4 flex justify-between items-center">' +
       '<div>' +
@@ -464,7 +570,6 @@ function renderPOSModule() {
       '<button onclick="fetchInitialPOSData().then(rPG)" class="px-2.5 py-1.5 bg-white hover:bg-amber-100 text-amber-800 rounded-xl text-xs font-bold border border-amber-200 active:scale-95 transition flex items-center gap-1 shadow-2xs"><i class="fas fa-sync-alt"></i> Refresh</button>' +
     '</div>';
 
-  // ៤. បុគ្គលិកលក់នៅកន្លែង
   } else {
     customerHeaderHTML = '<div class="card border-l-4 border-blue-600 bg-blue-50 p-3 mb-4 flex justify-between items-center">' +
       '<b class="text-blue-900 text-sm"><i class="fas fa-store mr-2"></i>លក់នៅកន្លែង (Walk-in)</b>' +
@@ -473,7 +578,25 @@ function renderPOSModule() {
     '</div>';
   }
 
-  // ផ្នែកបង់លុយ (បង្ហាញតែ Admin និង Seller ប៉ុណ្ណោះ! លាក់ចោលសម្រាប់ Reseller & Driver)
+  // ផ្នែក Discount (បង្ហាញសម្រាប់ Admin)
+  var discountSectionHTML = '';
+  if (isAdmin) {
+    discountSectionHTML = '<div class="bg-yellow-50/70 p-3 rounded-xl border border-yellow-200 mb-3 space-y-2">' +
+      '<div class="flex justify-between items-center">' +
+        '<span class="text-xs font-bold text-yellow-900 flex items-center gap-1"><i class="fas fa-tags text-yellow-600"></i> បញ្ចុះតម្លៃលើវិក្កយបត្រ (Discount)</span>' +
+        '<div class="flex gap-1 text-[10px]">' +
+          '<button type="button" onclick="setDiscountType(\'NONE\')" id="btnDiscNone" class="px-2 py-0.5 rounded-md font-bold bg-yellow-600 text-white">គ្មាន</button>' +
+          '<button type="button" onclick="setDiscountType(\'CASH\')" id="btnDiscCash" class="px-2 py-0.5 rounded-md font-bold bg-white text-gray-700 border">សាច់ប្រាក់</button>' +
+          '<button type="button" onclick="setDiscountType(\'PERCENT\')" id="btnDiscPercent" class="px-2 py-0.5 rounded-md font-bold bg-white text-gray-700 border">%</button>' +
+        '</div>' +
+      '</div>' +
+      '<div id="discountInputRow" class="hidden flex items-center gap-2">' +
+        '<input type="number" id="posDiscountVal" oninput="applyDiscountValue(this.value)" placeholder="ចំនួនចុះតម្លៃ" class="text-center font-bold text-xs p-2 bg-white border border-yellow-300 rounded-lg flex-1 outline-none">' +
+        '<span id="discountPreviewLabel" class="text-xs font-bold text-red-600 whitespace-nowrap"></span>' +
+      '</div>' +
+    '</div>';
+  }
+
   var paymentSectionHTML = '';
   if (isAdmin || isSeller) {
     paymentSectionHTML = '<div class="bg-blue-50/60 p-4 rounded-2xl border border-blue-200 space-y-3 mt-3">' +
@@ -493,7 +616,6 @@ function renderPOSModule() {
     '</div>';
   }
 
-  // ប៊ូតុង Submit (ប្តូរតាមតួនាទី)
   var submitBtnHTML = '';
   if (isReseller || isDriver) {
     submitBtnHTML = '<button onclick="confirmSale()" id="sBtn" class="btn-green shadow-xl active:scale-95 transition mt-4 py-4 text-base flex items-center justify-center w-full font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-2xl"><i class="fas fa-clipboard-check mr-2 text-lg"></i>កត់ត្រាការដកទំនិញ (កត់ចូលបញ្ជីជំពាក់)</button>';
@@ -512,6 +634,7 @@ function renderPOSModule() {
     '<div class="card border-t-4 border-green-600 shadow-xl p-4 sm:p-5">' +
       '<div class="flex justify-between items-center mb-3"><h3 class="font-extrabold text-gray-800 text-sm sm:text-base flex items-center"><i class="fas fa-shopping-cart mr-2 text-green-600"></i>បញ្ជីទំនិញក្នុងកន្ត្រក</h3><span id="cartCountBadge" class="bg-green-100 text-green-800 text-xs px-2.5 py-0.5 rounded-full font-bold">0 មុខ</span></div>' +
       '<div class="overflow-x-auto rounded-xl border border-gray-100 mb-3"><table class="w-full text-left text-xs border-collapse"><thead><tr class="bg-gray-100 text-gray-700 font-bold border-b"><th class="p-2.5">ទំនិញ</th><th class="p-2.5 text-center">ចំនួន</th><th class="p-2.5 text-right">តម្លៃរាយ</th><th class="p-2.5 text-right">សរុប</th><th class="p-2.5 text-center">លុប</th></tr></thead><tbody id="cItemsTableBody"><tr><td colspan="5" class="p-4 text-center text-gray-400 italic">កន្ត្រកទទេ</td></tr></tbody></table></div>' +
+      discountSectionHTML +
       '<div class="bg-green-50 p-3.5 rounded-xl border border-green-200 flex justify-between items-center text-green-900 mb-3 font-extrabold text-sm sm:text-base"><span>សរុបទឹកប្រាក់៖</span><span id="cTotalVal" class="text-green-700 text-base sm:text-lg">0 ៛</span></div>' +
       paymentSectionHTML +
       submitBtnHTML +
@@ -519,6 +642,33 @@ function renderPOSModule() {
   '</div>';
 
   rPG();
+  rC();
+}
+
+function setDiscountType(type) {
+  currentPosDiscount.type = type;
+  var row = document.getElementById('discountInputRow');
+  var btnNone = document.getElementById('btnDiscNone');
+  var btnCash = document.getElementById('btnDiscCash');
+  var btnPercent = document.getElementById('btnDiscPercent');
+
+  if (btnNone) btnNone.className = (type === 'NONE' ? "px-2 py-0.5 rounded-md font-bold bg-yellow-600 text-white" : "px-2 py-0.5 rounded-md font-bold bg-white text-gray-700 border");
+  if (btnCash) btnCash.className = (type === 'CASH' ? "px-2 py-0.5 rounded-md font-bold bg-yellow-600 text-white" : "px-2 py-0.5 rounded-md font-bold bg-white text-gray-700 border");
+  if (btnPercent) btnPercent.className = (type === 'PERCENT' ? "px-2 py-0.5 rounded-md font-bold bg-yellow-600 text-white" : "px-2 py-0.5 rounded-md font-bold bg-white text-gray-700 border");
+
+  if (type === 'NONE') {
+    if (row) row.classList.add('hidden');
+    currentPosDiscount.value = 0;
+    if (document.getElementById('posDiscountVal')) document.getElementById('posDiscountVal').value = "";
+  } else {
+    if (row) row.classList.remove('hidden');
+    if (document.getElementById('posDiscountVal')) document.getElementById('posDiscountVal').placeholder = (type === 'PERCENT' ? "ចុះតម្លៃជា % (ឧ៖ 5)" : "ចុះតម្លៃជាសាច់ប្រាក់ (ឧ៖ 2000)");
+  }
+  rC();
+}
+
+function applyDiscountValue(val) {
+  currentPosDiscount.value = parseFloat(val || 0);
   rC();
 }
 
@@ -533,7 +683,6 @@ function setPosCategoryFilter(cat) {
   rPG();
 }
 
-// 📦 បង្ហាញទំនិញលើ POS (គណនាតម្លៃពិសេស & ច្រោះទំនិញ MONTHLY)
 function rPG() {
   var grid = document.getElementById('pGrid');
   if (!grid) return;
@@ -547,7 +696,6 @@ function rPG() {
   var filtered = allProducts.filter(function(p) {
     if (p.channel === 'ONLINE') return false;
 
-    // 🎯 ប្រសិនបើជាម៉ូយប្រចាំខែ (Monthly) ➔ បង្ហាញតែទំនិញណាដែលមានក្នុង customer_prices របស់គាត់ប៉ុណ្ណោះ!
     if (isMonthly) {
       return specialPrices.some(sp => sp.customer_name === custName && sp.product_name === p.name);
     }
@@ -602,7 +750,6 @@ function openProductModal(id) {
   
   var priceInp = document.getElementById('modalPriceInput');
   priceInp.value = unitPrice;
-  // បើមិនមែន Admin ➔ ចាក់សោមិនឱ្យកែតម្លៃឡើយ
   priceInp.readOnly = !isAdmin;
   priceInp.className = !isAdmin ? 
     "w-full text-center text-xl font-black bg-gray-100 py-2 rounded-xl border border-gray-300 text-gray-700 outline-none select-none pointer-events-none" : 
@@ -650,24 +797,39 @@ function confirmAddToCart() {
   showToast("បានបញ្ចូលទំនិញក្នុងកន្ត្រក!", "success");
 }
 
+function getCartCalculations() {
+  var rawTotal = cart.reduce((sum, i) => sum + (i.qty * i.price), 0);
+  var discountK = 0;
+
+  if (currentPosDiscount.type === 'PERCENT' && currentPosDiscount.value > 0) {
+    discountK = Math.round((rawTotal * currentPosDiscount.value) / 100);
+  } else if (currentPosDiscount.type === 'CASH' && currentPosDiscount.value > 0) {
+    discountK = Math.min(rawTotal, currentPosDiscount.value);
+  }
+
+  var finalTotal = Math.max(0, rawTotal - discountK);
+  return { rawTotal: rawTotal, discountK: discountK, finalTotal: finalTotal };
+}
+
 function rC() {
   var tbody = document.getElementById('cItemsTableBody');
   var totalValEl = document.getElementById('cTotalVal');
   var badge = document.getElementById('cartCountBadge');
+  var previewLabel = document.getElementById('discountPreviewLabel');
 
   if (!tbody) return;
   if (cart.length === 0) {
     tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-400 italic">កន្ត្រកទទេ</td></tr>';
     if (totalValEl) totalValEl.innerText = "0 ៛";
     if (badge) badge.innerText = "0 មុខ";
+    if (previewLabel) previewLabel.innerText = "";
     calcPOSChange();
     return;
   }
 
-  var html = '', total = 0;
+  var html = '';
   cart.forEach(function(i, idx) {
     var sub = i.qty * i.price;
-    total += sub;
     html += '<tr class="border-b hover:bg-gray-50">' +
       '<td class="p-2.5 font-bold text-gray-800">' + i.name + '</td>' +
       '<td class="p-2.5 text-center font-bold text-blue-700">' + i.qty + '</td>' +
@@ -679,22 +841,28 @@ function rC() {
 
   tbody.innerHTML = html;
   badge.innerText = cart.length + " មុខ";
-  totalValEl.innerText = Number(total).toLocaleString() + " ៛";
-  calcPOSChange();
-}
 
-function getCartTotal() {
-  return cart.reduce((sum, i) => sum + (i.qty * i.price), 0);
+  var calc = getCartCalculations();
+  if (previewLabel) {
+    if (calc.discountK > 0) {
+      previewLabel.innerText = "-៛ " + calc.discountK.toLocaleString();
+    } else {
+      previewLabel.innerText = "";
+    }
+  }
+
+  totalValEl.innerText = Number(calc.finalTotal).toLocaleString() + " ៛";
+  calcPOSChange();
 }
 
 function calcPOSChange() {
   var area = document.getElementById('posChangeArea');
   if (!area) return;
-  var total = getCartTotal();
+  var calc = getCartCalculations();
   var paid = parseFloat(document.getElementById('pK') ? document.getElementById('pK').value || 0 : 0);
 
-  if (total === 0 || paid === 0) { area.classList.add('hidden'); return; }
-  var diff = paid - total;
+  if (calc.finalTotal === 0 || paid === 0) { area.classList.add('hidden'); return; }
+  var diff = paid - calc.finalTotal;
 
   if (diff > 0) {
     area.className = 'p-3 rounded-xl font-bold text-center border-2 bg-green-100 text-green-900 border-green-400';
@@ -712,8 +880,8 @@ function calcPOSChange() {
 }
 
 function fillExactPOSPay() {
-  var tot = getCartTotal();
-  if (document.getElementById('pK')) document.getElementById('pK').value = tot > 0 ? tot : "";
+  var calc = getCartCalculations();
+  if (document.getElementById('pK')) document.getElementById('pK').value = calc.finalTotal > 0 ? calc.finalTotal : "";
   calcPOSChange();
 }
 
@@ -735,9 +903,9 @@ function setPosPaymentMethod(mode) {
 }
 
 function openPOSKHQR() {
-  var total = getCartTotal();
-  if (total === 0) { showToast("សូមជ្រើសរើសទំនិញក្នុងកន្ត្រកជាមុនសិន!", "error"); return; }
-  document.getElementById('posKhqrAmountText').innerText = "៛ " + total.toLocaleString();
+  var calc = getCartCalculations();
+  if (calc.finalTotal === 0) { showToast("សូមជ្រើសរើសទំនិញក្នុងកន្ត្រកជាមុនសិន!", "error"); return; }
+  document.getElementById('posKhqrAmountText').innerText = "៛ " + calc.finalTotal.toLocaleString();
   document.getElementById('posKhqrModal').classList.remove('hidden');
 }
 
@@ -746,7 +914,7 @@ function closePOSKHQR() {
 }
 
 // ==========================================
-// 💾 ៤. រក្សាទុកការលក់ (SUBMIT SALE ទៅ SUPABASE)
+// 💾 ៤. រក្សាទុកការលក់ (SUBMIT SALE)
 // ==========================================
 var isSubmittingSaleLock = false;
 
@@ -758,11 +926,10 @@ async function confirmSale() {
   var custName = custNameEl ? custNameEl.value.trim() : (currentUser.fullName || '');
 
   var isResellerOrDriver = (currentUser.role !== 'Admin' && currentUser.role !== 'Seller');
-  var total = getCartTotal();
+  var calc = getCartCalculations();
   var paid = parseFloat(document.getElementById('pK') ? document.getElementById('pK').value || 0 : 0);
   
-  // ✅ បើជា Reseller ឬ Driver ដកទឹក ➔ ស្ថានភាពគឺ Unpaid (ជំពាក់) ជានិច្ច!
-  var status = isResellerOrDriver ? 'Unpaid' : ((custName === 'Walk-in' && paid >= total) ? 'Paid' : 'Unpaid');
+  var status = isResellerOrDriver ? 'Unpaid' : ((custName === 'Walk-in' && paid >= calc.finalTotal) ? 'Paid' : 'Unpaid');
 
   var tid = "TR-" + new Date().getTime();
   var btn = document.getElementById('sBtn');
@@ -788,10 +955,25 @@ async function confirmSale() {
       });
     });
 
+    if (calc.discountK > 0) {
+      rowsToInsert.push({
+        transaction_id: tid,
+        customer_name: custName,
+        product_name: "បញ្ចុះតម្លៃលើវិក្កយបត្រ (Discount)",
+        qty: 1,
+        price: -calc.discountK,
+        currency: "KHR",
+        total: -calc.discountK,
+        paid_khr: 0,
+        recorded_by: currentUser.fullName || "Admin",
+        status: status,
+        payment_method: isResellerOrDriver ? 'Debt' : currentPosPayMethod
+      });
+    }
+
     const { error: insErr } = await supabaseClient.from('transactions').insert(rowsToInsert);
     if (insErr) throw insErr;
 
-    // កាត់ស្តុកក្នុង Products
     for (var i = 0; i < cart.length; i++) {
       var item = cart[i];
       var prodObj = allProducts.find(p => p.id === item.id);
@@ -802,7 +984,6 @@ async function confirmSale() {
       }
     }
 
-    // ផ្ញើសារដំណឹង Telegram
     try {
       var itemSummary = cart.map(item => "  • " + item.name + " x " + item.qty + " = ៛ " + (item.qty * item.price).toLocaleString()).join("\n");
       var tgHeader = isResellerOrDriver ? "💧 <b>[KC WATER - ដកទំនិញថ្មី (ជំពាក់)]</b>" : "💧 <b>[KC WATER - លក់នៅកន្លែង POS]</b>";
@@ -811,15 +992,17 @@ async function confirmSale() {
                   "👤 <b>អតិថិជន៖</b> " + custName + "\n" +
                   "✍️ <b>អ្នកកត់ត្រា៖</b> " + (currentUser.fullName || "Admin") + "\n" +
                   "📦 <b>ទំនិញ៖</b>\n" + itemSummary + "\n" +
-                  "💰 <b>សរុប៖</b> <b>៛ " + total.toLocaleString() + "</b>\n" +
+                  (calc.discountK > 0 ? "🏷️ <b>បញ្ចុះតម្លៃ៖</b> -៛ " + calc.discountK.toLocaleString() + "\n" : "") +
+                  "💰 <b>សរុប៖</b> <b>៛ " + calc.finalTotal.toLocaleString() + "</b>\n" +
                   "📌 <b>ស្ថានភាព៖</b> <b>" + (status === 'Paid' ? 'ទូទាត់រួច' : 'ជំពាក់ / កត់ត្រាទុក') + "</b>\n" +
                   "🕒 <b>ម៉ោង៖</b> " + new Date().toLocaleTimeString('km-KH');
       sendTelegramAlert(tgMsg);
     } catch(e) {}
 
-    generateReceiptImage(tid, custName, total, (isResellerOrDriver ? 0 : paid), cart, isResellerOrDriver ? "ប័ណ្ណដកទំនិញ (WITHDRAWAL VOUCHER)" : "វិក្កយបត្រលក់ទំនិញ (RECEIPT)");
+    generateReceiptImage(tid, custName, calc.finalTotal, (isResellerOrDriver ? 0 : paid), cart, isResellerOrDriver ? "ប័ណ្ណដកទំនិញ (WITHDRAWAL VOUCHER)" : "វិក្កយបត្រលក់ទំនិញ (RECEIPT)", calc.discountK);
 
     cart = [];
+    currentPosDiscount = { type: 'NONE', value: 0 };
     rC();
     if (document.getElementById('pK')) document.getElementById('pK').value = "";
     calcPOSChange();
@@ -836,9 +1019,10 @@ async function confirmSale() {
 }
 
 // 🧾 បង្កើតរូបវិក្កយបត្រ
-function generateReceiptImage(tid, cust, total, paid, items, titleText) {
+function generateReceiptImage(tid, cust, total, paid, items, titleText, discountAmount) {
   var dateStr = new Date().toLocaleString('km-KH');
   var change = Math.max(0, paid - total);
+  discountAmount = parseFloat(discountAmount || 0);
 
   var itemsHtml = '';
   (items || []).forEach(function(i) {
@@ -867,6 +1051,7 @@ function generateReceiptImage(tid, cust, total, paid, items, titleText) {
       itemsHtml +
     '</table>' +
     '<div style="background:#f0fdf4; padding:10px; border-radius:8px; font-size:11px; line-height:1.7; border:1px solid #bbf7d0;">' +
+      (discountAmount > 0 ? '<div style="display:flex; justify-content:space-between; color:#c2410c;"><span>បញ្ចុះតម្លៃ (Discount)៖</span><b>-៛ ' + discountAmount.toLocaleString() + '</b></div>' : '') +
       '<div style="display:flex; justify-content:space-between; font-weight:bold;"><span>សរុបទឹកប្រាក់៖</span><b>៛ ' + total.toLocaleString() + '</b></div>' +
       (paid > 0 ? '<div style="display:flex; justify-content:space-between; color:#1d4ed8;"><span>ប្រាក់បានបង់៖</span><b>៛ ' + paid.toLocaleString() + '</b></div>' : '<div style="display:flex; justify-content:space-between; color:#c2410c; font-weight:bold;"><span>ស្ថានភាព៖</span><b>កត់ត្រាជំពាក់</b></div>') +
       (change > 0 ? '<div style="display:flex; justify-content:space-between; color:#15803d; font-weight:bold; border-top:1px dashed #86efac; padding-top:4px; margin-top:4px;"><span>ប្រាក់អាប់ជូនវិញ៖</span><b>៛ ' + change.toLocaleString() + '</b></div>' : '') +
