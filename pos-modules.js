@@ -1,7 +1,7 @@
 /** ==========================================================================
  *  KC WATER POS SYSTEM - COMPLETE MODULES ENGINE (pos-modules.js)
  *  (Stock, Bottle Loans, Expenses, Customers & Prices, Settings,
- *   Full Customer Portal, History, Bottles & Payment Request)
+ *   Full Customer Portal, History, Bottles & Statement Modal)
  *  ========================================================================== */
 
 var editingProductId = null;
@@ -731,8 +731,6 @@ async function saveUserToSupabase() {
   if (roleType === 'MONTHLY') {
     role = 'Customer';
     type = 'Monthly';
-    user = null;
-    pass = null;
   } else if (roleType === 'RESELLER') {
     role = 'Customer';
     type = 'Regular';
@@ -795,7 +793,6 @@ async function saveUserToSupabase() {
     await fetchInitialPOSData();
     renderCustomersModule();
   } catch(err) {
-    console.error("Save user error:", err);
     showToast("កំហុស៖ " + (err.message || err), "error");
   } finally {
     if (btn) { btn.disabled = false; btn.innerText = "រក្សាទុកគណនី (Save Account)"; }
@@ -884,6 +881,7 @@ async function saveSpecialPriceToSupabase() {
 
     showToast("បានរក្សាទុកតម្លៃពិសេសជោគជ័យ!", "success");
     document.getElementById('spPriceInput').value = "";
+    await fetchInitialPOSData(); // Update memory ភ្លាមៗ
     fetchSpecialPricesTable();
   } catch(err) {
     showToast("កំហុស៖ " + err.message, "error");
@@ -895,6 +893,7 @@ async function delSpecialPriceFromSupabase(id) {
   try {
     await supabaseClient.from('customer_prices').delete().eq('id', id);
     showToast("បានលុបតម្លៃពិសេសជោគជ័យ!", "success");
+    await fetchInitialPOSData();
     fetchSpecialPricesTable();
   } catch(err) {
     showToast("កំហុស៖ " + err.message, "error");
@@ -926,7 +925,6 @@ function renderSettingsModule() {
   });
 
   area.innerHTML = '<div class="max-w-2xl mx-auto space-y-4">' +
-    // ម៉ោងធ្វើការ & សេវាដឹក
     '<div class="card border-t-4 border-indigo-600 shadow-xl p-5 mb-0 space-y-3">' +
       '<h2 class="font-extrabold text-indigo-950 text-base flex items-center gap-2"><i class="fas fa-clock text-indigo-600"></i>ម៉ោងទទួលកុម្ម៉ង់ & សេវាដឹក (Store Rules)</h2>' +
       '<div class="grid grid-cols-2 gap-2 text-xs">' +
@@ -939,7 +937,6 @@ function renderSettingsModule() {
       '</div>' +
     '</div>' +
 
-    // ប្រព័ន្ធ Promotion លើ Web
     '<div class="card border-t-4 border-amber-500 shadow-xl p-5 mb-0 space-y-3">' +
       '<div class="flex justify-between items-center">' +
         '<h3 class="font-extrabold text-amber-950 text-base flex items-center gap-2"><i class="fas fa-gift text-amber-600"></i>ប្រព័ន្ធ Promotion លើ Website</h3>' +
@@ -955,17 +952,15 @@ function renderSettingsModule() {
       '</div>' +
     '</div>' +
 
-    // 🔔 កាត TELEGRAM BOT ALERT (មានប៊ូតុង បិទ/បើក ភ្លាមៗ)
     '<div class="card border-t-4 border-green-600 shadow-xl p-5 mb-0 space-y-3">' +
       '<div class="flex justify-between items-center">' +
         '<h3 class="font-extrabold text-green-950 text-base flex items-center gap-2"><i class="fab fa-telegram text-blue-500"></i>Telegram Bot Alert</h3>' +
         '<div class="flex items-center gap-1.5">' +
-          // 🔘 ប៊ូតុង Toggle បិទ / បើក Telegram
           '<button type="button" id="btnToggleTelegramStatus" onclick="toggleTelegramAlertStatusLive()" class="px-3 py-1.5 rounded-xl text-xs font-black shadow-xs active:scale-95 transition flex items-center gap-1.5"></button>' +
           '<button type="button" onclick="testTelegramAlertNow()" class="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold rounded-xl border border-blue-200">🔔 តេស្ត</button>' +
         '</div>' +
       '</div>' +
-      '<p class="text-[11px] text-gray-500">*ចុចប៊ូតុងខាងលើដើម្បី <b>បិទ (OFF)</b> កុំឱ្យរំខានពេលកំពុងសាកល្បងកូដ ឬ <b>បើក (ON)</b> ពេលដំណើរការលក់ជាក់ស្តែង។</p>' +
+      '<p class="text-[11px] text-gray-500">*ចុចប៊ូតុងខាងលើដើម្បី <b>បិទ (OFF)</b> ឬ <b>បើក (ON)</b> សារដំណឹង Telegram។</p>' +
       '<div class="space-y-2 text-xs">' +
         '<input type="text" id="set_tg_token" placeholder="Telegram Bot Token" class="border p-2 rounded-xl w-full font-mono">' +
         '<input type="text" id="set_tg_chatid" placeholder="Telegram Chat ID" class="border p-2 rounded-xl w-full font-mono">' +
@@ -977,10 +972,8 @@ function renderSettingsModule() {
   loadSettingsForm();
 }
 
-// 🎨 មុខងារបង្ហាញប៊ូតុង បិទ/បើក Telegram (ក្រហម ឬ បៃតង)
 function updateTelegramButtonUI(status) {
   currentTelegramAlertStatus = (String(status).trim().toUpperCase() === "OFF") ? "OFF" : "ON";
-  // ✅ បញ្ជាបិទក្នុង Memory ភ្លាមៗកុំឱ្យនៅសល់
   telegramConfig.status = currentTelegramAlertStatus;
   localStorage.setItem('kc_telegram_status', currentTelegramAlertStatus);
 
@@ -996,7 +989,6 @@ function updateTelegramButtonUI(status) {
   }
 }
 
-// ⚡ ចុចប្តូរភ្លាម បិទសោរភ្លាមៗ និង Save ចូល Supabase
 async function toggleTelegramAlertStatusLive() {
   var nextStatus = (currentTelegramAlertStatus === "ON") ? "OFF" : "ON";
   updateTelegramButtonUI(nextStatus);
@@ -1011,6 +1003,7 @@ async function toggleTelegramAlertStatusLive() {
     updateTelegramButtonUI(currentTelegramAlertStatus);
   }
 }
+
 async function loadSettingsForm() {
   try {
     const { data } = await supabaseClient.from('settings').select('*');
@@ -1245,7 +1238,6 @@ function injectCustKhqrPaymentModal() {
         '<button type="button" id="btnPayModeAba" onclick="switchCustPayMode(\'ABA\')" class="py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1"><i class="fas fa-qrcode"></i> ស្កេន ABA / ចម្រុះ</button>' +
       '</div>' +
 
-      // ផ្នែក QR Code ផ្លូវការ
       '<div id="custQrSection" class="space-y-2 bg-gray-50 p-3 rounded-2xl border">' +
         '<div class="flex justify-between items-center">' +
           '<span class="text-xs font-black text-gray-700 flex items-center gap-1"><i class="fas fa-qrcode text-red-600"></i> ABA KHQR ផ្លូវការ</span>' +
@@ -1257,10 +1249,8 @@ function injectCustKhqrPaymentModal() {
         '<p class="text-[10px] text-gray-400 italic">ស្កេនទូទាត់ ឬ Save QR ទុកស្កេនក្នុង App ធនាគារ</p>' +
       '</div>' +
 
-      // ផ្នែកបែងចែកលុយសុទ្ធ & ស្កេន ABA (Auto-Balance សម្រាប់ម៉ូយ)
       '<div id="custCurrencyBoxesArea" class="space-y-2 text-left"></div>' +
 
-      // 🧾 ប្រអប់ ABA Reference Code / ចំណាំ
       '<div id="custRefSection">' +
         '<label class="text-[10px] font-bold text-gray-600 uppercase block mb-1">លេខកូដ ABA Ref / ចំណាំ (បើមាន) *</label>' +
         '<input type="text" id="custAbaRefInput" placeholder="ឧ៖ 123456789 ឬ កុងផ្ញើ..." class="text-xs bg-gray-50 p-3 rounded-xl border w-full font-bold outline-none focus:border-blue-500 focus:bg-white">' +
@@ -1382,7 +1372,6 @@ async function submitCustPaymentFinal() {
     closeCustKhqrModal();
     showToast("បានផ្ញើសំណើទូទាត់ទៅកាន់រោងចក្ររួចរាល់!", "success");
 
-    // 🔔 បាញ់ Telegram Alert ប្រាប់ Admin ភ្លាមៗ
     try {
       var payDetail = (currentCustPayMode === "CASH") ? "💵 លុយសុទ្ធទាំងអស់" : ("📱 ស្កេន ABA: ៛ " + kScan.toLocaleString() + (kCash > 0 ? " + 💵 សុទ្ធ: ៛ " + kCash.toLocaleString() : ""));
       var tgMsg = "🔔 <b>[KC WATER - សំណើទូទាត់ប្រាក់ថ្មីពីម៉ូយ]</b>\n\n" +
@@ -1616,7 +1605,7 @@ async function renderCustomerBottlesModule() {
 }
 
 // ==========================================
-// 💡 ១០. MODALS ជំនួយសម្រាប់ម៉ូយ (PRICES, PASSWORD, CONTACT)
+// 💡 ១០. MODALS ជំនួយសម្រាប់ម៉ូយ (PRICES, PASSWORD, CONTACT & STATEMENT MODAL)
 // ==========================================
 async function openMyPricesModal() {
   try {
@@ -1632,7 +1621,7 @@ async function openMyPricesModal() {
 
     var html = '<div id="myPricesModal" class="fixed inset-0 z-[7500] flex items-center justify-center p-4">' +
       '<div class="absolute inset-0 bg-black/60 backdrop-blur-xs" onclick="document.getElementById(\'myPricesModal\').remove()"></div>' +
-      '<div class="bg-white rounded-3xl shadow-2xl z-10 w-full max-w-sm p-5 space-y-3 relative border text-center">' +
+      '<div class="bg-white rounded-3xl shadow-2xl z-10 w-full max-w-sm p-5 space-y-3 relative border text-center animate-in zoom-in duration-200">' +
         '<div class="flex justify-between items-center border-b pb-2"><h3 class="font-black text-blue-900 text-base"><i class="fas fa-tags text-yellow-500 mr-1"></i> តម្លៃទឹករបស់ខ្ញុំ</h3><button onclick="document.getElementById(\'myPricesModal\').remove()" class="text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button></div>' +
         '<div class="overflow-x-auto max-h-60 overflow-y-auto rounded-xl border"><table class="w-full text-left text-xs border-collapse"><thead class="bg-gray-100 font-bold text-gray-600"><tr><th class="p-2.5">មុខទំនិញ</th><th class="p-2.5 text-right">តម្លៃព្រមព្រៀង</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
         '<button onclick="document.getElementById(\'myPricesModal\').remove()" class="w-full py-2.5 bg-gray-100 text-gray-700 font-bold rounded-xl text-xs active:scale-95 transition">រួចរាល់</button>' +
@@ -1645,7 +1634,7 @@ async function openMyPricesModal() {
 function openChangePasswordModal() {
   var html = '<div id="changePassModal" class="fixed inset-0 z-[7500] flex items-center justify-center p-4">' +
     '<div class="absolute inset-0 bg-black/60 backdrop-blur-xs" onclick="document.getElementById(\'changePassModal\').remove()"></div>' +
-    '<div class="bg-white rounded-3xl shadow-2xl z-10 w-full max-w-sm p-5 space-y-3 relative border text-center">' +
+    '<div class="bg-white rounded-3xl shadow-2xl z-10 w-full max-w-sm p-5 space-y-3 relative border text-center animate-in zoom-in duration-200">' +
       '<div class="flex justify-between items-center border-b pb-2"><h3 class="font-black text-gray-800 text-base"><i class="fas fa-key text-blue-600 mr-1"></i> ប្តូរលេខសម្ងាត់ផ្ទាល់ខ្លួន</h3><button onclick="document.getElementById(\'changePassModal\').remove()" class="text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button></div>' +
       '<div class="space-y-2 text-left">' +
         '<div><label class="text-[10px] font-bold text-gray-500 uppercase">លេខសម្ងាត់ចាស់</label><input type="password" id="cp_old_pass" placeholder="លេខសម្ងាត់បច្ចុប្បន្ន" class="text-xs border p-2 rounded-xl w-full font-bold"></div>' +
@@ -1680,7 +1669,7 @@ async function submitChangePassword() {
 function openContactEnterpriseModal() {
   var html = '<div id="contactEnterpriseModal" class="fixed inset-0 z-[7500] flex items-center justify-center p-4">' +
     '<div class="absolute inset-0 bg-black/60 backdrop-blur-xs" onclick="document.getElementById(\'contactEnterpriseModal\').remove()"></div>' +
-    '<div class="bg-white rounded-3xl shadow-2xl z-10 w-full max-w-sm p-5 space-y-3.5 relative border text-center">' +
+    '<div class="bg-white rounded-3xl shadow-2xl z-10 w-full max-w-sm p-5 space-y-3.5 relative border text-center animate-in zoom-in duration-200">' +
       '<div class="flex justify-between items-center border-b pb-2"><h3 class="font-black text-green-950 text-base"><i class="fas fa-headset text-green-600 mr-1"></i> ទំនាក់ទំនងរោងចក្រ KC WATER</h3><button onclick="document.getElementById(\'contactEnterpriseModal\').remove()" class="text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button></div>' +
       '<div class="p-3 bg-green-50 rounded-2xl border border-green-200 text-left space-y-2">' +
         '<div class="text-[10px] text-green-700 font-bold uppercase">លេខទូរស័ព្ទរោងចក្រ</div>' +
@@ -1696,14 +1685,92 @@ function openContactEnterpriseModal() {
   document.body.insertAdjacentHTML('beforeend', html);
 }
 
-function viewMyMonthlyStatement() {
-  loadModule('MonthlyRep');
-  setTimeout(function() {
-    switchRepTab('customer');
-    var drop = document.getElementById('custSelectDropdown');
-    if (drop) { drop.value = currentUser.fullName; }
-    var inp = document.getElementById('custSearchInp');
-    if (inp) { inp.value = currentUser.fullName; }
-    fetchFullStatementFromSupabase();
-  }, 300);
+// 📑 កាតគ្រីផ្ទាល់ខ្លួនរបស់ម៉ូយ (MY MONTHLY STATEMENT MODAL POPUP)
+async function viewMyMonthlyStatement() {
+  var now = new Date();
+  var firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+  var today = now.toISOString().split('T')[0];
+
+  showToast("កំពុងរៀបចំកាតគ្រីខែនេះ...");
+
+  try {
+    const { data: items } = await supabaseClient
+      .from('transactions')
+      .select('*')
+      .eq('customer_name', currentUser.fullName)
+      .gte('created_at', firstDay + 'T00:00:00Z')
+      .lte('created_at', today + 'T23:59:59Z')
+      .order('created_at', { ascending: true });
+
+    const { data: payments } = await supabaseClient
+      .from('settlements')
+      .select('*')
+      .eq('customer_name', currentUser.fullName)
+      .gte('settled_at', firstDay + 'T00:00:00Z')
+      .lte('settled_at', today + 'T23:59:59Z')
+      .order('settled_at', { ascending: true });
+
+    const { data: lastSet } = await supabaseClient
+      .from('settlements')
+      .select('balance_khr')
+      .eq('customer_name', currentUser.fullName)
+      .lt('settled_at', firstDay + 'T00:00:00Z')
+      .order('id', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    var prevDebt = lastSet ? parseFloat(lastSet.balance_khr || 0) : 0;
+    var totalPurchased = 0, totalPaidInMonth = 0;
+
+    (items || []).forEach(i => { totalPurchased += parseFloat(i.total || 0); });
+    (payments || []).forEach(p => { totalPaidInMonth += parseFloat(p.paid_khr || 0); });
+    var finalBalance = Math.max(0, prevDebt + totalPurchased - totalPaidInMonth);
+
+    var itemsHtml = '';
+    (items || []).forEach(function(item) {
+      var dateStr = new Date(item.created_at).toLocaleString('km-KH', { dateStyle: 'short', timeStyle: 'short' });
+      itemsHtml += '<tr class="border-b"><td class="p-2 text-[10px] text-gray-500">' + dateStr + '</td><td class="p-2 font-bold text-gray-800">' + item.product_name + '</td><td class="p-2 text-center text-blue-700 font-bold">' + item.qty + '</td><td class="p-2 text-right font-black text-green-700">៛ ' + Number(item.total).toLocaleString() + '</td></tr>';
+    });
+
+    var payHtml = '';
+    if (payments && payments.length > 0) {
+      payments.forEach(function(p) {
+        payHtml += '<div class="flex justify-between text-[11px] bg-white p-1.5 rounded border"><span>' + new Date(p.settled_at).toLocaleDateString('km-KH') + ' (' + p.pay_method + ')</span><b class="text-blue-700">-៛ ' + Number(p.paid_khr).toLocaleString() + '</b></div>';
+      });
+    }
+
+    var modalHtml = '<div id="myStatementModal" class="fixed inset-0 z-[7500] flex items-center justify-center p-3">' +
+      '<div class="absolute inset-0 bg-black/60 backdrop-blur-xs" onclick="document.getElementById(\'myStatementModal\').remove()"></div>' +
+      '<div class="bg-white rounded-3xl shadow-2xl z-10 w-full max-w-md overflow-hidden p-4 space-y-3 relative border text-center animate-in zoom-in duration-200">' +
+        '<div id="my-statement-printable" class="p-3 bg-white text-left space-y-2 border rounded-2xl">' +
+          '<div class="text-center border-b pb-2"><b class="text-green-800 text-base uppercase">KC WATER - កាតគ្រីអតិថិជន</b><div class="text-xs text-gray-600 font-bold">ឈ្មោះ៖ ' + currentUser.fullName + '</div><div class="text-[10px] text-gray-400">ប្រចាំខែ៖ ' + firstDay + ' ដល់ ' + today + '</div></div>' +
+          '<div class="flex justify-between text-xs bg-orange-50 p-2 rounded-xl text-orange-900 border border-orange-200 font-bold"><span>បំណុលចាស់ពីមុន៖</span><b>៛ ' + prevDebt.toLocaleString() + '</b></div>' +
+          '<div class="max-h-48 overflow-y-auto border rounded-xl"><table class="w-full text-left text-[11px]"><thead class="bg-gray-100 font-bold text-gray-600"><tr><th class="p-2">កាលបរិច្ឆេទ</th><th class="p-2">មុខទំនិញ</th><th class="p-2 text-center">ចំនួន</th><th class="p-2 text-right">សរុប</th></tr></thead><tbody>' + (itemsHtml || '<tr><td colspan="4" class="p-3 text-center text-gray-400 italic">គ្មានទំនិញដកខែនេះ</td></tr>') + '</tbody></table></div>' +
+          (payHtml ? '<div class="bg-blue-50 p-2 rounded-xl text-[11px] space-y-1"><div class="font-bold text-blue-900">ប្រាក់បានបង់សងក្នុងខែនេះ៖</div>' + payHtml + '</div>' : '') +
+          '<div class="p-2.5 bg-green-50 rounded-xl border border-green-200 space-y-1 text-xs font-bold"><div class="flex justify-between"><span>សរុបទំនិញដកថ្មី (+)៖</span><b>៛ ' + totalPurchased.toLocaleString() + '</b></div><div class="flex justify-between text-blue-700"><span>សរុបបានបង់ (-)៖</span><b>-៛ ' + totalPaidInMonth.toLocaleString() + '</b></div><div class="flex justify-between text-green-950 font-black border-t border-green-300 pt-1 text-sm"><span>បំណុលនៅសល់ (=)៖</span><span class="text-green-800">៛ ' + finalBalance.toLocaleString() + '</span></div></div>' +
+        '</div>' +
+        '<div class="grid grid-cols-2 gap-2 pt-1"><button onclick="downloadMyStatementPNG()" class="py-2.5 bg-gray-800 hover:bg-gray-900 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1 active:scale-95 transition"><i class="fas fa-download text-green-400"></i> ទាញយក PNG</button><button onclick="document.getElementById(\'myStatementModal\').remove()" class="py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold rounded-xl text-xs active:scale-95 transition">បិទ</button></div>' +
+      '</div>' +
+    '</div>';
+
+    var old = document.getElementById('myStatementModal');
+    if (old) old.remove();
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+  } catch(e) {
+    showToast("កំហុសទាញកាតគ្រី៖ " + e.message, "error");
+  }
+}
+
+function downloadMyStatementPNG() {
+  var el = document.getElementById('my-statement-printable');
+  if (!el) return;
+  showToast("កំពុងទាញយករូបភាព...");
+  html2canvas(el, { scale: 3 }).then(function(canvas) {
+    var link = document.createElement('a');
+    link.download = 'Statement-' + currentUser.fullName + '.png';
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+    showToast("បានទាញយកកាតគ្រីជោគជ័យ!", "success");
+  });
 }
