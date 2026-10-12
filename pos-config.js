@@ -1,5 +1,6 @@
 /** ==========================================================================
  *  KC WATER POS SYSTEM - CONFIGURATION & UTILITIES (pos-config.js)
+ *  (Supabase Client, Global App State & Telegram Alerts)
  *  ========================================================================== */
 
 // 🔑 ១. SUPABASE CLIENT INITIALIZATION
@@ -7,10 +8,11 @@ const SUPABASE_URL = "https://ntftdylkcnkxsytptket.supabase.co";
 const SUPABASE_KEY = "sb_publishable_58qNd6IpyWqlvuI5BpuHRw__pTm7g7v";
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// 🌐 ២. GLOBAL APP STATE (អថេររួមទូទាំងកម្មវិធី)
+// 🌐 ២. GLOBAL APP STATE (អថេររួមទូទាំងកម្មវិធី POS)
 var currentUser = {};
 var allProducts = [];
 var allCustomers = [];
+var specialPrices = window.specialPrices || [];
 var cart = [];
 var selectedModalProduct = null;
 var currentPosCategoryFilter = 'ALL';
@@ -23,7 +25,7 @@ var currentSettlementItems = [];
 var currentSettlementPayMode = "Cash";
 var currentSettlementOldDebt = 0;
 
-// 🔔 ៣. មុខងារ TOAST NOTIFICATION (លោតសារដំណឹង)
+// 🔔 ៣. មុខងារ TOAST NOTIFICATION (សារដំណឹង)
 function showToast(msg, type) {
   type = type || 'success';
   var toast = document.getElementById('toast');
@@ -80,7 +82,7 @@ async function loadSettingsAndTelegram() {
       data.forEach(function(r) {
         if (r.key === 'Telegram_Token') telegramConfig.token = r.value;
         if (r.key === 'Telegram_ChatID') telegramConfig.chatId = r.value;
-        if (r.key === 'Telegram_Alert_Status') telegramConfig.status = r.value;
+        if (r.key === 'Telegram_Alert_Status') telegramConfig.status = r.value.toUpperCase();
       });
     }
   } catch(e) {
@@ -106,20 +108,31 @@ async function sendTelegramAlert(message) {
   }
 }
 
-// 📦 ៧. មុខងារទាញយកទិន្នន័យទំនិញ និងអតិថិជនដំបូងពី SUPABASE
+// 📦 ៧. មុខងារទាញយកទិន្នន័យដំបូង (ទំនិញ, អតិថិជន និងតម្លៃពិសេស) ពី SUPABASE
 async function fetchInitialPOSData() {
   try {
+    // ១. ទាញទំនិញទាំងអស់
     const { data: prods } = await supabaseClient
       .from('products')
       .select('*')
       .order('id', { ascending: true });
     if (prods) allProducts = prods;
 
+    // ២. ទាញអតិថិជនទាំងអស់
     const { data: custs } = await supabaseClient
       .from('users')
       .select('*')
       .order('full_name', { ascending: true });
     if (custs) allCustomers = custs;
+
+    // ៣. ទាញតម្លៃពិសេស (Contract Prices) សម្រាប់ម៉ូយប្រចាំ និង Monthly
+    const { data: prices } = await supabaseClient
+      .from('customer_prices')
+      .select('*');
+    if (prices) {
+      specialPrices = prices;
+      window.specialPrices = prices;
+    }
   } catch(e) {
     console.error("Initial data load error:", e);
   }
