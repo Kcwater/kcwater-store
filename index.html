@@ -29,7 +29,7 @@
     }
 
     .kc-glass-nav {
-      background: rgba(255, 255, 255, 0.92);
+      background: rgba(255, 255, 255, 0.94);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
       border-bottom: 1px solid rgba(16, 185, 129, 0.15);
@@ -90,7 +90,7 @@
         </div>
       </div>
 
-      <!-- ៣ ភាសា -->
+      <!-- ៣ ភាសា (ខ្មែរ / EN / 中文) -->
       <div class="flex items-center bg-slate-100 p-1 rounded-full border border-slate-200 text-xs font-black">
         <button onclick="changeAppLanguage('km')" id="langBtn_km" class="px-2.5 py-1 rounded-full bg-emerald-700 text-white shadow-xs transition">ខ្មែរ</button>
         <button onclick="changeAppLanguage('en')" id="langBtn_en" class="px-2.5 py-1 rounded-full text-slate-500 hover:text-slate-900 transition">EN</button>
@@ -105,10 +105,8 @@
           <i class="fas fa-moon"></i>
         </div>
         <div>
-          <b class="text-amber-950 font-black block">បច្ចុប្បន្នផុតម៉ោងដឹកជញ្ជូនហើយ!</b>
-          <span class="text-[11px] text-amber-800 leading-snug block mt-0.5" id="storeClosedTimeHint">
-            ម៉ោងទទួលកុម្ម៉ង់៖ 07:00 ព្រឹក ដល់ 18:00 ល្ងាច។ លោកអ្នកនៅតែអាចកុម្ម៉ង់ទុកជាមុនបាន ហើយរោងចក្រនឹងចាត់ចែងដឹកជូននៅព្រឹកស្អែក!
-          </span>
+          <b class="text-amber-950 font-black block" id="storeClosedTitle">បច្ចុប្បន្នផុតម៉ោងដឹកជញ្ជូនហើយ!</b>
+          <span class="text-[11px] text-amber-800 leading-snug block mt-0.5" id="storeClosedTimeHint"></span>
         </div>
       </div>
     </div>
@@ -137,7 +135,7 @@
       <div class="p-2.5 bg-white rounded-2xl border border-slate-100 shadow-2xs space-y-0.5">
         <i class="fas fa-truck-fast text-blue-600 text-sm"></i>
         <div class="text-[10px] font-black text-slate-800" id="tbSpeed">ដឹកដល់មុខផ្ទះ</div>
-        <div class="text-[9px] text-slate-400 font-bold">ក្រុងប៉ោយប៉ែត</div>
+        <div class="text-[9px] text-slate-400 font-bold" id="tbSpeedSub">ក្រុងប៉ោយប៉ែត</div>
       </div>
       <div class="p-2.5 bg-white rounded-2xl border border-slate-100 shadow-2xs space-y-0.5">
         <i class="fas fa-award text-amber-500 text-sm"></i>
@@ -336,7 +334,7 @@
           <div class="p-1 bg-white rounded-xl border border-red-200 shadow-inner max-w-[180px] mx-auto">
             <img src="https://i.postimg.cc/DzHPhnmQ/photo-2026-09-06-20-44-57.jpg" alt="ABA KHQR" class="w-full rounded-lg shadow-xs">
           </div>
-          <p class="text-[10px] text-slate-500 font-bold">ស្កេនទូទាត់រួចហើយ សូមចុចប៊ូតុងកុម្ម៉ង់ខាងក្រោម</p>
+          <p class="text-[10px] text-slate-500 font-bold" id="abaInstructionText">ស្កេនទូទាត់រួចហើយ សូមចុចប៊ូតុងកុម្ម៉ង់ខាងក្រោម</p>
         </div>
       </div>
 
@@ -356,7 +354,7 @@
   </div>
 
   <!-- ==============================================
-       ៧. JAVASCRIPT LOGIC (SUPABASE CLOUD POWERED)
+       ៧. JAVASCRIPT LOGIC (100% COMPLETE MULTILINGUAL)
        ============================================== -->
   <script>
     // 🔑 ១. SUPABASE INITIALIZATION
@@ -373,8 +371,10 @@
     var STORE_CATALOG = [];
     var activePromoConfig = null;
     var storeDeliveryConfig = { standardFee: 0, freeMinQty: 2 };
+    var storeOperatingConfig = { isOpen: true, openTime: "07:00", closeTime: "18:00" };
     var telegramSettings = { token: "", chatId: "", status: "ON" };
 
+    // 📚 វចនានុក្រមបកប្រែ ៣ ភាសាពេញលេញ (100% Complete Multilingual Dictionary)
     var DICT = {
       km: {
         topSub: "រោងចក្រទឹកបរិសុទ្ធ ខេ ស៊ី (ប៉ោយប៉ែត)",
@@ -383,13 +383,17 @@
         bannerDesc: "ឆ្លងកាត់ការចម្រោះ ៧ ដំណាក់កាល UV និងអូហ្សូន ស្តង់ដារសុខភាព ១០០%",
         tbSafe: "សុវត្ថិភាពខ្ពស់",
         tbSpeed: "ដឹកដល់មុខផ្ទះ",
+        tbSpeedSub: "ក្រុងប៉ោយប៉ែត",
         tbStandard: "ស្តង់ដារជាតិ",
+        reorderTag: "ធ្លាប់កុម្ម៉ង់ពីមុន?",
+        reorderBtn: "កុម្ម៉ង់ម្ដងទៀត",
         catTitle: "មុខទំនិញទឹកពិសា (Products)",
         catAll: "ទាំងអស់",
         catBarrel: "ទឹកធុង ២០L",
         catPack: "ទឹកយួរ / ដប",
         catEquip: "ជើងទម្រ / បរិក្ខារ",
         btnSelect: "រើសទិញ",
+        modalBadge: "ស្តង់ដារ KC WATER",
         modalQty: "ចំនួនកុម្ម៉ង់៖",
         modalAdd: "បញ្ចូលកន្ត្រក",
         dockItems: "មុខទំនិញ",
@@ -397,16 +401,51 @@
         coHeading: "ព័ត៌មានដឹកជញ្ជូនទឹក (ប៉ោយប៉ែត)",
         coSub: "ដឹកជូនដល់មុខផ្ទះរហ័សដោយអ្នកដឹក KC WATER",
         coSecUser: "១. ព័ត៌មានអ្នកទទួលទឹក",
+        phName: "ឈ្មោះអ្នកទទួល (*)",
+        phPhone: "លេខទូរស័ព្ទ (*)",
         coSecLoc: "២. ទីតាំងផ្ទះនៅក្រុងប៉ោយប៉ែត",
         btnGps: "📍 ចុចចាប់ GPS ផ្ទះខ្ញុំ",
-        coSecSwap: "៣. ការដោះដូរសំបកធុងទឹក",
+        gpsHint: "💡 ចុចប៊ូតុងខៀវខាងលើ ដើម្បីឱ្យទូរស័ព្ទចាប់កូអរដោនេផ្ទះដោយស្វ័យប្រវត្តិ",
+        gpsDetecting: "កំពុងចាប់ទីតាំង GPS...",
+        gpsSuccess: "✅ ចាប់បានទីតាំងជោគជ័យ!",
+        gpsFail: "⚠️ មិនអាចចាប់ GPS (សូមចុច Allow ឬវាយទីតាំង)",
+        phAddress: "ភូមិ, សង្កាត់, ឬចំណាំទីតាំងសម្គាល់ក្បែរផ្ទះ...",
+        coSecSwap: "៣. ការដោះដូរសំបកធុងទឹក (Empty Barrel Swap)",
         optSwapYes: "✅ ខ្ញុំមានសំបកធុងដូរ (មិនគិតថ្លៃសំបក)",
         optSwapNo: "🛒 គ្មានសំបកធុងដូរទេ (ទិញសំបកថ្មីដាច់ +១២,០០០៛/ធុង)",
         coSecPay: "៤. វិធីទូទាត់ប្រាក់",
         optCod: "💵 លុយសុទ្ធពេលដល់",
         optAba: "📱 ស្កេន ABA KHQR",
+        abaInstruction: "ស្កេនទូទាត់រួចហើយ សូមចុចប៊ូតុងកុម្ម៉ង់ខាងក្រោម",
         coTotal: "សរុបទឹកប្រាក់ត្រូវបង់៖",
-        btnOrderNow: "បញ្ជាក់ការកុម្ម៉ង់ទឹកឥឡូវនេះ (Order Now)"
+        btnOrderNow: "បញ្ជាក់ការកុម្ម៉ង់ទឹកឥឡូវនេះ (Order Now)",
+        btnSubmitting: "កំពុងបញ្ជូនការកុម្ម៉ង់...",
+        // Breakdown Labels
+        breakdownBarrelFee: "ថ្លៃទិញសំបកធុងថ្មីដាច់",
+        breakdownDeliveryFree: "សេវាដឹកជញ្ជូនដល់ផ្ទះ",
+        breakdownFreeTag: "Free (ឥតគិតថ្លៃ) 🎉",
+        breakdownDeliveryFee: "សេវាដឹកជញ្ជូន",
+        breakdownMinFreeHint: "កុម្ម៉ង់ចាប់ពី {min} ធុងឡើង ដឹក Free",
+        breakdownPromoTag: "ប្រូម៉ូសិន",
+        // In-App Errors
+        errName: "សូមបញ្ចូលឈ្មោះរបស់អ្នកទទួលទឹក!",
+        errPhone: "សូមបញ្ចូលលេខទូរស័ព្ទរបស់អ្នកទទួលទឹក!",
+        errAddress: "សូមចុចចាប់ GPS ឬវាយអាសយដ្ឋានផ្ទះរបស់អ្នក!",
+        errEmptyCart: "កន្ត្រកទទេ! សូមជ្រើសរើសទឹកជាមុនសិន។",
+        // Live Tracking
+        trackTitle: "📦 ស្ថានភាពការកុម្ម៉ង់ទឹករបស់អ្នក",
+        trackRefresh: "Refresh",
+        trackPending: "⏳ រង់ចាំរោងចក្រពិនិត្យ",
+        trackAssigned: "🚚 អ្នកដឹកកំពុងធ្វើដំណើរ",
+        trackDriverLabel: "អ្នកដឹកជញ្ជូនរោងចក្រ៖",
+        trackCallDriver: "ខលទៅអ្នកដឹក",
+        trackSendSlip: "📲 ផ្ញើបង្កាន់ដៃ (Slip ABA) ទៅ Telegram",
+        trackTotal: "សរុបទឹកប្រាក់៖",
+        // Store Hours Banner
+        closedTitle: "បច្ចុប្បន្នផុតម៉ោងដឹកជញ្ជូនហើយ!",
+        closedHint: "ម៉ោងទទួលកុម្ម៉ង់៖ {open} ដល់ {close}។ លោកអ្នកនៅតែអាចកុម្ម៉ង់ទុកជាមុនបាន ហើយរោងចក្រនឹងចាត់ចែងដឹកជូននៅព្រឹកស្អែក!",
+        promoBannerTag: "PROMOTION កំពុងដំណើរការ",
+        promoBannerBtn: "កុម្ម៉ង់ឥឡូវ"
       },
       en: {
         topSub: "KC Purified Water Factory (Poipet)",
@@ -415,30 +454,69 @@
         bannerDesc: "7-Stage UV & Ozone Filtration System. 100% Certified Healthy Hydration.",
         tbSafe: "Ultra Safe",
         tbSpeed: "Home Delivery",
+        tbSpeedSub: "Poipet City",
         tbStandard: "National Certified",
+        reorderTag: "Ordered before?",
+        reorderBtn: "Reorder",
         catTitle: "Water Products",
         catAll: "All",
         catBarrel: "20L Barrels",
         catPack: "Bottled Packs",
         catEquip: "Stands & Accessories",
         btnSelect: "Order",
+        modalBadge: "KC WATER Standard",
         modalQty: "Quantity:",
         modalAdd: "Add to Cart",
-        dockItems: "items in cart",
+        dockItems: "items",
         dockCheckout: "Checkout",
         coHeading: "Delivery Details (Poipet)",
         coSub: "Fast direct home delivery by KC WATER couriers",
         coSecUser: "1. Customer Details",
+        phName: "Recipient Name (*)",
+        phPhone: "Phone Number (*)",
         coSecLoc: "2. Delivery Location (Poipet)",
-        btnGps: "📍 Pin My Home Location (GPS)",
+        btnGps: "📍 Pin My GPS Location",
+        gpsHint: "💡 Tap the blue button above to auto-pin your GPS delivery location",
+        gpsDetecting: "Detecting GPS location...",
+        gpsSuccess: "✅ GPS location pinned successfully!",
+        gpsFail: "⚠️ Unable to detect GPS (Please allow access or enter address)",
+        phAddress: "Village, Sangkat, or nearby landmark...",
         coSecSwap: "3. Barrel Exchange Option",
         optSwapYes: "✅ I have empty barrels to exchange (Free)",
         optSwapNo: "🛒 No barrels to exchange (+12,000 KHR/barrel deposit)",
         coSecPay: "4. Payment Method",
         optCod: "💵 Cash on Delivery",
         optAba: "📱 Scan ABA KHQR",
+        abaInstruction: "After scanning payment, please click order button below",
         coTotal: "Total Amount to Pay:",
-        btnOrderNow: "Confirm Water Order (Order Now)"
+        btnOrderNow: "Confirm Water Order (Order Now)",
+        btnSubmitting: "Submitting order...",
+        // Breakdown Labels
+        breakdownBarrelFee: "New barrel deposit fee",
+        breakdownDeliveryFree: "Home delivery fee",
+        breakdownFreeTag: "Free Delivery 🎉",
+        breakdownDeliveryFee: "Delivery fee",
+        breakdownMinFreeHint: "Free delivery for {min}+ barrels",
+        breakdownPromoTag: "Promotion",
+        // In-App Errors
+        errName: "Please enter recipient name!",
+        errPhone: "Please enter recipient phone number!",
+        errAddress: "Please pin GPS or enter your home address!",
+        errEmptyCart: "Cart is empty! Please select water items.",
+        // Live Tracking
+        trackTitle: "📦 Your Order Status",
+        trackRefresh: "Refresh",
+        trackPending: "⏳ Awaiting Review",
+        trackAssigned: "🚚 Out for Delivery",
+        trackDriverLabel: "Factory Courier:",
+        trackCallDriver: "Call Driver",
+        trackSendSlip: "📲 Send Payment Slip to Telegram",
+        trackTotal: "Total Amount:",
+        // Store Hours Banner
+        closedTitle: "Delivery is currently closed for the day!",
+        closedHint: "Ordering hours: {open} to {close}. You can still place an advance order and we will deliver it tomorrow morning!",
+        promoBannerTag: "ACTIVE PROMOTION",
+        promoBannerBtn: "Order Now"
       },
       zh: {
         topSub: "波贝KC优质纯净水厂 (Poipet)",
@@ -447,13 +525,17 @@
         bannerDesc: "采用7道深层过滤，UV紫外线与臭氧杀菌消毒，健康有保障。",
         tbSafe: "安全健康",
         tbSpeed: "配送到家",
+        tbSpeedSub: "波贝市区",
         tbStandard: "国家认证",
+        reorderTag: "曾订购过？",
+        reorderBtn: "再来一单",
         catTitle: "精选商品 (Products)",
         catAll: "全部",
         catBarrel: "20L 大桶水",
         catPack: "小瓶装/提装",
         catEquip: "水桶支架/配件",
         btnSelect: "选购",
+        modalBadge: "KC WATER 认证",
         modalQty: "订购数量：",
         modalAdd: "加入购物车",
         dockItems: "件商品",
@@ -461,18 +543,90 @@
         coHeading: "配送与支付信息 (波贝)",
         coSub: "KC WATER 专业送水员快速送达您的住处",
         coSecUser: "1. 收货人信息",
+        phName: "收货人姓名 (*)",
+        phPhone: "电话号码 (*)",
         coSecLoc: "2. 波贝送货地址",
-        btnGps: "📍 点击定位当前位置 (GPS)",
+        btnGps: "📍 点击获取我的GPS定位",
+        gpsHint: "💡 点击上方蓝色按钮自动定位您的送水住处",
+        gpsDetecting: "正在定位GPS地址...",
+        gpsSuccess: "✅ GPS定位成功！",
+        gpsFail: "⚠️ 无法获取定位 (请允许权限或手动输入地址)",
+        phAddress: "村庄、分区或住处附近地标...",
         coSecSwap: "3. 空桶置换说明",
-        optSwapYes: "✅ 我有空桶可交换 (免收桶押金)",
-        optSwapNo: "🛒 无空桶交换 (每个押金+12,000瑞尔)",
+        optSwapYes: "✅ 我有空桶可交换 (免押金)",
+        optSwapNo: "🛒 无空桶可换 (买桶+12,000瑞尔/桶)",
         coSecPay: "4. 支付方式",
         optCod: "💵 货到付款 (现金)",
         optAba: "📱 ABA KHQR 扫码支付",
+        abaInstruction: "扫码付款完成后，请点击下方确认按钮提交",
         coTotal: "应付总金额：",
-        btnOrderNow: "立即提交订水 (Order Now)"
+        btnOrderNow: "立即提交订水 (Order Now)",
+        btnSubmitting: "正在提交订单...",
+        // Breakdown Labels
+        breakdownBarrelFee: "购买空桶押金费",
+        breakdownDeliveryFree: "送货上门费",
+        breakdownFreeTag: "免费配送 🎉",
+        breakdownDeliveryFee: "配送费",
+        breakdownMinFreeHint: "满 {min} 桶起免配送费",
+        breakdownPromoTag: "特惠活动",
+        // In-App Errors
+        errName: "请输入收货人姓名！",
+        errPhone: "请输入收货人电话号码！",
+        errAddress: "请定位GPS或输入您的送水地址！",
+        errEmptyCart: "购物车为空！请先选购商品。",
+        // Live Tracking
+        trackTitle: "📦 您的订单状态",
+        trackRefresh: "刷新",
+        trackPending: "⏳ 等待水厂确认",
+        trackAssigned: "🚚 配送员正在派送",
+        trackDriverLabel: "水厂配送员：",
+        trackCallDriver: "拨打配送员",
+        trackSendSlip: "📲 发送付款水单至 Telegram",
+        trackTotal: "应付总额：",
+        // Store Hours Banner
+        closedTitle: "当前已超过配送营业时间！",
+        closedHint: "接单时间：{open} 至 {close}。您仍可预先提交订单，水厂将于明早优先为您安排派送！",
+        promoBannerTag: "限时特惠进行中",
+        promoBannerBtn: "立即抢购"
       }
     };
+
+    // 🌐 មុខងារបកប្រែឈ្មោះទំនិញស្វ័យប្រវត្ត (Smart Product Name Translation)
+    function getLocalizedProductName(p, lang) {
+      if (!p || !p.name) return '';
+      if (lang === 'km') return p.name;
+
+      var n = p.name;
+      // បញ្ជីឈ្មោះផ្គូផ្គងផ្ទាល់
+      var directMap = {
+        'ទឹកធុង ២០L ពណ៌ស': { en: '20L White Barrel Pure Water', zh: '20L 白桶装优质纯净水' },
+        'ទឹកធុង ២០L ពណ៌ខៀវ': { en: '20L Blue Barrel Pure Water', zh: '20L 蓝桶装优质纯净水' },
+        'ទឹកធុង ២០L': { en: '20L Barrel Pure Water', zh: '20L 大桶纯净水' },
+        'ទឹកបរិសុទ្ធ 350ml (យួរ)': { en: '350ml Bottled Water (Pack of 24)', zh: '350ml 瓶装水 (24瓶/提)' },
+        'ទឹកបរិសុទ្ធ 500ml (យួរ)': { en: '500ml Bottled Water (Pack of 24)', zh: '500ml 瓶装水 (24瓶/提)' },
+        'ទឹកបរិសុទ្ធ 1500ml (យួរ)': { en: '1500ml Bottled Water (Pack of 12)', zh: '1500ml 大瓶装水 (12瓶/提)' },
+        'ជើងទម្រធុងទឹក': { en: 'Water Barrel Stand / Rack', zh: '加厚水桶放置支架' },
+        'ក្បាលរ៉ូប៊ីណេ': { en: 'Water Dispenser Valve / Faucet', zh: '专用出水嘴/水龙头' },
+        'ម៉ាស៊ីនទឹកក្តៅ-ត្រជាក់': { en: 'Hot & Cold Water Dispenser', zh: '立式冷热饮水机' }
+      };
+
+      if (directMap[n] && directMap[n][lang]) {
+        return directMap[n][lang];
+      }
+
+      // ករណីទំនិញថ្មី បកប្រែតាម Keyword
+      if (lang === 'en') {
+        if (n.indexOf('ធុង') !== -1) return n.replace(/ទឹកធុង|ធុង/g, '20L Barrel Water');
+        if (n.indexOf('យួរ') !== -1) return n.replace(/យួរ/g, 'Pack');
+        if (n.indexOf('ដប') !== -1) return n.replace(/ដប/g, 'Bottle');
+      } else if (lang === 'zh') {
+        if (n.indexOf('ធុង') !== -1) return n.replace(/ទឹកធុង|ធុង/g, '20L 大桶纯净水');
+        if (n.indexOf('យួរ') !== -1) return n.replace(/យួរ/g, '提');
+        if (n.indexOf('ដប') !== -1) return n.replace(/ដប/g, '瓶');
+      }
+
+      return n;
+    }
 
     function changeAppLanguage(lang) {
       currentLang = lang;
@@ -487,41 +641,83 @@
         }
       });
 
+      // ១. Header & Badges
       document.getElementById('txtTopSubtitle').innerText = d.topSub;
       document.getElementById('txtBannerTag').innerText = d.bannerTag;
       document.getElementById('txtBannerTitle').innerText = d.bannerTitle;
       document.getElementById('txtBannerDesc').innerText = d.bannerDesc;
       document.getElementById('tbSafe').innerText = d.tbSafe;
       document.getElementById('tbSpeed').innerText = d.tbSpeed;
+      document.getElementById('tbSpeedSub').innerText = d.tbSpeedSub;
       document.getElementById('tbStandard').innerText = d.tbStandard;
+
+      // ២. Reorder Card
+      var rTag = document.getElementById('txtReorderTag');
+      var rBtn = document.getElementById('txtReorderBtn');
+      if (rTag) rTag.innerText = d.reorderTag;
+      if (rBtn) rBtn.innerText = d.reorderBtn;
+
+      // ៣. Categories
+      document.getElementById('txtCatalogTitle').innerHTML = '<i class="fas fa-boxes-stacked text-emerald-600 mr-1.5"></i><span>' + d.catTitle + '</span>';
+      document.getElementById('txtCatalogAll').innerText = d.catAll;
       document.getElementById('catBtn_ALL').innerText = d.catAll;
       document.getElementById('catBtn_BARREL').innerText = d.catBarrel;
       document.getElementById('catBtn_PACK').innerText = d.catPack;
       document.getElementById('catBtn_EQUIP').innerText = d.catEquip;
 
+      // ៤. Modal Product Detail
+      document.getElementById('modalBadge').innerText = d.modalBadge;
       document.getElementById('modalQtyLabel').innerText = d.modalQty;
+
+      // ៥. Dock
       document.getElementById('dockCheckoutLabel').innerText = d.dockCheckout;
+
+      // ៦. Checkout Form & Placeholders
       document.getElementById('coHeading').innerText = d.coHeading;
       document.getElementById('coSub').innerText = d.coSub;
       document.getElementById('coSectionUser').innerText = d.coSecUser;
+      document.getElementById('inp_custName').placeholder = d.phName;
+      document.getElementById('inp_custPhone').placeholder = d.phPhone;
+
+      document.getElementById('coSectionLoc').innerText = d.coSecLoc;
       document.getElementById('btnGpsLabel').innerText = d.btnGps;
+      var gpsHint = document.getElementById('gpsStatusHint');
+      if (gpsHint && (!document.getElementById('inp_custMapUrl').value)) {
+        gpsHint.innerText = d.gpsHint;
+      }
+      document.getElementById('inp_custAddress').placeholder = d.phAddress;
+
       document.getElementById('coSectionSwap').innerText = d.coSecSwap;
       document.getElementById('optSwapYes').innerText = d.optSwapYes;
       document.getElementById('optSwapNo').innerText = d.optSwapNo;
+
+      document.getElementById('coSectionPay').innerText = d.coSecPay;
       document.getElementById('optCodLabel').innerText = d.optCod;
       document.getElementById('optAbaLabel').innerText = d.optAba;
+      document.getElementById('abaInstructionText').innerText = d.abaInstruction;
+
       document.getElementById('coTotalLabel').innerText = d.coTotal;
       document.getElementById('btnSubmitOrderText').innerText = d.btnOrderNow;
 
+      // ៧. Closed Store Notice (if banner visible)
+      var closedTitle = document.getElementById('storeClosedTitle');
+      var closedHint = document.getElementById('storeClosedTimeHint');
+      if (closedTitle) closedTitle.innerText = d.closedTitle;
+      if (closedHint) {
+        closedHint.innerText = d.closedHint.replace('{open}', storeOperatingConfig.openTime).replace('{close}', storeOperatingConfig.closeTime);
+      }
+
       renderCatalogGrid();
       recalcCartDock();
+      updateCheckoutCalculation();
+      checkActiveOrderLiveStatus(); // Refresh Tracking labels if tracking
     }
 
     // 📦 ២. ទាញយកទំនិញពី SUPABASE
     async function loadStoreOnlineProducts() {
       var grid = document.getElementById('catalogGrid');
       if (grid) {
-        grid.innerHTML = '<div class="col-span-full py-12 text-center text-slate-400 font-bold text-xs"><i class="fas fa-spinner fa-spin text-emerald-600 text-xl mb-2 block"></i> កំពុងទាញយកទំនិញពិតពីឃ្លាំងរោងចក្រ...</div>';
+        grid.innerHTML = '<div class="col-span-full py-12 text-center text-slate-400 font-bold text-xs"><i class="fas fa-spinner fa-spin text-emerald-600 text-xl mb-2 block"></i> Loading products...</div>';
       }
 
       try {
@@ -557,15 +753,9 @@
 
             return {
               id: String(p.id || ''),
+              raw_name: p.name,
               cat: cat,
               isBarrel20L: isBarrel,
-              badge: (cat === 'BARREL') ? 'ពេញនិយមបំផុត' : 'គុណភាពខ្ពស់',
-              name_km: p.name,
-              name_en: p.name,
-              name_zh: p.name,
-              desc_km: 'ទឹកពិសាបរិសុទ្ធស្តង់ដារអនាម័យខ្ពស់ ដឹកជញ្ជូនរហ័សដោយ KC WATER',
-              desc_en: 'KC WATER pure drinking water, fast direct delivery in Poipet.',
-              desc_zh: 'KC WATER 优质纯净饮用水，快速送达。',
               price: onlinePrice,
               svg: imgDisplay
             };
@@ -574,11 +764,11 @@
           renderCatalogGrid('ALL');
         } else {
           if (grid) {
-            grid.innerHTML = '<div class="col-span-full py-10 text-center text-slate-400 font-bold text-xs"><i class="fas fa-box-open text-2xl text-slate-300 mb-2 block"></i> មិនទាន់មានទំនិញដាក់លក់លើ Website នៅឡើយទេ</div>';
+            grid.innerHTML = '<div class="col-span-full py-10 text-center text-slate-400 font-bold text-xs"><i class="fas fa-box-open text-2xl text-slate-300 mb-2 block"></i> No products available</div>';
           }
         }
       } catch(err) {
-        if (grid) grid.innerHTML = '<div class="col-span-full py-8 text-center text-red-500 font-bold text-xs">កំហុសទាញយកទំនិញ៖ ' + err.message + '</div>';
+        if (grid) grid.innerHTML = '<div class="col-span-full py-8 text-center text-red-500 font-bold text-xs">Error: ' + err.message + '</div>';
       }
     }
 
@@ -591,16 +781,18 @@
 
       STORE_CATALOG.forEach(function(item) {
         if (filterCat !== 'ALL' && item.cat !== filterCat) return;
-        var name = item['name_' + currentLang] || item.name_km;
+        var localizedName = getLocalizedProductName({ name: item.raw_name }, currentLang);
         var inCart = (cartItems[item.id] && cartItems[item.id].qty > 0) ? cartItems[item.id].qty : 0;
         var inCartBadge = inCart > 0 ? '<span class="absolute top-3 right-3 w-6 h-6 rounded-full bg-emerald-600 text-white font-black text-xs flex items-center justify-center shadow">' + inCart + '</span>' : '';
 
+        var badgeLabel = (item.cat === 'BARREL') ? (currentLang === 'km' ? 'ពេញនិយម' : (currentLang === 'zh' ? '热销' : 'Popular')) : (currentLang === 'km' ? 'គុណភាពខ្ពស់' : (currentLang === 'zh' ? '优选' : 'Premium'));
+
         html += '<div onclick="openProductDetailModal(\'' + item.id + '\')" class="kc-glass-card p-3.5 flex flex-col justify-between cursor-pointer relative group">' +
-          '<span class="absolute top-3 left-3 bg-emerald-50 text-emerald-800 text-[9px] font-black px-2 py-0.5 rounded-full border border-emerald-200">' + item.badge + '</span>' +
+          '<span class="absolute top-3 left-3 bg-emerald-50 text-emerald-800 text-[9px] font-black px-2 py-0.5 rounded-full border border-emerald-200">' + badgeLabel + '</span>' +
           inCartBadge +
           '<div class="h-24 flex items-center justify-center my-2 group-hover:scale-105 transition-transform">' + item.svg + '</div>' +
           '<div class="space-y-1">' +
-            '<h4 class="text-xs font-bold text-slate-800 line-clamp-2 h-8 leading-snug">' + name + '</h4>' +
+            '<h4 class="text-xs font-bold text-slate-800 line-clamp-2 h-8 leading-snug">' + localizedName + '</h4>' +
             '<div class="text-xs font-black text-emerald-700">៛ ' + Number(item.price).toLocaleString() + '</div>' +
           '</div>' +
           '<button type="button" class="mt-2.5 w-full py-1.5 rounded-xl bg-slate-100 group-hover:bg-emerald-600 text-slate-700 group-hover:text-white font-black text-[11px] transition flex items-center justify-center gap-1">' +
@@ -624,13 +816,18 @@
       if (!item) return;
       activeModalProduct = item;
 
-      var name = item['name_' + currentLang] || item.name_km;
-      var desc = item['desc_' + currentLang] || item.desc_km;
+      var localizedName = getLocalizedProductName({ name: item.raw_name }, currentLang);
       var curQty = (cartItems[item.id] && cartItems[item.id].qty > 0) ? cartItems[item.id].qty : 1;
 
+      var descMap = {
+        km: 'ទឹកពិសាបរិសុទ្ធស្តង់ដារអនាម័យខ្ពស់ ឆ្លងកាត់ការចម្រោះ ៧ ដំណាក់កាល UV និងអូហ្សូន។ ដឹកជញ្ជូនរហ័សដោយ KC WATER។',
+        en: 'KC WATER premium pure drinking water, filtered through 7 stages with UV & Ozone. Fast home delivery.',
+        zh: 'KC WATER 优质纯净饮用水，采用7道深层过滤及紫外线臭氧杀菌消毒，健康卫生，快速送达。'
+      };
+
       document.getElementById('modalSvgArea').innerHTML = item.svg;
-      document.getElementById('modalTitle').innerText = name;
-      document.getElementById('modalDesc').innerText = desc;
+      document.getElementById('modalTitle').innerText = localizedName;
+      document.getElementById('modalDesc').innerText = descMap[currentLang];
       document.getElementById('modalPrice').innerText = '៛ ' + Number(item.price).toLocaleString();
       document.getElementById('modalQtyDisplay').innerText = curQty;
 
@@ -662,10 +859,9 @@
     function confirmAddToCart() {
       if (!activeModalProduct) return;
       var q = parseInt(document.getElementById('modalQtyDisplay').innerText) || 1;
-      var name = activeModalProduct['name_' + currentLang] || activeModalProduct.name_km;
 
       cartItems[activeModalProduct.id] = {
-        name: name,
+        raw_name: activeModalProduct.raw_name,
         price: activeModalProduct.price,
         qty: q,
         isBarrel20L: activeModalProduct.isBarrel20L || false
@@ -722,6 +918,7 @@
       var grandText = document.getElementById('coGrandTotalText');
       var khqrDue = document.getElementById('khqrDueAmountText');
       var barrelHint = document.getElementById('barrelCountSummaryBadge');
+      var d = DICT[currentLang];
 
       var html = '', waterTotal = 0, total20LBarrels = 0, totalUnits = 0;
       var targetProdName = (activePromoConfig && activePromoConfig.targetProduct) ? activePromoConfig.targetProduct : 'ALL';
@@ -739,25 +936,28 @@
             total20LBarrels += cartItems[k].qty;
           }
 
-          var isEligible = (targetProdName === 'ALL' || cartItems[k].name === targetProdName);
+          var isEligible = (targetProdName === 'ALL' || cartItems[k].raw_name === targetProdName);
           if (isEligible) {
             eligibleQty += cartItems[k].qty;
             eligibleSubTotal += sub;
             eligibleUnitPrice = cartItems[k].price;
           }
 
+          var displayName = getLocalizedProductName({ name: cartItems[k].raw_name }, currentLang);
+
           html += '<div class="flex justify-between items-center py-1 border-b border-slate-200 last:border-none">' +
-            '<span><b>' + cartItems[k].name + '</b> x ' + cartItems[k].qty + '</span>' +
+            '<span><b>' + displayName + '</b> x ' + cartItems[k].qty + '</span>' +
             '<b class="text-emerald-800">៛ ' + sub.toLocaleString() + '</b>' +
           '</div>';
         }
       }
 
       if (barrelHint) {
-        barrelHint.innerText = total20LBarrels > 0 ? (total20LBarrels + ' ធុង ២០L') : 'គ្មានធុង ២០L';
+        var bUnit = (currentLang === 'km' ? ' ធុង ២០L' : (currentLang === 'zh' ? ' 桶 20L' : ' Barrels (20L)'));
+        barrelHint.innerText = total20LBarrels > 0 ? (total20LBarrels + bUnit) : (currentLang === 'km' ? 'គ្មានធុង ២០L' : (currentLang === 'zh' ? '无20L桶' : 'No 20L barrels'));
       }
 
-      // ១. គណនាថ្លៃទិញសំបកធុងដាច់ (បើគ្មានសំបកដូរ)
+      // ១. គណនាថ្លៃទិញសំបកធុងដាច់
       var swapChecked = document.querySelector('input[name="co_swapOption"]:checked');
       var isNoSwap = swapChecked ? (swapChecked.value === 'NO') : false;
       var barrelFee = 0;
@@ -765,7 +965,7 @@
       if (isNoSwap && total20LBarrels > 0) {
         barrelFee = total20LBarrels * BARREL_DEPOSIT_PRICE;
         html += '<div class="flex justify-between items-center py-1.5 border-t border-amber-300 text-amber-950 bg-amber-100/80 px-2 rounded-lg mt-1">' +
-          '<span><i class="fas fa-cart-shopping mr-1 text-amber-800"></i><b>ថ្លៃទិញសំបកធុងថ្មីដាច់ (' + total20LBarrels + ' ធុង x ' + BARREL_DEPOSIT_PRICE.toLocaleString() + '៛)</b></span>' +
+          '<span><i class="fas fa-cart-shopping mr-1 text-amber-800"></i><b>' + d.breakdownBarrelFee + ' (' + total20LBarrels + ' x ' + BARREL_DEPOSIT_PRICE.toLocaleString() + '៛)</b></span>' +
           '<b class="text-amber-900 font-black">+៛ ' + barrelFee.toLocaleString() + '</b>' +
         '</div>';
       }
@@ -778,14 +978,15 @@
       if (totalUnits > 0) {
         if (stdFee > 0 && totalUnits < minFreeQty) {
           deliveryFee = stdFee;
+          var hintText = d.breakdownMinFreeHint.replace('{min}', minFreeQty);
           html += '<div class="flex justify-between items-center py-1.5 border-t border-blue-200 text-blue-950 bg-blue-50 px-2 rounded-lg mt-1">' +
-            '<span><i class="fas fa-truck text-blue-600 mr-1"></i><b>សេវាដឹកជញ្ជូន (កុម្ម៉ង់ចាប់ពី ' + minFreeQty + ' ធុងឡើង ដឹក Free)</b></span>' +
+            '<span><i class="fas fa-truck text-blue-600 mr-1"></i><b>' + d.breakdownDeliveryFee + ' (' + hintText + ')</b></span>' +
             '<b class="text-blue-900 font-black">+៛ ' + deliveryFee.toLocaleString() + '</b>' +
           '</div>';
         } else {
           html += '<div class="flex justify-between items-center py-1.5 border-t border-emerald-200 text-emerald-950 bg-emerald-50 px-2 rounded-lg mt-1">' +
-            '<span><i class="fas fa-truck-fast text-emerald-600 mr-1"></i><b>សេវាដឹកជញ្ជូនដល់ផ្ទះ</b></span>' +
-            '<b class="text-emerald-700 font-black">Free (ឥតគិតថ្លៃ) 🎉</b>' +
+            '<span><i class="fas fa-truck-fast text-emerald-600 mr-1"></i><b>' + d.breakdownDeliveryFree + '</b></span>' +
+            '<b class="text-emerald-700 font-black">' + d.breakdownFreeTag + '</b>' +
           '</div>';
         }
       }
@@ -794,18 +995,18 @@
       var promoDiscount = 0;
       var promoNote = '';
       if (activePromoConfig && activePromoConfig.active && eligibleQty > 0) {
-        var prodLabel = (targetProdName === 'ALL') ? '' : (' [' + targetProdName + ']');
+        var prodLabel = (targetProdName === 'ALL') ? '' : (' [' + getLocalizedProductName({ name: targetProdName }, currentLang) + ']');
 
         if (activePromoConfig.type === 'BUY_X_GET_Y' && eligibleQty >= activePromoConfig.buyQty) {
           var freeCount = Math.floor(eligibleQty / activePromoConfig.buyQty) * activePromoConfig.freeQty;
           promoDiscount = freeCount * eligibleUnitPrice;
-          promoNote = '🎁 ប្រូម៉ូសិន' + prodLabel + ' (ទិញ ' + activePromoConfig.buyQty + ' ថែម ' + activePromoConfig.freeQty + ' Free): ថែម ' + freeCount + ' ឯកតា';
+          promoNote = d.breakdownPromoTag + prodLabel + ' (Buy ' + activePromoConfig.buyQty + ' Get ' + activePromoConfig.freeQty + ' Free): +' + freeCount;
         } else if (activePromoConfig.type === 'PERCENT_DISCOUNT' && activePromoConfig.discountVal > 0) {
           promoDiscount = Math.round((eligibleSubTotal * activePromoConfig.discountVal) / 100);
-          promoNote = '🏷️ ប្រូម៉ូសិន' + prodLabel + ' បញ្ចុះតម្លៃ ' + activePromoConfig.discountVal + '%';
+          promoNote = d.breakdownPromoTag + prodLabel + ' -' + activePromoConfig.discountVal + '%';
         } else if (activePromoConfig.type === 'CASH_DISCOUNT' && activePromoConfig.discountVal > 0) {
           promoDiscount = Math.min(eligibleSubTotal, activePromoConfig.discountVal);
-          promoNote = '💰 ប្រូម៉ូសិន' + prodLabel + ' បញ្ចុះតម្លៃពិសេស';
+          promoNote = d.breakdownPromoTag + prodLabel;
         }
 
         if (promoDiscount > 0) {
@@ -818,7 +1019,7 @@
 
       var grandTotal = Math.max(0, waterTotal + barrelFee + deliveryFee - promoDiscount);
 
-      listCont.innerHTML = html || '<div class="text-center py-2 text-slate-400 italic">កន្ត្រកទទេ</div>';
+      listCont.innerHTML = html || '<div class="text-center py-2 text-slate-400 italic">Empty</div>';
       grandText.innerText = '៛ ' + grandTotal.toLocaleString();
       if (khqrDue) khqrDue.innerText = '៛ ' + grandTotal.toLocaleString();
 
@@ -833,6 +1034,7 @@
 
     async function submitFinalWaterOrder() {
       if (isSubmittingOrderLock) return;
+      var d = DICT[currentLang];
 
       var nameInp = document.getElementById('inp_custName');
       var phoneInp = document.getElementById('inp_custPhone');
@@ -849,20 +1051,20 @@
 
       if (!name) {
         nameInp.classList.add('border-red-500');
-        showInAppError("សូមបញ្ចូលឈ្មោះរបស់អ្នកទទួលទឹក!");
+        showInAppError(d.errName);
         nameInp.focus();
         return;
       }
 
       if (!phone) {
         phoneInp.classList.add('border-red-500');
-        showInAppError("សូមបញ្ចូលលេខទូរស័ព្ទរបស់អ្នកទទួលទឹក!");
+        showInAppError(d.errPhone);
         phoneInp.focus();
         return;
       }
 
       if (!mapUrl && !address) {
-        showInAppError("សូមចុចចាប់ GPS ឬវាយអាសយដ្ឋានផ្ទះរបស់អ្នក!");
+        showInAppError(d.errAddress);
         return;
       }
 
@@ -871,7 +1073,7 @@
 
       for (var k in cartItems) {
         if (cartItems[k].qty > 0) {
-          items.push({ id: k, name: cartItems[k].name, price: cartItems[k].price, qty: cartItems[k].qty });
+          items.push({ id: k, raw_name: cartItems[k].raw_name, price: cartItems[k].price, qty: cartItems[k].qty });
           if (cartItems[k].isBarrel20L) {
             total20LBarrels += cartItems[k].qty;
           }
@@ -879,7 +1081,7 @@
       }
 
       if (items.length === 0) {
-        showInAppError("កន្ត្រកទទេ! សូមជ្រើសរើសទឹកជាមុនសិន។");
+        showInAppError(d.errEmptyCart);
         return;
       }
 
@@ -889,7 +1091,7 @@
       if (isNoSwap && total20LBarrels > 0) {
         items.push({
           id: "BARREL_NEW",
-          name: "ទិញសំបកធុងថ្មី (២០L)",
+          raw_name: "ទិញសំបកធុងថ្មី (២០L)",
           price: BARREL_DEPOSIT_PRICE,
           qty: total20LBarrels
         });
@@ -901,7 +1103,7 @@
       if (calcResult.deliveryFee > 0) {
         items.push({
           id: "DELIVERY_FEE",
-          name: "សេវាដឹកជញ្ជូនដល់ផ្ទះ",
+          raw_name: "សេវាដឹកជញ្ជូនដល់ផ្ទះ",
           price: calcResult.deliveryFee,
           qty: 1
         });
@@ -912,19 +1114,17 @@
 
       isSubmittingOrderLock = true;
       var btn = document.getElementById('btnSubmitOrderAction');
-      var originalBtnText = btn.innerHTML;
       btn.disabled = true;
-      btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i> កំពុងបញ្ជូនការកុម្ម៉ង់...';
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i> ' + d.btnSubmitting;
 
       var itemsSummaryText = items.map(function(item) {
-        return item.name + " x " + item.qty;
+        return item.raw_name + " x " + item.qty;
       }).join(", ");
 
       var barrelSwapText = isNoSwap ? ('ទិញសំបកថ្មីដាច់ ' + total20LBarrels + ' ធុង') : 'មានសំបកដូរ';
       var payMethodText = (payVal === 'ABA' ? 'ស្កេន ABA KHQR' : 'លុយសុទ្ធពេលដល់ (COD)');
 
       try {
-        // កត់ត្រាចូលតារាង Orders ក្នុង Supabase
         const { error: insErr } = await supabaseClient
           .from('orders')
           .insert([{
@@ -944,11 +1144,11 @@
 
         if (insErr) throw insErr;
 
-        // ផ្ញើសារដំណឹង Telegram ទៅរោងចក្រភ្លាមៗ
+        // ផ្ញើសារដំណឹង Telegram ទៅរោងចក្រ
         try {
           if (telegramSettings.token && telegramSettings.chatId && telegramSettings.status !== 'OFF') {
             var itemLines = items.map(function(it) {
-              return "  • <b>" + it.name + "</b> x " + it.qty + " = ៛ " + Number(it.price * it.qty).toLocaleString();
+              return "  • <b>" + it.raw_name + "</b> x " + it.qty + " = ៛ " + Number(it.price * it.qty).toLocaleString();
             }).join("\n");
 
             var tgMsg = "🔔 <b>[KC WATER - មានការកុម្ម៉ង់ទឹកថ្មីតាម ONLINE!]</b>\n\n" +
@@ -988,11 +1188,11 @@
         checkActiveOrderLiveStatus();
 
       } catch(err) {
-        showInAppError("កំហុសបច្ចេកទេស៖ " + err.message);
+        showInAppError("Error: " + err.message);
       } finally {
         isSubmittingOrderLock = false;
         btn.disabled = false;
-        btn.innerHTML = originalBtnText;
+        btn.innerHTML = '<i class="fas fa-paper-plane mr-1.5"></i>' + d.btnOrderNow;
       }
     }
 
@@ -1019,13 +1219,14 @@
     function detectGPSLocation() {
       var hint = document.getElementById('gpsStatusHint');
       var inpUrl = document.getElementById('inp_custMapUrl');
+      var d = DICT[currentLang];
 
       if (!navigator.geolocation) {
-        hint.innerHTML = '<span class="text-red-500 font-bold">⚠️ ទូរស័ព្ទមិនគាំទ្រ GPS ទេ សូមវាយអាសយដ្ឋានដោយដៃ</span>';
+        hint.innerHTML = '<span class="text-red-500 font-bold">' + d.gpsFail + '</span>';
         return;
       }
 
-      hint.innerHTML = '<span class="text-blue-600 font-bold"><i class="fas fa-spinner fa-spin"></i> កំពុងចាប់យកទីតាំងផ្ទះនៅប៉ោយប៉ែត...</span>';
+      hint.innerHTML = '<span class="text-blue-600 font-bold"><i class="fas fa-spinner fa-spin"></i> ' + d.gpsDetecting + '</span>';
 
       navigator.geolocation.getCurrentPosition(function(pos) {
         var lat = pos.coords.latitude.toFixed(6);
@@ -1033,9 +1234,9 @@
         var googleMapUrl = "https://www.google.com/maps?q=" + lat + "," + lng;
 
         inpUrl.value = googleMapUrl;
-        hint.innerHTML = '<span class="text-emerald-700 font-bold">✅ ចាប់បានទីតាំងជោគជ័យ!</span> <a href="' + googleMapUrl + '" target="_blank" class="text-blue-600 underline font-bold ml-1">(ពិនិត្យផែនទី)</a>';
+        hint.innerHTML = '<span class="text-emerald-700 font-bold">' + d.gpsSuccess + '</span> <a href="' + googleMapUrl + '" target="_blank" class="text-blue-600 underline font-bold ml-1">(Map)</a>';
       }, function(err) {
-        hint.innerHTML = '<span class="text-amber-600 font-bold">⚠️ មិនអាចចាប់ GPS (សូមចុច Allow ឬវាយទីតាំងក្នុងប្រអប់)</span>';
+        hint.innerHTML = '<span class="text-amber-600 font-bold">' + d.gpsFail + '</span>';
       }, { enableHighAccuracy: true, timeout: 10000 });
     }
 
@@ -1049,7 +1250,7 @@
       }
     }
 
-    // 📡 ៤. តាមដានស្ថានភាពការកុម្ម៉ង់ជាក់ស្តែង (LIVE TRACKING ពី SUPABASE)
+    // 📡 ៤. តាមដានស្ថានភាពការកុម្ម៉ង់ផ្ទាល់ (LIVE ORDER TRACKING IN 3 LANGUAGES)
     async function checkActiveOrderLiveStatus() {
       var orderId = currentTrackingOrderId || localStorage.getItem('kc_active_order_id');
       var cardBox = document.getElementById('activeOrderCardBox');
@@ -1060,6 +1261,7 @@
 
       var refreshIcon = document.getElementById('trackingRefreshIcon');
       if (refreshIcon) refreshIcon.classList.add('fa-spin');
+      var d = DICT[currentLang];
 
       try {
         const { data: info } = await supabaseClient
@@ -1078,8 +1280,8 @@
 
         var isPending = (info.status === "Pending");
         var statusBadge = isPending ? 
-          '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300">⏳ រង់ចាំរោងចក្រពិនិត្យ</span>' : 
-          '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300 animate-pulse">🚚 អ្នកដឹកកំពុងធ្វើដំណើរ</span>';
+          '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300">' + d.trackPending + '</span>' : 
+          '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300 animate-pulse">' + d.trackAssigned + '</span>';
 
         var driverInfoHtml = '';
         if (info.driver_name && !isPending) {
@@ -1088,33 +1290,41 @@
           driverInfoHtml = '<div class="p-3 bg-emerald-50/90 rounded-2xl border border-emerald-300 space-y-2">' +
             '<div class="flex justify-between items-center text-xs">' +
               '<div>' +
-                '<span class="text-[10px] text-emerald-800 font-bold block">អ្នកដឹកជញ្ជូនរោងចក្រ៖</span>' +
+                '<span class="text-[10px] text-emerald-800 font-bold block">' + d.trackDriverLabel + '</span>' +
                 '<b class="text-slate-900 text-sm"><i class="fas fa-motorcycle text-emerald-600 mr-1"></i>' + info.driver_name + '</b>' +
                 (info.driver_phone ? '<div class="text-[11px] text-emerald-900 font-black mt-0.5">📞 ' + info.driver_phone + '</div>' : '') +
               '</div>' +
               '<a href="tel:' + cleanPhone + '" class="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl font-black text-xs shadow-md flex items-center gap-1.5 active:scale-95 transition" style="text-decoration:none;">' +
-                '<i class="fas fa-phone text-xs"></i> ខលទៅអ្នកដឹក' +
+                '<i class="fas fa-phone text-xs"></i> ' + d.trackCallDriver +
               '</a>' +
             '</div>' +
           '</div>';
         }
 
+        var tgMsgText = encodeURIComponent("Hello KC WATER! I ordered code [" + orderId + "] Total: " + Number(info.total || 0).toLocaleString() + " KHR. Here is my payment slip:");
+        var tgSlipLink = "https://t.me/KcWater?text=" + tgMsgText;
+
         cardBox.innerHTML = '<div class="p-4 rounded-3xl bg-white border-2 border-emerald-400 shadow-md space-y-2.5 animate-in zoom-in duration-200">' +
           '<div class="flex justify-between items-center border-b border-slate-100 pb-2">' +
             '<div>' +
               '<div class="flex items-center gap-2">' +
-                '<b class="text-xs text-slate-900 font-black">📦 ស្ថានភាពការកុម្ម៉ង់ទឹករបស់អ្នក</b>' +
+                '<b class="text-xs text-slate-900 font-black">' + d.trackTitle + '</b>' +
                 '<button type="button" onclick="checkActiveOrderLiveStatus()" class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-[10px] font-bold flex items-center gap-1 active:scale-90 transition">' +
-                  '<i id="trackingRefreshIcon" class="fas fa-rotate text-[10px]"></i> Refresh' +
+                  '<i id="trackingRefreshIcon" class="fas fa-rotate text-[10px]"></i> ' + d.trackRefresh +
                 '</button>' +
               '</div>' +
-              '<div class="text-[10px] text-slate-400 font-mono mt-0.5">កូដ៖ ' + orderId + '</div>' +
+              '<div class="text-[10px] text-slate-400 font-mono mt-0.5">ID: ' + orderId + '</div>' +
             '</div>' +
             '<div>' + statusBadge + '</div>' +
           '</div>' +
           driverInfoHtml +
+          '<div class="pt-1">' +
+            '<a href="' + tgSlipLink + '" target="_blank" class="w-full py-2.5 px-3 bg-gradient-to-r from-blue-600 to-sky-600 hover:from-blue-700 text-white rounded-xl text-xs font-black shadow-xs flex items-center justify-center gap-2 active:scale-95 transition" style="text-decoration:none;">' +
+              '<i class="fab fa-telegram text-sm"></i> ' + d.trackSendSlip +
+            '</a>' +
+          '</div>' +
           '<div class="flex justify-between items-center text-[11px] pt-1 text-slate-700 font-bold">' +
-            '<span>សរុបទឹកប្រាក់៖ <b class="text-emerald-800 font-black text-xs">៛ ' + Number(info.total || 0).toLocaleString() + '</b></span>' +
+            '<span>' + d.trackTotal + ' <b class="text-emerald-800 font-black text-xs">៛ ' + Number(info.total || 0).toLocaleString() + '</b></span>' +
             '<span class="text-slate-400 text-[10px]">KC WATER Poipet</span>' +
           '</div>' +
         '</div>';
@@ -1132,16 +1342,13 @@
         var sMap = {};
         settings.forEach(r => { sMap[r.key] = r.value; });
 
-        // Telegram
         if (sMap['Telegram_Token']) telegramSettings.token = sMap['Telegram_Token'];
         if (sMap['Telegram_ChatID']) telegramSettings.chatId = sMap['Telegram_ChatID'];
         if (sMap['Telegram_Alert_Status']) telegramSettings.status = sMap['Telegram_Alert_Status'];
 
-        // Delivery
         if (sMap['Delivery_Fee_Standard']) storeDeliveryConfig.standardFee = parseFloat(sMap['Delivery_Fee_Standard']) || 0;
         if (sMap['Delivery_Free_Min_Qty']) storeDeliveryConfig.freeMinQty = parseInt(sMap['Delivery_Free_Min_Qty']) || 2;
 
-        // Operating Hours
         var openTime = sMap['Store_Open_Time'] || "07:00";
         var closeTime = sMap['Store_Close_Time'] || "18:00";
         var storeStatus = (sMap['Store_Open_Status'] || "AUTO").toUpperCase();
@@ -1150,14 +1357,15 @@
         var nowHHMM = String(now.getHours()).padStart(2, '0') + ":" + String(now.getMinutes()).padStart(2, '0');
         var isOpen = (storeStatus === "OPEN") ? true : (storeStatus === "CLOSED" ? false : (nowHHMM >= openTime && nowHHMM <= closeTime));
 
+        storeOperatingConfig = { isOpen: isOpen, openTime: openTime, closeTime: closeTime };
+
         var banner = document.getElementById('storeClosedNoticeBanner');
         var hint = document.getElementById('storeClosedTimeHint');
-        var topSub = document.getElementById('txtTopSubtitle');
+        var d = DICT[currentLang];
 
         if (!isOpen) {
           if (banner) banner.classList.remove('hidden');
-          if (hint) hint.innerText = "ម៉ោងទទួលកុម្ម៉ង់៖ " + openTime + " ដល់ " + closeTime + "។ លោកអ្នកនៅតែអាចកុម្ម៉ង់ទុកជាមុនបាន ហើយរោងចក្រនឹងចាត់ចែងដឹកជូននៅព្រឹកស្អែក!";
-          if (topSub) topSub.innerHTML = '<span class="text-amber-700 font-bold">🌙 ក្រៅម៉ោងធ្វើការ (ដឹកជញ្ជូននៅព្រឹកស្អែក)</span>';
+          if (hint) hint.innerText = d.closedHint.replace('{open}', openTime).replace('{close}', closeTime);
         } else {
           if (banner) banner.classList.add('hidden');
         }
@@ -1172,10 +1380,9 @@
             buyQty: parseInt(sMap['Promo_Buy_Qty']) || 5,
             freeQty: parseInt(sMap['Promo_Free_Qty']) || 1,
             discountVal: parseFloat(sMap['Promo_Discount_Val']) || 0,
-            bannerText: sMap['Promo_Banner_Text'] || '🎁 ប្រូម៉ូសិនពិសេស៖ កុម្ម៉ង់ឥឡូវនេះដើម្បីទទួលបានការថែមជូន!'
+            bannerText: sMap['Promo_Banner_Text'] || '🎁 Special Promotion!'
           };
 
-          // បង្ហាញ Banner មាស
           var oldCard = document.getElementById('storeLivePromoCard');
           if (oldCard) oldCard.remove();
 
@@ -1186,12 +1393,12 @@
                   '<i class="fas fa-gift animate-bounce text-white"></i>' +
                 '</div>' +
                 '<div>' +
-                  '<span class="text-[9px] font-black uppercase tracking-wider bg-white/25 px-2 py-0.5 rounded-full">PROMOTION កំពុងដំណើរការ</span>' +
+                  '<span class="text-[9px] font-black uppercase tracking-wider bg-white/25 px-2 py-0.5 rounded-full">' + d.promoBannerTag + '</span>' +
                   '<div class="text-xs font-black mt-0.5 leading-snug">' + activePromoConfig.bannerText + '</div>' +
                 '</div>' +
               '</div>' +
               '<button type="button" onclick="document.getElementById(\'catalogSection\').scrollIntoView({behavior:\'smooth\'})" class="px-3.5 py-2 bg-white hover:bg-amber-50 text-amber-950 font-black text-xs rounded-xl shadow active:scale-95 transition whitespace-nowrap">' +
-                'កុម្ម៉ង់ឥឡូវ' +
+                d.promoBannerBtn +
               '</button>' +
             '</div>' +
           '</div>';
@@ -1215,7 +1422,10 @@
         var savedItems = JSON.parse(rawSaved);
         var itemNames = [];
         for (var k in savedItems) {
-          if (savedItems[k].qty > 0) itemNames.push(savedItems[k].name + ' x ' + savedItems[k].qty);
+          if (savedItems[k].qty > 0) {
+            var localized = getLocalizedProductName({ name: savedItems[k].raw_name }, currentLang);
+            itemNames.push(localized + ' x ' + savedItems[k].qty);
+          }
         }
 
         if (itemNames.length > 0) {
@@ -1243,9 +1453,9 @@
 
     // 🚀 INITIALIZE ON LOAD
     window.addEventListener('DOMContentLoaded', async function() {
-      changeAppLanguage('km');
       await loadStoreOnlineProducts();
       await loadStoreSettingsFromSupabase();
+      changeAppLanguage('km'); // Default Khmer
       checkQuickReorderAvailability();
       checkActiveOrderLiveStatus();
       trackingPollTimer = setInterval(checkActiveOrderLiveStatus, 10000);
