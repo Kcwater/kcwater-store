@@ -310,16 +310,19 @@
             <span id="optTimeSchedule">⏰ កំណត់ម៉ោងដឹក</span>
           </label>
         </div>
-        <div id="scheduleTimePickerRow" class="hidden pt-1">
-          <select id="inp_timeSlotSelect" class="w-full p-2 bg-white border border-emerald-300 rounded-xl font-bold text-xs text-slate-800 outline-none">
+        <div id="scheduleTimePickerRow" class="hidden pt-1 space-y-1.5">
+          <select id="inp_timeSlotSelect" onchange="onSchedulePresetChange(this.value)" class="w-full p-2 bg-white border border-emerald-300 rounded-xl font-bold text-xs text-slate-800 outline-none">
             <option value="11:30 - 12:30">🕒 ថ្ងៃត្រង់ (១១:៣០ - ១២:៣០)</option>
             <option value="14:00 - 15:30">🕒 រសៀល (១៤:០០ - ១៥:៣០)</option>
             <option value="17:00 - 18:30">🕒 ល្ងាច (១៧:០០ - ១៨:៣០)</option>
             <option value="ស្អែកព្រឹក (08:00 - 10:00)">🌅 ព្រឹកស្អែក (០៨:០០ - ១០:០០)</option>
+            <option value="CUSTOM">✍️ វាយបញ្ចូលម៉ោងដោយដៃ (Custom Time)</option>
           </select>
+          <!-- ប្រអប់វាយម៉ោងដោយដៃ នឹងលោតចេញមកពេលភ្ញៀវរើស Custom -->
+          <div id="customTimeManualInputRow" class="hidden">
+            <input type="text" id="inp_customTimeManual" placeholder="វាយម៉ោងចង់ឱ្យដឹក (ឧ៖ ម៉ោង 2:15 រសៀល ឬ 14:15)..." class="w-full p-2 bg-white border-2 border-emerald-400 rounded-xl font-bold text-xs text-emerald-950 outline-none">
+          </div>
         </div>
-      </div>
-
       <!-- ៣. 🏢 ប្រភេទលំនៅដ្ឋាន & ជាន់ផ្ទះ (BUILDING & FLOOR DETAILS) -->
       <div class="space-y-1.5 p-3 bg-slate-50 rounded-2xl border border-slate-200">
         <div class="font-black text-slate-800 uppercase text-[11px] flex items-center gap-1">
@@ -684,6 +687,19 @@
       }
     }
 
+    // ✍️ មុខងារបើកប្រអប់វាយម៉ោងដោយដៃពេលភ្ញៀវរើស Custom
+    function onSchedulePresetChange(val) {
+      var manualRow = document.getElementById('customTimeManualInputRow');
+      var manualInp = document.getElementById('inp_customTimeManual');
+      if (manualRow) {
+        if (val === 'CUSTOM') {
+          manualRow.classList.remove('hidden');
+          if (manualInp) setTimeout(() => manualInp.focus(), 100);
+        } else {
+          manualRow.classList.add('hidden');
+        }
+      }
+    }
     function onBuildingTypeChanged() {
       var val = document.querySelector('input[name="co_bldType"]:checked').value;
       var row = document.getElementById('buildingFloorDetailRow');
@@ -1138,9 +1154,16 @@
       var mapUrl = mapUrlInp ? mapUrlInp.value.trim() : '';
 
       // ចាប់យកព័ត៌មានម៉ោងដឹក និងព័ត៌មានអគារ/ជាន់ផ្ទះ
-      var timeSlotVal = document.querySelector('input[name="co_timeSlot"]:checked').value;
-      var timeDetail = (timeSlotVal === 'ASAP') ? '⚡ ដឹកភ្លាមៗ (ASAP)' : ('⏰ ម៉ោង៖ ' + document.getElementById('inp_timeSlotSelect').value);
-
+      var timeDetail = '⚡ ដឹកភ្លាមៗ (ASAP)';
+if (timeSlotVal === 'SCHEDULE') {
+  var preset = document.getElementById('inp_timeSlotSelect').value;
+  if (preset === 'CUSTOM') {
+    var customVal = document.getElementById('inp_customTimeManual').value.trim();
+    timeDetail = '⏰ ម៉ោង៖ ' + (customVal || 'តាមការកំណត់របស់ភ្ញៀវ');
+  } else {
+    timeDetail = '⏰ ម៉ោង៖ ' + preset;
+  }
+}
       var bldTypeVal = document.querySelector('input[name="co_bldType"]:checked').value;
       var floorDetail = (bldTypeVal === 'GROUND') ? '🏠 ផ្ទះផ្ទាល់ដី' : ('🏢 ' + (document.getElementById('inp_bldFloorDetail').value.trim() || 'បន្ទប់ជួល/អគារ'));
 
