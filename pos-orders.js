@@ -118,6 +118,7 @@ function injectOnlineOrdersAdminModal() {
   document.body.insertAdjacentHTML('beforeend', html);
 }
 
+// 📦 មុខងារបើកផ្ទាំងពិនិត្យការកុម្ម៉ង់ Online (ធានាមានឈ្មោះអ្នកដឹកជានិច្ច & បង្ហាញព័ត៌មានលម្អិត)
 async function openOnlineOrdersModal() {
   injectOnlineOrdersAdminModal();
   var modal = document.getElementById('onlineOrdersAdminModal');
@@ -126,6 +127,16 @@ async function openOnlineOrdersModal() {
   if (container) container.innerHTML = '<div class="text-center py-8 text-gray-400 italic text-xs"><i class="fas fa-spinner fa-spin mr-1.5 text-amber-600"></i> កំពុងទាញយកបញ្ជីកុម្ម៉ង់...</div>';
 
   try {
+    // ១. ការពារបញ្ហា Dropdown ទទេ៖ បើមិនទាន់មានទិន្នន័យអ្នកដឹក ឱ្យទាញពី Supabase ភ្លាម
+    if (!allCustomers || allCustomers.length === 0) {
+      const { data: custs } = await supabaseClient
+        .from('users')
+        .select('*')
+        .order('full_name', { ascending: true });
+      if (custs) allCustomers = custs;
+    }
+
+    // ២. ទាញយកការកុម្ម៉ង់ដែលរង់ចាំ (Pending & Assigned)
     const { data: list, error } = await supabaseClient
       .from('orders')
       .select('*')
@@ -143,7 +154,7 @@ async function openOnlineOrdersModal() {
       return;
     }
 
-    // ស្រង់ឈ្មោះអ្នកដឹកជញ្ជូនរោងចក្រ (Company Drivers)
+    // ៣. ស្រង់ឈ្មោះអ្នកដឹកជញ្ជូនរោងចក្រ (Company Drivers)
     var driverOptions = '<option value="">-- រើសអ្នកដឹករបស់រោងចក្រ --</option>';
     allCustomers.forEach(function(c) {
       if (c.role === 'Driver' || c.type === 'CompanyDriver' || c.linked_boss === 'KC WATER') {
@@ -187,10 +198,10 @@ async function openOnlineOrdersModal() {
             '<span class="text-gray-400 font-bold whitespace-nowrap">🛢️ សំបកធុង៖</span>' +
             '<span class="font-bold text-emerald-700">' + (o.barrel_swap || 'មានសំបកដូរ') + '</span>' +
           '</div>' +
-          (o.location_url ? 
+          (o.address ? 
           '<div class="flex items-start gap-1.5 pt-0.5">' +
-            '<span class="text-gray-400 font-bold whitespace-nowrap">📍 ទីតាំង៖</span>' +
-            '<span class="text-gray-600 text-[11px] line-clamp-2">' + o.location_url + '</span>' +
+            '<span class="text-gray-400 font-bold whitespace-nowrap">📍 ទីតាំង & ចំណាំ៖</span>' +
+            '<span class="text-slate-800 font-bold text-[11px] leading-snug">' + o.address + '</span>' +
           '</div>' : '') +
         '</div>' +
 
@@ -214,8 +225,8 @@ async function openOnlineOrdersModal() {
             '<i class="fas fa-phone text-xs text-green-600"></i> ខល ' + o.phone +
           '</a>' : '') +
 
-          (o.location_url ? 
-          '<button type="button" onclick="openOrderMap(\'' + o.location_url.replace(/'/g, "\\'") + '\')" class="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-xl text-xs font-bold border border-blue-200 shadow-2xs flex items-center gap-1 active:scale-95 transition">' +
+          (o.location_url || o.address ? 
+          '<button type="button" onclick="openOrderMap(\'' + (o.location_url || o.address).replace(/'/g, "\\'") + '\')" class="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-xl text-xs font-bold border border-blue-200 shadow-2xs flex items-center gap-1 active:scale-95 transition">' +
             '<i class="fas fa-map-location-dot text-xs text-blue-600"></i> បើកផែនទី' +
           '</button>' : '') +
 
@@ -235,7 +246,6 @@ async function openOnlineOrdersModal() {
     container.innerHTML = '<div class="p-4 text-center text-red-500 font-bold text-xs">កំហុស៖ ' + err.message + '</div>';
   }
 }
-
 function closeOnlineOrdersModal() {
   var modal = document.getElementById('onlineOrdersAdminModal');
   if (modal) modal.classList.add('hidden');
