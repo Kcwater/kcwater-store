@@ -1136,6 +1136,37 @@
         deliveryFee: deliveryFee
       };
     }
+    // ➕➖ មុខងារបន្ថែម ឬបន្ថយចំនួនទំនិញផ្ទាល់ពីលើផ្ទាំង Checkout
+    function adjustCheckoutItemQty(id, delta) {
+      if (cartItems[id]) {
+        cartItems[id].qty += delta;
+        if (cartItems[id].qty <= 0) {
+          delete cartItems[id];
+        }
+      }
+      updateCheckoutCalculation();
+      recalcCartDock();
+      renderCatalogGrid();
+
+      // បើលុបទំនិញអស់ពីកន្ត្រក ឱ្យបិទផ្ទាំង Checkout អូតូ
+      if (Object.keys(cartItems).length === 0) {
+        closeCheckoutModal();
+      }
+    }
+
+    // 🗑️ មុខងារលុបទំនិញចោលចេញពីកន្ត្រក
+    function removeCheckoutItem(id) {
+      if (cartItems[id]) {
+        delete cartItems[id];
+      }
+      updateCheckoutCalculation();
+      recalcCartDock();
+      renderCatalogGrid();
+
+      if (Object.keys(cartItems).length === 0) {
+        closeCheckoutModal();
+      }
+    }
 
     var isSubmittingOrderLock = false;
 
