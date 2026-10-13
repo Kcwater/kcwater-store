@@ -1024,6 +1024,7 @@
       document.getElementById('checkoutModal').classList.add('hidden');
     }
 
+    // 🛒 មុខងារគណនាកន្ត្រក (មានប៊ូតុង +, -, និង 🗑️ កែប្រែចំនួនផ្ទាល់ក្នុង Checkout)
     function updateCheckoutCalculation() {
       var listCont = document.getElementById('checkoutCartItemsList');
       var grandText = document.getElementById('coGrandTotalText');
@@ -1056,9 +1057,19 @@
 
           var displayName = getLocalizedProductName({ name: cartItems[k].raw_name }, currentLang);
 
-          html += '<div class="flex justify-between items-center py-1 border-b border-slate-200 last:border-none">' +
-            '<span><b>' + displayName + '</b> x ' + cartItems[k].qty + '</span>' +
-            '<b class="text-emerald-800">៛ ' + sub.toLocaleString() + '</b>' +
+          // 🌟 ជួរទំនិញមានប៊ូតុង [-] [ចំនួន] [+] និង [🗑️ លុប] ភ្លាមៗ
+          html += '<div class="flex items-center justify-between py-1.5 border-b border-slate-200 last:border-none gap-2">' +
+            '<div class="flex-1 min-w-0 text-left">' +
+              '<b class="text-slate-800 block truncate text-xs">' + displayName + '</b>' +
+              '<span class="text-[10px] text-emerald-700 font-bold">៛ ' + Number(cartItems[k].price).toLocaleString() + '</span>' +
+            '</div>' +
+            '<div class="flex items-center gap-1.5 shrink-0">' +
+              '<button type="button" onclick="adjustCheckoutItemQty(\'' + k + '\', -1)" class="w-6 h-6 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 font-black flex items-center justify-center text-xs active:scale-90">-</button>' +
+              '<span class="font-black text-xs text-slate-900 w-5 text-center">' + cartItems[k].qty + '</span>' +
+              '<button type="button" onclick="adjustCheckoutItemQty(\'' + k + '\', 1)" class="w-6 h-6 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-black flex items-center justify-center text-xs active:scale-90">+</button>' +
+              '<button type="button" onclick="removeCheckoutItem(\'' + k + '\')" class="w-6 h-6 text-red-400 hover:text-red-600 ml-1 active:scale-90 flex items-center justify-center" title="លុប"><i class="fas fa-trash-can text-xs"></i></button>' +
+            '</div>' +
+            '<b class="text-emerald-800 text-right w-16 text-xs whitespace-nowrap">៛ ' + sub.toLocaleString() + '</b>' +
           '</div>';
         }
       }
@@ -1068,6 +1079,7 @@
         barrelHint.innerText = total20LBarrels > 0 ? (total20LBarrels + bUnit) : (currentLang === 'km' ? 'គ្មានធុង ២០L' : (currentLang === 'zh' ? '无20L桶' : 'No 20L barrels'));
       }
 
+      // ១. គណនាថ្លៃសំបកធុង
       var swapChecked = document.querySelector('input[name="co_swapOption"]:checked');
       var isNoSwap = swapChecked ? (swapChecked.value === 'NO') : false;
       var barrelFee = 0;
@@ -1080,6 +1092,7 @@
         '</div>';
       }
 
+      // ២. គណនាថ្លៃដឹកជញ្ជូន
       var deliveryFee = 0;
       var stdFee = parseFloat(storeDeliveryConfig.standardFee || 0);
       var minFreeQty = parseInt(storeDeliveryConfig.freeMinQty || 2);
@@ -1100,6 +1113,7 @@
         }
       }
 
+      // ៣. គណនា Promotion
       var promoDiscount = 0;
       var promoNote = '';
       if (activePromoConfig && activePromoConfig.active && eligibleQty > 0) {
@@ -1127,7 +1141,7 @@
 
       var grandTotal = Math.max(0, waterTotal + barrelFee + deliveryFee - promoDiscount);
 
-      listCont.innerHTML = html || '<div class="text-center py-2 text-slate-400 italic">Empty</div>';
+      listCont.innerHTML = html || '<div class="text-center py-3 text-slate-400 italic text-xs">កន្ត្រកទទេ</div>';
       grandText.innerText = '៛ ' + grandTotal.toLocaleString();
       if (khqrDue) khqrDue.innerText = '៛ ' + grandTotal.toLocaleString();
 
@@ -1136,6 +1150,7 @@
         deliveryFee: deliveryFee
       };
     }
+
     // ➕➖ មុខងារបន្ថែម ឬបន្ថយចំនួនទំនិញផ្ទាល់ពីលើផ្ទាំង Checkout
     function adjustCheckoutItemQty(id, delta) {
       if (cartItems[id]) {
@@ -1167,7 +1182,6 @@
         closeCheckoutModal();
       }
     }
-
     var isSubmittingOrderLock = false;
 
     async function submitFinalWaterOrder() {
