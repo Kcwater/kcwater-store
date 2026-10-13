@@ -718,6 +718,12 @@ function renderCustomersModule() {
   fetchSpecialPricesTable();
 }
 
+// 🛠️ មុខងារជំនួយទាញយកតម្លៃពី Input
+function getElVal(id) {
+  var el = document.getElementById(id);
+  return el ? (el.value || '').trim() : '';
+}
+
 function toggleCustTypeFields() {
   var roleType = getElVal('mem_role_type') || 'MONTHLY';
   var bossBox = document.getElementById('driverBossContainer');
@@ -733,7 +739,6 @@ function toggleCustTypeFields() {
     else loginBox.classList.remove('hidden');
   }
 }
-
 async function saveUserToSupabase() {
   var name = getElVal('mem_name');
   var roleType = getElVal('mem_role_type') || 'MONTHLY';
