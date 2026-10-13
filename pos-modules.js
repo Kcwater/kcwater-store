@@ -866,6 +866,7 @@ function switchUserTab(tab) {
   filterUsersModuleTable();
 }
 
+// 🔍 មុខងារចម្រាញ់ & Search (រក្សាឈ្មោះស្ទួនទាំងអស់, វាយអក្សរ "ក" ចេញទាំងអស់ & បង្ហាញព័ត៌មានភ្ញៀវ Online ពេញលេញ)
 function filterUsersModuleTable() {
   var tbody = document.getElementById('usersModuleTableBody');
   var searchInp = document.getElementById('custModuleSearchInp');
@@ -874,22 +875,24 @@ function filterUsersModuleTable() {
 
   var q = searchInp ? searchInp.value.toLowerCase().trim() : '';
 
+  // ១. រក្សាទុកភ្ញៀវទាំងអស់ (ដាច់ខាតមិនលុបឈ្មោះ ឬលេខទូរស័ព្ទស្ទួនឡើយ)
   var filtered = cachedUsersModuleList.filter(function(u) {
     if (!u.full_name || u.full_name === 'Walk-in') return false;
 
-    // ១. ចម្រាញ់តាម Tab
+    // ចម្រាញ់តាម Tab
     if (activeUserModuleTab === 'RESELLER' && (u.role === 'Admin' || u.role === 'Seller' || u.role === 'Driver' || u.type === 'CompanyDriver' || u.type === 'Monthly' || u.type === 'Retail')) return false;
     if (activeUserModuleTab === 'MONTHLY' && u.type !== 'Monthly') return false;
     if (activeUserModuleTab === 'RETAIL' && u.type !== 'Retail' && u.role !== 'Retail' && !String(u.username || '').startsWith('online_')) return false;
     if (activeUserModuleTab === 'DRIVER' && (u.role !== 'Driver' && u.type !== 'Driver' && u.type !== 'CompanyDriver')) return false;
     if (activeUserModuleTab === 'STAFF' && (u.role !== 'Admin' && u.role !== 'Seller')) return false;
 
-    // ២. ចម្រាញ់តាមពាក្យស្វែងរក (ឈ្មោះ, លេខទូរស័ព្ទ, Username)
+    // ២. Search តាមតួអក្សរ (វាយ "ក" លោតចេញរាល់ឈ្មោះ និងលេខទូរស័ព្ទណាដែលមានអក្សរ "ក")
     if (q) {
       var matchName = String(u.full_name || '').toLowerCase().indexOf(q) !== -1;
       var matchPhone = String(u.phone || '').toLowerCase().indexOf(q) !== -1;
       var matchUser = String(u.username || '').toLowerCase().indexOf(q) !== -1;
-      if (!matchName && !matchPhone && !matchUser) return false;
+      var matchLoc = String(u.linked_boss || '').toLowerCase().indexOf(q) !== -1;
+      if (!matchName && !matchPhone && !matchUser && !matchLoc) return false;
     }
 
     return true;
@@ -904,10 +907,12 @@ function filterUsersModuleTable() {
 
   var html = '';
   filtered.forEach(function(u) {
+    var isOnlineRetail = (u.type === 'Retail' || u.role === 'Retail' || String(u.username || '').startsWith('online_'));
     var badgeHtml = '';
+
     if (u.type === 'Monthly') {
       badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-orange-100 text-orange-800 border border-orange-300">🏢 ប្រចាំខែ</span>';
-    } else if (u.type === 'Retail' || u.role === 'Retail' || String(u.username || '').startsWith('online_')) {
+    } else if (isOnlineRetail) {
       badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-black text-[10px] bg-emerald-100 text-emerald-900 border border-emerald-300">🌐 ភ្ញៀវ Online</span>';
     } else if (u.type === 'CompanyDriver') {
       badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-emerald-100 text-emerald-900 border border-emerald-300">🚚 អ្នកដឹក KC WATER</span>';
@@ -921,15 +926,37 @@ function filterUsersModuleTable() {
       badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-green-100 text-green-800">🚚 អ្នកលក់បន្ត</span>';
     }
 
-    var credsText = (u.type === 'Monthly' || u.type === 'Retail') ? 
-      '<span class="text-gray-400 text-[11px] italic">អតិថិជន (គ្មាន Login)</span>' : 
-      ('<span class="font-mono text-xs"><b>' + (u.username || '-') + '</b> / ' + (u.password || '-') + '</span>');
+    // ៣. បង្ហាញព័ត៌មានពេញលេញរបស់ភ្ញៀវ Online (ឈ្មោះ, លេខទូរស័ព្ទ, អាសយដ្ឋាន & Link Google Maps)
+    var credsText = '';
+    if (isOnlineRetail) {
+      var locInfo = u.linked_boss ? String(u.linked_boss).trim() : '';
+      var mapDisplay = '';
 
-    html += '<tr class="border-b hover:bg-gray-50">' +
-      '<td class="p-2.5"><b class="text-gray-800">' + u.full_name + '</b><br><small class="text-emerald-700 font-bold">' + (u.phone || '-') + '</small></td>' +
+      if (locInfo.indexOf('http') !== -1) {
+        mapDisplay = '<a href="' + locInfo + '" target="_blank" class="text-blue-600 hover:underline font-bold text-[10px] flex items-center gap-1"><i class="fas fa-map-location-dot text-emerald-600"></i> បើកផែនទី Google Maps</a>';
+      } else if (locInfo) {
+        mapDisplay = '<span class="text-gray-700 font-bold text-[10px] flex items-center gap-1"><i class="fas fa-location-dot text-red-500"></i> ' + locInfo + '</span>';
+      } else {
+        mapDisplay = '<span class="text-gray-400 text-[10px] italic">មិនមានទីតាំង</span>';
+      }
+
+      credsText = '<div class="space-y-1 text-left">' +
+        '<div class="text-[10px] text-emerald-800 font-black flex items-center gap-1"><i class="fas fa-bag-shopping text-emerald-600"></i> ភ្ញៀវកុម្ម៉ង់លើ Website</div>' +
+        mapDisplay +
+      '</div>';
+    } else if (u.type === 'Monthly') {
+      credsText = '<span class="text-gray-400 text-[11px] italic">ម៉ូយប្រចាំខែ (គ្មាន Login)</span>';
+    } else {
+      credsText = '<span class="font-mono text-xs"><b>' + (u.username || '-') + '</b> / ' + (u.password || '-') + '</span>';
+    }
+
+    var phoneDisplay = u.phone ? ('<span class="text-emerald-700 font-bold text-xs"><i class="fas fa-phone text-[10px] mr-1"></i>' + u.phone + '</span>') : '<span class="text-gray-400 text-[10px]">-</span>';
+
+    html += '<tr class="border-b hover:bg-gray-50 transition">' +
+      '<td class="p-2.5"><b class="text-gray-800 text-xs">' + u.full_name + '</b><br>' + phoneDisplay + '</td>' +
       '<td class="p-2.5">' + credsText + '</td>' +
       '<td class="p-2.5 text-center">' + badgeHtml + '</td>' +
-      '<td class="p-2.5 text-center"><button onclick="delUserFromSupabase(' + u.id + ')" class="text-red-400 hover:text-red-600"><i class="fas fa-trash-can"></i></button></td>' +
+      '<td class="p-2.5 text-center"><button onclick="delUserFromSupabase(' + u.id + ')" class="text-red-400 hover:text-red-600 p-1" title="លុប"><i class="fas fa-trash-can"></i></button></td>' +
     '</tr>';
   });
 
