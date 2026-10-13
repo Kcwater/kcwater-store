@@ -578,14 +578,7 @@ async function delExpenseFromSupabase(id) {
   }
 }
 
-// ==========================================
-// 👥 ៤. គ្រប់គ្រងគណនី & តម្លៃពិសេស (CUSTOMERS & MONTHLY PRICES)
-// ==========================================
-function getElVal(id) {
-  var el = document.getElementById(id);
-  return el ? (el.value || '').trim() : '';
-}
-
+// 👥 ៤. គ្រប់គ្រងគណនី & តម្លៃពិសេស (មានប្រអប់ Search & Tabs បែងចែកដាច់ដោយឡែក)
 function renderCustomersModule() {
   var area = document.getElementById('contentArea');
   if (!area) return;
@@ -593,7 +586,7 @@ function renderCustomersModule() {
   var custOptions = '<option value="">-- រើសអតិថិជន / ម៉ូយ --</option>';
   (allCustomers || []).forEach(function(c) {
     if (c.role !== 'Admin' && c.full_name !== 'Walk-in') {
-      var tag = (c.type === 'Monthly') ? ' [ប្រចាំខែ]' : ' [អ្នកលក់បន្ត]';
+      var tag = (c.type === 'Monthly') ? ' [ប្រចាំខែ]' : (c.type === 'Retail' ? ' [Online តាមផ្ទះ]' : ' [អ្នកលក់បន្ត]');
       custOptions += '<option value="' + c.full_name + '">' + c.full_name + tag + '</option>';
     }
   });
@@ -611,6 +604,7 @@ function renderCustomersModule() {
   });
 
   area.innerHTML = '<div class="max-w-3xl mx-auto space-y-4">' +
+    // កាត បង្កើតគណនីថ្មី
     '<div class="card border-t-4 border-blue-600 shadow-xl p-5 mb-0">' +
       '<h2 class="font-extrabold text-blue-900 text-base mb-3 flex items-center gap-2">' +
         '<i class="fas fa-user-plus text-blue-600"></i>បង្កើតគណនី Admin / អ្នកដឹក / អតិថិជន' +
@@ -652,12 +646,13 @@ function renderCustomersModule() {
       '</div>' +
     '</div>' +
 
+    // កាត កំណត់តម្លៃពិសេស
     '<div class="card border-t-4 border-orange-500 shadow-xl p-5 mb-0">' +
       '<h3 class="font-extrabold text-orange-900 text-base mb-1 flex items-center gap-2">' +
         '<i class="fas fa-tags text-orange-600"></i>កំណត់តម្លៃពិសេសសម្រាប់អតិថិជន (Contract Prices)' +
       '</h3>' +
       '<p class="text-[11px] text-gray-500 mb-3 leading-relaxed">' +
-        '💡 <b>ចំណាំសម្រាប់អតិថិជន Monthly៖</b> កំណត់មុខទំនិញ និងតម្លៃនៅទីនេះ ដើម្បីឱ្យទំនិញនោះបង្ហាញលើផ្ទាំង POS ពេលលក់ឱ្យគាត់ (ទំនិញក្រៅពីនេះនឹងមិនបង្ហាញឡើយ)។' +
+        '💡 <b>ចំណាំសម្រាប់អតិថិជន Monthly៖</b> កំណត់មុខទំនិញ និងតម្លៃនៅទីនេះ ដើម្បីឱ្យទំនិញនោះបង្ហាញលើផ្ទាំង POS ពេលលក់ឱ្យគាត់។' +
       '</p>' +
       '<div class="space-y-3">' +
         '<div>' +
@@ -678,14 +673,43 @@ function renderCustomersModule() {
       '</div>' +
     '</div>' +
 
+    // កាត តារាងតម្លៃពិសេស
     '<div class="card border-t-4 border-orange-400 shadow-lg p-5 mb-0">' +
       '<h4 class="font-bold text-gray-800 text-sm mb-2"><i class="fas fa-list-check text-orange-600 mr-1.5"></i>បញ្ជីតម្លៃពិសេសដែលបានកំណត់</h4>' +
       '<div class="overflow-x-auto rounded-xl border"><table class="w-full text-left text-xs border-collapse"><thead><tr class="bg-gray-100 text-gray-700 font-bold border-b"><th class="p-2.5">អតិថិជន</th><th class="p-2.5">មុខទំនិញ</th><th class="p-2.5 text-right">តម្លៃពិសេស</th><th class="p-2.5 text-center">លុប</th></tr></thead><tbody id="specialPricesTableBody"></tbody></table></div>' +
     '</div>' +
 
-    '<div class="card border-t-4 border-gray-700 shadow-xl p-5 mb-0">' +
-      '<h3 class="font-bold text-gray-800 text-sm mb-3 flex items-center gap-2"><i class="fas fa-users"></i>បញ្ជីគណនីទាំងអស់</h3>' +
-      '<div class="overflow-x-auto rounded-xl border"><table class="w-full text-left text-xs border-collapse"><thead><tr class="bg-gray-100 text-gray-700 font-bold border-b"><th class="p-2.5">ឈ្មោះ</th><th class="p-2.5">ព័ត៌មានគណនី</th><th class="p-2.5 text-center">តួនាទី / ប្រភេទ</th><th class="p-2.5 text-center">លុប</th></tr></thead><tbody id="usersModuleTableBody"></tbody></table></div>' +
+    // 🔍 កាត បញ្ជីគណនីទាំងអស់ (មាន SEARCH BAR & TABS បែងចែកដាច់ពីគ្នា)
+    '<div class="card border-t-4 border-gray-700 shadow-xl p-5 mb-0 space-y-3">' +
+      '<div class="flex justify-between items-center">' +
+        '<h3 class="font-bold text-gray-800 text-sm flex items-center gap-2"><i class="fas fa-users text-blue-600"></i>បញ្ជីគណនីទាំងអស់</h3>' +
+        '<span id="userTotalCountBadge" class="text-xs font-black bg-blue-100 text-blue-900 px-2.5 py-0.5 rounded-full">0 នាក់</span>' +
+      '</div>' +
+
+      // 🔍 ប្រអប់ Search ស្វែងរកតាមឈ្មោះ ឬលេខទូរស័ព្ទ
+      '<div class="relative">' +
+        '<input type="text" id="custModuleSearchInp" oninput="filterUsersModuleTable()" placeholder="🔍 វាយឈ្មោះ, លេខទូរស័ព្ទ ឬ Username ដើម្បីស្វែងរកភ្លាមៗ..." class="w-full border-2 border-gray-200 rounded-xl p-2.5 pl-9 outline-none focus:border-blue-500 font-bold text-xs">' +
+        '<i class="fas fa-search absolute left-3 top-3 text-gray-400 text-xs pointer-events-none"></i>' +
+      '</div>' +
+
+      // 📑 Tabs បែងចែកប្រភេទ (All, Reseller, Monthly, Online, Driver, Staff)
+      '<div class="flex flex-wrap gap-1.5 text-xs">' +
+        '<button type="button" onclick="switchUserTab(\'ALL\')" id="uTab_ALL" class="px-2.5 py-1.5 rounded-xl font-bold bg-blue-700 text-white shadow-2xs active:scale-95 transition">ទាំងអស់</button>' +
+        '<button type="button" onclick="switchUserTab(\'RESELLER\')" id="uTab_RESELLER" class="px-2.5 py-1.5 rounded-xl font-bold bg-white text-gray-700 border hover:bg-gray-50 active:scale-95 transition">🚚 អ្នកលក់បន្ត</button>' +
+        '<button type="button" onclick="switchUserTab(\'MONTHLY\')" id="uTab_MONTHLY" class="px-2.5 py-1.5 rounded-xl font-bold bg-white text-gray-700 border hover:bg-gray-50 active:scale-95 transition">🏢 ប្រចាំខែ</button>' +
+        '<button type="button" onclick="switchUserTab(\'RETAIL\')" id="uTab_RETAIL" class="px-2.5 py-1.5 rounded-xl font-bold bg-white text-emerald-800 border border-emerald-300 hover:bg-emerald-50 active:scale-95 transition">🌐 ភ្ញៀវ Online</button>' +
+        '<button type="button" onclick="switchUserTab(\'DRIVER\')" id="uTab_DRIVER" class="px-2.5 py-1.5 rounded-xl font-bold bg-white text-gray-700 border hover:bg-gray-50 active:scale-95 transition">🛵 អ្នកដឹក</button>' +
+        '<button type="button" onclick="switchUserTab(\'STAFF\')" id="uTab_STAFF" class="px-2.5 py-1.5 rounded-xl font-bold bg-white text-gray-700 border hover:bg-gray-50 active:scale-95 transition">👑 Staff/Admin</button>' +
+      '</div>' +
+
+      '<div class="overflow-x-auto max-h-96 overflow-y-auto rounded-xl border border-gray-200 shadow-inner">' +
+        '<table class="w-full text-left text-xs border-collapse">' +
+          '<thead class="sticky top-0 bg-gray-100 text-gray-700 font-bold border-b z-10 shadow-2xs">' +
+            '<tr><th class="p-2.5">ឈ្មោះ / ទូរស័ព្ទ</th><th class="p-2.5">ព័ត៌មានគណនី (Login)</th><th class="p-2.5 text-center">តួនាទី / ប្រភេទ</th><th class="p-2.5 text-center">លុប</th></tr>' +
+          '</thead>' +
+          '<tbody id="usersModuleTableBody"></tbody>' +
+        '</table>' +
+      '</div>' +
     '</div>' +
   '</div>';
 
