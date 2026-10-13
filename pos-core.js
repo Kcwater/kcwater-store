@@ -779,10 +779,28 @@ function updateModalSubtotal() {
   document.getElementById('modalSubtotalText').innerText = Number(q * p).toLocaleString() + ' ៛';
 }
 
+// 🛒 មុខងារបញ្ចូលទំនិញក្នុងកន្ត្រក (មានប្រព័ន្ធការពារកុំឱ្យលក់លើសស្តុកក្នុងឃ្លាំង)
 function confirmAddToCart() {
   if (!selectedModalProduct) return;
   var q = parseInt(document.getElementById('modalQtyInput').value) || 1;
   var pr = parseFloat(document.getElementById('modalPriceInput').value) || 0;
+
+  if (isNaN(q) || q <= 0) {
+    showToast("សូមបញ្ចូលចំនួនឱ្យត្រឹមត្រូវ!", "error");
+    return;
+  }
+
+  // 🛡️ ឆែកមើលស្តុកសម្រាប់ទំនិញប្រភេទ «ទិញគេ» (កុំឱ្យលក់លើសចំនួនដែលមាន)
+  if (selectedModalProduct.type === 'ទិញគេ') {
+    var inCartQty = cart.filter(i => i.id === selectedModalProduct.id).reduce((sum, i) => sum + i.qty, 0);
+    var curStock = parseFloat(selectedModalProduct.stock || 0);
+    var available = curStock - inCartQty;
+
+    if (q > available) {
+      showToast("មិនអាចបញ្ចូលបានទេ! ទំនិញនេះសល់ត្រឹមតែ " + Math.max(0, available) + " ក្នុងស្តុកប៉ុណ្ណោះ!", "error");
+      return;
+    }
+  }
 
   cart.push({
     id: selectedModalProduct.id,
@@ -794,7 +812,7 @@ function confirmAddToCart() {
 
   closeProductModal();
   rC();
-  showToast("បានបញ្ចូលទំនិញក្នុងកន្ត្រក!", "success");
+  showToast("បានបញ្ចូល [" + selectedModalProduct.name + "] x " + q + " ក្នុងកន្ត្រក!", "success");
 }
 
 function getCartCalculations() {
