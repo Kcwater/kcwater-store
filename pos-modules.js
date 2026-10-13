@@ -823,47 +823,113 @@ async function saveUserToSupabase() {
   }
 }
 
+// 🔍 មុខងារទាញយក និងចម្រាញ់តារាងគណនី (Search តាមឈ្មោះ/លេខ & Tabs បែងចែកដាច់ពីគ្នា)
+var cachedUsersModuleList = [];
+var activeUserModuleTab = 'ALL';
+
 async function fetchUsersModuleTable() {
   var tbody = document.getElementById('usersModuleTableBody');
   if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-400 italic"><i class="fas fa-spinner fa-spin text-blue-600 mr-1"></i> កំពុងទាញបញ្ជីគណនី...</td></tr>';
 
   try {
     const { data: users, error } = await supabaseClient.from('users').select('*').order('id', { ascending: false });
     if (error) throw error;
-    if (!users) return;
-
-    var html = '';
-    users.forEach(function(u) {
-      var badgeHtml = '';
-      if (u.type === 'Monthly') {
-        badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-orange-100 text-orange-800 border border-orange-300">🏢 ប្រចាំខែ</span>';
-      } else if (u.type === 'CompanyDriver') {
-        badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-emerald-100 text-emerald-900 border border-emerald-300">🚚 អ្នកដឹក KC WATER</span>';
-      } else if (u.type === 'Driver') {
-        badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-amber-100 text-amber-900 border border-amber-300">🛵 កូនចៅដកទឹក (មេ: ' + (u.linked_boss || '-') + ')</span>';
-      } else if (u.role === 'Admin') {
-        badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-purple-100 text-purple-900">👑 Admin</span>';
-      } else if (u.role === 'Seller') {
-        badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-blue-100 text-blue-900">🛒 បុគ្គលិកលក់</span>';
-      } else {
-        badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-green-100 text-green-800">🚚 អ្នកលក់បន្ត</span>';
-      }
-
-      var credsText = (u.type === 'Monthly') ? 
-        '<span class="text-gray-400 text-[11px] italic">ម៉ូយប្រចាំខែ (គ្មាន Login)</span>' : 
-        ('<span class="font-mono text-xs"><b>' + (u.username || '-') + '</b> / ' + (u.password || '-') + '</span>');
-
-      html += '<tr class="border-b hover:bg-gray-50">' +
-        '<td class="p-2.5 font-bold text-gray-800">' + u.full_name + '<br><small class="text-gray-400 font-normal">' + (u.phone || '-') + '</small></td>' +
-        '<td class="p-2.5">' + credsText + '</td>' +
-        '<td class="p-2.5 text-center">' + badgeHtml + '</td>' +
-        '<td class="p-2.5 text-center"><button onclick="delUserFromSupabase(' + u.id + ')" class="text-red-400 hover:text-red-600"><i class="fas fa-trash-can"></i></button></td>' +
-      '</tr>';
-    });
-    tbody.innerHTML = html;
-  } catch(e) {}
+    cachedUsersModuleList = users || [];
+    filterUsersModuleTable();
+  } catch(e) {
+    tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-red-500 font-bold">កំហុស៖ ' + e.message + '</td></tr>';
+  }
 }
 
+function switchUserTab(tab) {
+  activeUserModuleTab = tab;
+  var tabs = ['ALL', 'RESELLER', 'MONTHLY', 'RETAIL', 'DRIVER', 'STAFF'];
+  tabs.forEach(function(t) {
+    var btn = document.getElementById('uTab_' + t);
+    if (!btn) return;
+    if (t === tab) {
+      btn.className = (t === 'RETAIL') ? 
+        "px-2.5 py-1.5 rounded-xl font-bold bg-emerald-700 text-white shadow-2xs active:scale-95 transition" :
+        "px-2.5 py-1.5 rounded-xl font-bold bg-blue-700 text-white shadow-2xs active:scale-95 transition";
+    } else {
+      btn.className = (t === 'RETAIL') ?
+        "px-2.5 py-1.5 rounded-xl font-bold bg-white text-emerald-800 border border-emerald-300 hover:bg-emerald-50 active:scale-95 transition" :
+        "px-2.5 py-1.5 rounded-xl font-bold bg-white text-gray-700 border hover:bg-gray-50 active:scale-95 transition";
+    }
+  });
+  filterUsersModuleTable();
+}
+
+function filterUsersModuleTable() {
+  var tbody = document.getElementById('usersModuleTableBody');
+  var searchInp = document.getElementById('custModuleSearchInp');
+  var badgeCount = document.getElementById('userTotalCountBadge');
+  if (!tbody) return;
+
+  var q = searchInp ? searchInp.value.toLowerCase().trim() : '';
+
+  var filtered = cachedUsersModuleList.filter(function(u) {
+    if (!u.full_name || u.full_name === 'Walk-in') return false;
+
+    // ១. ចម្រាញ់តាម Tab
+    if (activeUserModuleTab === 'RESELLER' && (u.role === 'Admin' || u.role === 'Seller' || u.role === 'Driver' || u.type === 'CompanyDriver' || u.type === 'Monthly' || u.type === 'Retail')) return false;
+    if (activeUserModuleTab === 'MONTHLY' && u.type !== 'Monthly') return false;
+    if (activeUserModuleTab === 'RETAIL' && u.type !== 'Retail' && u.role !== 'Retail' && !String(u.username || '').startsWith('online_')) return false;
+    if (activeUserModuleTab === 'DRIVER' && (u.role !== 'Driver' && u.type !== 'Driver' && u.type !== 'CompanyDriver')) return false;
+    if (activeUserModuleTab === 'STAFF' && (u.role !== 'Admin' && u.role !== 'Seller')) return false;
+
+    // ២. ចម្រាញ់តាមពាក្យស្វែងរក (ឈ្មោះ, លេខទូរស័ព្ទ, Username)
+    if (q) {
+      var matchName = String(u.full_name || '').toLowerCase().indexOf(q) !== -1;
+      var matchPhone = String(u.phone || '').toLowerCase().indexOf(q) !== -1;
+      var matchUser = String(u.username || '').toLowerCase().indexOf(q) !== -1;
+      if (!matchName && !matchPhone && !matchUser) return false;
+    }
+
+    return true;
+  });
+
+  if (badgeCount) badgeCount.innerText = filtered.length + " នាក់";
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" class="p-8 text-center text-gray-400 italic">រកមិនឃើញគណនីត្រូវតាមការស្វែងរកឡើយ</td></tr>';
+    return;
+  }
+
+  var html = '';
+  filtered.forEach(function(u) {
+    var badgeHtml = '';
+    if (u.type === 'Monthly') {
+      badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-orange-100 text-orange-800 border border-orange-300">🏢 ប្រចាំខែ</span>';
+    } else if (u.type === 'Retail' || u.role === 'Retail' || String(u.username || '').startsWith('online_')) {
+      badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-black text-[10px] bg-emerald-100 text-emerald-900 border border-emerald-300">🌐 ភ្ញៀវ Online</span>';
+    } else if (u.type === 'CompanyDriver') {
+      badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-emerald-100 text-emerald-900 border border-emerald-300">🚚 អ្នកដឹក KC WATER</span>';
+    } else if (u.type === 'Driver' || u.role === 'Driver') {
+      badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-amber-100 text-amber-900 border border-amber-300">🛵 កូនចៅដកទឹក (មេ: ' + (u.linked_boss || '-') + ')</span>';
+    } else if (u.role === 'Admin') {
+      badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-purple-100 text-purple-900">👑 Admin</span>';
+    } else if (u.role === 'Seller') {
+      badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-blue-100 text-blue-900">🛒 បុគ្គលិកលក់</span>';
+    } else {
+      badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-green-100 text-green-800">🚚 អ្នកលក់បន្ត</span>';
+    }
+
+    var credsText = (u.type === 'Monthly' || u.type === 'Retail') ? 
+      '<span class="text-gray-400 text-[11px] italic">អតិថិជន (គ្មាន Login)</span>' : 
+      ('<span class="font-mono text-xs"><b>' + (u.username || '-') + '</b> / ' + (u.password || '-') + '</span>');
+
+    html += '<tr class="border-b hover:bg-gray-50">' +
+      '<td class="p-2.5"><b class="text-gray-800">' + u.full_name + '</b><br><small class="text-emerald-700 font-bold">' + (u.phone || '-') + '</small></td>' +
+      '<td class="p-2.5">' + credsText + '</td>' +
+      '<td class="p-2.5 text-center">' + badgeHtml + '</td>' +
+      '<td class="p-2.5 text-center"><button onclick="delUserFromSupabase(' + u.id + ')" class="text-red-400 hover:text-red-600"><i class="fas fa-trash-can"></i></button></td>' +
+    '</tr>';
+  });
+
+  tbody.innerHTML = html;
+}
 async function fetchSpecialPricesTable() {
   var tbody = document.getElementById('specialPricesTableBody');
   if (!tbody) return;
