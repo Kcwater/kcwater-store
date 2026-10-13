@@ -7,9 +7,7 @@ var specialPrices = [];
 var currentPosDiscount = { type: 'NONE', value: 0 };
 var activeQuickRestockData = null;
 
-// ==========================================
-// ១. AUTHENTICATION & LOGIN (បែងចែកសិទ្ធិ ROLE-BASED)
-// ==========================================
+// 🔑 មុខងារចូលប្រើប្រាស់ (ទាញយកលេខកុម្ម៉ង់ Online & បែងចែកទំព័រដើមតាមតួនាទីភ្លាមៗ)
 async function login() {
   var userEl = document.getElementById('user');
   var passEl = document.getElementById('pass');
@@ -65,8 +63,37 @@ async function login() {
       document.getElementById('userInfo').innerText = roleLabel + currentUser.fullName;
 
       renderSidebarMenu();
+
+      // 🔔 ទាញយកចំនួនការកុម្ម៉ង់ Online មកបង្ហាញលើផ្លាកក្រហមភ្លាមៗ
+      if (typeof checkPendingOnlineOrdersBadge === 'function') {
+        checkPendingOnlineOrdersBadge();
+      }
+
       await loadSettingsAndTelegram();
       await fetchInitialPOSData();
+
+      // 🎯 បែងចែកទំព័រដើមតាមតួនាទី (Role Routing)
+      if (currentUser.role === 'Admin') {
+        loadModule('Dashboard');
+      } else if (currentUser.type === 'CompanyDriver') {
+        loadModule('CompanyDeliveries');
+      } else if (currentUser.role === 'Seller' || currentUser.role === 'Driver') {
+        loadModule('POS');
+      } else {
+        loadModule('CustPortal');
+      }
+
+      showToast("ចូលប្រើប្រាស់ជោគជ័យ! សួស្តី " + currentUser.fullName, "success");
+    } else {
+      showToast("ឈ្មោះ ឬលេខសម្ងាត់មិនត្រឹមត្រូវឡើយ!", "error");
+    }
+  } catch (err) {
+    showToast("កំហុសតភ្ជាប់៖ " + err.message, "error");
+  } finally {
+    btnEl.innerHTML = '<span>ចូលប្រើប្រាស់</span>';
+    btnEl.disabled = false;
+  }
+}
 
       // 🎯 បែងចែកទំព័រដើមតាមតួនាទី (Role Routing)
       if (currentUser.role === 'Admin') {
