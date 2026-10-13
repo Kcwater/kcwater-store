@@ -262,6 +262,7 @@ function cancelEditProduct() {
   tCF();
 }
 
+// 📦 មុខងាររក្សាទុកទំនិញថ្មី (កំណត់ស្តុកដំបូងត្រឹម ០ លែងលោតលេខ ៥០ ទៀតហើយ)
 async function saveProductToSupabase() {
   var name = document.getElementById('pN').value.trim();
   if (!name) { showToast("សូមបញ្ចូលឈ្មោះទំនិញ!", "error"); return; }
@@ -281,8 +282,9 @@ async function saveProductToSupabase() {
     img: imgData
   };
 
+  // ✅ កែសម្រួល៖ បើបង្កើតទំនិញថ្មី ឱ្យស្តុកស្មើ ០ ជាមុន (មិនដាក់ ៥០ ផ្តេសផ្តាសទៀតទេ)
   if (!editingProductId) {
-    payload.stock = (payload.type === 'ផលិតឯង') ? 500 : 50;
+    payload.stock = 0;
   }
 
   var btn = document.getElementById('btnSaveProdAction');
@@ -292,7 +294,7 @@ async function saveProductToSupabase() {
     const { error } = await supabaseClient.from('products').upsert([payload]);
     if (error) throw error;
 
-    showToast(editingProductId ? "បានកែប្រែទំនិញជោគជ័យ!" : "បានបន្ថែមទំនិញថ្មីជោគជ័យ!", "success");
+    showToast(editingProductId ? "បានកែប្រែទំនិញជោគជ័យ!" : "បានបង្កើតទំនិញថ្មីជោគជ័យ (ស្តុក: ០)!", "success");
     cancelEditProduct();
     await fetchInitialPOSData();
     renderStockTableRows();
@@ -303,7 +305,6 @@ async function saveProductToSupabase() {
     btn.disabled = false;
   }
 }
-
 async function saveStockInToSupabase() {
   var id = document.getElementById('si_prod').value;
   var qty = parseFloat(document.getElementById('si_qty').value || 0);
