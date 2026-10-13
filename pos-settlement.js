@@ -429,25 +429,52 @@ async function checkAdminPendingPayments() {
   } catch(e) {}
 }
 
+// ⚡ មុខងារយកសំណើមកទូទាត់ (បំពេញប្រអប់លុយសុទ្ធ & ស្កេន ABA អូតូតាមម៉ូយបានផ្ញើមក)
 async function applyPendingPaymentToSettlement(pendingId, custName, amount, method) {
   currentActivePendingPaymentId = pendingId;
   await selectCustomerForSettlement(custName);
 
-  if (method && method.indexOf('ABA') !== -1) {
-    setSettlePayMode('ABA');
-  } else {
-    setSettlePayMode('Cash');
+  try {
+    // ១. ទាញទិន្នន័យសំណើជាក់ស្តែងពី Supabase
+    const { data: item } = await supabaseClient
+      .from('pending_payments')
+      .select('*')
+      .eq('id', pendingId)
+      .maybeSingle();
+
+    var kCash = item ? parseFloat(item.khr_cash || 0) : 0;
+    var kScan = item ? parseFloat(item.khr_scan || 0) : 0;
+
+    // ២. បើម៉ូយបានបំបែកលុយសុទ្ធ + ស្កេន ABA ➔ បើក Mode Split អូតូ
+    if (kCash > 0 && kScan > 0) {
+      setSettlePayMode('Split');
+      var cashInp = document.getElementById('splitKhrCash');
+      var scanInp = document.getElementById('splitKhrScan');
+      var abaLabel = document.getElementById('splitAbaAmountLabel');
+
+      if (cashInp) cashInp.value = kCash;
+      if (scanInp) scanInp.value = kScan;
+      if (abaLabel) abaLabel.innerText = kScan.toLocaleString();
+
+    } else if (method && method.indexOf('ABA') !== -1) {
+      setSettlePayMode('ABA');
+      document.getElementById('settlePaidInput').value = amount > 0 ? amount : "";
+    } else {
+      setSettlePayMode('Cash');
+      document.getElementById('settlePaidInput').value = amount > 0 ? amount : "";
+    }
+
+    calcSettleChange();
+
+    var card = document.getElementById('settlement_card');
+    if (card) card.scrollIntoView({ behavior: 'smooth' });
+
+    showToast("បានបញ្ចូលទិន្នន័យទូទាត់របស់ [" + custName + "] រួចរាល់!", "success");
+
+  } catch(e) {
+    showToast("កំហុសបញ្ចូលសំណើ៖ " + e.message, "error");
   }
-
-  document.getElementById('settlePaidInput').value = amount > 0 ? amount : "";
-  calcSettleChange();
-
-  var card = document.getElementById('settlement_card');
-  if (card) card.scrollIntoView({ behavior: 'smooth' });
-
-  showToast("បានបញ្ចូលសំណើទូទាត់របស់ [" + custName + "] រួចរាល់!", "success");
 }
-
 async function dismissPendingCard(pendingId) {
   if (!confirm("តើអ្នកចង់បដិសេធសំណើទូទាត់នេះមែនទេ?")) return;
   try {
