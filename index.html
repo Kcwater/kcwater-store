@@ -1207,6 +1207,9 @@
     }
     var isSubmittingOrderLock = false;
 
+   // 🚀 មុខងារបញ្ជាក់ការកុម្ម៉ង់ទឹក (ភ្ជាប់ទំនិញសំបកធុងពិតប្រាកដ & កាត់ស្តុកអូតូ)
+    var isSubmittingOrderLock = false;
+
     async function submitFinalWaterOrder() {
       if (isSubmittingOrderLock) return;
       var d = DICT[currentLang];
@@ -1221,17 +1224,19 @@
       var address = addrInp ? addrInp.value.trim() : '';
       var mapUrl = mapUrlInp ? mapUrlInp.value.trim() : '';
 
-      // ចាប់យកព័ត៌មានម៉ោងដឹក និងព័ត៌មានអគារ/ជាន់ផ្ទះ
+      // ១. ចាប់យកព័ត៌មានម៉ោងដឹក & ព័ត៌មានជាន់ផ្ទះ
+      var timeSlotVal = document.querySelector('input[name="co_timeSlot"]:checked').value;
       var timeDetail = '⚡ ដឹកភ្លាមៗ (ASAP)';
-if (timeSlotVal === 'SCHEDULE') {
-  var preset = document.getElementById('inp_timeSlotSelect').value;
-  if (preset === 'CUSTOM') {
-    var customVal = document.getElementById('inp_customTimeManual').value.trim();
-    timeDetail = '⏰ ម៉ោង៖ ' + (customVal || 'តាមការកំណត់របស់ភ្ញៀវ');
-  } else {
-    timeDetail = '⏰ ម៉ោង៖ ' + preset;
-  }
-}
+      if (timeSlotVal === 'SCHEDULE') {
+        var preset = document.getElementById('inp_timeSlotSelect').value;
+        if (preset === 'CUSTOM') {
+          var customVal = document.getElementById('inp_customTimeManual').value.trim();
+          timeDetail = '⏰ ម៉ោង៖ ' + (customVal || 'តាមការកំណត់របស់ភ្ញៀវ');
+        } else {
+          timeDetail = '⏰ ម៉ោង៖ ' + preset;
+        }
+      }
+
       var bldTypeVal = document.querySelector('input[name="co_bldType"]:checked').value;
       var floorDetail = (bldTypeVal === 'GROUND') ? '🏠 ផ្ទះផ្ទាល់ដី' : ('🏢 ' + (document.getElementById('inp_bldFloorDetail').value.trim() || 'បន្ទប់ជួល/អគារ'));
 
@@ -1257,6 +1262,7 @@ if (timeSlotVal === 'SCHEDULE') {
         return;
       }
 
+      // ២. រៀបចំបញ្ជីទំនិញដែលបានកុម្ម៉ង់
       var items = [];
       var total20LBarrels = 0;
 
@@ -1274,21 +1280,24 @@ if (timeSlotVal === 'SCHEDULE') {
         return;
       }
 
+      var calcResult = updateCheckoutCalculation();
+      var grandTotal = calcResult.grandTotal;
+
       var swapVal = document.querySelector('input[name="co_swapOption"]:checked').value;
       var isNoSwap = (swapVal === 'NO');
 
-      if (isNoSwap && total20LBarrels > 0) {
+      // 🛢️ ភ្ជាប់ទំនិញសំបកធុងពិតប្រាកដចូលក្នុងបញ្ជាទិញ ដើម្បីកាត់ស្តុកអូតូ
+      if (isNoSwap && calcResult.barrelFee > 0) {
+        var bProd = calcResult.barrelProduct;
         items.push({
-          id: "BARREL_NEW",
-          raw_name: "ទិញសំបកធុងថ្មី (២០L)",
-          price: BARREL_DEPOSIT_PRICE,
+          id: bProd ? bProd.id : "BARREL_NEW",
+          raw_name: bProd ? bProd.raw_name : "ទិញសំបកធុងថ្មី",
+          price: calcResult.barrelPrice,
           qty: total20LBarrels
         });
       }
 
-      var calcResult = updateCheckoutCalculation();
-      var grandTotal = calcResult.grandTotal;
-
+      // 🚚 បញ្ចូលថ្លៃដឹកជញ្ជូន (បើមាន)
       if (calcResult.deliveryFee > 0) {
         items.push({
           id: "DELIVERY_FEE",
@@ -1312,11 +1321,10 @@ if (timeSlotVal === 'SCHEDULE') {
 
       var barrelSwapText = isNoSwap ? ('ទិញសំបកថ្មីដាច់ ' + total20LBarrels + ' ធុង') : 'មានសំបកដូរ';
       var payMethodText = (payVal === 'ABA' ? 'ស្កេន ABA KHQR' : 'លុយសុទ្ធពេលដល់ (COD)');
-
-      // បញ្ចូលព័ត៌មានលម្អិតចូលក្នុង address
       var fullAddressNote = address + " [" + floorDetail + "] [" + timeDetail + "]";
 
       try {
+        // កត់ត្រាចូលតារាង Orders ក្នុង Supabase
         const { error: insErr } = await supabaseClient
           .from('orders')
           .insert([{
@@ -1389,7 +1397,6 @@ if (timeSlotVal === 'SCHEDULE') {
         btn.innerHTML = '<i class="fas fa-paper-plane mr-1.5"></i>' + d.btnOrderNow;
       }
     }
-
     function onSwapOptionChanged() {
       updateCheckoutCalculation();
     }
