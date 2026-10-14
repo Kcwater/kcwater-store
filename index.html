@@ -344,23 +344,47 @@
         </div>
       </div>
 
-      <!-- ៤. ទីតាំង GPS Google Maps ផ្ទះ -->
-      <div class="space-y-1.5">
+      <!-- ៤. ទីតាំង GPS & រូបថតមុខផ្ទះ (GPS & House Photo) -->
+      <div class="space-y-2 p-3 bg-blue-50/60 rounded-2xl border border-blue-200 text-left">
         <div class="flex justify-between items-center">
-          <span class="font-black text-slate-800 uppercase text-[11px] flex items-center gap-1">
+          <span class="font-black text-blue-950 uppercase text-[11px] flex items-center gap-1">
             <i class="fas fa-map-location-dot text-blue-600"></i>
-            <span id="coSectionLoc">៤. ទីតាំងផ្ទះនៅក្រុងប៉ោយប៉ែត</span>
+            <span id="coSectionLoc">៤. ទីតាំងផ្ទះ (GPS & រូបថតមុខផ្ទះ)</span>
           </span>
-          <button type="button" onclick="detectGPSLocation()" class="px-2.5 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg font-bold text-[10px] flex items-center gap-1 active:scale-95 transition">
-            <i class="fas fa-crosshairs text-blue-600"></i>
-            <span id="btnGpsLabel">📍 ចុចចាប់ GPS ផ្ទះខ្ញុំ</span>
-          </button>
+          <span class="text-[9px] bg-blue-100 text-blue-800 font-bold px-2 py-0.5 rounded-full">ប៉ោយប៉ែត</span>
         </div>
-        <input type="hidden" id="inp_custMapUrl" value="">
-        <div id="gpsStatusHint" class="text-[10px] text-slate-500 font-bold italic">💡 ចុចប៊ូតុងខៀវខាងលើ ដើម្បីឱ្យទូរស័ព្ទចាប់កូអរដោនេផ្ទះដោយស្វ័យប្រវត្តិ</div>
-        <input type="text" id="inp_custAddress" placeholder="ភូមិ, សង្កាត់, ឬចំណាំទីតាំងសម្គាល់ក្បែរផ្ទះ..." class="font-bold p-2.5 rounded-xl border border-slate-300 bg-white outline-none focus:border-emerald-600 w-full">
-      </div>
 
+        <!-- 📍 ប៊ូតុងចាប់ GPS ច្បាស់ៗ (មិនបាច់ស្គាល់ផ្លូវក៏កុម្ម៉ង់បាន) -->
+        <button type="button" onclick="detectGPSLocation()" id="btnDetectGPSAction" class="w-full py-2.5 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs shadow-xs flex items-center justify-center gap-2 active:scale-95 transition">
+          <i class="fas fa-crosshairs text-sm text-yellow-300"></i>
+          <span id="btnGpsLabel">📍 ចុចចាប់ទីតាំង GPS ផ្ទះខ្ញុំ (*ចាំបាច់)</span>
+        </button>
+        <input type="hidden" id="inp_custMapUrl" value="">
+        <div id="gpsStatusHint" class="text-[10px] text-slate-500 font-bold italic text-center">💡 ចុចប៊ូតុងខៀវ ដើម្បីឱ្យទូរស័ព្ទចាប់កូអរដោនេផ្ទះអូតូ (មិនបាច់ស្គាល់ផ្លូវ)</div>
+
+        <!-- 📷 កន្លែងថតរូបមុខផ្ទះ / ច្រកចូលជាក់ស្តែង -->
+        <div class="pt-1.5 border-t border-blue-200/60 flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2">
+            <div id="housePhotoThumbBox" class="w-10 h-10 rounded-xl bg-white border border-blue-300 flex items-center justify-center overflow-hidden shrink-0 shadow-2xs">
+              <i class="fas fa-house-chimney text-slate-400 text-sm" id="housePhotoDefaultIcon"></i>
+              <img id="housePhotoImgPreview" src="" class="w-full h-full object-cover hidden">
+            </div>
+            <div>
+              <span class="text-[10px] font-bold text-slate-800 block">រូបថតមុខផ្ទះ / ច្រកចូល</span>
+              <span class="text-[9px] text-slate-400 font-normal" id="housePhotoStatusText">ថតរូបទុកឱ្យអ្នកដឹកចំណាំ (បើមាន)</span>
+            </div>
+          </div>
+          <label class="cursor-pointer px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-[11px] font-bold shadow-2xs inline-flex items-center gap-1 active:scale-95 transition shrink-0">
+            <i class="fas fa-camera text-xs"></i>
+            <span>ថតរូប</span>
+            <input type="file" id="inpHousePhotoFile" accept="image/*" capture="environment" onchange="previewHousePhotoFile(this)" class="hidden">
+          </label>
+          <input type="hidden" id="inp_custPhotoUrl" value="">
+        </div>
+
+        <!-- ចំណាំអាសយដ្ឋាន (មិនបង្ខំឱ្យវាយទេ - Optional) -->
+        <input type="text" id="inp_custAddress" placeholder="ចំណាំទីតាំងបន្ថែម ដូចជាក្បែរហាង ឬលេខផ្ទះ (បើមាន / Optional)..." class="font-bold p-2 rounded-xl border border-blue-200 bg-white outline-none focus:border-blue-600 w-full text-xs">
+      </div>
       <!-- ៥. ជម្រើសសំបកធុង -->
       <div class="p-3 bg-amber-50/90 rounded-2xl border border-amber-200 space-y-1.5">
         <div class="font-black text-amber-950 text-[11px] flex justify-between items-center">
