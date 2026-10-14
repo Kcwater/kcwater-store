@@ -7,9 +7,7 @@ var specialPrices = window.specialPrices || [];
 var currentPosDiscount = { type: 'NONE', value: 0 };
 var activeQuickRestockData = null;
 
-// ==========================================
-// ១. AUTHENTICATION & LOGIN (បែងចែកសិទ្ធិ ROLE-BASED)
-// ==========================================
+// 🔑 មុខងារចូលប្រើប្រាស់សុវត្ថិភាពខ្ពស់ (ផ្ទៀងផ្ទាត់តាម Secure RPC ដោយមិនបញ្ចេញ Password មកក្រៅ)
 async function login() {
   var userEl = document.getElementById('user');
   var passEl = document.getElementById('pass');
@@ -28,15 +26,13 @@ async function login() {
   btnEl.disabled = true;
 
   try {
+    // 🛡️ ផ្ទៀងផ្ទាត់តាមរយៈ Secure RPC Function ក្នុង Database ផ្ទាល់
     const { data, error } = await supabaseClient
-      .from('users')
-      .select('*')
-      .eq('username', u)
-      .eq('password', p)
-      .maybeSingle();
+      .rpc('verify_user_login', { p_username: u, p_password: p });
 
     if (error) throw error;
 
+    // បើឈ្មោះ និងលេខកូដត្រឹមត្រូវ (data មិន null)
     if (data) {
       currentUser = {
         id: data.id,
@@ -96,7 +92,6 @@ async function login() {
     btnEl.disabled = false;
   }
 }
-
 function logout() {
   localStorage.removeItem('kc_pos_user');
   localStorage.removeItem('kc_pos_pass');
