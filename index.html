@@ -331,6 +331,7 @@
             <input type="text" id="inp_customTimeManual" placeholder="វាយម៉ោងចង់ឱ្យដឹក (ឧ៖ ម៉ោង 2:15 រសៀល ឬ 14:15)..." class="w-full p-2 bg-white border-2 border-emerald-400 rounded-xl font-bold text-xs text-emerald-950 outline-none">
           </div>
         </div>
+      </div>
       <!-- ៣. 🏢 ប្រភេទលំនៅដ្ឋាន & ជាន់ផ្ទះ (BUILDING & FLOOR DETAILS) -->
       <div class="space-y-1.5 p-3 bg-slate-50 rounded-2xl border border-slate-200">
         <div class="font-black text-slate-800 uppercase text-[11px] flex items-center gap-1">
@@ -1323,8 +1324,7 @@
         closeCheckoutModal();
       }
     }
-    var isSubmittingOrderLock = false;
-
+    
    // 🚀 មុខងារបញ្ជាក់ការកុម្ម៉ង់ទឹក (ភ្ជាប់ទំនិញសំបកធុងពិតប្រាកដ & កាត់ស្តុកអូតូ)
     var isSubmittingOrderLock = false;
 
@@ -1625,23 +1625,7 @@
 
       img.src = blobUrl;
     }
-    // 🗑️ មុខងារលុបរូបថតមុខផ្ទះចេញវិញបើភ្ញៀវចង់ថត ឬរើសរូបថ្មី
-    function removeHousePhoto() {
-      var previewImg = document.getElementById('housePhotoImgPreview');
-      var defaultIcon = document.getElementById('housePhotoDefaultIcon');
-      var hiddenInput = document.getElementById('inp_custPhotoUrl');
-      var fileInput = document.getElementById('inpHousePhotoFile');
-      var statusText = document.getElementById('housePhotoStatusText');
-      var removeBtn = document.getElementById('btnRemoveHousePhoto');
-
-      if (previewImg) { previewImg.src = ''; previewImg.classList.add('hidden'); }
-      if (defaultIcon) defaultIcon.classList.remove('hidden');
-      if (hiddenInput) hiddenInput.value = '';
-      if (fileInput) fileInput.value = '';
-      if (removeBtn) removeBtn.classList.add('hidden');
-      if (statusText) statusText.innerText = 'ថត ឬរើសរូបទុកឱ្យអ្នកដឹកចំណាំ';
-    }
-
+   
       hint.innerHTML = '<span class="text-blue-600 font-bold"><i class="fas fa-spinner fa-spin"></i> ' + d.gpsDetecting + '</span>';
 
       navigator.geolocation.getCurrentPosition(function(pos) {
