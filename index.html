@@ -370,23 +370,30 @@
         <input type="hidden" id="inp_custMapUrl" value="">
         <div id="gpsStatusHint" class="text-[10px] text-slate-500 font-bold italic text-center">💡 ចុចប៊ូតុងខៀវ ដើម្បីឱ្យទូរស័ព្ទចាប់កូអរដោនេផ្ទះអូតូ (មិនបាច់ស្គាល់ផ្លូវ)</div>
 
-        <!-- 📷 កន្លែងថតរូបមុខផ្ទះ / ច្រកចូលជាក់ស្តែង -->
+        <!-- 📷 កន្លែងថតរូបមុខផ្ទះ ឬរើសរូបស្រាប់ពីទូរស័ព្ទ (Camera & Gallery) -->
         <div class="pt-1.5 border-t border-blue-200/60 flex items-center justify-between gap-2">
-          <div class="flex items-center gap-2">
-            <div id="housePhotoThumbBox" class="w-10 h-10 rounded-xl bg-white border border-blue-300 flex items-center justify-center overflow-hidden shrink-0 shadow-2xs">
+          <div class="flex items-center gap-2 min-w-0">
+            <div id="housePhotoThumbBox" class="w-11 h-11 rounded-xl bg-white border-2 border-dashed border-blue-300 flex items-center justify-center overflow-hidden shrink-0 shadow-2xs">
               <i class="fas fa-house-chimney text-slate-400 text-sm" id="housePhotoDefaultIcon"></i>
               <img id="housePhotoImgPreview" src="" class="w-full h-full object-cover hidden">
             </div>
-            <div>
+            <div class="min-w-0">
               <span class="text-[10px] font-bold text-slate-800 block">រូបថតមុខផ្ទះ / ច្រកចូល</span>
-              <span class="text-[9px] text-slate-400 font-normal" id="housePhotoStatusText">ថតរូបទុកឱ្យអ្នកដឹកចំណាំ (បើមាន)</span>
+              <span class="text-[9.5px] text-slate-500 font-normal block truncate" id="housePhotoStatusText">ថត ឬរើសរូបទុកឱ្យអ្នកដឹកចំណាំ</span>
             </div>
           </div>
-          <label class="cursor-pointer px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-[11px] font-bold shadow-2xs inline-flex items-center gap-1 active:scale-95 transition shrink-0">
-            <i class="fas fa-camera text-xs"></i>
-            <span>ថតរូប</span>
-            <input type="file" id="inpHousePhotoFile" accept="image/*" capture="environment" onchange="previewHousePhotoFile(this)" class="hidden">
-          </label>
+
+          <div class="flex items-center gap-1 shrink-0">
+            <label class="cursor-pointer px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-[10.5px] font-bold shadow-2xs inline-flex items-center gap-1 active:scale-95 transition">
+              <i class="fas fa-camera text-xs"></i>
+              <span id="btnPhotoPickLabel">ថត / រើសរូប</span>
+              <!-- ដក capture ចេញ ដើម្បីឱ្យទូរស័ព្ទបើកជម្រើសទាំងថតផ្ទាល់ និងរើសរូបពី Gallery -->
+              <input type="file" id="inpHousePhotoFile" accept="image/*" onchange="previewHousePhotoFile(this)" class="hidden">
+            </label>
+            <button type="button" onclick="removeHousePhoto()" id="btnRemoveHousePhoto" class="w-7 h-7 text-red-400 hover:text-red-600 rounded-lg hover:bg-red-50 flex items-center justify-center hidden" title="លុបរូប">
+              <i class="fas fa-trash-can text-xs"></i>
+            </button>
+          </div>
           <input type="hidden" id="inp_custPhotoUrl" value="">
         </div>
 
@@ -1527,6 +1534,69 @@
         hint.innerHTML = '<span class="text-red-500 font-bold">' + d.gpsFail + '</span>';
         return;
       }
+      // 📷 មុខងារបង្ហាញ និងបង្រួមរូបថតមុខផ្ទះ (ថតផ្ទាល់ ឬរើសរូបស្រាប់ពីទូរស័ព្ទ)
+    function previewHousePhotoFile(input) {
+      if (input.files && input.files[0]) {
+        var file = input.files[0];
+        var statusText = document.getElementById('housePhotoStatusText');
+        if (statusText) statusText.innerHTML = '<span class="text-blue-600 font-bold"><i class="fas fa-spinner fa-spin mr-1"></i> កំពុងដំណើរការរូប...</span>';
+
+        var reader = new FileReader();
+        reader.onload = function(e) {
+          var img = new Image();
+          img.onload = function() {
+            // បង្រួមទំហំរូប (Max 800px) ដើម្បីឱ្យទូរស័ព្ទដើរលឿន មិនស៊ីអ៊ីនធឺណិត
+            var maxDim = 800;
+            var w = img.width, h = img.height;
+            if (w > maxDim || h > maxDim) {
+              if (w > h) { h = Math.round((h * maxDim) / w); w = maxDim; }
+              else { w = Math.round((w * maxDim) / h); h = maxDim; }
+            }
+
+            var canvas = document.createElement('canvas');
+            canvas.width = w; canvas.height = h;
+            var ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+
+            var compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+
+            // បង្ហាញរូប Preview និងផ្លាកសញ្ញាជោគជ័យ
+            var previewImg = document.getElementById('housePhotoImgPreview');
+            var defaultIcon = document.getElementById('housePhotoDefaultIcon');
+            var hiddenInput = document.getElementById('inp_custPhotoUrl');
+            var removeBtn = document.getElementById('btnRemoveHousePhoto');
+
+            if (previewImg) { previewImg.src = compressedBase64; previewImg.classList.remove('hidden'); }
+            if (defaultIcon) defaultIcon.classList.add('hidden');
+            if (hiddenInput) hiddenInput.value = compressedBase64;
+            if (removeBtn) removeBtn.classList.remove('hidden');
+
+            if (statusText) {
+              statusText.innerHTML = '<span class="text-emerald-700 font-bold flex items-center gap-1"><i class="fas fa-check-circle text-emerald-600"></i> បានភ្ជាប់រូបថតជោគជ័យ!</span>';
+            }
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    // 🗑️ មុខងារលុបរូបថតមុខផ្ទះចេញវិញបើភ្ញៀវចង់ថត ឬរើសរូបថ្មី
+    function removeHousePhoto() {
+      var previewImg = document.getElementById('housePhotoImgPreview');
+      var defaultIcon = document.getElementById('housePhotoDefaultIcon');
+      var hiddenInput = document.getElementById('inp_custPhotoUrl');
+      var fileInput = document.getElementById('inpHousePhotoFile');
+      var statusText = document.getElementById('housePhotoStatusText');
+      var removeBtn = document.getElementById('btnRemoveHousePhoto');
+
+      if (previewImg) { previewImg.src = ''; previewImg.classList.add('hidden'); }
+      if (defaultIcon) defaultIcon.classList.remove('hidden');
+      if (hiddenInput) hiddenInput.value = '';
+      if (fileInput) fileInput.value = '';
+      if (removeBtn) removeBtn.classList.add('hidden');
+      if (statusText) statusText.innerText = 'ថត ឬរើសរូបទុកឱ្យអ្នកដឹកចំណាំ';
+    }
 
       hint.innerHTML = '<span class="text-blue-600 font-bold"><i class="fas fa-spinner fa-spin"></i> ' + d.gpsDetecting + '</span>';
 
