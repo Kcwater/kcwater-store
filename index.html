@@ -1023,7 +1023,8 @@
     function closeCheckoutModal() {
       document.getElementById('checkoutModal').classList.add('hidden');
     }
-    // 🛒 មុខងារគណនាកន្ត្រក (បំបែកការគិតសំបកធុងស និងធុងខៀវដាច់ពីគ្នា ១០០% មិនច្រឡំគ្នាទៀតទេ)
+
+    // 🛒 មុខងារគណនាកន្ត្រក (កែសម្រួលបំបាត់បញ្ហាយល់ច្រឡំអក្សរ "ស" ក្នុងពាក្យ "សំបក" ត្រឹមត្រូវ ១០០%)
     function updateCheckoutCalculation() {
       var listCont = document.getElementById('checkoutCartItemsList');
       var grandText = document.getElementById('coGrandTotalText');
@@ -1047,13 +1048,13 @@
           waterTotal += sub;
           totalUnits += cartItems[k].qty;
 
-          // 🔍 ពិនិត្យមើលថាតើជាទឹកធុងខៀវ ឬទឹកធុងស
           if (cartItems[k].isBarrel20L) {
             var rawNameLower = (cartItems[k].raw_name || '').toLowerCase();
+            // ឆែកមើលពាក្យ «ខៀវ»
             if (rawNameLower.indexOf('ខៀវ') !== -1 || rawNameLower.indexOf('blue') !== -1) {
               blueBarrelsQty += cartItems[k].qty;
             } else {
-              // បើមិនមែនខៀវ គឺចាត់ទុកជាធុងស
+              // បើមិនមែនខៀវ គឺចាត់ទុកជាទឹកធុងស
               whiteBarrelsQty += cartItems[k].qty;
             }
           }
@@ -1083,7 +1084,6 @@
         }
       }
 
-      // បង្ហាញផ្លាកសរុបចំនួនធុង
       if (barrelHint) {
         var hintParts = [];
         if (blueBarrelsQty > 0) hintParts.push(blueBarrelsQty + ' ធុងខៀវ');
@@ -1091,28 +1091,34 @@
         barrelHint.innerText = hintParts.length > 0 ? hintParts.join(' | ') : 'គ្មានទឹកធុង ២០L';
       }
 
-      // ២. ស្វែងរកទំនិញ «សំបកធុងខៀវ» និង «សំបកធុងស» ក្នុងស្តុក Supabase
+      // ២. ស្វែងរកសំបកធុងខៀវ (ឈ្មោះមានពាក្យ ខៀវ ឬ Blue)
       var blueBarrelProd = STORE_CATALOG.find(function(p) {
         var n = (p.raw_name || '').toLowerCase();
-        return n.indexOf('សំបក') !== -1 && (n.indexOf('ខៀវ') !== -1 || n.indexOf('blue') !== -1);
+        return (n.indexOf('សំបក') !== -1 || n.indexOf('empty') !== -1) && (n.indexOf('ខៀវ') !== -1 || n.indexOf('blue') !== -1);
       }) || STORE_CATALOG.find(function(p) {
         var n = (p.raw_name || '').toLowerCase();
-        return n.indexOf('សំបក') !== -1 && n.indexOf('ស') === -1;
+        var withoutSombok = n.replace(/សំបក/g, '').replace(/empty/g, '').trim();
+        return (n.indexOf('សំបក') !== -1 || n.indexOf('empty') !== -1) && withoutSombok.indexOf('ស') === -1;
       });
 
+      // 🔍 ស្វែងរកសំបកធុងស (ដកពាក្យ «សំបក» ចេញជាមុនសិន ទើបឆែករកអក្សរ «ស» ឬ «ពណ៌ស»)
       var whiteBarrelProd = STORE_CATALOG.find(function(p) {
         var n = (p.raw_name || '').toLowerCase();
-        return n.indexOf('សំបក') !== -1 && (n.indexOf('ស') !== -1 || n.indexOf('white') !== -1);
+        if (n.indexOf('សំបក') === -1 && n.indexOf('empty') === -1) return false;
+        var withoutSombok = n.replace(/សំបក/g, '').replace(/empty/g, '').trim();
+        var hasWhiteWord = (withoutSombok.indexOf('ពណ៌ស') !== -1 || withoutSombok.indexOf('ធុងស') !== -1 || withoutSombok.indexOf('ស') !== -1 || withoutSombok.indexOf('white') !== -1);
+        var hasBlueWord = (n.indexOf('ខៀវ') !== -1 || n.indexOf('blue') !== -1);
+        return hasWhiteWord && !hasBlueWord;
       });
 
-      var blueBarrelPrice = blueBarrelProd ? parseFloat(blueBarrelProd.price || 0) : 12000;
+      var blueBarrelPrice = blueBarrelProd ? parseFloat(blueBarrelProd.price || 0) : 10000;
       var whiteBarrelPrice = whiteBarrelProd ? parseFloat(whiteBarrelProd.price || 0) : 0;
 
-      // 🔄 Update អក្សរលើប៊ូតុងជ្រើសរើសសំបកធុងឱ្យច្បាស់លាស់
+      // 🔄 Update អក្សរលើប៊ូតុងជ្រើសរើសសំបកធុង
       var optSwapNoEl = document.getElementById('optSwapNo');
       if (optSwapNoEl) {
         if (blueBarrelsQty > 0 && whiteBarrelsQty > 0) {
-          optSwapNoEl.innerText = '🛒 គ្មានសំបកដូរ (ទិញសំបកខៀវថ្មី +៛ ' + blueBarrelPrice.toLocaleString() + '/ធុង | ធុងស: ដូរសំបក)';
+          optSwapNoEl.innerText = '🛒 គ្មានសំបកដូរ (ទិញសំបកខៀវថ្មី +៛ ' + blueBarrelPrice.toLocaleString() + '/ធុង | ធុងស: ត្រូវមានសំបកដូរ)';
         } else if (blueBarrelsQty > 0) {
           optSwapNoEl.innerText = '🛒 គ្មានសំបកដូរ (ទិញសំបកខៀវថ្មី +៛ ' + blueBarrelPrice.toLocaleString() + '/ធុង)';
         } else if (whiteBarrelsQty > 0) {
@@ -1131,7 +1137,7 @@
 
       // ៣. គណនាថ្លៃសំបកធុងដាច់ដោយឡែកពីគ្នា ១០០%
       if (isNoSwap) {
-        // ក. គណនាថ្លៃសំបកធុងខៀវ
+        // ក. គណនាថ្លៃសំបកធុងខៀវ (បូកតែលើចំនួនធុងខៀវប៉ុណ្ណោះ)
         if (blueBarrelsQty > 0 && blueBarrelPrice > 0) {
           var bTotal = blueBarrelsQty * blueBarrelPrice;
           barrelFee += bTotal;
@@ -1149,7 +1155,7 @@
           '</div>';
         }
 
-        // ខ. គណនាថ្លៃសំបកធុងស (បច្ចុប្បន្នគ្មានសំបកសលក់ = ០៛ មិនបូកសំបកខៀវចូលឡើយ!)
+        // ខ. គណនាថ្លៃសំបកធុងស
         if (whiteBarrelsQty > 0) {
           if (whiteBarrelProd && whiteBarrelPrice > 0) {
             var wTotal = whiteBarrelsQty * whiteBarrelPrice;
@@ -1167,7 +1173,7 @@
               '<b class="text-amber-900 font-black">+៛ ' + wTotal.toLocaleString() + '</b>' +
             '</div>';
           } else {
-            // ⚠️ គ្មានសំបកសលក់ ➔ គិត +០៛ (ដាច់ខាតមិនយកថ្លៃសំបកខៀវមកបូកទេ!)
+            // ⚠️ ករណីបច្ចុប្បន្ន៖ គ្មានសំបកសលក់ ➔ គិត +០៛ (ដាច់ខាតលែងបូកថ្លៃសំបកខៀវទៀតហើយ!)
             html += '<div class="flex justify-between items-center py-1.5 border-t border-slate-200 text-slate-700 bg-slate-100 px-2 rounded-lg mt-1 text-[11px]">' +
               '<span><i class="fas fa-info-circle mr-1 text-slate-500"></i><b>ទឹកធុងស៖ ត្រូវមានសំបកដូរ (មិនទាន់មានសំបកសលក់)</b></span>' +
               '<b class="text-slate-500 font-bold">+៛ 0</b>' +
@@ -1236,7 +1242,7 @@
         barrelItemsToCharge: barrelItemsToCharge
       };
     }
-
+    
         // ➕➖ មុខងារបន្ថែម ឬបន្ថយចំនួនទំនិញផ្ទាល់ពីលើផ្ទាំង Checkout
     function adjustCheckoutItemQty(id, delta) {
       if (cartItems[id]) {
