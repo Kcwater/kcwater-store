@@ -3,7 +3,6 @@
  *  (Authentication, Dashboard, Quick Restock, POS & Discount Engine)
  *  ========================================================================== */
 
-var specialPrices = window.specialPrices || [];
 var currentPosDiscount = { type: 'NONE', value: 0 };
 var activeQuickRestockData = null;
 
