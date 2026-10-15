@@ -282,17 +282,25 @@ async function saveProductToSupabase() {
     img: imgData
   };
 
-  // ✅ កែសម្រួល៖ បើបង្កើតទំនិញថ្មី ឱ្យស្តុកស្មើ ០ ជាមុន (មិនដាក់ ៥០ ផ្តេសផ្តាសទៀតទេ)
-  if (!editingProductId) {
-    payload.stock = 0;
-  }
-
   var btn = document.getElementById('btnSaveProdAction');
   btn.disabled = true;
 
   try {
-    const { error } = await supabaseClient.from('products').upsert([payload]);
-    if (error) throw error;
+    // ✅ បើជាការកែប្រែទំនិញចាស់ ប្រើ .update() (រក្សាស្តុកចាស់មិនឱ្យបាត់បង់)
+    if (editingProductId) {
+      const { error } = await supabaseClient
+        .from('products')
+        .update(payload)
+        .eq('id', editingProductId);
+      if (error) throw error;
+    } else {
+      // ✅ បើជាទំនិញបង្កើតថ្មី ដាក់ស្តុកដំបូងស្មើ ០
+      payload.stock = 0;
+      const { error } = await supabaseClient
+        .from('products')
+        .insert([payload]);
+      if (error) throw error;
+    }
 
     showToast(editingProductId ? "បានកែប្រែទំនិញជោគជ័យ!" : "បានបង្កើតទំនិញថ្មីជោគជ័យ (ស្តុក: ០)!", "success");
     cancelEditProduct();
