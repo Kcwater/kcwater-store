@@ -137,3 +137,99 @@ async function fetchInitialPOSData() {
     console.error("Initial data load error:", e);
   }
 }
+// ==========================================
+// 🌟 ៨. KC POS CUSTOM DIALOG ENGINE (CONFIRM & PROMPT)
+// ==========================================
+function kcConfirm(opts) {
+  return new Promise(function(resolve) {
+    opts = opts || {};
+    var modal = document.getElementById('kcDialogModal');
+    var titleEl = document.getElementById('kcDialogTitle');
+    var msgEl = document.getElementById('kcDialogMessage');
+    var iconBox = document.getElementById('kcDialogIconBox');
+    var iconEl = document.getElementById('kcDialogIcon');
+    var inputArea = document.getElementById('kcDialogInputArea');
+    var btnConfirm = document.getElementById('kcDialogBtnConfirm');
+    var btnCancel = document.getElementById('kcDialogBtnCancel');
+    var backdrop = document.getElementById('kcDialogBackdrop');
+
+    if (!modal) { resolve(confirm(opts.message || "")); return; }
+
+    var isDanger = (opts.type === 'danger');
+    titleEl.innerText = opts.title || (isDanger ? "បញ្ជាក់ការលុប" : "បញ្ជាក់ប្រតិបត្តិការ");
+    msgEl.innerText = opts.message || "តើអ្នកប្រាកដដែរឬទេ?";
+    inputArea.classList.add('hidden');
+
+    if (isDanger) {
+      iconBox.className = "w-14 h-14 mx-auto rounded-2xl flex items-center justify-center text-2xl shadow-inner bg-red-100 text-red-600";
+      iconEl.className = "fas fa-trash-can animate-pulse";
+      btnConfirm.className = "py-2.5 bg-red-600 hover:bg-red-700 text-white font-black rounded-xl text-xs shadow-md active:scale-95 transition";
+      btnConfirm.innerText = opts.confirmText || "យល់ព្រមលុប";
+    } else {
+      iconBox.className = "w-14 h-14 mx-auto rounded-2xl flex items-center justify-center text-2xl shadow-inner bg-emerald-100 text-emerald-700";
+      iconEl.className = "fas fa-circle-question";
+      btnConfirm.className = "py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-xl text-xs shadow-md active:scale-95 transition";
+      btnConfirm.innerText = opts.confirmText || "យល់ព្រម";
+    }
+
+    modal.classList.remove('hidden');
+
+    function cleanUp(result) {
+      modal.classList.add('hidden');
+      btnConfirm.onclick = null;
+      btnCancel.onclick = null;
+      backdrop.onclick = null;
+      resolve(result);
+    }
+
+    btnConfirm.onclick = function() { cleanUp(true); };
+    btnCancel.onclick = function() { cleanUp(false); };
+    backdrop.onclick = function() { cleanUp(false); };
+  });
+}
+
+function kcPrompt(opts) {
+  return new Promise(function(resolve) {
+    opts = opts || {};
+    var modal = document.getElementById('kcDialogModal');
+    var titleEl = document.getElementById('kcDialogTitle');
+    var msgEl = document.getElementById('kcDialogMessage');
+    var iconBox = document.getElementById('kcDialogIconBox');
+    var iconEl = document.getElementById('kcDialogIcon');
+    var inputArea = document.getElementById('kcDialogInputArea');
+    var inputEl = document.getElementById('kcDialogInput');
+    var btnConfirm = document.getElementById('kcDialogBtnConfirm');
+    var btnCancel = document.getElementById('kcDialogBtnCancel');
+    var backdrop = document.getElementById('kcDialogBackdrop');
+
+    if (!modal) { resolve(prompt(opts.message || "", opts.defaultValue || "")); return; }
+
+    titleEl.innerText = opts.title || "បញ្ចូលព័ត៌មាន";
+    msgEl.innerText = opts.message || "";
+    iconBox.className = "w-14 h-14 mx-auto rounded-2xl flex items-center justify-center text-2xl shadow-inner bg-blue-100 text-blue-700";
+    iconEl.className = "fas fa-keyboard";
+    btnConfirm.className = "py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-xl text-xs shadow-md active:scale-95 transition";
+    btnConfirm.innerText = opts.confirmText || "យល់ព្រម";
+
+    inputArea.classList.remove('hidden');
+    inputEl.value = (opts.defaultValue !== undefined) ? opts.defaultValue : "";
+    if (opts.inputType) inputEl.type = opts.inputType;
+
+    modal.classList.remove('hidden');
+    setTimeout(function() { inputEl.focus(); inputEl.select(); }, 150);
+
+    function cleanUp(val) {
+      modal.classList.add('hidden');
+      inputArea.classList.add('hidden');
+      btnConfirm.onclick = null;
+      btnCancel.onclick = null;
+      backdrop.onclick = null;
+      resolve(val);
+    }
+
+    btnConfirm.onclick = function() { cleanUp(inputEl.value.trim()); };
+    btnCancel.onclick = function() { cleanUp(null); };
+    backdrop.onclick = function() { cleanUp(null); };
+    inputEl.onkeyup = function(e) { if (e.key === 'Enter') cleanUp(inputEl.value.trim()); };
+  });
+}
