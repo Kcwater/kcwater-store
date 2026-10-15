@@ -728,18 +728,25 @@ async function submitSettlementPayment() {
   }
 
   var remainingBalance = Math.max(0, totalDue - paid);
+  // ✅ គណនាសាច់ប្រាក់សុទ្ធពិតប្រាកដដែលត្រូវទុកក្នុងថត (កាត់ប្រាក់អាប់ចេញរួចជាស្រេច)
+  var actualSettledPaid = Math.min(paid, totalDue);
+  var changeKhr = Math.max(0, paid - totalDue);
   var cashKhrRecorded = 0;
   var scanKhrRecorded = 0;
 
   if (currentSettlementPayMode === 'Split') {
-    cashKhrRecorded = parseFloat(document.getElementById('splitKhrCash') ? document.getElementById('splitKhrCash').value || 0 : 0);
-    scanKhrRecorded = parseFloat(document.getElementById('splitKhrScan') ? document.getElementById('splitKhrScan').value || 0 : 0);
+    var rawCash = parseFloat(document.getElementById('splitKhrCash') ? document.getElementById('splitKhrCash').value || 0 : 0);
+    var rawScan = parseFloat(document.getElementById('splitKhrScan') ? document.getElementById('splitKhrScan').value || 0 : 0);
+    // ប្រាក់អាប់ត្រូវកាត់ចេញពីលុយសុទ្ធ
+    cashKhrRecorded = Math.max(0, rawCash - changeKhr);
+    scanKhrRecorded = Math.min(rawScan, actualSettledPaid - cashKhrRecorded);
   } else if (currentSettlementPayMode === 'Cash') {
-    cashKhrRecorded = paid;
+    cashKhrRecorded = actualSettledPaid; // កត់ត្រាតែប្រាក់ដែលត្រូវទទួលពិតប្រាកដ (៣៥,០០០៛)
+    scanKhrRecorded = 0;
   } else {
-    scanKhrRecorded = paid;
+    cashKhrRecorded = 0;
+    scanKhrRecorded = actualSettledPaid;
   }
-
   var btn = document.getElementById('btnSubmitSettlement');
   btn.disabled = true;
   btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i> កំពុងទូទាត់ប្រាក់...';
