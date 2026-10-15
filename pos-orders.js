@@ -327,7 +327,14 @@ async function assignDriverToOnlineOrder(orderId, custName) {
   }
 }
 async function cancelOnlineOrder(orderId, custName) {
-  if (!confirm("តើអ្នកពិតជាចង់បោះបង់ការកុម្ម៉ង់កូដ [" + orderId + "] នេះមែនទេ?")) return;
+  // 🌟 ប្រើ Pop-up ថ្មីរបស់ KC POS ពណ៌ក្រហមច្បាស់ៗ
+  var ok = await kcConfirm({
+    title: "បោះបង់ការកុម្ម៉ង់ទឹក",
+    message: "តើអ្នកពិតជាចង់បោះបង់ការកុម្ម៉ង់របស់ [" + custName + "] លេខកូដ [" + orderId + "] នេះមែនទេ?",
+    type: "danger",
+    confirmText: "យល់ព្រមបោះបង់"
+  });
+  if (!ok) return;
 
   try {
     const { error } = await supabaseClient
@@ -343,10 +350,15 @@ async function cancelOnlineOrder(orderId, custName) {
     showToast("កំហុស៖ " + err.message, "error");
   }
 }
-
 // ✅ មុខងារបញ្ចប់ការដឹកជញ្ជូន (កត់ត្រាចំណូល, កាត់ស្តុកទំនិញអូតូ & Refresh ត្រូវតាមទំព័រ)
 async function completeOnlineOrder(orderId, custName, total, itemsText, driverName, payMethod) {
-  if (!confirm("តើការកុម្ម៉ង់កូដ [" + orderId + "] ត្រូវបានដឹកដល់ និងប្រមូលប្រាក់រួចរាល់ហើយមែនទេ?")) return;
+  // 🌟 ប្រើ Pop-up បញ្ជាក់ជោគជ័យពណ៌បៃតងរបស់ KC POS បង្ហាញទាំងចំនួនទឹកប្រាក់ច្បាស់ៗ
+  var ok = await kcConfirm({
+    title: "បញ្ជាក់ការដឹកដល់ & ប្រមូលប្រាក់",
+    message: "តើការកុម្ម៉ង់របស់ [" + custName + "] កូដ [" + orderId + "] ទឹកប្រាក់ ៛ " + Number(total).toLocaleString() + " ត្រូវបានដឹកដល់ និងប្រមូលប្រាក់រួចរាល់ហើយមែនទេ?",
+    confirmText: "យល់ព្រម (ដឹកដល់ហើយ)"
+  });
+  if (!ok) return;
 
   try {
     // ១. ប្តូរ Status ក្នុង Orders ទៅ Delivered
