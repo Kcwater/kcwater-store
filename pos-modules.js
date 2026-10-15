@@ -592,7 +592,15 @@ async function submitExpenseToSupabase() {
 }
 
 async function delExpenseFromSupabase(id) {
-  if (!confirm("តើអ្នកពិតជាចង់លុបការចំណាយនេះមែនទេ?")) return;
+  // 🌟 ប្រើ Pop-up បញ្ជាក់ការលុបបែប Danger ពណ៌ក្រហមរបស់ KC POS
+  var ok = await kcConfirm({
+    title: "បញ្ជាក់ការលុបចំណាយ",
+    message: "តើអ្នកពិតជាចង់លុបកំណត់ត្រាចំណាយនេះមែនទេ? សកម្មភាពនេះមិនអាចត្រឡប់វិញបានឡើយ។",
+    type: "danger",
+    confirmText: "យល់ព្រមលុប"
+  });
+  if (!ok) return;
+
   try {
     await supabaseClient.from('expenses').delete().eq('expense_id', id);
     showToast("បានលុបការចំណាយជោគជ័យ!", "success");
@@ -601,7 +609,6 @@ async function delExpenseFromSupabase(id) {
     showToast("កំហុស៖ " + err.message, "error");
   }
 }
-
 // 👥 ៤. គ្រប់គ្រងគណនី & តម្លៃពិសេស (មានប្រអប់ Search & Tabs បែងចែកដាច់ដោយឡែក)
 function renderCustomersModule() {
   var area = document.getElementById('contentArea');
@@ -1035,7 +1042,15 @@ async function saveSpecialPriceToSupabase() {
 }
 
 async function delSpecialPriceFromSupabase(id) {
-  if (!confirm("តើអ្នកចង់លុបតម្លៃពិសេសនេះមែនទេ?")) return;
+  // 🌟 ប្រើ Pop-up បញ្ជាក់ការលុបបែប Danger ពណ៌ក្រហមរបស់ KC POS
+  var ok = await kcConfirm({
+    title: "បញ្ជាក់ការលុបតម្លៃពិសេស",
+    message: "តើអ្នកពិតជាចង់លុបការកំណត់តម្លៃពិសេសនេះមែនទេ?",
+    type: "danger",
+    confirmText: "យល់ព្រមលុប"
+  });
+  if (!ok) return;
+
   try {
     await supabaseClient.from('customer_prices').delete().eq('id', id);
     showToast("បានលុបតម្លៃពិសេសជោគជ័យ!", "success");
@@ -1047,7 +1062,15 @@ async function delSpecialPriceFromSupabase(id) {
 }
 
 async function delUserFromSupabase(id) {
-  if (!confirm("តើអ្នកពិតជាចង់លុបគណនីនេះមែនទេ?")) return;
+  // 🌟 ប្រើ Pop-up បញ្ជាក់ការលុបបែប Danger ពណ៌ក្រហមរបស់ KC POS
+  var ok = await kcConfirm({
+    title: "បញ្ជាក់ការលុបគណនី",
+    message: "តើអ្នកពិតជាចង់លុបគណនីនេះចេញពីប្រព័ន្ធមែនទេ? សកម្មភាពនេះមិនអាចត្រឡប់វិញបានឡើយ។",
+    type: "danger",
+    confirmText: "យល់ព្រមលុប"
+  });
+  if (!ok) return;
+
   try {
     await supabaseClient.from('users').delete().eq('id', id);
     showToast("បានលុបគណនីជោគជ័យ!", "success");
@@ -1057,7 +1080,6 @@ async function delUserFromSupabase(id) {
     showToast("កំហុស៖ " + err.message, "error");
   }
 }
-
 // ==========================================
 // ⚙️ ៥. ការកំណត់ប្រព័ន្ធ & TELEGRAM TOGGLE (SETTINGS)
 // ==========================================
