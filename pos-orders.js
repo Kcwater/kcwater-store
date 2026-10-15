@@ -367,7 +367,7 @@ async function completeOnlineOrder(orderId, custName, total, itemsText, driverNa
       price: total,
       currency: "KHR",
       total: total,
-      paid_khr: isABA ? 0 : total,
+      paid_khr: total, // ✅ កែត្រង់នេះ៖ មិនថាបង់ Cash ឬ ABA ទេ គឺត្រូវកត់ត្រាចំនួនលុយពេញលេញ
       recorded_by: driverName ? (driverName + " (អ្នកដឹក)") : "Admin",
       status: "Paid",
       payment_method: isABA ? "ABA" : "Cash"
