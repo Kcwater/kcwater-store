@@ -364,7 +364,15 @@ async function saveStockInToSupabase() {
 }
 
 async function delProductFromSupabase(id) {
-  if (!confirm("តើអ្នកពិតជាចង់លុបទំនិញនេះមែនទេ?")) return;
+  // 🌟 ប្រើ Pop-up បញ្ជាក់ការលុបបែប Danger ពណ៌ក្រហមរបស់ KC POS
+  var ok = await kcConfirm({
+    title: "បញ្ជាក់ការលុបទំនិញ",
+    message: "តើអ្នកពិតជាចង់លុបទំនិញនេះចេញពីស្តុកមែនទេ? សកម្មភាពនេះមិនអាចត្រឡប់វិញបានឡើយ។",
+    type: "danger",
+    confirmText: "យល់ព្រមលុប"
+  });
+  if (!ok) return;
+
   try {
     await supabaseClient.from('products').delete().eq('id', id);
     showToast("បានលុបទំនិញជោគជ័យ!", "success");
@@ -375,7 +383,6 @@ async function delProductFromSupabase(id) {
     showToast("កំហុស៖ " + err.message, "error");
   }
 }
-
 // ==========================================
 // 🛢️ ២. ភ្ញៀវខ្ចីធុង / បរិក្ខារ (BOTTLE LOANS)
 // ==========================================
