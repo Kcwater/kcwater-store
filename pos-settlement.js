@@ -476,14 +476,21 @@ async function applyPendingPaymentToSettlement(pendingId, custName, amount, meth
   }
 }
 async function dismissPendingCard(pendingId) {
-  if (!confirm("តើអ្នកចង់បដិសេធសំណើទូទាត់នេះមែនទេ?")) return;
+  // 🌟 ប្រើ Pop-up បញ្ជាក់បែប Danger ពណ៌ក្រហមរបស់ KC POS
+  var ok = await kcConfirm({
+    title: "បដិសេធសំណើទូទាត់",
+    message: "តើអ្នកពិតជាចង់បដិសេធសំណើទូទាត់ប្រាក់នេះមែនទេ?",
+    type: "danger",
+    confirmText: "យល់ព្រមបដិសេធ"
+  });
+  if (!ok) return;
+
   try {
     await supabaseClient.from('pending_payments').update({ status: 'Cancelled' }).eq('id', pendingId);
     showToast("បានបដិសេធសំណើជោគជ័យ!", "info");
     checkAdminPendingPayments();
   } catch(e) {}
 }
-
 // ==========================================
 // 📋 ៥. ស្រង់បញ្ជីឈ្មោះម៉ូយជំពាក់ពី SUPABASE
 // ==========================================
