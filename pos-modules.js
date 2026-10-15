@@ -470,7 +470,16 @@ async function submitBottleLoanToSupabase() {
 }
 
 async function quickReturnBottleLoan(loanId, remaining, returned, borrowed) {
-  var val = prompt("សងសំបកធុង (នៅជំពាក់ " + remaining + " ធុង)៖ សូមវាយចំនួនសង៖", remaining);
+  // 🌟 ប្រើ Pop-up ថ្មីរបស់ KC POS មានប្រអប់វាយលេខធំៗ ស្រួលចុចលើទូរស័ព្ទ
+  var val = await kcPrompt({
+    title: "សងសំបកធុងទឹក",
+    message: "អតិថិជននៅជំពាក់ " + remaining + " ធុង។ សូមវាយចំនួនសងខាងក្រោម៖",
+    defaultValue: remaining,
+    confirmText: "យល់ព្រមសង",
+    inputType: "number"
+  });
+
+  if (val === null || val === "") return;
   var returnQty = parseFloat(val);
   if (isNaN(returnQty) || returnQty <= 0) return;
 
@@ -483,13 +492,12 @@ async function quickReturnBottleLoan(loanId, remaining, returned, borrowed) {
       status: newStatus
     }).eq('loan_id', loanId);
 
-    showToast("បានកត់ត្រាការសងជោគជ័យ!", "success");
+    showToast("បានកត់ត្រាការសងសំបកធុងជោគជ័យ!", "success");
     fetchBottleLoansData();
   } catch(err) {
     showToast("កំហុស៖ " + err.message, "error");
   }
 }
-
 // ==========================================
 // 💸 ៣. កត់ត្រាការចំណាយ (EXPENSES)
 // ==========================================
