@@ -958,7 +958,19 @@ async function confirmSale() {
 
   try {
     var rowsToInsert = [];
+    // ✅ គណនាប្រាក់ពិតប្រាកដដែលទទួលបាន (កាត់លុយអាប់ចេញ មិនឱ្យលើសពីតម្លៃត្រូវបង់)
+    var netPaidCollected = isResellerOrDriver ? 0 : Math.min(paid, calc.finalTotal);
+    var remainingPaidToDistribute = netPaidCollected;
+
     cart.forEach(function(item) {
+      var itemTotal = item.qty * item.price;
+      // បែងចែកទឹកប្រាក់បង់តាមមុខទំនិញនីមួយៗ មិនឱ្យគុណស្ទួនឡើយ
+      var allocatedPaid = 0;
+      if (remainingPaidToDistribute > 0) {
+        allocatedPaid = Math.min(remainingPaidToDistribute, itemTotal);
+        remainingPaidToDistribute -= allocatedPaid;
+      }
+
       rowsToInsert.push({
         transaction_id: tid,
         customer_name: custName,
@@ -966,8 +978,8 @@ async function confirmSale() {
         qty: item.qty,
         price: item.price,
         currency: "KHR",
-        total: item.qty * item.price,
-        paid_khr: isResellerOrDriver ? 0 : paid,
+        total: itemTotal,
+        paid_khr: allocatedPaid, // ✅ បានបែងចែកលុយត្រឹមត្រូវ ១០០%
         recorded_by: currentUser.fullName || "Admin",
         status: status,
         payment_method: isResellerOrDriver ? 'Debt' : currentPosPayMethod
