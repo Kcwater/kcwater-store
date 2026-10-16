@@ -452,7 +452,6 @@ async function completeOnlineOrder(orderId, custName, total, itemsText, driverNa
     showToast("កំហុស៖ " + err.message, "error");
   }
 }
-} // <--- បន្ទាត់ ៤៣៨ ចាស់របស់អ្នក
 
 // 🖼️ មុខងារបើកមើលរូបថតមុខផ្ទះរបស់ភ្ញៀវ (កូដថ្មីដែលទើបតែ Paste)
 function viewOrderHousePhoto(photoUrl, custName) {
