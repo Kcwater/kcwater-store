@@ -733,28 +733,42 @@ function rPG() {
 }
 
 // ==========================================
-// 💵 ប្រព័ន្ធគ្រប់គ្រង ៣ រូបិយប័ណ្ណ & ថែម 00 អូតូ (MODAL LOGIC)
+// 💵 ប្រព័ន្ធគ្រប់គ្រង ៣ រូបិយប័ណ្ណ, ប្តូរពណ៌ & ថែម 00 (MODAL LOGIC)
 // ==========================================
 var currentModalCurrency = 'KHR';
 
-// 🔄 ១. មុខងារចុចប្តូររូបិយប័ណ្ណ & ប្តូរពណ៌ប៊ូតុង
+// 🔄 ១. មុខងារចុចប្តូររូបិយប័ណ្ណ & ប្តូរពណ៌ (ខៀវ / ទឹកក្រូច / បៃតង)
 function setModalCurrency(curr) {
   currentModalCurrency = curr;
 
+  var btnKhr = document.getElementById('btnModalCurr_KHR');
+  var btnThb = document.getElementById('btnModalCurr_THB');
+  var btnUsd = document.getElementById('btnModalCurr_USD');
+  var suffixEl = document.getElementById('modalCurrencySymbolSuffix');
+  var priceBox = document.getElementById('modalPriceInput');
+
+  // Reset ពណ៌ប៊ូតុងអត់ជ្រើសរើស
   ['KHR', 'THB', 'USD'].forEach(function(c) {
     var btn = document.getElementById('btnModalCurr_' + c);
-    if (!btn) return;
-    if (c === curr) {
-      btn.className = "py-2 rounded-xl text-xs font-black shadow-xs bg-blue-600 text-white transition flex items-center justify-center gap-1";
-    } else {
-      btn.className = "py-2 rounded-xl text-xs font-black text-slate-600 hover:bg-white transition flex items-center justify-center gap-1";
-    }
+    if (btn) btn.className = "py-2 rounded-xl text-xs font-black text-slate-600 hover:bg-white transition flex items-center justify-center gap-1";
   });
 
-  // ប្តូរសញ្ញាសម្គាល់ខាងចុងប្រអប់តម្លៃ (៛, ฿, $)
-  var suffixEl = document.getElementById('modalCurrencySymbolSuffix');
-  if (suffixEl) {
-    suffixEl.innerText = (curr === 'KHR') ? '៛' : ((curr === 'THB') ? '฿' : '$');
+  // 🎨 ប្តូរពណ៌តាមប្រភេទលុយនីមួយៗ
+  if (curr === 'THB') {
+    // 🟠 លុយថៃ ពណ៌ទឹកក្រូច
+    if (btnThb) btnThb.className = "py-2 rounded-xl text-xs font-black shadow-xs bg-amber-600 text-white transition flex items-center justify-center gap-1";
+    if (suffixEl) { suffixEl.innerText = '฿'; suffixEl.className = "absolute right-3 top-3 font-black text-amber-600 text-sm"; }
+    if (priceBox) priceBox.className = "w-full text-center text-xl font-black bg-white py-2.5 rounded-xl border-2 border-amber-300 focus:border-amber-600 text-amber-950 outline-none pr-8";
+  } else if (curr === 'USD') {
+    // 🟢 លុយដុល្លារ ពណ៌បៃតង
+    if (btnUsd) btnUsd.className = "py-2 rounded-xl text-xs font-black shadow-xs bg-emerald-600 text-white transition flex items-center justify-center gap-1";
+    if (suffixEl) { suffixEl.innerText = '$'; suffixEl.className = "absolute right-3 top-3 font-black text-emerald-600 text-sm"; }
+    if (priceBox) priceBox.className = "w-full text-center text-xl font-black bg-white py-2.5 rounded-xl border-2 border-emerald-300 focus:border-emerald-600 text-emerald-950 outline-none pr-8";
+  } else {
+    // 🔵 លុយខ្មែរ ពណ៌ខៀវ
+    if (btnKhr) btnKhr.className = "py-2 rounded-xl text-xs font-black shadow-xs bg-blue-600 text-white transition flex items-center justify-center gap-1";
+    if (suffixEl) { suffixEl.innerText = '៛'; suffixEl.className = "absolute right-3 top-3 font-black text-blue-600 text-sm"; }
+    if (priceBox) priceBox.className = "w-full text-center text-xl font-black bg-white py-2.5 rounded-xl border-2 border-blue-300 focus:border-blue-600 text-blue-950 outline-none pr-8";
   }
 
   // បង្ហាញជួរប៊ូតុងជំនួយ +00 តែលើលុយខ្មែរ (KHR) ប៉ុណ្ណោះ
@@ -776,22 +790,29 @@ function setModalCurrency(curr) {
 // 🧮 ២. មុខងារបំប្លែង និងទាញយកតម្លៃលក់ (ស្គាល់សញ្ញា , និង . លើប្រាក់ដុល្លារ)
 function getModalParsedPrice() {
   var inp = document.getElementById('modalPriceInput');
-  if (!inp) return 0;
+  var defaultPrice = selectedModalProduct ? parseFloat(selectedModalProduct.price || 0) : 0;
+  if (!inp) return defaultPrice;
+
   var rawVal = String(inp.value || '').trim();
+
+  // បើប្រអប់ទទេ យកតម្លៃដើមរបស់ទំនិញធ្វើជាតួរលេខគណនា
+  if (rawVal === '') {
+    return defaultPrice;
+  }
 
   if (currentModalCurrency === 'USD') {
     // ប្តូរសញ្ញាក្បៀស , មកជាចុច . សម្រាប់ដុល្លារ
     rawVal = rawVal.replace(',', '.');
     var num = parseFloat(rawVal);
-    return isNaN(num) ? 0 : num;
+    return isNaN(num) ? defaultPrice : num;
   } else {
     var clean = rawVal.replace(/[^0-9.]/g, '');
     var num = parseFloat(clean);
-    return isNaN(num) ? 0 : num;
+    return isNaN(num) ? defaultPrice : num;
   }
 }
 
-// ⌨️ ៣. មុខងារពេលវាយតម្លៃ (ថែម 00 អូតូសម្រាប់លុយខ្មែរ)
+// ⌨️ ៣. មុខងារពេលវាយតម្លៃ (ថែម 00 អូតូសម្រាប់តែលុយខ្មែរ)
 function onModalPriceInput(val) {
   var inp = document.getElementById('modalPriceInput');
   if (!inp) return;
@@ -827,7 +848,7 @@ function setModalExactPrice(p) {
   }
 }
 
-// 🛍️ ៤. បើកផ្ទាំង Modal រើសទំនិញ
+// 🛍️ ៤. បើកផ្ទាំង Modal រើសទំនិញ (កំណត់ប្រអប់តម្លៃឱ្យទទេ & អាចកែតម្លៃបានគ្រប់គណនី)
 function openProductModal(id) {
   var p = allProducts.find(item => item.id === id);
   if (!p) return;
@@ -838,28 +859,29 @@ function openProductModal(id) {
   var sp = specialPrices.find(s => s.customer_name === custName && s.product_name === p.name);
   var unitPrice = sp ? parseFloat(sp.price) : parseFloat(p.price || 0);
 
-  var isAdmin = (currentUser && currentUser.role === 'Admin');
-
   document.getElementById('modalProdImg').src = p.img || "https://cdn-icons-png.flaticon.com/512/3100/3100566.png";
   document.getElementById('modalProdTitle').innerText = p.name;
   document.getElementById('modalStockStatusBadge').innerText = p.type || "ទំនិញ";
   
   var costHint = document.getElementById('modalOriginalCostHint');
-  if (costHint) costHint.innerText = "(តម្លៃដើម: " + Number(p.price || 0).toLocaleString() + " " + (p.currency || 'KHR') + ")";
+  if (costHint) costHint.innerText = "(តម្លៃដើម: " + Number(unitPrice).toLocaleString() + " " + (p.currency || 'KHR') + ")";
 
   // កំណត់រូបិយប័ណ្ណតាមទំនិញ (លំនាំដើម KHR)
   setModalCurrency(p.currency || 'KHR');
 
   var priceInp = document.getElementById('modalPriceInput');
-  priceInp.value = unitPrice;
-  priceInp.readOnly = !isAdmin;
-  priceInp.className = !isAdmin ? 
-    "w-full text-center text-xl font-black bg-slate-100 py-2.5 rounded-xl border border-slate-300 text-slate-700 outline-none select-none pointer-events-none pr-8" : 
-    "w-full text-center text-xl font-black bg-white py-2.5 rounded-xl border-2 border-blue-300 focus:border-blue-600 text-blue-950 outline-none pr-8";
+  // ✅ ដាក់តម្លៃឱ្យទទេ ("") ដើម្បីងាយស្រួលវាយលេខថ្មីភ្លាមៗ តែមាន Placeholder បង្ហាញតម្លៃដើម
+  priceInp.value = "";
+  priceInp.placeholder = unitPrice > 0 ? unitPrice : "0";
+  // ✅ អនុញ្ញាតឱ្យកែតម្លៃលក់បានទាំងអស់ (ទាំង Admin & Seller)
+  priceInp.readOnly = false;
 
   document.getElementById('modalQtyInput').value = 1;
   updateModalSubtotal();
   document.getElementById('productSelectModal').classList.remove('hidden');
+
+  // Focus លើប្រអប់តម្លៃអូតូ
+  setTimeout(function() { priceInp.focus(); }, 150);
 }
 
 function changeModalQty(delta) {
