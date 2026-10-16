@@ -619,7 +619,11 @@ function renderPOSModule() {
   var submitBtnHTML = '';
   if (isReseller || isDriver) {
     submitBtnHTML = '<button onclick="confirmSale()" id="sBtn" class="btn-green shadow-xl active:scale-95 transition mt-4 py-4 text-base flex items-center justify-center w-full font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-2xl"><i class="fas fa-clipboard-check mr-2 text-lg"></i>កត់ត្រាការដកទំនិញ (កត់ចូលបញ្ជីជំពាក់)</button>';
+  } else if (isSeller) {
+    // 🛒 ប៊ូតុងសម្រាប់គណនី Seller អ្នកលក់នៅកន្លែង
+    submitBtnHTML = '<button onclick="confirmSale()" id="sBtn" class="btn-green shadow-xl active:scale-95 transition mt-4 py-3.5 text-base flex items-center justify-center w-full font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-2xl"><i class="fas fa-file-pen mr-2 text-lg"></i>កត់ត្រាការលក់ (រង់ចាំ Admin ពិនិត្យ)</button>';
   } else {
+    // 👑 ប៊ូតុងសម្រាប់ Admin
     submitBtnHTML = '<button onclick="confirmSale()" id="sBtn" class="btn-green shadow-xl active:scale-95 transition mt-4 py-3.5 text-base flex items-center justify-center w-full font-bold">រក្សាទុកការលក់ (Save Sale)</button>';
   }
 
