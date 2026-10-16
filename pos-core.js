@@ -943,9 +943,13 @@ function confirmAddToCart() {
     }
   }
 
+  // ✅ ចងចាំឈ្មោះទំនិញទុកជាមុន មិនឱ្យបាត់តម្លៃ
+  var prodName = selectedModalProduct.name;
+  var prodId = selectedModalProduct.id;
+
   cart.push({
-    id: selectedModalProduct.id,
-    name: selectedModalProduct.name,
+    id: prodId,
+    name: prodName,
     price: pr,
     qty: q,
     currency: currentModalCurrency || "KHR"
@@ -953,8 +957,9 @@ function confirmAddToCart() {
 
   closeProductModal();
   rC();
-  showToast("បានបញ្ចូល [" + selectedModalProduct.name + "] x " + q + " ក្នុងកន្ត្រក!", "success");
+  showToast("បានបញ្ចូល [" + prodName + "] x " + q + " ក្នុងកន្ត្រក!", "success");
 }
+
 // ❌ មុខងារបិទផ្ទាំង Modal រើសទំនិញ (នៅចន្លោះកណ្តាលនេះ)
 function closeProductModal() {
   var modal = document.getElementById('productSelectModal');
