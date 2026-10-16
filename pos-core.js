@@ -1264,46 +1264,89 @@ async function confirmSale() {
   }
 }
 
-// 🧾 បង្កើតរូបវិក្កយបត្រ
+// ==========================================
+// 🧾 បង្កើតរូបវិក្កយបត្រ (RECEIPT GENERATOR)
+// ==========================================
 function generateReceiptImage(tid, cust, total, paid, items, titleText, discountAmount) {
   var dateStr = new Date().toLocaleString('km-KH');
   var change = Math.max(0, paid - total);
   discountAmount = parseFloat(discountAmount || 0);
 
+  var isAdmin = (currentUser && currentUser.role === 'Admin');
+  var isSeller = (currentUser && (currentUser.role === 'Seller' || currentUser.role === 'Cashier'));
+
+  // កំណត់ស្ថានភាពលើវិក្កយបត្រឱ្យច្បាស់
+  var isPaidComplete = (isAdmin && paid >= total && total > 0);
+  var statusBadgeText = isPaidComplete ? 
+    '<span style="color:#15803d; font-weight:bold;">ទូទាត់រួចរាល់ (បង់ប្រាក់គ្រប់)</span>' : 
+    (isSeller ? '<span style="color:#d97706; font-weight:bold;">កត់ត្រាទុក (រង់ចាំ Admin ពិនិត្យ)</span>' : '<span style="color:#c2410c; font-weight:bold;">កត់ត្រាជំពាក់</span>');
+
   var itemsHtml = '';
-  (items || []).forEach(function(i) {
+  (items || []).forEach(function(i, idx) {
     var pName = i.name || i.product_name || "ទំនិញ";
-    var tot = (i.qty * i.price);
-    itemsHtml += '<tr style="border-bottom:1px dashed #cbd5e1;">' +
-      '<td style="padding:6px 4px;">' + pName + '</td>' +
-      '<td align="center" style="padding:6px 4px; font-weight:bold; color:#1d4ed8;">' + i.qty + '</td>' +
-      '<td align="right" style="padding:6px 4px; font-weight:bold;">' + tot.toLocaleString() + ' ៛</td>' +
+    var pPrice = parseFloat(i.price || 0);
+    var pQty = parseFloat(i.qty || 1);
+    var tot = (pQty * pPrice);
+    var currSymbol = (i.currency === 'USD') ? '$ ' : ((i.currency === 'THB') ? '฿ ' : '៛ ');
+
+    itemsHtml += '<tr style="border-bottom:1px dashed #cbd5e1; font-size:10.5px;">' +
+      '<td align="center" style="padding:6px 2px; color:#64748b;">' + (idx + 1) + '</td>' +
+      '<td style="padding:6px 4px; font-weight:bold; color:#0f172a;">' + pName + '</td>' +
+      '<td align="center" style="padding:6px 4px; font-weight:bold; color:#1d4ed8;">' + pQty + '</td>' +
+      '<td align="right" style="padding:6px 4px; color:#475569;">' + Number(pPrice).toLocaleString() + '</td>' +
+      '<td align="right" style="padding:6px 4px; font-weight:bold; color:#15803d;">' + currSymbol + Number(tot).toLocaleString() + '</td>' +
     '</tr>';
   });
 
-  var h = '<div id="pos-canvas-box" style="width:360px; padding:20px; background:white; color:#0f172a; font-family:\'Battambang\', sans-serif; border-radius:12px;">' +
-    '<div style="text-align:center; border-bottom:2px dashed #16a34a; padding-bottom:8px; margin-bottom:10px;">' +
-      '<b style="font-size:16px; color:#15803d;">KC WATER</b><br>' +
-      '<span style="font-size:11px; color:#64748b; font-weight:bold;">' + (titleText || 'វិក្កយបត្រ (RECEIPT)') + '</span>' +
+  var h = '<div id="pos-canvas-box" style="width:360px; padding:22px 18px; background:#ffffff; color:#0f172a; font-family:\'Battambang\', sans-serif; border-radius:16px;">' +
+    // ក្បាលវិក្កយបត្រ
+    '<div style="text-align:center; border-bottom:2px dashed #16a34a; padding-bottom:10px; margin-bottom:10px;">' +
+      '<b style="font-size:17px; color:#15803d; letter-spacing:0.5px;">រោងចក្រទឹកបរិសុទ្ធ ខេ ស៊ី (KC WATER)</b><br>' +
+      '<span style="font-size:10px; color:#64748b; font-weight:bold;">ទីតាំង៖ ក្រុងប៉ោយប៉ែត | ទូរស័ព្ទ៖ 077 934 748</span><br>' +
+      '<div style="display:inline-block; margin-top:6px; padding:3px 12px; background:#f0fdf4; border:1px solid #86efac; border-radius:20px; font-size:11px; font-weight:bold; color:#166534;">' + 
+        (titleText || 'វិក្កយបត្រលក់ទំនិញ (RECEIPT)') + 
+      '</div>' +
     '</div>' +
-    '<div style="font-size:10.5px; line-height:1.6; margin-bottom:10px; color:#334155;">' +
-      'លេខកូដ៖ <b>' + tid + '</b><br>' +
-      'អតិថិជន៖ <b>' + cust + '</b><br>' +
+
+    // ព័ត៌មានអតិថិជន & កាលបរិច្ឆេទ
+    '<div style="font-size:10.5px; line-height:1.7; margin-bottom:10px; color:#334155; background:#f8fafc; padding:8px 10px; border-radius:8px;">' +
+      'លេខកូដវិក្កយបត្រ៖ <b style="color:#0f172a;">' + tid + '</b><br>' +
+      'អតិថិជន / ម៉ូយ៖ <b style="color:#0f172a;">' + cust + '</b><br>' +
       'កាលបរិច្ឆេទ៖ ' + dateStr + '<br>' +
-      'អ្នកកត់ត្រា៖ <b>' + (currentUser.fullName || "Admin") + '</b>' +
+      'អ្នកកត់ត្រា៖ <b style="color:#0f172a;">' + (currentUser.fullName || "Admin") + '</b>' +
     '</div>' +
-    '<table style="width:100%; font-size:11px; border-collapse:collapse; margin-bottom:10px;">' +
-      '<tr style="background:#f1f5f9; color:#475569; border-bottom:1px solid #cbd5e1;"><th align="left" style="padding:5px 4px;">ទំនិញ</th><th align="center" style="padding:5px 4px;">ចំនួន</th><th align="right" style="padding:5px 4px;">សរុប</th></tr>' +
-      itemsHtml +
+
+    // តារាងមុខទំនិញ
+    '<table style="width:100%; border-collapse:collapse; margin-bottom:10px;">' +
+      '<thead>' +
+        '<tr style="background:#f1f5f9; color:#475569; font-size:10px; border-bottom:1px solid #cbd5e1;">' +
+          '<th align="center" style="padding:5px 2px; width:22px;">ល.រ</th>' +
+          '<th align="left" style="padding:5px 4px;">មុខទំនិញ</th>' +
+          '<th align="center" style="padding:5px 4px; width:35px;">ចំនួន</th>' +
+          '<th align="right" style="padding:5px 4px; width:55px;">តម្លៃរាយ</th>' +
+          '<th align="right" style="padding:5px 4px; width:65px;">តម្លៃសរុប</th>' +
+        '</tr>' +
+      '</thead>' +
+      '<tbody>' + itemsHtml + '</tbody>' +
     '</table>' +
-    '<div style="background:#f0fdf4; padding:10px; border-radius:8px; font-size:11px; line-height:1.7; border:1px solid #bbf7d0;">' +
+
+    // ប្រអប់សរុបប្រាក់ & ស្ថានភាព
+    '<div style="background:#f0fdf4; padding:10px 12px; border-radius:10px; font-size:11px; line-height:1.8; border:1px solid #bbf7d0;">' +
       (discountAmount > 0 ? '<div style="display:flex; justify-content:space-between; color:#c2410c;"><span>បញ្ចុះតម្លៃ (Discount)៖</span><b>-៛ ' + discountAmount.toLocaleString() + '</b></div>' : '') +
-      '<div style="display:flex; justify-content:space-between; font-weight:bold;"><span>សរុបទឹកប្រាក់៖</span><b>៛ ' + total.toLocaleString() + '</b></div>' +
-      (paid > 0 ? '<div style="display:flex; justify-content:space-between; color:#1d4ed8;"><span>ប្រាក់បានបង់៖</span><b>៛ ' + paid.toLocaleString() + '</b></div>' : '<div style="display:flex; justify-content:space-between; color:#c2410c; font-weight:bold;"><span>ស្ថានភាព៖</span><b>កត់ត្រាជំពាក់</b></div>') +
-      (change > 0 ? '<div style="display:flex; justify-content:space-between; color:#15803d; font-weight:bold; border-top:1px dashed #86efac; padding-top:4px; margin-top:4px;"><span>ប្រាក់អាប់ជូនវិញ៖</span><b>៛ ' + change.toLocaleString() + '</b></div>' : '') +
+      '<div style="display:flex; justify-content:space-between; font-weight:bold; font-size:12px; color:#0f172a; border-bottom:1px solid #bbf7d0; padding-bottom:4px; margin-bottom:4px;">' +
+        '<span>សរុបទឹកប្រាក់ត្រូវបង់៖</span><b>៛ ' + total.toLocaleString() + '</b>' +
+      '</div>' +
+      '<div style="display:flex; justify-content:space-between; color:#334155;"><span>ស្ថានភាពទូទាត់៖</span>' + statusBadgeText + '</div>' +
+      (isPaidComplete ? 
+        ('<div style="display:flex; justify-content:space-between; color:#1d4ed8;"><span>ប្រាក់បានទទួល៖</span><b>៛ ' + paid.toLocaleString() + '</b></div>' +
+         (change > 0 ? '<div style="display:flex; justify-content:space-between; color:#15803d; font-weight:bold;"><span>ប្រាក់អាប់ជូនវិញ៖</span><b>៛ ' + change.toLocaleString() + '</b></div>' : '')) : 
+        '') +
     '</div>' +
+
+    // ពាក្យជូនពរខាងក្រោម (កែសម្រួលត្រឹមត្រូវតាមវេយ្យាករណ៍ខ្មែរ)
     '<div style="text-align:center; margin-top:12px; border-top:1px dashed #cbd5e1; padding-top:8px;">' +
-      '<span style="font-size:9.5px; color:#64748b;">សូមអរគុណ! សូមអញ្ជើញមកពិសាម្តងទៀត 🙏</span>' +
+      '<b style="font-size:10px; color:#166534;">សូមអរគុណចំពោះការជាវទឹកបរិសុទ្ធ ខេ ស៊ី!</b><br>' +
+      '<span style="font-size:9px; color:#64748b;">សូមអញ្ជើញមកម្តងទៀត 🙏</span>' +
     '</div>' +
   '</div>';
 
@@ -1318,7 +1361,6 @@ function generateReceiptImage(tid, cust, total, paid, items, titleText, discount
     document.getElementById('posSaleReceiptModal').classList.remove('hidden');
   });
 }
-
 function closePOSReceiptModal() { 
   document.getElementById('posSaleReceiptModal').classList.add('hidden'); 
 }
