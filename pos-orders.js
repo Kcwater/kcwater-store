@@ -225,9 +225,14 @@ async function openOnlineOrdersModal() {
             '<i class="fas fa-phone text-xs text-green-600"></i> ខល ' + o.phone +
           '</a>' : '') +
 
-          (o.location_url || o.address ? 
+         (o.location_url || o.address ? 
           '<button type="button" onclick="openOrderMap(\'' + (o.location_url || o.address).replace(/'/g, "\\'") + '\')" class="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-xl text-xs font-bold border border-blue-200 shadow-2xs flex items-center gap-1 active:scale-95 transition">' +
             '<i class="fas fa-map-location-dot text-xs text-blue-600"></i> បើកផែនទី' +
+          '</button>' : '') +
+
+          (o.photo_url ? 
+          '<button type="button" onclick="viewOrderHousePhoto(\'' + o.photo_url + '\', \'' + safeName + '\')" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-xl text-xs font-bold border border-amber-300 shadow-2xs flex items-center gap-1 active:scale-95 transition">' +
+            '<i class="fas fa-camera text-xs text-amber-600"></i> រូបផ្ទះ' +
           '</button>' : '') +
 
           '<button type="button" onclick="cancelOnlineOrder(\'' + o.order_id + '\', \'' + safeName + '\')" class="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 rounded-xl text-xs font-bold border border-red-200 shadow-2xs flex items-center gap-1 active:scale-95 transition">' +
@@ -431,6 +436,43 @@ async function completeOnlineOrder(orderId, custName, total, itemsText, driverNa
     showToast("កំហុស៖ " + err.message, "error");
   }
 }
+} // <--- បន្ទាត់ ៤៣៨ ចាស់របស់អ្នក
+
+// 🖼️ មុខងារបើកមើលរូបថតមុខផ្ទះរបស់ភ្ញៀវ (កូដថ្មីដែលទើបតែ Paste)
+function viewOrderHousePhoto(photoUrl, custName) {
+  if (!photoUrl) {
+    showToast("ការកុម្ម៉ង់នេះមិនមានភ្ជាប់រូបថតមុខផ្ទះឡើយ!", "info");
+    return;
+  }
+  var existing = document.getElementById('orderHousePhotoModal');
+  if (existing) existing.remove();
+
+  var html = '<div id="orderHousePhotoModal" class="fixed inset-0 z-[7000] flex items-center justify-center p-4 overflow-y-auto">' +
+    '<div class="fixed inset-0 bg-slate-950/75 backdrop-blur-xs" onclick="document.getElementById(\'orderHousePhotoModal\').remove()"></div>' +
+    '<div class="bg-white rounded-3xl shadow-2xl z-10 w-full max-w-sm overflow-hidden p-4 space-y-3 relative border text-center animate-in zoom-in-95 duration-200 my-auto max-h-[90dvh] flex flex-col">' +
+      '<div class="flex justify-between items-center border-b pb-2">' +
+        '<div class="text-left">' +
+          '<b class="text-xs sm:text-sm text-slate-900 flex items-center gap-1.5"><i class="fas fa-house-chimney text-emerald-600"></i> រូបថតមុខផ្ទះ / ច្រកចូល</b>' +
+          '<p class="text-[10px] text-slate-500 font-bold mt-0.5">អតិថិជន៖ ' + (custName || 'ភ្ញៀវ') + '</p>' +
+        '</div>' +
+        '<button type="button" onclick="document.getElementById(\'orderHousePhotoModal\').remove()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:text-slate-800 text-lg font-bold flex items-center justify-center">&times;</button>' +
+      '</div>' +
+      '<div class="rounded-2xl overflow-hidden border border-slate-200 bg-slate-50 flex items-center justify-center max-h-[58vh]">' +
+        '<img src="' + photoUrl + '" class="w-full h-auto object-contain max-h-[58vh] rounded-xl shadow-xs" alt="House Photo">' +
+      '</div>' +
+      '<button type="button" onclick="document.getElementById(\'orderHousePhotoModal\').remove()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl transition">បិទផ្ទាំងរូបភាព</button>' +
+    '</div>' +
+  '</div>';
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+// 🗺️ មុខងារផែនទីចាស់របស់អ្នក (នៅដដែល មិនបាច់ប៉ះពាល់ទេ)
+function openOrderMap(mapUrl) {
+  if (!mapUrl || String(mapUrl).trim() === "") {
+    showToast("មិនមានទីតាំង ឬអាសយដ្ឋានឡើយ!", "warning");
+    return;
+  }
+  // ... កូដផែនទីខាងក្រោមនៅដដែល
 function openOrderMap(mapUrl) {
   if (!mapUrl || String(mapUrl).trim() === "") {
     showToast("មិនមានទីតាំង ឬអាសយដ្ឋានឡើយ!", "warning");
@@ -542,14 +584,18 @@ async function renderCompanyDeliveriesModule() {
             '<span class="text-slate-700 font-bold text-[11px] line-clamp-2">' + task.address + '</span>' +
           '</div>' : '') +
         '</div>' +
-        '<div class="grid grid-cols-2 gap-2 pt-1">' +
+        '<div class="flex flex-wrap gap-2 pt-1">' +
           (cleanPhone ? 
-          '<a href="tel:' + cleanPhone + '" class="py-2.5 px-3 bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-xl text-xs font-black border border-blue-200 shadow-2xs flex items-center justify-center gap-1.5" style="text-decoration:none;">' +
+          '<a href="tel:' + cleanPhone + '" class="flex-1 py-2.5 px-3 bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-xl text-xs font-black border border-blue-200 shadow-2xs flex items-center justify-center gap-1.5" style="text-decoration:none;">' +
             '<i class="fas fa-phone text-blue-600 text-sm"></i> ខល ' + task.phone +
           '</a>' : '') +
           (mapTarget ? 
-          '<button type="button" onclick="openOrderMap(\'' + mapTarget.replace(/'/g, "\\'") + '\')" class="py-2.5 px-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-xl text-xs font-black border border-emerald-200 shadow-2xs flex items-center justify-center gap-1.5 active:scale-95 transition">' +
-            '<i class="fas fa-map-location-dot text-emerald-600 text-sm"></i> បើកផែនទី' +
+          '<button type="button" onclick="openOrderMap(\'' + mapTarget.replace(/'/g, "\\'") + '\')" class="flex-1 py-2.5 px-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-xl text-xs font-black border border-emerald-200 shadow-2xs flex items-center justify-center gap-1.5 active:scale-95 transition">' +
+            '<i class="fas fa-map-location-dot text-emerald-600 text-sm"></i> ផែនទី' +
+          '</button>' : '') +
+          (task.photo_url ? 
+          '<button type="button" onclick="viewOrderHousePhoto(\'' + task.photo_url + '\', \'' + safeName + '\')" class="py-2.5 px-3 bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-xl text-xs font-black border border-amber-300 shadow-2xs flex items-center justify-center gap-1.5 active:scale-95 transition">' +
+            '<i class="fas fa-camera text-amber-600 text-sm"></i> រូបផ្ទះ' +
           '</button>' : '') +
         '</div>' +
         '<button type="button" onclick="completeOnlineOrder(\'' + task.order_id + '\', \'' + safeName + '\', ' + (task.total || 0) + ', \'' + (task.items || '').replace(/'/g, "\\'") + '\', \'' + driverName.replace(/'/g, "\\'") + '\', \'' + (task.payment_method || 'COD').replace(/'/g, "\\'") + '\')" class="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-green-700 hover:from-emerald-700 hover:to-green-800 text-white rounded-2xl font-black text-xs sm:text-sm shadow-md flex items-center justify-center gap-2 active:scale-95 transition">' +
