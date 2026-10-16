@@ -70,16 +70,32 @@ async function checkPendingOnlineOrdersBadge() {
     lastKnownPendingOrderCount = c;
   } catch(e) {}
 }
-// ⚡ REALTIME LISTENER (ស្តាប់ការកុម្ម៉ង់ផ្ទាល់ពី SUPABASE)
+// ⚡ REALTIME LISTENER (ស្តាប់ការកុម្ម៉ង់ផ្ទាល់ពី SUPABASE ទាំង Admin និងអ្នកដឹក)
 function initOrdersRealtimeListener() {
   try {
     ordersRealtimeChannel = supabaseClient
       .channel('public:orders')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, function(payload) {
+        // ១. សម្រាប់ Admin និង Seller
         checkPendingOnlineOrdersBadge();
         var modal = document.getElementById('onlineOrdersAdminModal');
         if (modal && !modal.classList.contains('hidden')) {
           openOnlineOrdersModal();
+        }
+
+        // 🛵 ២. សម្រាប់អ្នកដឹកជញ្ជូនរោងចក្រ (Company Driver)
+        if (currentUser && currentUser.type === 'CompanyDriver') {
+          var driverContainer = document.getElementById('driverOrdersContainer');
+          if (driverContainer) {
+            renderCompanyDeliveriesModule();
+          }
+
+          // បើ Admin ចាត់ចែងការងារមកឱ្យអ្នកដឹកនេះ ឱ្យបន្លឺសំឡេងរោទ៍ & សារដំណឹងភ្លាម
+          var newRecord = payload.new || {};
+          if (newRecord.status === 'Assigned' && newRecord.driver_name === currentUser.fullName) {
+            playOrderChime();
+            showToast("🛵 [ការងារថ្មី] Admin បានចាត់ចែងការដឹកទឹកថ្មីឱ្យអ្នក!", "success");
+          }
         }
       })
       .subscribe();
@@ -496,7 +512,16 @@ window.addEventListener('load', function() {
   }
   checkPendingOnlineOrdersBadge();
   initOrdersRealtimeListener();
-  setInterval(checkPendingOnlineOrdersBadge, 15000); // Polling រៀងរាល់ ១៥ វិនាទីម្តង
+  // Polling រៀងរាល់ ១៥ វិនាទីម្តង (Auto-Sync ទាំង Admin និងអ្នកដឹក)
+  setInterval(function() {
+    checkPendingOnlineOrdersBadge();
+    if (currentUser && currentUser.type === 'CompanyDriver') {
+      var driverContainer = document.getElementById('driverOrdersContainer');
+      if (driverContainer) {
+        renderCompanyDeliveriesModule();
+      }
+    }
+  }, 15000);
 });
 // 🚚 មុខងារបង្ហាញបេសកកម្មដឹកទឹករបស់អ្នកដឹកជញ្ជូនរោងចក្រ (Company Driver Cockpit)
 async function renderCompanyDeliveriesModule() {
