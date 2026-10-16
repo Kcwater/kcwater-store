@@ -873,20 +873,47 @@ function openProductModal(id) {
   // កំណត់រូបិយប័ណ្ណតាមទំនិញ (លំនាំដើម KHR)
   setModalCurrency(p.currency || 'KHR');
 
-  var priceInp = document.getElementById('modalPriceInput');
-  // ✅ ដាក់តម្លៃឱ្យទទេ ("") ដើម្បីងាយស្រួលវាយលេខថ្មីភ្លាមៗ តែមាន Placeholder បង្ហាញតម្លៃដើម
-  priceInp.value = "";
-  priceInp.placeholder = unitPrice > 0 ? unitPrice : "0";
-  // ✅ អនុញ្ញាតឱ្យកែតម្លៃលក់បានទាំងអស់ (ទាំង Admin & Seller)
-  priceInp.readOnly = false;
+ var priceInp = document.getElementById('modalPriceInput');
+  var quickPayBtn = document.getElementById('btnModalQuickPay');
+  var addToCartBtn = document.getElementById('btnModalAddToCart');
+  var khrQuickRow = document.getElementById('modalKhrQuickButtonsRow');
+  var khrHintText = document.getElementById('modalKhrHintText');
+
+  // 👑🔒 ឆែកសិទ្ធិ៖ មានតែ Admin និង Seller (អ្នកលក់នៅកន្លែង) ប៉ុណ្ណោះ ទើបកែតម្លៃ និងឃើញប៊ូតុងទូទាត់រហ័ស
+  var canEditPriceAndQuickPay = (currentUser && (currentUser.role === 'Admin' || currentUser.role === 'Seller' || currentUser.role === 'Cashier'));
+
+  if (canEditPriceAndQuickPay) {
+    // ១. សម្រាប់ Admin និង Seller៖ កែតម្លៃបាន & ឃើញប៊ូតុងទូទាត់រហ័ស
+    priceInp.readOnly = false;
+    priceInp.value = "";
+    priceInp.placeholder = unitPrice > 0 ? unitPrice : "0";
+    priceInp.className = "w-full text-center text-xl font-black bg-white py-2.5 rounded-xl border-2 border-blue-300 focus:border-blue-600 text-blue-950 outline-none pr-8";
+
+    if (quickPayBtn) quickPayBtn.classList.remove('hidden');
+    if (addToCartBtn) addToCartBtn.className = "py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-2xl text-xs shadow-md flex items-center justify-center gap-1.5 active:scale-95 transition";
+  } else {
+    // 🚚 ២. សម្រាប់ម៉ូយ និងអ្នកដឹក (Reseller/Driver)៖ ចាក់សោរតម្លៃថេរ & លាក់ប៊ូតុងទូទាត់រហ័ស (ដំណើរការតាមលំហូរចាស់)
+    priceInp.readOnly = true;
+    priceInp.value = unitPrice; // បង្ហាញតម្លៃព្រមព្រៀងជាក់ស្តែង
+    priceInp.placeholder = unitPrice;
+    priceInp.className = "w-full text-center text-xl font-black bg-slate-100 py-2.5 rounded-xl border border-slate-300 text-slate-700 outline-none select-none pointer-events-none pr-8";
+
+    // លាក់ប៊ូតុងទូទាត់រហ័ស និងជួរប៊ូតុងថែម 00
+    if (quickPayBtn) quickPayBtn.classList.add('hidden');
+    if (khrQuickRow) khrQuickRow.classList.add('hidden');
+    if (khrHintText) khrHintText.classList.add('hidden');
+
+    // ឱ្យប៊ូតុង «បញ្ចូលកន្ត្រក» រីកធំពេញជួរតែម្តង
+    if (addToCartBtn) addToCartBtn.className = "col-span-2 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-2xl text-xs shadow-md flex items-center justify-center gap-1.5 active:scale-95 transition";
+  }
 
   document.getElementById('modalQtyInput').value = 1;
   updateModalSubtotal();
   document.getElementById('productSelectModal').classList.remove('hidden');
 
-  // Focus លើប្រអប់តម្លៃអូតូ
-  setTimeout(function() { priceInp.focus(); }, 150);
-}
+  if (canEditPriceAndQuickPay) {
+    setTimeout(function() { priceInp.focus(); }, 150);
+  }
 
 // ❌ មុខងារបិទផ្ទាំង Modal រើសទំនិញ (នៅចន្លោះកណ្តាលនេះ)
 function closeProductModal() {
@@ -985,6 +1012,15 @@ function closeProductModal() {
 // ⚡ ៦. មុខងារទូទាត់រហ័ស (QUICK CHECKOUT) សម្រាប់លក់ ១ មុខភ្លាមៗ
 // ==========================================
 async function quickCheckoutSingleItem() {
+  // 🔒 ការពារសិទ្ធិ៖ ក្រៅពី Admin និង Seller មិនអនុញ្ញាតឱ្យទូទាត់រហ័សឡើយ
+  var canQuickPay = (currentUser && (currentUser.role === 'Admin' || currentUser.role === 'Seller' || currentUser.role === 'Cashier'));
+  if (!canQuickPay) {
+    showToast("អ្នកមិនមានសិទ្ធិប្រើប្រាស់មុខងារទូទាត់រហ័សនេះឡើយ!", "error");
+    return;
+  }
+
+  if (!selectedModalProduct) return;
+  // ... កូដខាងក្រោមនៅដដែល
   if (!selectedModalProduct) return;
   var q = parseInt(document.getElementById('modalQtyInput') ? document.getElementById('modalQtyInput').value : 1) || 1;
   var pr = getModalParsedPrice();
