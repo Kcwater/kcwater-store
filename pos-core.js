@@ -884,6 +884,13 @@ function openProductModal(id) {
   setTimeout(function() { priceInp.focus(); }, 150);
 }
 
+// ❌ មុខងារបិទផ្ទាំង Modal រើសទំនិញ (នៅចន្លោះកណ្តាលនេះ)
+function closeProductModal() {
+  var modal = document.getElementById('productSelectModal');
+  if (modal) modal.classList.add('hidden');
+  selectedModalProduct = null;
+}
+
 function changeModalQty(delta) {
   var inp = document.getElementById('modalQtyInput');
   var val = (parseInt(inp.value) || 1) + delta;
@@ -907,7 +914,12 @@ function updateModalSubtotal() {
     subEl.innerText = '៛ ' + Math.round(sub).toLocaleString() + ' KHR';
   }
 }
-
+// ❌ មុខងារបិទផ្ទាំង Modal រើសទំនិញ (នៅចន្លោះកណ្តាលនេះ)
+function closeProductModal() {
+  var modal = document.getElementById('productSelectModal');
+  if (modal) modal.classList.add('hidden');
+  selectedModalProduct = null;
+}
 // 🛒 ៥. បញ្ចូលកន្ត្រកធម្មតា
 function confirmAddToCart() {
   if (!selectedModalProduct) return;
@@ -943,7 +955,12 @@ function confirmAddToCart() {
   rC();
   showToast("បានបញ្ចូល [" + selectedModalProduct.name + "] x " + q + " ក្នុងកន្ត្រក!", "success");
 }
-
+// ❌ មុខងារបិទផ្ទាំង Modal រើសទំនិញ (នៅចន្លោះកណ្តាលនេះ)
+function closeProductModal() {
+  var modal = document.getElementById('productSelectModal');
+  if (modal) modal.classList.add('hidden');
+  selectedModalProduct = null;
+}
 // ==========================================
 // ⚡ ៦. មុខងារទូទាត់រហ័ស (QUICK CHECKOUT) សម្រាប់លក់ ១ មុខភ្លាមៗ
 // ==========================================
