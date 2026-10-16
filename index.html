@@ -912,11 +912,12 @@
               id: String(p.id || ''),
               raw_name: p.name,
               cat: cat,
+              type: p.type || '',
+              stock: parseFloat(p.stock || 0),
               isBarrel20L: isBarrel,
               price: onlinePrice,
               svg: imgDisplay
             };
-          });
 
           renderCatalogGrid('ALL');
         } else {
@@ -936,25 +937,37 @@
       var d = DICT[currentLang];
       var html = '';
 
-      STORE_CATALOG.forEach(function(item) {
+     STORE_CATALOG.forEach(function(item) {
         if (filterCat !== 'ALL' && item.cat !== filterCat) return;
         var localizedName = getLocalizedProductName({ name: item.raw_name }, currentLang);
         var inCart = (cartItems[item.id] && cartItems[item.id].qty > 0) ? cartItems[item.id].qty : 0;
         var inCartBadge = inCart > 0 ? '<span class="absolute top-3 right-3 w-6 h-6 rounded-full bg-emerald-600 text-white font-black text-xs flex items-center justify-center shadow">' + inCart + '</span>' : '';
 
-        var badgeLabel = (item.cat === 'BARREL') ? (currentLang === 'km' ? 'ពេញនិយម' : (currentLang === 'zh' ? '热销' : 'Popular')) : (currentLang === 'km' ? 'គុណភាពខ្ពស់' : (currentLang === 'zh' ? '优选' : 'Premium'));
+        // 🛡️ ឆែកមើលថាតើទំនិញនេះអស់ពីស្តុកឬនៅ
+        var isOutOfStock = (item.type === 'ទិញគេ' && item.stock <= 0);
 
-        html += '<div onclick="openProductDetailModal(\'' + item.id + '\')" class="kc-glass-card p-3.5 flex flex-col justify-between cursor-pointer relative group">' +
-          '<span class="absolute top-3 left-3 bg-emerald-50 text-emerald-800 text-[9px] font-black px-2 py-0.5 rounded-full border border-emerald-200">' + badgeLabel + '</span>' +
+        var badgeLabel = isOutOfStock ? 
+          '<span class="absolute top-3 left-3 bg-red-100 text-red-700 text-[9px] font-black px-2 py-0.5 rounded-full border border-red-300">❌ អស់ពីស្តុក</span>' : 
+          ((item.cat === 'BARREL') ? 
+            '<span class="absolute top-3 left-3 bg-emerald-50 text-emerald-800 text-[9px] font-black px-2 py-0.5 rounded-full border border-emerald-200">' + (currentLang === 'km' ? 'ពេញនិយម' : (currentLang === 'zh' ? '热销' : 'Popular')) + '</span>' : 
+            '<span class="absolute top-3 left-3 bg-emerald-50 text-emerald-800 text-[9px] font-black px-2 py-0.5 rounded-full border border-emerald-200">' + (currentLang === 'km' ? 'គុណភាពខ្ពស់' : (currentLang === 'zh' ? '优选' : 'Premium')) + '</span>');
+
+        var clickAction = isOutOfStock ? '' : 'onclick="openProductDetailModal(\'' + item.id + '\')"';
+        var cardOpacity = isOutOfStock ? 'opacity-65 grayscale-[30%]' : '';
+
+        var btnAction = isOutOfStock ? 
+          '<button type="button" disabled class="mt-2.5 w-full py-1.5 rounded-xl bg-slate-200 text-slate-400 font-black text-[11px] cursor-not-allowed flex items-center justify-center gap-1"><i class="fas fa-ban text-[10px]"></i> អស់ស្តុក</button>' : 
+          '<button type="button" class="mt-2.5 w-full py-1.5 rounded-xl bg-slate-100 group-hover:bg-emerald-600 text-slate-700 group-hover:text-white font-black text-[11px] transition flex items-center justify-center gap-1"><i class="fas fa-plus text-[10px]"></i> ' + (inCart > 0 ? (d.btnSelect + ' (' + inCart + ')') : d.btnSelect) + '</button>';
+
+        html += '<div ' + clickAction + ' class="kc-glass-card p-3.5 flex flex-col justify-between cursor-pointer relative group ' + cardOpacity + '">' +
+          badgeLabel +
           inCartBadge +
           '<div class="h-24 flex items-center justify-center my-2 group-hover:scale-105 transition-transform">' + item.svg + '</div>' +
           '<div class="space-y-1">' +
             '<h4 class="text-xs font-bold text-slate-800 line-clamp-2 h-8 leading-snug">' + localizedName + '</h4>' +
             '<div class="text-xs font-black text-emerald-700">៛ ' + Number(item.price).toLocaleString() + '</div>' +
           '</div>' +
-          '<button type="button" class="mt-2.5 w-full py-1.5 rounded-xl bg-slate-100 group-hover:bg-emerald-600 text-slate-700 group-hover:text-white font-black text-[11px] transition flex items-center justify-center gap-1">' +
-            '<i class="fas fa-plus text-[10px]"></i> ' + (inCart > 0 ? (d.btnSelect + ' (' + inCart + ')') : d.btnSelect) +
-          '</button>' +
+          btnAction +
         '</div>';
       });
       grid.innerHTML = html;
@@ -1466,6 +1479,37 @@
 
         if (insErr) throw insErr;
 
+        // 👤 ស្វ័យប្រវត្តិកត់ត្រាភ្ញៀវ Online ចូលតារាងអតិថិជន (users) ឱ្យ Admin ស្គាល់ម៉ូយ
+        try {
+          const { data: existingUser } = await supabaseClient
+            .from('users')
+            .select('id')
+            .eq('phone', phone)
+            .maybeSingle();
+
+          if (!existingUser) {
+            await supabaseClient.from('users').insert([{
+              full_name: name,
+              phone: phone,
+              role: 'Retail',
+              type: 'Retail',
+              linked_boss: mapUrl || address || '',
+              username: 'online_' + phone.replace(/[^0-9]/g, '')
+            }]);
+          } else {
+            await supabaseClient.from('users').update({
+              full_name: name,
+              linked_boss: mapUrl || address || ''
+            }).eq('id', existingUser.id);
+          }
+        } catch(custErr) {
+          console.warn("Auto save customer error:", custErr);
+        }
+
+        // ផ្ញើសារដំណឹង Telegram ទៅរោងចក្រ និងអ្នកដឹក
+        try {
+          if (telegramSettings.token && telegramSettings.chatId && telegramSettings.status !== 'OFF') {
+
         // ផ្ញើសារដំណឹង Telegram ទៅរោងចក្រ និងអ្នកដឹក
         try {
           if (telegramSettings.token && telegramSettings.chatId && telegramSettings.status !== 'OFF') {
@@ -1676,9 +1720,40 @@
 
         if (refreshIcon) refreshIcon.classList.remove('fa-spin');
 
-        if (!info || info.status === "Delivered" || info.status === "Cancelled") {
+        // បើការកុម្ម៉ង់ត្រូវបាន Cancel
+        if (!info || info.status === "Cancelled") {
           cardBox.classList.add('hidden');
           clearInterval(trackingPollTimer);
+          localStorage.removeItem('kc_active_order_id');
+          return;
+        }
+
+        // 🎉 បើទឹកដឹកដល់ហើយ បង្ហាញផ្ទាំងអបអរសាទរ និងបាញ់កាំជ្រួច
+        if (info.status === "Delivered") {
+          clearInterval(trackingPollTimer);
+          try {
+            if (typeof confetti === 'function') confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
+          } catch(e) {}
+
+          cardBox.innerHTML = '<div class="p-4 rounded-3xl bg-gradient-to-br from-emerald-600 to-green-700 text-white shadow-xl space-y-3 animate-in zoom-in-95 duration-300 border-2 border-emerald-300 text-center">' +
+            '<div class="w-14 h-14 mx-auto rounded-full bg-white text-emerald-600 flex items-center justify-center text-2xl shadow-md animate-bounce">' +
+              '<i class="fas fa-circle-check"></i>' +
+            '</div>' +
+            '<div>' +
+              '<h3 class="text-base font-black tracking-tight leading-snug">🎉 ដឹកជញ្ជូនដល់ផ្ទះរួចរាល់!</h3>' +
+              '<p class="text-xs text-emerald-100 mt-1 font-medium">ទឹកពិសាបរិសុទ្ធ ខេ ស៊ី ត្រូវបានប្រគល់ជូនរួចរាល់។ សូមអរគុណចំពោះការគាំទ្រ!</p>' +
+            '</div>' +
+            '<div class="p-2.5 bg-emerald-800/60 rounded-2xl border border-emerald-400/40 text-xs flex justify-between items-center text-emerald-50">' +
+              '<span>អ្នកដឹកជញ្ជូន៖ <b>' + (info.driver_name || 'KC WATER') + '</b></span>' +
+              '<span class="font-black text-amber-300 text-sm">៛ ' + Number(info.total || 0).toLocaleString() + '</span>' +
+            '</div>' +
+            '<div class="grid grid-cols-2 gap-2 pt-1">' +
+              '<button type="button" onclick="localStorage.removeItem(\'kc_active_order_id\'); document.getElementById(\'activeOrderCardBox\').classList.add(\'hidden\');" class="py-2.5 bg-white hover:bg-emerald-50 text-emerald-950 font-black text-xs rounded-xl shadow active:scale-95 transition">យល់ព្រម (បិទ)</button>' +
+              '<button type="button" onclick="localStorage.removeItem(\'kc_active_order_id\'); document.getElementById(\'activeOrderCardBox\').classList.add(\'hidden\'); execute1ClickReorder();" class="py-2.5 bg-emerald-900/80 hover:bg-emerald-900 text-white font-black text-xs rounded-xl border border-emerald-300 shadow active:scale-95 transition flex items-center justify-center gap-1"><i class="fas fa-rotate-right text-[10px]"></i> កុម្ម៉ង់ម្តងទៀត</button>' +
+            '</div>' +
+          '</div>';
+
+          cardBox.classList.remove('hidden');
           return;
         }
 
