@@ -175,11 +175,11 @@
       </div>
 
       <!-- ប៊ូតុងសកម្មភាព ២ (បញ្ចូលកន្ត្រក និង ទូទាត់រហ័ស) -->
-      <div class="grid grid-cols-2 gap-2 pt-1">
-        <button type="button" onclick="confirmAddToCart()" class="py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-2xl text-xs shadow-md flex items-center justify-center gap-1.5 active:scale-95 transition">
+      <div class="grid grid-cols-2 gap-2 pt-1" id="modalActionButtonsContainer">
+        <button type="button" id="btnModalAddToCart" onclick="confirmAddToCart()" class="py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-2xl text-xs shadow-md flex items-center justify-center gap-1.5 active:scale-95 transition">
           <i class="fas fa-cart-plus"></i> បញ្ចូលកន្ត្រក
         </button>
-        <button type="button" onclick="quickCheckoutSingleItem()" class="py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-black rounded-2xl text-xs shadow-md flex items-center justify-center gap-1.5 active:scale-95 transition">
+        <button type="button" id="btnModalQuickPay" onclick="quickCheckoutSingleItem()" class="py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-black rounded-2xl text-xs shadow-md flex items-center justify-center gap-1.5 active:scale-95 transition">
           <i class="fas fa-bolt text-yellow-200"></i> ទូទាត់រហ័ស
         </button>
       </div>
