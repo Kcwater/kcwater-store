@@ -35,9 +35,9 @@ async function checkPendingOnlineOrdersBadge() {
   var badge = document.getElementById('navOnlineOrdersCount');
   if (!btn || !badge) return;
 
-  // 🚫 បើមិនមែន Admin ឬ Seller ទេ ➔ លាក់ប៊ូតុងនេះចោលជាដាច់ខាត និងមិនឱ្យបន្លឺសំឡេងរោទ៍ឡើយ!
-  var isAdminOrSeller = (currentUser && (currentUser.role === 'Admin' || currentUser.role === 'Seller'));
-  if (!isAdminOrSeller) {
+  // 👑 បង្ហាញ និងបន្លឺសំឡេងរោទ៍សម្រាប់តែ Admin ម្នាក់គត់ (លាក់ពី Seller/Driver ទាំងអស់)
+  var isAdmin = (currentUser && currentUser.role === 'Admin');
+  if (!isAdmin) {
     btn.classList.add('hidden');
     btn.style.setProperty('display', 'none', 'important');
     return;
