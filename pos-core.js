@@ -1326,6 +1326,20 @@ function generateReceiptImage(tid, cust, total, paid, items, titleText, discount
     '</tr>';
   });
 
+  // 🚚 ១. ឆែកមើលថាតើជាកូនចៅដកទឹកជំនួសមេដែរឬទេ (ដាក់នៅពីលើ var h)
+  var isDriverWithdraw = (currentUser && currentUser.role === 'Driver' && currentUser.linkedBoss);
+  var driverWithdrawLine = isDriverWithdraw ? 
+    ('អ្នកមកដកផ្ទាល់៖ <b style="color:#b45309;">' + currentUser.fullName + ' (កូនចៅ/អ្នកដឹក)</b><br>') : '';
+
+  // 📋 ២. ព័ត៌មានអតិថិជន & កាលបរិច្ឆេទ
+  var custInfoHtml = '<div style="font-size:10.5px; line-height:1.7; margin-bottom:10px; color:#334155; background:#f8fafc; padding:8px 10px; border-radius:8px;">' +
+    'លេខកូដវិក្កយបត្រ៖ <b style="color:#0f172a;">' + tid + '</b><br>' +
+    'អតិថិជន / ម៉ូយ៖ <b style="color:#0f172a;">' + cust + '</b><br>' +
+    driverWithdrawLine +
+    'កាលបរិច្ឆេទ៖ ' + dateStr + '<br>' +
+    'អ្នកកត់ត្រា៖ <b style="color:#0f172a;">' + (currentUser.fullName || "Admin") + '</b>' +
+  '</div>';
+  // 🧾 ៣. តួខ្លួនវិក្កយបត្រ (var h ចាប់ផ្តើមត្រង់នេះ តគ្នាជាប់រហូត មិនដាច់ទេ)
   var h = '<div id="pos-canvas-box" style="width:360px; padding:22px 18px; background:#ffffff; color:#0f172a; font-family:\'Battambang\', sans-serif; border-radius:16px;">' +
     // ក្បាលវិក្កយបត្រ
     '<div style="text-align:center; border-bottom:2px dashed #16a34a; padding-bottom:10px; margin-bottom:10px;">' +
@@ -1335,14 +1349,11 @@ function generateReceiptImage(tid, cust, total, paid, items, titleText, discount
         (titleText || 'វិក្កយបត្រលក់ទំនិញ (RECEIPT)') + 
       '</div>' +
     '</div>' +
-
-    // ព័ត៌មានអតិថិជន & កាលបរិច្ឆេទ
-    '<div style="font-size:10.5px; line-height:1.7; margin-bottom:10px; color:#334155; background:#f8fafc; padding:8px 10px; border-radius:8px;">' +
-      'លេខកូដវិក្កយបត្រ៖ <b style="color:#0f172a;">' + tid + '</b><br>' +
-      'អតិថិជន / ម៉ូយ៖ <b style="color:#0f172a;">' + cust + '</b><br>' +
-      'កាលបរិច្ឆេទ៖ ' + dateStr + '<br>' +
-      'អ្នកកត់ត្រា៖ <b style="color:#0f172a;">' + (currentUser.fullName || "Admin") + '</b>' +
-    '</div>' +
+    // ភ្ជាប់ព័ត៌មានអតិថិជនចូល
+    custInfoHtml +
+    // តារាងមុខទំនិញ
+    '<table style="width:100%; border-collapse:collapse; margin-bottom:10px;">' +
+      '<thead>' +
 
     // តារាងមុខទំនិញ
     '<table style="width:100%; border-collapse:collapse; margin-bottom:10px;">' +
