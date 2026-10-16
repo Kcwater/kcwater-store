@@ -1358,9 +1358,12 @@ async function fetchCustomerPortalData() {
         var html = '';
         todayItems.forEach(function(i) {
           var timeStr = new Date(i.created_at).toLocaleTimeString('km-KH', { hour: '2-digit', minute: '2-digit' });
+          var recTag = (i.recorded_by && i.recorded_by !== currentUser.fullName && i.recorded_by !== 'Admin') ? 
+            ('<br><span class="text-[9.5px] text-amber-950 font-black bg-amber-100 border border-amber-300 px-1.5 py-0.5 rounded-md inline-flex items-center gap-1 mt-0.5"><i class="fas fa-truck text-[9px] text-amber-600"></i>ដកដោយ៖ ' + i.recorded_by + '</span>') : '';
+
           html += '<tr class="border-b hover:bg-gray-50">' +
             '<td class="p-2.5 text-gray-500 text-[10px]">' + timeStr + '</td>' +
-            '<td class="p-2.5 font-bold text-gray-800">' + i.product_name + '</td>' +
+            '<td class="p-2.5 font-bold text-gray-800">' + i.product_name + recTag + '</td>' +
             '<td class="p-2.5 text-center font-bold text-blue-700">' + i.qty + '</td>' +
             '<td class="p-2.5 text-right font-black text-green-700">៛ ' + Number(i.total).toLocaleString() + '</td>' +
           '</tr>';
@@ -1649,9 +1652,12 @@ async function loadAllUnpaidHistory() {
     var html = '';
     unpaids.forEach(function(i) {
       var dateStr = new Date(i.created_at).toLocaleString('km-KH', { dateStyle: 'short', timeStyle: 'short' });
+      var recTag = (i.recorded_by && i.recorded_by !== currentUser.fullName && i.recorded_by !== 'Admin') ? 
+        ('<br><span class="text-[9.5px] text-amber-950 font-black bg-amber-100 border border-amber-300 px-1.5 py-0.5 rounded-md inline-flex items-center gap-1 mt-0.5"><i class="fas fa-truck text-[9px] text-amber-600"></i>ដកដោយ៖ ' + i.recorded_by + '</span>') : '';
+
       html += '<tr class="border-b hover:bg-orange-50/40">' +
         '<td class="p-2.5 text-gray-500 text-[10px] whitespace-nowrap">' + dateStr + '</td>' +
-        '<td class="p-2.5 font-bold text-gray-800">' + i.product_name + '</td>' +
+        '<td class="p-2.5 font-bold text-gray-800">' + i.product_name + recTag + '</td>' +
         '<td class="p-2.5 text-center font-bold text-blue-700">' + i.qty + '</td>' +
         '<td class="p-2.5 text-right">' + Number(i.price).toLocaleString() + '</td>' +
         '<td class="p-2.5 text-right font-black text-orange-700 whitespace-nowrap">៛ ' + Number(i.total).toLocaleString() + '</td>' +
@@ -1685,9 +1691,12 @@ async function fetchCustomHistoryByDate() {
     var html = '';
     list.forEach(function(i) {
       var dateStr = new Date(i.created_at).toLocaleString('km-KH', { dateStyle: 'short', timeStyle: 'short' });
+      var recTag = (i.recorded_by && i.recorded_by !== currentUser.fullName && i.recorded_by !== 'Admin') ? 
+        ('<br><span class="text-[9.5px] text-amber-950 font-black bg-amber-100 border border-amber-300 px-1.5 py-0.5 rounded-md inline-flex items-center gap-1 mt-0.5"><i class="fas fa-truck text-[9px] text-amber-600"></i>ដកដោយ៖ ' + i.recorded_by + '</span>') : '';
+
       html += '<tr class="border-b hover:bg-gray-50">' +
         '<td class="p-2.5 text-gray-500 text-[10px]">' + dateStr + '</td>' +
-        '<td class="p-2.5 font-bold text-gray-800">' + i.product_name + '</td>' +
+        '<td class="p-2.5 font-bold text-gray-800">' + i.product_name + recTag + '</td>' +
         '<td class="p-2.5 text-center font-bold text-blue-700">' + i.qty + '</td>' +
         '<td class="p-2.5 text-right font-black text-green-700">៛ ' + Number(i.total).toLocaleString() + '</td>' +
         '<td class="p-2.5 text-center"><span class="px-2 py-0.5 rounded-full text-[9px] font-bold ' + (i.status === 'Paid' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800') + '">' + (i.status === 'Paid' ? 'បង់រួច' : 'ជំពាក់') + '</span></td>' +
