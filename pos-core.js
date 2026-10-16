@@ -943,17 +943,28 @@ function confirmAddToCart() {
     }
   }
 
-  // ✅ ចងចាំឈ្មោះទំនិញទុកជាមុន មិនឱ្យបាត់តម្លៃ
-  var prodName = selectedModalProduct.name;
+var prodName = selectedModalProduct.name;
   var prodId = selectedModalProduct.id;
+  var curr = currentModalCurrency || "KHR";
 
-  cart.push({
-    id: prodId,
-    name: prodName,
-    price: pr,
-    qty: q,
-    currency: currentModalCurrency || "KHR"
+  // 🔍 ឆែកមើលថាតើទំនិញនេះ (និងតម្លៃ + រូបិយប័ណ្ណដូចគ្នា) មានក្នុងកន្ត្រករួចហើយឬនៅ
+  var existingItem = cart.find(function(item) {
+    return item.id === prodId && item.price === pr && item.currency === curr;
   });
+
+  if (existingItem) {
+    // ✅ បើមានឈ្មោះ និងតម្លៃដូចគ្នាហើយ ឱ្យបូកចំនួនបន្ថែមចូលគ្នា (១ + ២ = ៣)
+    existingItem.qty += q;
+  } else {
+    // បើជាទំនិញថ្មី ឬតម្លៃផ្សេង ទើបបង្កើតជួរថ្មី
+    cart.push({
+      id: prodId,
+      name: prodName,
+      price: pr,
+      qty: q,
+      currency: curr
+    });
+  }
 
   closeProductModal();
   rC();
@@ -1140,11 +1151,15 @@ async function confirmSale() {
   var custNameEl = document.getElementById('posCustSelect');
   var custName = custNameEl ? custNameEl.value.trim() : (currentUser.fullName || '');
 
-  var isResellerOrDriver = (currentUser.role !== 'Admin' && currentUser.role !== 'Seller');
+  var isAdmin = (currentUser && currentUser.role === 'Admin');
+  var isResellerOrDriver = (currentUser && (currentUser.role === 'Driver' || currentUser.type === 'Regular' || currentUser.type === 'Monthly' || currentUser.role === 'Customer'));
+  var isSeller = (currentUser && (currentUser.role === 'Seller' || currentUser.role === 'Cashier'));
+
   var calc = getCartCalculations();
   var paid = parseFloat(document.getElementById('pK') ? document.getElementById('pK').value || 0 : 0);
   
-  var status = isResellerOrDriver ? 'Unpaid' : ((custName === 'Walk-in' && paid >= calc.finalTotal) ? 'Paid' : 'Unpaid');
+  // 🔒 ច្បាប់៖ មានតែ Admin ម្នាក់គត់ទើបអាចលក់ចេញជា Paid បាន។ ចំណែក Seller/Driver/ម៉ូយ គឺកត់ត្រាជា Unpaid ជានិច្ច!
+  var status = (isAdmin && custName === 'Walk-in' && paid >= calc.finalTotal) ? 'Paid' : 'Unpaid';
 
   var tid = "TR-" + new Date().getTime();
   var btn = document.getElementById('sBtn');
