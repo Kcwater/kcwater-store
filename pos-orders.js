@@ -475,19 +475,13 @@ function viewOrderHousePhoto(photoUrl, custName) {
       '<div class="rounded-2xl overflow-hidden border border-slate-200 bg-slate-50 flex items-center justify-center max-h-[58vh]">' +
         '<img src="' + photoUrl + '" class="w-full h-auto object-contain max-h-[58vh] rounded-xl shadow-xs" alt="House Photo">' +
       '</div>' +
-      '<button type="button" onclick="document.getElementById(\'orderHousePhotoModal\').remove()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl transition">បិទផ្ទាំងរូបភាព</button>' +
+      <button type="button" onclick="document.getElementById(\'orderHousePhotoModal\').remove()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl transition">បិទផ្ទាំងរូបភាព</button>' +
     '</div>' +
   '</div>';
   document.body.insertAdjacentHTML('beforeend', html);
 }
 
-// 🗺️ មុខងារផែនទីចាស់របស់អ្នក (នៅដដែល មិនបាច់ប៉ះពាល់ទេ)
-function openOrderMap(mapUrl) {
-  if (!mapUrl || String(mapUrl).trim() === "") {
-    showToast("មិនមានទីតាំង ឬអាសយដ្ឋានឡើយ!", "warning");
-    return;
-  }
-  // ... កូដផែនទីខាងក្រោមនៅដដែល
+// 🗺️ មុខងារបើកផែនទី Google Maps
 function openOrderMap(mapUrl) {
   if (!mapUrl || String(mapUrl).trim() === "") {
     showToast("មិនមានទីតាំង ឬអាសយដ្ឋានឡើយ!", "warning");
