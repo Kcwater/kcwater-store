@@ -1510,10 +1510,6 @@
         // ផ្ញើសារដំណឹង Telegram ទៅរោងចក្រ និងអ្នកដឹក
         try {
           if (telegramSettings.token && telegramSettings.chatId && telegramSettings.status !== 'OFF') {
-
-        // ផ្ញើសារដំណឹង Telegram ទៅរោងចក្រ និងអ្នកដឹក
-        try {
-          if (telegramSettings.token && telegramSettings.chatId && telegramSettings.status !== 'OFF') {
             var itemLines = items.map(function(it) {
               return "  • <b>" + it.raw_name + "</b> x " + it.qty + " = ៛ " + Number(it.price * it.qty).toLocaleString();
             }).join("\n");
@@ -1699,6 +1695,16 @@
       }
     }
 
+   // 🌟 មុខងារបិទផ្ទាំងអបអរសាទរពេលដឹកដល់ (ដាក់នៅខាងក្រៅ)
+    function dismissDeliveredCard(shouldReorder) {
+      localStorage.removeItem('kc_active_order_id');
+      var box = document.getElementById('activeOrderCardBox');
+      if (box) box.classList.add('hidden');
+      if (shouldReorder && typeof execute1ClickReorder === 'function') {
+        execute1ClickReorder();
+      }
+    }
+
     // 📡 តាមដានស្ថានភាពការកុម្ម៉ង់ផ្ទាល់ (មានចលនាម៉ូតូ ៤ ដំណាក់កាល 🛵 💨)
     async function checkActiveOrderLiveStatus() {
       var orderId = currentTrackingOrderId || localStorage.getItem('kc_active_order_id');
@@ -1707,14 +1713,7 @@
         if (cardBox) cardBox.classList.add('hidden');
         return;
       }
-      function dismissDeliveredCard(shouldReorder) {
-  localStorage.removeItem('kc_active_order_id');
-  var box = document.getElementById('activeOrderCardBox');
-  if (box) box.classList.add('hidden');
-  if (shouldReorder && typeof execute1ClickReorder === 'function') {
-    execute1ClickReorder();
-  }
-}
+      // (កូដខាងក្រោមនៅដដែល)
 
       var refreshIcon = document.getElementById('trackingRefreshIcon');
       if (refreshIcon) refreshIcon.classList.add('fa-spin');
