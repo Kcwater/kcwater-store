@@ -397,7 +397,21 @@ async function loadDashboardData() {
       var rHtml = '';
       todayRecentSales.forEach(function(r) {
         var timeStr = new Date(r.created_at).toLocaleTimeString('km-KH', { hour: '2-digit', minute: '2-digit' });
-        rHtml += '<tr class="border-b hover:bg-gray-50"><td class="p-2.5 text-gray-500 whitespace-nowrap text-[10px]">' + timeStr + '</td><td class="p-2.5 font-bold text-gray-800">' + r.customer_name + '</td><td class="p-2.5">' + r.product_name + '</td><td class="p-2.5 text-center font-bold text-blue-700">' + r.qty + '</td><td class="p-2.5 text-right font-black text-green-700 whitespace-nowrap">៛ ' + Number(r.total).toLocaleString() + '</td><td class="p-2.5 text-center"><span class="px-2 py-0.5 rounded-full text-[9px] font-bold ' + (r.status === 'Paid' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800 border border-orange-200') + '">' + (r.status === 'Paid' ? 'បង់រួច' : 'ជំពាក់') + '</span></td></tr>';
+
+        // 🚚 ឆែកមើលថាតើមានកូនចៅ ឬអ្នកដឹកមកដកជំនួសមេដែរឬទេ
+        var isWithdrawnByOther = (r.recorded_by && r.recorded_by !== r.customer_name && r.recorded_by !== 'Admin');
+        var withdrawTag = isWithdrawnByOther ? 
+          ('<br><span class="text-[9.5px] text-amber-950 font-black bg-amber-100 border border-amber-300 px-1.5 py-0.5 rounded-md inline-flex items-center gap-1 mt-0.5"><i class="fas fa-truck text-[9px] text-amber-600"></i>ដកជំនួសដោយ៖ ' + r.recorded_by + '</span>') : 
+          (r.recorded_by && r.recorded_by !== 'Admin' && r.recorded_by !== r.customer_name ? ('<br><small class="text-slate-400 font-normal text-[9px]">កត់ដោយ៖ ' + r.recorded_by + '</small>') : '');
+
+        rHtml += '<tr class="border-b hover:bg-gray-50">' +
+          '<td class="p-2.5 text-gray-500 whitespace-nowrap text-[10px]">' + timeStr + '</td>' +
+          '<td class="p-2.5 font-bold text-gray-800">' + r.customer_name + withdrawTag + '</td>' +
+          '<td class="p-2.5">' + r.product_name + '</td>' +
+          '<td class="p-2.5 text-center font-bold text-blue-700">' + r.qty + '</td>' +
+          '<td class="p-2.5 text-right font-black text-green-700 whitespace-nowrap">៛ ' + Number(r.total).toLocaleString() + '</td>' +
+          '<td class="p-2.5 text-center"><span class="px-2 py-0.5 rounded-full text-[9px] font-bold ' + (r.status === 'Paid' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800 border border-orange-200') + '">' + (r.status === 'Paid' ? 'បង់រួច' : 'ជំពាក់') + '</span></td>' +
+        '</tr>';
       });
       tbodyRecent.innerHTML = rHtml;
     }
