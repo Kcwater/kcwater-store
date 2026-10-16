@@ -512,6 +512,7 @@ window.addEventListener('load', function() {
   }
   checkPendingOnlineOrdersBadge();
   initOrdersRealtimeListener();
+
   // Polling រៀងរាល់ ១៥ វិនាទីម្តង (Auto-Sync ទាំង Admin និងអ្នកដឹក)
   setInterval(function() {
     checkPendingOnlineOrdersBadge();
