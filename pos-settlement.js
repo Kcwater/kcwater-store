@@ -352,13 +352,19 @@ async function fetchSettlementOverviewData() {
         tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-green-600 font-bold"><i class="fas fa-check-circle mr-1"></i> គ្មានអ្នកដកទំនិញជំពាក់ថ្ងៃនេះទេ</td></tr>';
       } else {
         var html = '';
-        todayUnpaids.forEach(function(item) {
+       todayUnpaids.forEach(function(item) {
           var timeStr = new Date(item.created_at).toLocaleTimeString('km-KH', { hour: '2-digit', minute: '2-digit' });
           var safeName = String(item.customer_name || '').replace(/'/g, "\\'");
 
+          // 🚚 ឆែកមើលថាតើមានកូនចៅ ឬអ្នកដឹកមកដកជំនួសមេដែរឬទេ
+          var isWithdrawnByOther = (item.recorded_by && item.recorded_by !== item.customer_name && item.recorded_by !== 'Admin');
+          var withdrawTag = isWithdrawnByOther ? 
+            ('<br><span class="text-[9.5px] text-amber-950 font-black bg-amber-100 border border-amber-300 px-1.5 py-0.5 rounded-md inline-flex items-center gap-1 mt-0.5"><i class="fas fa-truck text-[9px] text-amber-600"></i>ដកជំនួសដោយ៖ ' + item.recorded_by + '</span>') : 
+            (item.recorded_by && item.recorded_by !== 'Admin' && item.recorded_by !== item.customer_name ? ('<br><small class="text-slate-400 font-normal text-[9px]">កត់ដោយ៖ ' + item.recorded_by + '</small>') : '');
+
           html += '<tr class="border-b hover:bg-gray-50">' +
             '<td class="p-2.5 text-gray-500 whitespace-nowrap text-[10px]">' + timeStr + '</td>' +
-            '<td class="p-2.5 font-bold text-gray-800">' + item.customer_name + '</td>' +
+            '<td class="p-2.5 font-bold text-gray-800">' + item.customer_name + withdrawTag + '</td>' +
             '<td class="p-2.5">' + item.product_name + '</td>' +
             '<td class="p-2.5 text-center font-bold text-blue-700">' + item.qty + '</td>' +
             '<td class="p-2.5 text-right font-bold text-orange-700 whitespace-nowrap">៛ ' + Number(item.total).toLocaleString() + '</td>' +
@@ -571,7 +577,12 @@ async function selectCustomerForSettlement(custName) {
     var html = '';
     currentSettlementItems.forEach(function(item) {
       var dateStr = new Date(item.created_at).toLocaleString('km-KH', { dateStyle: 'short', timeStyle: 'short' });
-      var recTag = item.recorded_by ? '<br><span class="text-[9px] text-amber-800 font-bold bg-amber-50 px-1 py-0.2 rounded border border-amber-200 inline-block mt-0.5"><i class="fas fa-truck mr-1"></i>ដកដោយ៖ ' + item.recorded_by + '</span>' : '';
+
+      // 🚚 បង្ហាញផ្លាកឈ្មោះកូនចៅឱ្យច្បាស់ បើជាការដកជំនួសមេ
+      var isWithdrawnByOther = (item.recorded_by && item.recorded_by !== item.customer_name && item.recorded_by !== 'Admin');
+      var recTag = isWithdrawnByOther ? 
+        ('<br><span class="text-[9.5px] text-amber-950 font-black bg-amber-100 border border-amber-300 px-1.5 py-0.5 rounded-md inline-flex items-center gap-1 mt-0.5"><i class="fas fa-truck text-[9px] text-amber-600"></i>ដកជំនួសដោយ៖ ' + item.recorded_by + '</span>') : 
+        (item.recorded_by && item.recorded_by === 'Admin' ? '<br><small class="text-slate-400 font-normal text-[9px]">កត់ត្រាដោយ Admin</small>' : '');
 
       html += '<tr class="border-b hover:bg-blue-50/40 transition">' +
         '<td class="p-2 text-center">' +
