@@ -107,14 +107,14 @@ function renderSidebarMenu() {
   if (!sNav) return;
   var html = '';
 
-  var isAdminOrSeller = (currentUser && (currentUser.role === 'Admin' || currentUser.role === 'Seller'));
+ var isAdmin = (currentUser && currentUser.role === 'Admin');
   var isReseller = (currentUser.role === 'Customer' || currentUser.type === 'Regular' || currentUser.type === 'Monthly');
   var isCompanyDriver = (currentUser.type === 'CompanyDriver');
   var isDriver = (currentUser.role === 'Driver');
 
   var navOrderBtn = document.getElementById('navOnlineOrdersBtn');
   if (navOrderBtn) {
-    if (isAdminOrSeller) {
+    if (isAdmin) {
       navOrderBtn.classList.remove('hidden');
       navOrderBtn.style.setProperty('display', 'inline-flex', 'important');
     } else {
