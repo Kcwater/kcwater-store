@@ -964,6 +964,10 @@ async function quickCheckoutSingleItem() {
   }
   calcPOSChange();
 
+  // 🚀 ទូទាត់ កាត់ស្តុក និងចេញវិក្កយបត្រភ្លាមៗតែម្តង!
+  await confirmSale();
+}
+
 function getCartCalculations() {
   var rawTotal = cart.reduce((sum, i) => sum + (i.qty * i.price), 0);
   var discountK = 0;
