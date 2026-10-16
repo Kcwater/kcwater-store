@@ -453,7 +453,7 @@ async function completeOnlineOrder(orderId, custName, total, itemsText, driverNa
   }
 }
 
-// 🖼️ មុខងារបើកមើលរូបថតមុខផ្ទះរបស់ភ្ញៀវ (កូដថ្មីដែលទើបតែ Paste)
+// 🖼️ មុខងារបើកមើលរូបថតមុខផ្ទះរបស់ភ្ញៀវ (សម្រាប់ Admin & អ្នកដឹក)
 function viewOrderHousePhoto(photoUrl, custName) {
   if (!photoUrl) {
     showToast("ការកុម្ម៉ង់នេះមិនមានភ្ជាប់រូបថតមុខផ្ទះឡើយ!", "info");
@@ -475,7 +475,7 @@ function viewOrderHousePhoto(photoUrl, custName) {
       '<div class="rounded-2xl overflow-hidden border border-slate-200 bg-slate-50 flex items-center justify-center max-h-[58vh]">' +
         '<img src="' + photoUrl + '" class="w-full h-auto object-contain max-h-[58vh] rounded-xl shadow-xs" alt="House Photo">' +
       '</div>' +
-      <button type="button" onclick="document.getElementById(\'orderHousePhotoModal\').remove()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl transition">បិទផ្ទាំងរូបភាព</button>' +
+      '<button type="button" onclick="document.getElementById(\'orderHousePhotoModal\').remove()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl transition">បិទផ្ទាំងរូបភាព</button>' +
     '</div>' +
   '</div>';
   document.body.insertAdjacentHTML('beforeend', html);
@@ -496,7 +496,6 @@ function openOrderMap(mapUrl) {
     window.open("https://www.google.com/maps/search/?api=1&query=" + searchAddress, '_blank');
   }
 }
-
 // 🔄 ចាប់ផ្តើមដំណើរការស្កេន Realtime ពេលបើកទំព័រ
 window.addEventListener('load', function() {
   var navBtn = document.getElementById('navOnlineOrdersBtn');
