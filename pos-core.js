@@ -852,7 +852,7 @@ function setModalExactPrice(p) {
   }
 }
 
-// 🛍️ ៤. បើកផ្ទាំង Modal រើសទំនិញ (កំណត់ប្រអប់តម្លៃឱ្យទទេ & អាចកែតម្លៃបានគ្រប់គណនី)
+// 🛍️ ៤. បើកផ្ទាំង Modal រើសទំនិញ
 function openProductModal(id) {
   var p = allProducts.find(item => item.id === id);
   if (!p) return;
@@ -873,17 +873,16 @@ function openProductModal(id) {
   // កំណត់រូបិយប័ណ្ណតាមទំនិញ (លំនាំដើម KHR)
   setModalCurrency(p.currency || 'KHR');
 
- var priceInp = document.getElementById('modalPriceInput');
+  var priceInp = document.getElementById('modalPriceInput');
   var quickPayBtn = document.getElementById('btnModalQuickPay');
   var addToCartBtn = document.getElementById('btnModalAddToCart');
   var khrQuickRow = document.getElementById('modalKhrQuickButtonsRow');
   var khrHintText = document.getElementById('modalKhrHintText');
 
-  // 👑🔒 ឆែកសិទ្ធិ៖ មានតែ Admin និង Seller (អ្នកលក់នៅកន្លែង) ប៉ុណ្ណោះ ទើបកែតម្លៃ និងឃើញប៊ូតុងទូទាត់រហ័ស
+  // 👑🔒 ឆែកសិទ្ធិ៖ មានតែ Admin និង Seller ប៉ុណ្ណោះទើបកែតម្លៃ និងឃើញប៊ូតុងទូទាត់រហ័ស
   var canEditPriceAndQuickPay = (currentUser && (currentUser.role === 'Admin' || currentUser.role === 'Seller' || currentUser.role === 'Cashier'));
 
   if (canEditPriceAndQuickPay) {
-    // ១. សម្រាប់ Admin និង Seller៖ កែតម្លៃបាន & ឃើញប៊ូតុងទូទាត់រហ័ស
     priceInp.readOnly = false;
     priceInp.value = "";
     priceInp.placeholder = unitPrice > 0 ? unitPrice : "0";
@@ -892,18 +891,15 @@ function openProductModal(id) {
     if (quickPayBtn) quickPayBtn.classList.remove('hidden');
     if (addToCartBtn) addToCartBtn.className = "py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-2xl text-xs shadow-md flex items-center justify-center gap-1.5 active:scale-95 transition";
   } else {
-    // 🚚 ២. សម្រាប់ម៉ូយ និងអ្នកដឹក (Reseller/Driver)៖ ចាក់សោរតម្លៃថេរ & លាក់ប៊ូតុងទូទាត់រហ័ស (ដំណើរការតាមលំហូរចាស់)
     priceInp.readOnly = true;
-    priceInp.value = unitPrice; // បង្ហាញតម្លៃព្រមព្រៀងជាក់ស្តែង
+    priceInp.value = unitPrice;
     priceInp.placeholder = unitPrice;
     priceInp.className = "w-full text-center text-xl font-black bg-slate-100 py-2.5 rounded-xl border border-slate-300 text-slate-700 outline-none select-none pointer-events-none pr-8";
 
-    // លាក់ប៊ូតុងទូទាត់រហ័ស និងជួរប៊ូតុងថែម 00
     if (quickPayBtn) quickPayBtn.classList.add('hidden');
     if (khrQuickRow) khrQuickRow.classList.add('hidden');
     if (khrHintText) khrHintText.classList.add('hidden');
 
-    // ឱ្យប៊ូតុង «បញ្ចូលកន្ត្រក» រីកធំពេញជួរតែម្តង
     if (addToCartBtn) addToCartBtn.className = "col-span-2 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-2xl text-xs shadow-md flex items-center justify-center gap-1.5 active:scale-95 transition";
   }
 
@@ -914,8 +910,9 @@ function openProductModal(id) {
   if (canEditPriceAndQuickPay) {
     setTimeout(function() { priceInp.focus(); }, 150);
   }
+}
 
-// ❌ មុខងារបិទផ្ទាំង Modal រើសទំនិញ (នៅចន្លោះកណ្តាលនេះ)
+// ❌ មុខងារបិទផ្ទាំង Modal រើសទំនិញ
 function closeProductModal() {
   var modal = document.getElementById('productSelectModal');
   if (modal) modal.classList.add('hidden');
@@ -945,12 +942,7 @@ function updateModalSubtotal() {
     subEl.innerText = '៛ ' + Math.round(sub).toLocaleString() + ' KHR';
   }
 }
-// ❌ មុខងារបិទផ្ទាំង Modal រើសទំនិញ (នៅចន្លោះកណ្តាលនេះ)
-function closeProductModal() {
-  var modal = document.getElementById('productSelectModal');
-  if (modal) modal.classList.add('hidden');
-  selectedModalProduct = null;
-}
+
 // 🛒 ៥. បញ្ចូលកន្ត្រកធម្មតា
 function confirmAddToCart() {
   if (!selectedModalProduct) return;
@@ -974,20 +966,18 @@ function confirmAddToCart() {
     }
   }
 
-var prodName = selectedModalProduct.name;
+  var prodName = selectedModalProduct.name;
   var prodId = selectedModalProduct.id;
   var curr = currentModalCurrency || "KHR";
 
-  // 🔍 ឆែកមើលថាតើទំនិញនេះ (និងតម្លៃ + រូបិយប័ណ្ណដូចគ្នា) មានក្នុងកន្ត្រករួចហើយឬនៅ
+  // 🔍 បូកបញ្ចូលចំនួនបើឈ្មោះទំនិញដូចគ្នា
   var existingItem = cart.find(function(item) {
     return item.id === prodId && item.price === pr && item.currency === curr;
   });
 
   if (existingItem) {
-    // ✅ បើមានឈ្មោះ និងតម្លៃដូចគ្នាហើយ ឱ្យបូកចំនួនបន្ថែមចូលគ្នា (១ + ២ = ៣)
     existingItem.qty += q;
   } else {
-    // បើជាទំនិញថ្មី ឬតម្លៃផ្សេង ទើបបង្កើតជួរថ្មី
     cart.push({
       id: prodId,
       name: prodName,
@@ -1002,25 +992,17 @@ var prodName = selectedModalProduct.name;
   showToast("បានបញ្ចូល [" + prodName + "] x " + q + " ក្នុងកន្ត្រក!", "success");
 }
 
-// ❌ មុខងារបិទផ្ទាំង Modal រើសទំនិញ (នៅចន្លោះកណ្តាលនេះ)
-function closeProductModal() {
-  var modal = document.getElementById('productSelectModal');
-  if (modal) modal.classList.add('hidden');
-  selectedModalProduct = null;
-}
 // ==========================================
 // ⚡ ៦. មុខងារទូទាត់រហ័ស (QUICK CHECKOUT) សម្រាប់លក់ ១ មុខភ្លាមៗ
 // ==========================================
 async function quickCheckoutSingleItem() {
-  // 🔒 ការពារសិទ្ធិ៖ ក្រៅពី Admin និង Seller មិនអនុញ្ញាតឱ្យទូទាត់រហ័សឡើយ
+  // 🔒 ឆែកសិទ្ធិ៖ ក្រៅពី Admin និង Seller មិនអនុញ្ញាតឱ្យទូទាត់រហ័សឡើយ
   var canQuickPay = (currentUser && (currentUser.role === 'Admin' || currentUser.role === 'Seller' || currentUser.role === 'Cashier'));
   if (!canQuickPay) {
     showToast("អ្នកមិនមានសិទ្ធិប្រើប្រាស់មុខងារទូទាត់រហ័សនេះឡើយ!", "error");
     return;
   }
 
-  if (!selectedModalProduct) return;
-  // ... កូដខាងក្រោមនៅដដែល
   if (!selectedModalProduct) return;
   var q = parseInt(document.getElementById('modalQtyInput') ? document.getElementById('modalQtyInput').value : 1) || 1;
   var pr = getModalParsedPrice();
@@ -1039,7 +1021,6 @@ async function quickCheckoutSingleItem() {
     }
   }
 
-  // ដាក់ទំនិញចូលក្នុងកន្ត្រកតែ ១ មុខនេះ
   cart = [{
     id: selectedModalProduct.id,
     name: selectedModalProduct.name,
@@ -1052,17 +1033,14 @@ async function quickCheckoutSingleItem() {
   closeProductModal();
   rC();
 
-  // បំពេញប្រាក់ស្មើនឹងតម្លៃទំនិញដោយស្វ័យប្រវត្តិ (លុយគ្រប់)
   var calc = getCartCalculations();
   if (document.getElementById('pK')) {
     document.getElementById('pK').value = calc.finalTotal > 0 ? calc.finalTotal : "";
   }
   calcPOSChange();
 
-  // 🚀 ទូទាត់ កាត់ស្តុក និងចេញវិក្កយបត្រភ្លាមៗតែម្តង!
   await confirmSale();
 }
-
 function getCartCalculations() {
   var rawTotal = cart.reduce((sum, i) => sum + (i.qty * i.price), 0);
   var discountK = 0;
