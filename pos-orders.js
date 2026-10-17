@@ -134,7 +134,7 @@ function injectOnlineOrdersAdminModal() {
   document.body.insertAdjacentHTML('beforeend', html);
 }
 
-// 📦 មុខងារបើកផ្ទាំងពិនិត្យការកុម្ម៉ង់ Online (ធានាមានឈ្មោះអ្នកដឹកជានិច្ច & បង្ហាញព័ត៌មានលម្អិត)
+// 📦 មុខងារបើកផ្ទាំងពិនិត្យការកុម្ម៉ង់ Online (មាន Telegram ១-ចុច, របារស្ថិតិ & គ្រប់គ្រងអ្នកដឹក)
 async function openOnlineOrdersModal() {
   injectOnlineOrdersAdminModal();
   var modal = document.getElementById('onlineOrdersAdminModal');
@@ -143,7 +143,7 @@ async function openOnlineOrdersModal() {
   if (container) container.innerHTML = '<div class="text-center py-8 text-gray-400 italic text-xs"><i class="fas fa-spinner fa-spin mr-1.5 text-amber-600"></i> កំពុងទាញយកបញ្ជីកុម្ម៉ង់...</div>';
 
   try {
-    // ១. ការពារបញ្ហា Dropdown ទទេ៖ បើមិនទាន់មានទិន្នន័យអ្នកដឹក ឱ្យទាញពី Supabase ភ្លាម
+    // ១. ធានាថាមានទិន្នន័យអ្នកដឹកជញ្ជូនក្នុង Dropdown
     if (!allCustomers || allCustomers.length === 0) {
       const { data: custs } = await supabaseClient
         .from('users')
@@ -163,14 +163,40 @@ async function openOnlineOrdersModal() {
 
     if (!list || list.length === 0) {
       container.innerHTML = '<div class="p-8 text-center space-y-2">' +
-        '<div class="w-12 h-12 mx-auto rounded-full bg-green-100 text-green-700 flex items-center justify-center text-xl"><i class="fas fa-check"></i></div>' +
+        '<div class="w-12 h-12 mx-auto rounded-full bg-green-100 text-green-700 flex items-center justify-center text-xl shadow-inner"><i class="fas fa-check"></i></div>' +
         '<b class="text-gray-700 text-xs sm:text-sm block">បច្ចុប្បន្នគ្មានការកុម្ម៉ង់ទឹកដែលរង់ចាំដឹកជញ្ជូនឡើយ!</b>' +
         '<p class="text-[10px] text-gray-400">រាល់ពេលភ្ញៀវកុម្ម៉ង់លើ Website វានឹងលោតមកទីនេះភ្លាមៗ</p>' +
       '</div>';
       return;
     }
 
-    // ៣. ស្រង់ឈ្មោះអ្នកដឹកជញ្ជូនរោងចក្រ (Company Drivers)
+    // ៣. គណនាស្ថិតិសង្ខេបខាងលើ (Pending, Assigned, សរុបទឹកប្រាក់)
+    var pendingCount = 0;
+    var assignedCount = 0;
+    var totalAmountToCollect = 0;
+
+    list.forEach(function(o) {
+      if (o.status === 'Pending') pendingCount++;
+      if (o.status === 'Assigned') assignedCount++;
+      totalAmountToCollect += parseFloat(o.total || 0);
+    });
+
+    var statsSummaryBar = '<div class="grid grid-cols-3 gap-2 p-2.5 bg-amber-50 rounded-2xl border border-amber-200 text-center text-xs mb-3 shadow-2xs">' +
+      '<div class="bg-white p-2 rounded-xl border border-amber-200">' +
+        '<span class="text-[10px] text-amber-800 font-bold block">⏳ រង់ចាំ</span>' +
+        '<b class="text-sm font-black text-amber-900">' + pendingCount + '</b>' +
+      '</div>' +
+      '<div class="bg-white p-2 rounded-xl border border-blue-200">' +
+        '<span class="text-[10px] text-blue-700 font-bold block">🚚 កំពុងដឹក</span>' +
+        '<b class="text-sm font-black text-blue-900">' + assignedCount + '</b>' +
+      '</div>' +
+      '<div class="bg-white p-2 rounded-xl border border-emerald-200">' +
+        '<span class="text-[10px] text-emerald-700 font-bold block">💰 សរុបលុយ</span>' +
+        '<b class="text-xs sm:text-sm font-black text-emerald-800">៛ ' + Number(totalAmountToCollect).toLocaleString() + '</b>' +
+      '</div>' +
+    '</div>';
+
+    // ៤. ស្រង់ឈ្មោះអ្នកដឹកជញ្ជូនរោងចក្រ (Company Drivers)
     var driverOptions = '<option value="">-- រើសអ្នកដឹករបស់រោងចក្រ --</option>';
     allCustomers.forEach(function(c) {
       if (c.role === 'Driver' || c.type === 'CompanyDriver' || c.linked_boss === 'KC WATER') {
@@ -179,7 +205,7 @@ async function openOnlineOrdersModal() {
       }
     });
 
-    var html = '';
+    var html = statsSummaryBar;
     list.forEach(function(o) {
       var isPending = (o.status === 'Pending');
       var statusBadge = isPending ? 
@@ -189,6 +215,11 @@ async function openOnlineOrdersModal() {
       var cleanPhone = String(o.phone || '').replace(/[^0-9]/g, '');
       var safeName = String(o.customer_name || '').replace(/'/g, "\\'");
       var dateStr = new Date(o.created_at).toLocaleString('km-KH', { dateStyle: 'short', timeStyle: 'short' });
+
+      // បង្កើត Link ឆាត Telegram និង WhatsApp ទៅភ្ញៀវ (+855)
+      var intlPhone = cleanPhone.startsWith('0') ? ('855' + cleanPhone.substring(1)) : ('855' + cleanPhone);
+      var tgChatLink = "https://t.me/+" + intlPhone;
+      var waChatLink = "https://wa.me/" + intlPhone; // WhatsApp Link
 
       html += '<div class="bg-white p-3.5 rounded-2xl border border-amber-200 shadow-sm space-y-2.5 hover:shadow-md transition">' +
         '<div class="flex justify-between items-start border-b border-gray-100 pb-2">' +
@@ -234,29 +265,39 @@ async function openOnlineOrdersModal() {
           '</div>' +
         '</div>' +
 
-        // ជួរប៊ូតុងសកម្មភាព (ខល, ផែនទី, បោះបង់, ដឹកដល់)
-        '<div class="flex flex-wrap items-center justify-end gap-2 pt-0.5">' +
+        // ជួរប៊ូតុងសកម្មភាព (ខល, Telegram, WhatsApp, ផែនទី, រូបផ្ទះ, បោះបង់, ដឹកដល់)
+        '<div class="flex flex-wrap items-center justify-end gap-1.5 pt-0.5 text-xs">' +
           (cleanPhone ? 
-          '<a href="tel:' + cleanPhone + '" class="px-3 py-1.5 bg-green-50 hover:bg-green-100 text-green-800 rounded-xl text-xs font-bold border border-green-200 shadow-2xs flex items-center gap-1 active:scale-95 transition" style="text-decoration:none;">' +
-            '<i class="fas fa-phone text-xs text-green-600"></i> ខល ' + o.phone +
+          '<a href="tel:' + cleanPhone + '" class="px-2.5 py-1.5 bg-green-50 hover:bg-green-100 text-green-800 rounded-xl font-bold border border-green-200 shadow-2xs flex items-center gap-1 active:scale-95 transition" style="text-decoration:none;">' +
+            '<i class="fas fa-phone text-xs text-green-600"></i> ខល' +
           '</a>' : '') +
 
-         (o.location_url || o.address ? 
-          '<button type="button" onclick="openOrderMap(\'' + (o.location_url || o.address).replace(/'/g, "\\'") + '\')" class="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-xl text-xs font-bold border border-blue-200 shadow-2xs flex items-center gap-1 active:scale-95 transition">' +
-            '<i class="fas fa-map-location-dot text-xs text-blue-600"></i> បើកផែនទី' +
+          (cleanPhone ? 
+          '<a href="' + tgChatLink + '" target="_blank" class="px-2.5 py-1.5 bg-sky-50 hover:bg-sky-100 text-sky-900 rounded-xl font-bold border border-sky-300 shadow-2xs flex items-center gap-1 active:scale-95 transition" style="text-decoration:none;">' +
+            '<i class="fab fa-telegram text-xs text-sky-600"></i> Telegram' +
+          '</a>' : '') +
+          
+          (cleanPhone ? 
+          '<a href="' + waChatLink + '" target="_blank" class="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 rounded-xl font-bold border border-emerald-300 shadow-2xs flex items-center gap-1 active:scale-95 transition" style="text-decoration:none;">' +
+            '<i class="fab fa-whatsapp text-xs text-emerald-600"></i> WhatsApp' +
+          '</a>' : '') +
+
+          (o.location_url || o.address ? 
+          '<button type="button" onclick="openOrderMap(\'' + (o.location_url || o.address).replace(/'/g, "\\'") + '\')" class="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-xl font-bold border border-blue-200 shadow-2xs flex items-center gap-1 active:scale-95 transition">' +
+            '<i class="fas fa-map-location-dot text-xs text-blue-600"></i> ផែនទី' +
           '</button>' : '') +
 
           (o.photo_url ? 
-          '<button type="button" onclick="viewOrderHousePhoto(\'' + o.photo_url + '\', \'' + safeName + '\')" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-xl text-xs font-bold border border-amber-300 shadow-2xs flex items-center gap-1 active:scale-95 transition">' +
+          '<button type="button" onclick="viewOrderHousePhoto(\'' + o.photo_url + '\', \'' + safeName + '\')" class="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-xl font-bold border border-amber-300 shadow-2xs flex items-center gap-1 active:scale-95 transition">' +
             '<i class="fas fa-camera text-xs text-amber-600"></i> រូបផ្ទះ' +
           '</button>' : '') +
 
-          '<button type="button" onclick="cancelOnlineOrder(\'' + o.order_id + '\', \'' + safeName + '\')" class="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 rounded-xl text-xs font-bold border border-red-200 shadow-2xs flex items-center gap-1 active:scale-95 transition">' +
+          '<button type="button" onclick="cancelOnlineOrder(\'' + o.order_id + '\', \'' + safeName + '\')" class="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 rounded-xl font-bold border border-red-200 shadow-2xs flex items-center gap-1 active:scale-95 transition">' +
             '<i class="fas fa-trash-can text-xs text-red-500"></i> បោះបង់' +
           '</button>' +
 
-          '<button type="button" onclick="completeOnlineOrder(\'' + o.order_id + '\', \'' + safeName + '\', ' + (o.total || 0) + ', \'' + (o.items || '').replace(/'/g, "\\'") + '\', \'' + (o.driver_name || '').replace(/'/g, "\\'") + '\', \'' + (o.payment_method || 'COD').replace(/'/g, "\\'") + '\')" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-xs flex items-center gap-1 active:scale-95 transition">' +
-            '<i class="fas fa-check text-xs"></i> ដឹកជញ្ជូនរួចរាល់' +
+          '<button type="button" onclick="completeOnlineOrder(\'' + o.order_id + '\', \'' + safeName + '\', ' + (o.total || 0) + ', \'' + (o.items || '').replace(/'/g, "\\'") + '\', \'' + (o.driver_name || '').replace(/'/g, "\\'") + '\', \'' + (o.payment_method || 'COD').replace(/'/g, "\\'") + '\')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black shadow-xs flex items-center gap-1 active:scale-95 transition">' +
+            '<i class="fas fa-check text-xs"></i> ដឹកដល់' +
           '</button>' +
         '</div>' +
       '</div>';
@@ -773,9 +814,10 @@ async function renderCompanyDeliveriesModule() {
       var mapTarget = task.location_url || task.address || '';
       var timeStr = new Date(task.created_at).toLocaleString('km-KH', { dateStyle: 'short', timeStyle: 'short' });
 
-      // បង្កើតតំណភ្ជាប់ Telegram ទៅកាន់លេខទូរស័ព្ទភ្ញៀវ (+855)
+      // បង្កើតតំណភ្ជាប់ Telegram និង WhatsApp ទៅកាន់លេខទូរស័ព្ទភ្ញៀវ (+855)
       var intlPhone = cleanPhone.startsWith('0') ? ('855' + cleanPhone.substring(1)) : ('855' + cleanPhone);
       var tgChatLink = "https://t.me/+" + intlPhone;
+      var waChatLink = "https://wa.me/" + intlPhone; // WhatsApp Link
 
       html += '<div class="bg-white p-4 rounded-3xl border-2 border-emerald-400 shadow-md space-y-3 animate-in zoom-in duration-200">' +
         // ក្បាលកាត
@@ -806,11 +848,11 @@ async function renderCompanyDeliveriesModule() {
           (task.address ? 
           '<div class="flex items-start gap-1.5 pt-0.5">' +
             '<span class="text-slate-400 font-bold whitespace-nowrap">📍 ទីតាំង & ចំណាំ៖</span>' +
-            '<span class="text-slate-800 font-bold text-[11px] leading-snug">' + task.address + '</span>' +
+            '<span class="text-slate-700 font-bold text-[11px] line-clamp-2">' + task.address + '</span>' +
           '</div>' : '') +
         '</div>' +
 
-        // ជួរប៊ូតុងជំនួយរហ័ស (ខល, Telegram, ផែនទី, រូបផ្ទះ, ABA QR)
+        // ជួរប៊ូតុងជំនួយរហ័ស (ខល, Telegram, WhatsApp, ផែនទី, រូបផ្ទះ, ABA QR)
         '<div class="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1 text-xs">' +
           (cleanPhone ? 
           '<a href="tel:' + cleanPhone + '" class="py-2 px-2.5 bg-blue-50 hover:bg-blue-100 text-blue-900 rounded-xl font-bold border border-blue-200 shadow-2xs flex items-center justify-center gap-1 active:scale-95 transition" style="text-decoration:none;">' +
@@ -819,12 +861,17 @@ async function renderCompanyDeliveriesModule() {
 
           (cleanPhone ? 
           '<a href="' + tgChatLink + '" target="_blank" class="py-2 px-2.5 bg-sky-50 hover:bg-sky-100 text-sky-900 rounded-xl font-bold border border-sky-300 shadow-2xs flex items-center justify-center gap-1 active:scale-95 transition" style="text-decoration:none;">' +
-            '<i class="fab fa-telegram text-sky-600 text-sm"></i> Telegram' +
+            '<i class="fab fa-telegram text-sky-600"></i> Telegram' +
+          '</a>' : '') +
+          
+          (cleanPhone ? 
+          '<a href="' + waChatLink + '" target="_blank" class="py-2 px-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 rounded-xl font-bold border border-emerald-300 shadow-2xs flex items-center justify-center gap-1 active:scale-95 transition" style="text-decoration:none;">' +
+            '<i class="fab fa-whatsapp text-emerald-600"></i> WhatsApp' +
           '</a>' : '') +
 
           (mapTarget ? 
-          '<button type="button" onclick="openOrderMap(\'' + mapTarget.replace(/'/g, "\\'") + '\')" class="py-2 px-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 rounded-xl font-bold border border-emerald-200 shadow-2xs flex items-center justify-center gap-1 active:scale-95 transition">' +
-            '<i class="fas fa-map-location-dot text-emerald-600"></i> ផែនទី' +
+          '<button type="button" onclick="openOrderMap(\'' + mapTarget.replace(/'/g, "\\'") + '\')" class="py-2 px-2.5 bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-xl font-bold border border-blue-200 shadow-2xs flex items-center justify-center gap-1 active:scale-95 transition">' +
+            '<i class="fas fa-map-location-dot text-blue-600"></i> ផែនទី' +
           '</button>' : '') +
 
           (task.photo_url ? 
