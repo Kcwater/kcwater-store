@@ -107,7 +107,7 @@ function renderSidebarMenu() {
   if (!sNav) return;
   var html = '';
 
- var isAdmin = (currentUser && currentUser.role === 'Admin');
+  var isAdmin = (currentUser && currentUser.role === 'Admin');
   var isReseller = (currentUser.role === 'Customer' || currentUser.type === 'Regular' || currentUser.type === 'Monthly');
   var isCompanyDriver = (currentUser.type === 'CompanyDriver');
   var isDriver = (currentUser.role === 'Driver');
@@ -129,7 +129,6 @@ function renderSidebarMenu() {
     html += '<div class="text-[10px] font-bold text-green-300 uppercase px-3 pt-3 pb-1 opacity-80 tracking-wider">ការលក់ & ទូទាត់</div>';
     html += '<button onclick="loadModule(\'POS\')" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold"><i class="fas fa-shopping-cart mr-3 w-5 text-center"></i>ផ្ទាំងលក់ (POS)</button>';
     html += '<button onclick="loadModule(\'Settlement\')" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold"><i class="fas fa-calculator mr-3 w-5 text-center"></i>ទូទាត់លុយ</button>';
-    // 🌐 ដាក់ម៉ឺនុយ Online ត្រង់នេះ (ក្រោមទូទាត់លុយ)
     html += '<button onclick="loadModule(\'OnlineHub\')" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold text-amber-300"><i class="fas fa-globe mr-3 w-5 text-center"></i>គ្រប់គ្រង Online & ប្រវត្តិ</button>';
     html += '<div class="text-[10px] font-bold text-green-300 uppercase px-3 pt-3 pb-1 opacity-80 tracking-wider">ឃ្លាំង & ស្តុក</div>';
     html += '<button onclick="loadModule(\'Stock\')" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold"><i class="fas fa-box mr-3 w-5 text-center"></i>គ្រប់គ្រងស្តុក</button>';
@@ -142,8 +141,7 @@ function renderSidebarMenu() {
     html += '<button onclick="loadModule(\'Reports\')" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold"><i class="fas fa-chart-line mr-3 w-5 text-center"></i>របាយការណ៍ជំពាក់</button>';
     html += '<div class="text-[10px] font-bold text-green-300 uppercase px-3 pt-3 pb-1 opacity-80 tracking-wider">ការកំណត់ប្រព័ន្ធ</div>';
     html += '<button onclick="loadModule(\'Settings\')" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold text-yellow-300"><i class="fas fa-cog mr-3 w-5 text-center"></i>ការកំណត់ (Settings)</button>';
-    html += '<button onclick="loadModule(\'Settlement\')" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold"><i class="fas fa-calculator mr-3 w-5 text-center"></i>ទូទាត់លុយ</button>';
-    ​
+
   // ២. សម្រាប់ RESELLER / CUSTOMER
   } else if (isReseller) {
     html += '<div class="text-[10px] font-bold text-green-300 uppercase px-3 pt-2 pb-1 opacity-80 tracking-wider">គណនីម៉ូយប្រចាំ</div>';
@@ -176,7 +174,7 @@ function loadModule(name) {
   closeSidebar();
   
   var isRestricted = (currentUser.role !== 'Admin' && currentUser.role !== 'Seller');
-  if (isRestricted && (name === 'Dashboard' || name === 'Settlement' || name === 'Stock' || name === 'StockRep' || name === 'Expenses' || name === 'Customers' || name === 'MonthlyRep' || name === 'Reports' || name === 'Settings' || name === 'OnlineHub')) {
+  if (isRestricted && (name === 'Dashboard' || name === 'Settlement' || name === 'OnlineHub' || name === 'Stock' || name === 'StockRep' || name === 'Expenses' || name === 'Customers' || name === 'MonthlyRep' || name === 'Reports' || name === 'Settings')) {
     showToast("អ្នកមិនមានសិទ្ធិចូលផ្ទាំងនេះឡើយ!", "error");
     if (currentUser.role === 'Customer' || currentUser.type === 'Regular' || currentUser.type === 'Monthly') {
       loadModule('CustPortal');
@@ -189,7 +187,7 @@ function loadModule(name) {
   if (name === 'Dashboard') renderDashboardModule();
   else if (name === 'POS') renderPOSModule();
   else if (name === 'Settlement' && typeof renderSettlementModule === 'function') renderSettlementModule();
-  else if (name === 'OnlineHub' && typeof renderOnlineHubModule === 'function') renderOnlineHubModule(); // 🌐 ផ្ទាំងគ្រប់គ្រង Online ថ្មី
+  else if (name === 'OnlineHub' && typeof renderOnlineHubModule === 'function') renderOnlineHubModule();
   else if (name === 'Stock' && typeof renderStockModule === 'function') renderStockModule();
   else if (name === 'StockRep' && typeof renderStockRepModule === 'function') renderStockRepModule();
   else if (name === 'BottleLoan' && typeof renderBottleLoanModule === 'function') renderBottleLoanModule();
@@ -202,8 +200,7 @@ function loadModule(name) {
   else if (name === 'CustHistory' && typeof renderCustomerHistoryModule === 'function') renderCustomerHistoryModule();
   else if (name === 'CustBottles' && typeof renderCustomerBottlesModule === 'function') renderCustomerBottlesModule();
   else if (name === 'CompanyDeliveries' && typeof renderCompanyDeliveriesModule === 'function') renderCompanyDeliveriesModule();
-}
-// ==========================================
+}// ==========================================
 // 📊 ២. ផ្ទាំង DASHBOARD & QUICK RESTOCK MODAL
 // ==========================================
 async function renderDashboardModule() {
