@@ -235,6 +235,9 @@ async function renderDashboardModule() {
   await loadDashboardData();
 }
 
+// ==========================================
+// 📊 ទាញទិន្នន័យ DASHBOARD & មុខងារបោះបង់ការលក់ (VOID SALE)
+// ==========================================
 async function loadDashboardData() {
   try {
     var now = new Date();
@@ -395,14 +398,19 @@ async function loadDashboardData() {
       tbodyRecent.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-gray-400 italic">មិនទាន់មានប្រតិបត្តិការដកទំនិញថ្ងៃនេះនៅឡើយ</td></tr>';
     } else {
       var rHtml = '';
+      var isAdmin = (currentUser && currentUser.role === 'Admin');
+
       todayRecentSales.forEach(function(r) {
         var timeStr = new Date(r.created_at).toLocaleTimeString('km-KH', { hour: '2-digit', minute: '2-digit' });
 
-        // 🚚 ឆែកមើលថាតើមានកូនចៅ ឬអ្នកដឹកមកដកជំនួសមេដែរឬទេ
         var isWithdrawnByOther = (r.recorded_by && r.recorded_by !== r.customer_name && r.recorded_by !== 'Admin');
         var withdrawTag = isWithdrawnByOther ? 
           ('<br><span class="text-[9.5px] text-amber-950 font-black bg-amber-100 border border-amber-300 px-1.5 py-0.5 rounded-md inline-flex items-center gap-1 mt-0.5"><i class="fas fa-truck text-[9px] text-amber-600"></i>ដកជំនួសដោយ៖ ' + r.recorded_by + '</span>') : 
           (r.recorded_by && r.recorded_by !== 'Admin' && r.recorded_by !== r.customer_name ? ('<br><small class="text-slate-400 font-normal text-[9px]">កត់ដោយ៖ ' + r.recorded_by + '</small>') : '');
+
+        // 🗑️ ប៊ូតុងបោះបង់ការលក់ (បង្ហាញសម្រាប់តែ Admin ប៉ុណ្ណោះ)
+        var voidBtnHtml = isAdmin ? 
+          ('<button type="button" onclick="voidTransaction(' + r.id + ', \'' + (r.transaction_id || '') + '\', \'' + (r.product_name || '').replace(/'/g, "\\'") + '\', ' + (r.qty || 1) + ', ' + (r.total || 0) + ')" class="ml-1.5 text-slate-300 hover:text-red-600 active:scale-90 transition p-1" title="បោះបង់ការកត់ត្រានេះ"><i class="fas fa-trash-can text-xs"></i></button>') : '';
 
         rHtml += '<tr class="border-b hover:bg-gray-50">' +
           '<td class="p-2.5 text-gray-500 whitespace-nowrap text-[10px]">' + timeStr + '</td>' +
@@ -410,7 +418,10 @@ async function loadDashboardData() {
           '<td class="p-2.5">' + r.product_name + '</td>' +
           '<td class="p-2.5 text-center font-bold text-blue-700">' + r.qty + '</td>' +
           '<td class="p-2.5 text-right font-black text-green-700 whitespace-nowrap">៛ ' + Number(r.total).toLocaleString() + '</td>' +
-          '<td class="p-2.5 text-center"><span class="px-2 py-0.5 rounded-full text-[9px] font-bold ' + (r.status === 'Paid' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800 border border-orange-200') + '">' + (r.status === 'Paid' ? 'បង់រួច' : 'ជំពាក់') + '</span></td>' +
+          '<td class="p-2.5 text-center whitespace-nowrap">' +
+            '<span class="px-2 py-0.5 rounded-full text-[9px] font-bold ' + (r.status === 'Paid' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800 border border-orange-200') + '">' + (r.status === 'Paid' ? 'បង់រួច' : 'ជំពាក់') + '</span>' +
+            voidBtnHtml +
+          '</td>' +
         '</tr>';
       });
       tbodyRecent.innerHTML = rHtml;
@@ -420,6 +431,57 @@ async function loadDashboardData() {
   }
 }
 
+// 🗑️ មុខងារបោះបង់ការលក់ & បង្វិលស្តុកសងចូលឃ្លាំងវិញដោយស្វ័យប្រវត្តិ (Void Sale)
+async function voidTransaction(rowId, tid, prodName, qty, total) {
+  if (!rowId) return;
+
+  var ok = await kcConfirm({
+    title: "បោះបង់ការលក់ (Void Sale)",
+    message: "តើអ្នកពិតជាចង់បោះបង់ប្រតិបត្តិការ [" + prodName + " x " + qty + "] ចំនួន ៛ " + Number(total).toLocaleString() + " នេះមែនទេ? ស្តុកទំនិញនឹងត្រូវបង្វិលសងចូលឃ្លាំងវិញដោយស្វ័យប្រវត្តិ។",
+    type: "danger",
+    confirmText: "យល់ព្រមបោះបង់"
+  });
+
+  if (!ok) return;
+
+  try {
+    // ១. បង្វិលស្តុកទំនិញសងចូលឃ្លាំងវិញ (បើជាទំនិញទិញគេ)
+    var prodObj = allProducts.find(p => p.name.trim().toLowerCase() === prodName.trim().toLowerCase());
+    if (prodObj && prodObj.type === 'ទិញគេ' && qty > 0) {
+      var restoredStock = parseFloat(prodObj.stock || 0) + parseFloat(qty);
+      await supabaseClient.from('products').update({ stock: restoredStock }).eq('id', prodObj.id);
+      prodObj.stock = restoredStock;
+    }
+
+    // ២. លុបកំណត់ត្រាចេញពីតារាង Transactions
+    const { error: delErr } = await supabaseClient
+      .from('transactions')
+      .delete()
+      .eq('id', rowId);
+
+    if (delErr) throw delErr;
+
+    showToast("បានបោះបង់ការលក់ និងបង្វិលស្តុកសងវិញជោគជ័យ!", "success");
+
+    // ៣. បាញ់សារ Telegram Alert ទៅកាន់ថៅកែ
+    try {
+      var tgMsg = "⚠️ <b>[KC WATER - បោះបង់ការលក់ (Void Sale)]</b>\n\n" +
+                  "🆔 <b>កូដប្រតិបត្តិការ៖</b> <code>" + (tid || rowId) + "</code>\n" +
+                  "📦 <b>ទំនិញ៖</b> " + prodName + " x " + qty + "\n" +
+                  "💰 <b>ទឹកប្រាក់៖</b> <b>-៛ " + Number(total).toLocaleString() + "</b>\n" +
+                  "✍️ <b>អ្នកលុប៖</b> " + (currentUser.fullName || "Admin") + "\n" +
+                  "🕒 <b>ម៉ោង៖</b> " + new Date().toLocaleTimeString('km-KH');
+      sendTelegramAlert(tgMsg);
+    } catch(tgE) {}
+
+    // ៤. ទាញទិន្នន័យ Dashboard ឡើងវិញភ្លាមៗ
+    await fetchInitialPOSData();
+    loadDashboardData();
+
+  } catch(err) {
+    showToast("កំហុសបោះបង់ការលក់៖ " + err.message, "error");
+  }
+}
 // 📦 មុខងារ QUICK RESTOCK MODAL លើ DASHBOARD
 function injectQuickRestockModal() {
   if (document.getElementById('quickRestockModal')) return;
