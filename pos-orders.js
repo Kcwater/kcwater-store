@@ -992,3 +992,391 @@ async function renderCompanyDeliveriesModule() {
     container.innerHTML = '<div class="p-4 text-center text-red-500 font-bold text-xs">កំហុស៖ ' + e.message + '</div>';
   }
 }
+
+// ==========================================
+// 🌐 ផ្ទាំងមជ្ឈមណ្ឌលលក់ ONLINE ពេញលេញ (ONLINE HUB - 3 IN 1)
+// ==========================================
+var activeOnlineHubTab = 'ORDERS'; // 'ORDERS', 'AUDIT', 'PRODUCTS'
+var onlineAuditSearchKeyword = '';
+
+function renderOnlineHubModule() {
+  var area = document.getElementById('contentArea');
+  if (!area) return;
+
+  area.innerHTML = '<div class="max-w-4xl mx-auto space-y-4">' +
+    // ១. ក្បាលផ្ទាំង & ប៊ូតុងបើកមើល Web ភ្ញៀវផ្ទាល់
+    '<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-4 rounded-3xl border shadow-sm gap-3">' +
+      '<div>' +
+        '<h2 class="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">' +
+          '<i class="fas fa-globe text-emerald-600"></i>' +
+          '<span>មជ្ឈមណ្ឌលគ្រប់គ្រង ONLINE (Online Hub)</span>' +
+        '</h2>' +
+        '<p class="text-xs text-slate-500 mt-0.5">តាមដានការកុម្ម៉ង់, ប្រវត្តិលក់, ដោះស្រាយវិវាទ និងទំនិញលើ Web</p>' +
+      '</div>' +
+      '<div class="flex items-center gap-2">' +
+        '<a href="https://kcwater-store.vercel.app" target="_blank" class="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-xl text-xs font-black border border-emerald-300 shadow-2xs flex items-center gap-1.5 active:scale-95 transition" style="text-decoration:none;">' +
+          '<i class="fas fa-arrow-up-right-from-square text-xs"></i> 🌐 បើកមើល Web ភ្ញៀវ' +
+        '</a>' +
+        '<button onclick="renderOnlineHubModule()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold shadow-2xs active:scale-95 transition flex items-center gap-1">' +
+          '<i class="fas fa-sync-alt"></i> Refresh' +
+        '</button>' +
+      '</div>' +
+    '</div>' +
+
+    // ២. របារប្តូរផ្ទាំង ៣ Tabs (Orders / Audit / Products)
+    '<div class="flex bg-white p-1.5 rounded-2xl border shadow-xs gap-1.5 text-xs font-bold">' +
+      '<button id="hubTabBtn_ORDERS" onclick="switchOnlineHubTab(\'ORDERS\')" class="flex-1 py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 bg-emerald-700 text-white shadow">' +
+        '<i class="fas fa-truck-fast"></i> ១. បញ្ជីកុម្ម៉ង់បច្ចុប្បន្ន' +
+      '</button>' +
+      '<button id="hubTabBtn_AUDIT" onclick="switchOnlineHubTab(\'AUDIT\')" class="flex-1 py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 bg-slate-100 text-slate-600 hover:bg-slate-200">' +
+        '<i class="fas fa-receipt"></i> ២. ប្រវត្តិលក់ & ដោះស្រាយវិវាទ' +
+      '</button>' +
+      '<button id="hubTabBtn_PRODUCTS" onclick="switchOnlineHubTab(\'PRODUCTS\')" class="flex-1 py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 bg-slate-100 text-slate-600 hover:bg-slate-200">' +
+        '<i class="fas fa-boxes-stacked"></i> ៣. ទំនិញកំពុងបង្ហាញលើ Web' +
+      '</button>' +
+    '</div>' +
+
+    // ៣. តួខ្លួនផ្ទាំងនីមួយៗ
+    '<div id="hubTabContent_ORDERS" class="space-y-3"></div>' +
+    '<div id="hubTabContent_AUDIT" class="space-y-3 hidden"></div>' +
+    '<div id="hubTabContent_PRODUCTS" class="space-y-3 hidden"></div>' +
+  '</div>';
+
+  loadOnlineHubOrdersTab();
+}
+
+function switchOnlineHubTab(tab) {
+  activeOnlineHubTab = tab;
+
+  // Reset ពណ៌ប៊ូតុង Tabs
+  ['ORDERS', 'AUDIT', 'PRODUCTS'].forEach(function(t) {
+    var btn = document.getElementById('hubTabBtn_' + t);
+    var content = document.getElementById('hubTabContent_' + t);
+    if (btn && content) {
+      if (t === tab) {
+        btn.className = "flex-1 py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 bg-emerald-700 text-white shadow";
+        content.classList.remove('hidden');
+      } else {
+        btn.className = "flex-1 py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 bg-slate-100 text-slate-600 hover:bg-slate-200";
+        content.classList.add('hidden');
+      }
+    }
+  });
+
+  if (tab === 'ORDERS') loadOnlineHubOrdersTab();
+  else if (tab === 'AUDIT') loadOnlineHubAuditTab();
+  else if (tab === 'PRODUCTS') loadOnlineHubProductsTab();
+}
+
+// ==========================================
+// 📦 TAB ១៖ បញ្ជីកុម្ម៉ង់បច្ចុប្បន្ន
+// ==========================================
+async function loadOnlineHubOrdersTab() {
+  var area = document.getElementById('hubTabContent_ORDERS');
+  if (!area) return;
+
+  area.innerHTML = '<div class="card p-5 border-t-4 border-amber-500 shadow-md mb-0 text-center text-slate-400 italic text-xs">' +
+    '<i class="fas fa-spinner fa-spin mr-1 text-amber-600 text-base"></i> កំពុងទាញទិន្នន័យការកុម្ម៉ង់...' +
+  '</div>';
+
+  try {
+    const { data: list, error } = await supabaseClient
+      .from('orders')
+      .select('*')
+      .in('status', ['Pending', 'Assigned'])
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    if (!list || list.length === 0) {
+      area.innerHTML = '<div class="card p-8 border-t-4 border-emerald-500 shadow-md mb-0 text-center space-y-2 bg-white">' +
+        '<div class="w-12 h-12 mx-auto rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xl"><i class="fas fa-check"></i></div>' +
+        '<b class="text-slate-800 text-sm block">បច្ចុប្បន្នគ្មានការកុម្ម៉ង់ដែលរង់ចាំដឹកជញ្ជូនឡើយ!</b>' +
+        '<p class="text-xs text-slate-400">រាល់ពេលភ្ញៀវកុម្ម៉ង់លើ Web វានឹងលោតមកទីនេះភ្លាមៗ។</p>' +
+      '</div>';
+      return;
+    }
+
+    var html = '<div class="space-y-3">';
+    list.forEach(function(o) {
+      var isPending = (o.status === 'Pending');
+      var statusBadge = isPending ? 
+        '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300">⏳ រង់ចាំចាត់ចែង</span>' : 
+        '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-blue-100 text-blue-900 border border-blue-300">🚚 កំពុងដឹក (' + (o.driver_name || 'អ្នកដឹក') + ')</span>';
+
+      html += '<div class="card p-4 border-l-4 ' + (isPending ? 'border-amber-500' : 'border-blue-500') + ' shadow-md mb-0 space-y-2 hover:shadow-lg transition">' +
+        '<div class="flex justify-between items-start border-b pb-2">' +
+          '<div>' +
+            '<b class="text-sm font-black text-slate-900">' + o.customer_name + '</b>' +
+            '<div class="text-[10px] text-slate-400 mt-0.5">កូដ៖ <code>' + o.order_id + '</code> | ទូរស័ព្ទ៖ ' + (o.phone || '-') + '</div>' +
+          '</div>' +
+          '<div class="text-right">' +
+            '<b class="text-emerald-700 text-sm font-black">៛ ' + Number(o.total || 0).toLocaleString() + '</b>' +
+            '<div class="mt-0.5">' + statusBadge + '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="text-xs text-slate-700 space-y-1 bg-slate-50 p-2.5 rounded-xl border border-slate-100">' +
+          '<div><b>📦 ទំនិញ៖</b> ' + o.items + '</div>' +
+          (o.address ? '<div><b>📍 ទីតាំង៖</b> ' + o.address + '</div>' : '') +
+        '</div>' +
+        '<div class="flex justify-end pt-1">' +
+          '<button type="button" onclick="openOnlineOrdersModal()" class="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-black shadow-xs active:scale-95 transition flex items-center gap-1">' +
+            '<i class="fas fa-sliders text-[10px]"></i> បើកផ្ទាំងចាត់ចែងអ្នកដឹក' +
+          '</button>' +
+        '</div>' +
+      '</div>';
+    });
+    html += '</div>';
+    area.innerHTML = html;
+
+  } catch(e) {
+    area.innerHTML = '<div class="card p-4 text-center text-red-500 font-bold text-xs">កំហុស៖ ' + e.message + '</div>';
+  }
+}
+
+// ==========================================
+// 🔍 TAB ២៖ ប្រវត្តិលក់ & ដោះស្រាយវិវាទ (ពេលគិតលុយខុស)
+// ==========================================
+async function loadOnlineHubAuditTab() {
+  var area = document.getElementById('hubTabContent_AUDIT');
+  if (!area) return;
+
+  area.innerHTML = '<div class="card border-t-4 border-blue-600 shadow-xl p-5 mb-0 space-y-3">' +
+    '<div class="flex justify-between items-center">' +
+      '<h3 class="font-black text-slate-900 text-sm sm:text-base flex items-center gap-2">' +
+        '<i class="fas fa-receipt text-blue-600"></i>ប្រវត្តិលក់ Online & ផ្ទៀងផ្ទាត់វិក្កយបត្រ' +
+      '</h3>' +
+      '<span class="text-[10px] text-blue-800 bg-blue-100 px-2.5 py-0.5 rounded-full font-bold">ដោះស្រាយវិវាទ / Refund</span>' +
+    '</div>' +
+    // ប្រអប់ Search រកតាមលេខទូរស័ព្ទ ឬកូដកុម្ម៉ង់ភ្លាមៗ
+    '<div class="relative">' +
+      '<input type="text" id="inpOnlineAuditSearch" oninput="onOnlineAuditSearch(this.value)" placeholder="🔍 វាយលេខទូរស័ព្ទភ្ញៀវ, ឈ្មោះ ឬកូដកុម្ម៉ង់ (ORD-...) ដើម្បីឆែកមើលភស្តុតាង..." class="w-full border-2 border-blue-200 focus:border-blue-600 rounded-2xl p-3 pl-10 font-bold text-xs outline-none bg-slate-50 focus:bg-white">' +
+      '<i class="fas fa-search absolute left-3.5 top-3.5 text-slate-400 text-xs pointer-events-none"></i>' +
+    '</div>' +
+    '<div id="onlineAuditResultsArea" class="space-y-3 pt-1">' +
+      '<div class="text-center py-8 text-slate-400 italic text-xs"><i class="fas fa-spinner fa-spin mr-1"></i> កំពុងទាញប្រវត្តិលក់ Online...</div>' +
+    '</div>' +
+  '</div>';
+
+  fetchOnlineAuditOrders();
+}
+
+var cachedAuditOrders = [];
+
+async function fetchOnlineAuditOrders() {
+  var resArea = document.getElementById('onlineAuditResultsArea');
+  if (!resArea) return;
+
+  try {
+    const { data: list, error } = await supabaseClient
+      .from('orders')
+      .select('*')
+      .order('id', { ascending: false })
+      .limit(60);
+
+    if (error) throw error;
+    cachedAuditOrders = list || [];
+    renderOnlineAuditResultsList();
+  } catch(e) {
+    if (resArea) resArea.innerHTML = '<div class="text-center py-4 text-red-500 font-bold text-xs">កំហុស៖ ' + e.message + '</div>';
+  }
+}
+
+function onOnlineAuditSearch(val) {
+  onlineAuditSearchKeyword = (val || '').toLowerCase().trim();
+  renderOnlineAuditResultsList();
+}
+
+function renderOnlineAuditResultsList() {
+  var resArea = document.getElementById('onlineAuditResultsArea');
+  if (!resArea) return;
+
+  var q = onlineAuditSearchKeyword;
+  var filtered = cachedAuditOrders.filter(function(o) {
+    if (!q) return true;
+    var mId = String(o.order_id || '').toLowerCase().indexOf(q) !== -1;
+    var mName = String(o.customer_name || '').toLowerCase().indexOf(q) !== -1;
+    var mPhone = String(o.phone || '').toLowerCase().indexOf(q) !== -1;
+    var mDriver = String(o.driver_name || '').toLowerCase().indexOf(q) !== -1;
+    return mId || mName || mPhone || mDriver;
+  });
+
+  if (filtered.length === 0) {
+    resArea.innerHTML = '<div class="p-8 text-center text-slate-400 italic text-xs">រកមិនឃើញការកុម្ម៉ង់ត្រូវនឹងពាក្យស្វែងរកឡើយ</div>';
+    return;
+  }
+
+  var html = '';
+  filtered.forEach(function(o) {
+    var isDelivered = (o.status === 'Delivered');
+    var isCancelled = (o.status === 'Cancelled');
+    var dateStr = new Date(o.created_at).toLocaleString('km-KH', { dateStyle: 'short', timeStyle: 'short' });
+
+    var statusBadge = isDelivered ? 
+      '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300">✅ ដឹកដល់ (ទូទាត់រួច)</span>' : 
+      (isCancelled ? 
+        '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-red-100 text-red-700 border border-red-300">❌ បានបោះបង់ / សងលុយ</span>' : 
+        '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300">⏳ ' + o.status + '</span>');
+
+    html += '<div class="bg-white p-3.5 rounded-2xl border ' + (isCancelled ? 'border-red-200 bg-red-50/20' : 'border-slate-200') + ' shadow-xs space-y-2.5 hover:shadow-md transition">' +
+      '<div class="flex justify-between items-start border-b pb-2">' +
+        '<div>' +
+          '<b class="text-xs sm:text-sm text-slate-900 font-black"><i class="fas fa-user-circle text-blue-600 mr-1"></i>' + o.customer_name + '</b>' +
+          '<div class="text-[10px] text-slate-400 mt-0.5 font-mono">កូដ៖ ' + o.order_id + ' | ម៉ោង៖ ' + dateStr + '</div>' +
+        '</div>' +
+        '<div class="text-right">' +
+          '<b class="text-emerald-700 text-xs sm:text-sm font-black">៛ ' + Number(o.total || 0).toLocaleString() + '</b>' +
+          '<div class="mt-0.5">' + statusBadge + '</div>' +
+        '</div>' +
+      '</div>' +
+
+      // ភស្តុតាងលម្អិត
+      '<div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-xs space-y-1 text-slate-700">' +
+        '<div><b>📞 ទូរស័ព្ទភ្ញៀវ៖</b> ' + (o.phone || '-') + '</div>' +
+        '<div><b>📦 មុខទំនិញ៖</b> ' + o.items + '</div>' +
+        '<div><b>🛵 អ្នកដឹកជញ្ជូន៖</b> ' + (o.driver_name ? (o.driver_name + ' (📞 ' + (o.driver_phone || '-') + ')') : 'មិនទាន់ចាត់ចែង') + '</div>' +
+        '<div><b>💳 វិធីបង់ប្រាក់៖</b> ' + (o.payment_method || 'COD') + '</div>' +
+        (o.address ? '<div><b>📍 អាសយដ្ឋាន/ចំណាំ៖</b> ' + o.address + '</div>' : '') +
+      '</div>' +
+
+      // ប៊ូតុងភស្តុតាង & ប៊ូតុងដោះស្រាយវិវាទ (Refund / Void)
+      '<div class="flex flex-wrap items-center justify-between gap-2 pt-0.5">' +
+        '<div class="flex items-center gap-1.5">' +
+          (o.photo_url ? 
+          '<button type="button" onclick="viewOrderHousePhoto(\'' + o.photo_url + '\', \'' + o.customer_name.replace(/'/g, "\\'") + '\')" class="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-xl text-xs font-bold shadow-2xs flex items-center gap-1 active:scale-95 transition">' +
+            '<i class="fas fa-camera text-amber-600"></i> មើលរូបផ្ទះ' +
+          '</button>' : '') +
+          (o.location_url || o.address ? 
+          '<button type="button" onclick="openOrderMap(\'' + (o.location_url || o.address).replace(/'/g, "\\'") + '\')" class="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 rounded-xl text-xs font-bold shadow-2xs flex items-center gap-1 active:scale-95 transition">' +
+            '<i class="fas fa-map-location-dot text-blue-600"></i> ផែនទី' +
+          '</button>' : '') +
+        '</div>' +
+
+        // ⚠️ ប៊ូតុងដោះស្រាយវិវាទ / បង្វិលសងលុយ (បង្ហាញតែពេល Delivered ប៉ុណ្ណោះ)
+        (isDelivered ? 
+        '<button type="button" onclick="refundAndVoidOnlineOrder(\'' + o.order_id + '\', \'' + o.customer_name.replace(/'/g, "\\'") + '\', ' + (o.total || 0) + ', \'' + (o.items || '').replace(/'/g, "\\'") + '\')" class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-black shadow-xs flex items-center gap-1 active:scale-95 transition">' +
+          '<i class="fas fa-rotate-left text-xs"></i> សងលុយវិញ / បោះបង់ (Refund)' +
+        '</button>' : '') +
+      '</div>' +
+    '</div>';
+  });
+
+  resArea.innerHTML = html;
+}
+
+// ⚠️ មុខងារដោះស្រាយវិវាទ៖ បង្វិលសងលុយ & កាត់ស្តុកត្រឡប់មកវិញ (Refund / Dispute Handler)
+async function refundAndVoidOnlineOrder(orderId, custName, total, itemsText) {
+  var ok = await kcConfirm({
+    title: "ដោះស្រាយវិវាទ (Refund / Void Order)",
+    message: "តើអ្នកពិតជាចង់បោះបង់ ឬបង្វិលសងប្រាក់ចំនួន ៛ " + Number(total).toLocaleString() + " ទៅកាន់ភ្ញៀវ [" + custName + "] វិញមែនទេ? ស្តុកទំនិញនឹងត្រូវបង្វិលសងចូលឃ្លាំងវិញដោយស្វ័យប្រវត្តិ។",
+    type: "danger",
+    confirmText: "យល់ព្រមសងលុយ & បោះបង់"
+  });
+
+  if (!ok) return;
+
+  try {
+    // ១. ប្តូរ Status ក្នុង Orders ទៅ Cancelled
+    const { error: ordErr } = await supabaseClient
+      .from('orders')
+      .update({ status: 'Cancelled' })
+      .eq('order_id', orderId);
+
+    if (ordErr) throw ordErr;
+
+    // ២. បង្វិលស្តុកទំនិញសងចូលឃ្លាំងវិញ (បើជាទំនិញទិញគេ)
+    try {
+      var itemParts = String(itemsText).split(',');
+      for (var i = 0; i < itemParts.length; i++) {
+        var seg = itemParts[i].split('x');
+        if (seg.length === 2) {
+          var pName = seg[0].trim();
+          var pQty = parseFloat(seg[1].trim() || 0);
+
+          var prodObj = allProducts.find(p => p.name.trim().toLowerCase() === pName.toLowerCase());
+          if (prodObj && prodObj.type === 'ទិញគេ' && pQty > 0) {
+            var restoredStock = parseFloat(prodObj.stock || 0) + pQty;
+            await supabaseClient.from('products').update({ stock: restoredStock }).eq('id', prodObj.id);
+            prodObj.stock = restoredStock;
+          }
+        }
+      }
+    } catch(stkErr) {}
+
+    // ៣. កត់ត្រាប្រតិបត្តិការដកប្រាក់ចេញ (Negative Transaction / Refund Log)
+    var tid = "REFUND-" + new Date().getTime();
+    await supabaseClient.from('transactions').insert([{
+      transaction_id: tid,
+      customer_name: custName,
+      product_name: "សងប្រាក់អតិថិជនវិញ (Refund Online: " + orderId + ")",
+      qty: 1,
+      price: -total,
+      currency: "KHR",
+      total: -total,
+      paid_khr: -total,
+      recorded_by: (currentUser.fullName || "Admin") + " (ដោះស្រាយវិវាទ)",
+      status: "Paid",
+      payment_method: "Cash"
+    }]);
+
+    showToast("បានបោះបង់ការកុម្ម៉ង់ និងកត់ត្រាសងប្រាក់ជូនភ្ញៀវជោគជ័យ!", "success");
+
+    // ៤. ផ្ញើ Telegram Alert ទៅថៅកែភ្លាមៗ
+    try {
+      var tgMsg = "⚠️ <b>[KC WATER - ដោះស្រាយវិវាទ & សងប្រាក់ភ្ញៀវ (Refund Online)]</b>\n\n" +
+                  "🆔 <b>កូដកុម្ម៉ង់៖</b> <code>" + orderId + "</code>\n" +
+                  "👤 <b>អតិថិជន៖</b> " + custName + "\n" +
+                  "💰 <b>ទឹកប្រាក់សងវិញ៖</b> <b>-៛ " + Number(total).toLocaleString() + "</b>\n" +
+                  "✍️ <b>អ្នកដោះស្រាយ៖</b> " + (currentUser.fullName || "Admin") + "\n" +
+                  "🕒 <b>ម៉ោង៖</b> " + new Date().toLocaleTimeString('km-KH');
+      sendTelegramAlert(tgMsg);
+    } catch(tgE) {}
+
+    await fetchInitialPOSData();
+    fetchOnlineAuditOrders();
+
+  } catch(err) {
+    showToast("កំហុសដោះស្រាយវិវាទ៖ " + err.message, "error");
+  }
+}
+
+// ==========================================
+// 🌐 TAB ៣៖ ទំនិញកំពុងបង្ហាញលើ WEB (ONLINE SHOWCASE)
+// ==========================================
+async function loadOnlineHubProductsTab() {
+  var area = document.getElementById('hubTabContent_PRODUCTS');
+  if (!area) return;
+
+  var onlineProds = (allProducts || []).filter(function(p) {
+    var ch = String(p.channel || 'ALL').toUpperCase();
+    return ch === 'ALL' || ch === 'ONLINE';
+  });
+
+  var html = '<div class="card border-t-4 border-emerald-600 shadow-xl p-5 mb-0 space-y-3">' +
+    '<div class="flex justify-between items-center">' +
+      '<h3 class="font-black text-slate-900 text-sm sm:text-base flex items-center gap-2">' +
+        '<i class="fas fa-boxes-stacked text-emerald-600"></i>ទំនិញកំពុងដាក់លក់លើ Web តាមផ្ទះ (' + onlineProds.length + ' មុខ)' +
+      '</h3>' +
+      '<button type="button" onclick="loadModule(\'Stock\')" class="text-xs font-bold text-emerald-700 hover:underline flex items-center gap-1">' +
+        '<i class="fas fa-pen-to-square"></i> កែប្រែក្នុងស្តុក ➔' +
+      '</button>' +
+    '</div>' +
+    '<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 pt-1">';
+
+  onlineProds.forEach(function(p) {
+    var imgUrl = p.img || "https://cdn-icons-png.flaticon.com/512/3100/3100566.png";
+    var onlinePr = Number(p.online_price || p.price || 0).toLocaleString() + ' ៛';
+    var isOutOfStock = (p.type === 'ទិញគេ' && parseFloat(p.stock || 0) <= 0);
+
+    html += '<div class="bg-slate-50 p-3 rounded-2xl border border-slate-200 text-center space-y-1 relative shadow-2xs">' +
+      (isOutOfStock ? '<span class="absolute top-2 left-2 bg-red-100 text-red-700 text-[9px] font-black px-1.5 py-0.2 rounded-full border border-red-300">អស់ស្តុក</span>' : '') +
+      '<div class="w-16 h-16 mx-auto flex items-center justify-center p-1"><img src="' + imgUrl + '" class="max-w-full max-h-full object-contain"></div>' +
+      '<b class="text-xs text-slate-800 line-clamp-1 block">' + p.name + '</b>' +
+      '<div class="text-xs font-black text-emerald-700">🌐 ' + onlinePr + '</div>' +
+      '<span class="text-[10px] text-slate-400 font-bold block">' + (p.type === 'ផលិតឯង' ? 'ផលិតឯង' : ('សល់ ' + p.stock)) + '</span>' +
+    '</div>';
+  });
+
+  html += '</div></div>';
+  area.innerHTML = html;
+}
