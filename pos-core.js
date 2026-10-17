@@ -1291,7 +1291,6 @@ async function confirmSale() {
     btn.innerHTML = isResellerOrDriver ? '<i class="fas fa-clipboard-check mr-2 text-lg"></i>កត់ត្រាការដកទំនិញ (កត់ចូលបញ្ជីជំពាក់)' : 'រក្សាទុកការលក់ (Save Sale)';
   }
 }
-
 // ==========================================
 // 🧾 បង្កើតរូបវិក្កយបត្រ (RECEIPT GENERATOR)
 // ==========================================
@@ -1326,7 +1325,7 @@ function generateReceiptImage(tid, cust, total, paid, items, titleText, discount
     '</tr>';
   });
 
-  // 🚚 ១. ឆែកមើលថាតើជាកូនចៅដកទឹកជំនួសមេដែរឬទេ (ដាក់នៅពីលើ var h)
+  // 🚚 ១. ឆែកមើលថាតើជាកូនចៅដកទឹកជំនួសមេដែរឬទេ
   var isDriverWithdraw = (currentUser && currentUser.role === 'Driver' && currentUser.linkedBoss);
   var driverWithdrawLine = isDriverWithdraw ? 
     ('អ្នកមកដកផ្ទាល់៖ <b style="color:#b45309;">' + currentUser.fullName + ' (កូនចៅ/អ្នកដឹក)</b><br>') : '';
@@ -1339,7 +1338,8 @@ function generateReceiptImage(tid, cust, total, paid, items, titleText, discount
     'កាលបរិច្ឆេទ៖ ' + dateStr + '<br>' +
     'អ្នកកត់ត្រា៖ <b style="color:#0f172a;">' + (currentUser.fullName || "Admin") + '</b>' +
   '</div>';
-  // 🧾 ៣. តួខ្លួនវិក្កយបត្រ (var h ចាប់ផ្តើមត្រង់នេះ តគ្នាជាប់រហូត មិនដាច់ទេ)
+
+  // 🧾 ៣. តួខ្លួនវិក្កយបត្រ (បានសម្អាតស្លាក table ស្ទួនរួចរាល់)
   var h = '<div id="pos-canvas-box" style="width:360px; padding:22px 18px; background:#ffffff; color:#0f172a; font-family:\'Battambang\', sans-serif; border-radius:16px;">' +
     // ក្បាលវិក្កយបត្រ
     '<div style="text-align:center; border-bottom:2px dashed #16a34a; padding-bottom:10px; margin-bottom:10px;">' +
@@ -1351,11 +1351,7 @@ function generateReceiptImage(tid, cust, total, paid, items, titleText, discount
     '</div>' +
     // ភ្ជាប់ព័ត៌មានអតិថិជនចូល
     custInfoHtml +
-    // តារាងមុខទំនិញ
-    '<table style="width:100%; border-collapse:collapse; margin-bottom:10px;">' +
-      '<thead>' +
-
-    // តារាងមុខទំនិញ
+    // តារាងមុខទំនិញ (មានតែ <table> មួយត្រឹមត្រូវ)
     '<table style="width:100%; border-collapse:collapse; margin-bottom:10px;">' +
       '<thead>' +
         '<tr style="background:#f1f5f9; color:#475569; font-size:10px; border-bottom:1px solid #cbd5e1;">' +
@@ -1382,7 +1378,7 @@ function generateReceiptImage(tid, cust, total, paid, items, titleText, discount
         '') +
     '</div>' +
 
-    // ពាក្យជូនពរខាងក្រោម (កែសម្រួលត្រឹមត្រូវតាមវេយ្យាករណ៍ខ្មែរ)
+    // ពាក្យជូនពរខាងក្រោម
     '<div style="text-align:center; margin-top:12px; border-top:1px dashed #cbd5e1; padding-top:8px;">' +
       '<b style="font-size:10px; color:#166534;">សូមអរគុណចំពោះការជាវទឹកបរិសុទ្ធ ខេ ស៊ី!</b><br>' +
       '<span style="font-size:9px; color:#64748b;">សូមអញ្ជើញមកម្តងទៀត 🙏</span>' +
