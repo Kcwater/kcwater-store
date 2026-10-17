@@ -1613,103 +1613,18 @@
         alertBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }
     }
-      // 📷 មុខងារបង្ហាញ & បង្រួមរូបថតមុខផ្ទះ (ប្រើ ObjectURL ល្បឿនលឿន មិនគាំងទូរស័ព្ទ និងបង្ហាញ Preview ១០០%)
-    function previewHousePhotoFile(input) {
-      if (!input.files || !input.files[0]) return;
-
-      var file = input.files[0];
-      var statusText = document.getElementById('housePhotoStatusText');
-      var previewImg = document.getElementById('housePhotoImgPreview');
-      var defaultIcon = document.getElementById('housePhotoDefaultIcon');
-      var thumbBox = document.getElementById('housePhotoThumbBox');
-      var hiddenInput = document.getElementById('inp_custPhotoUrl');
-      var removeBtn = document.getElementById('btnRemoveHousePhoto');
-      var btnLabel = document.getElementById('btnPhotoPickLabel');
-
-      if (statusText) {
-        statusText.innerHTML = '<span class="text-blue-600 font-bold"><i class="fas fa-spinner fa-spin mr-1"></i> កំពុងដំណើរការរូប...</span>';
-      }
-
-      // ⚡ បង្កើត Blob URL ភ្លាមៗ មិនបាច់រង់ចាំអាន Base64 ធ្ងន់ទូរស័ព្ទ
-      var blobUrl = URL.createObjectURL(file);
-      var img = new Image();
-
-      img.onload = function() {
-        try {
-          // បង្រួមទំហំរូប (Max 800px)
-          var maxDim = 800;
-          var w = img.width, h = img.height;
-          if (w > maxDim || h > maxDim) {
-            if (w > h) { h = Math.round((h * maxDim) / w); w = maxDim; }
-            else { w = Math.round((w * maxDim) / h); h = maxDim; }
-          }
-
-          var canvas = document.createElement('canvas');
-          canvas.width = w;
-          canvas.height = h;
-          var ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, w, h);
-
-          // បំប្លែងជារូប JPEG ទម្ងន់ស្រាល (ត្រឹមតែ 40KB - 80KB)
-          var compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
-
-          // បង្ហាញរូប Thumbnail Preview ភ្លាមៗ
-          if (previewImg) {
-            previewImg.src = compressedBase64;
-            previewImg.classList.remove('hidden');
-            previewImg.style.display = 'block';
-          }
-          if (defaultIcon) {
-            defaultIcon.classList.add('hidden');
-            defaultIcon.style.display = 'none';
-          }
-          if (thumbBox) {
-            thumbBox.className = "w-11 h-11 rounded-xl bg-white border-2 border-emerald-500 flex items-center justify-center overflow-hidden shrink-0 shadow-sm";
-          }
-          if (hiddenInput) hiddenInput.value = compressedBase64;
-          if (removeBtn) {
-            removeBtn.classList.remove('hidden');
-            removeBtn.style.display = 'flex';
-          }
-          if (btnLabel) btnLabel.innerText = "ប្តូររូប";
-
-          if (statusText) {
-            statusText.innerHTML = '<span class="text-emerald-700 font-black flex items-center gap-1"><i class="fas fa-check-circle text-emerald-600"></i> បានភ្ជាប់រូបថតជោគជ័យ!</span>';
-          }
-
-        } catch (err) {
-          console.error("Canvas compression error:", err);
-          if (statusText) statusText.innerText = "កំហុសបង្រួមរូប";
-        } finally {
-          URL.revokeObjectURL(blobUrl); // សម្អាត Memory
-        }
-      };
-
-      img.onerror = function() {
-        URL.revokeObjectURL(blobUrl);
-        if (statusText) {
-          statusText.innerHTML = '<span class="text-red-500 font-bold">⚠️ ទម្រង់រូបភាពមិនត្រឹមត្រូវ</span>';
-        }
-      };
-
-      img.src = blobUrl;
-    }
-   
-      hint.innerHTML = '<span class="text-blue-600 font-bold"><i class="fas fa-spinner fa-spin"></i> ' + d.gpsDetecting + '</span>';
-
-      navigator.geolocation.getCurrentPosition(function(pos) {
-        var lat = pos.coords.latitude.toFixed(6);
-        var lng = pos.coords.longitude.toFixed(6);
-        var googleMapUrl = "https://www.google.com/maps?q=" + lat + "," + lng;
-
-        inpUrl.value = googleMapUrl;
-        hint.innerHTML = '<span class="text-emerald-700 font-bold">' + d.gpsSuccess + '</span> <a href="' + googleMapUrl + '" target="_blank" class="text-blue-600 underline font-bold ml-1">(Map)</a>';
-      }, function(err) {
-        hint.innerHTML = '<span class="text-amber-600 font-bold">' + d.gpsFail + '</span>';
-      }, { enableHighAccuracy: true, timeout: 10000 });
-    }
-
+      
   
+   function showInAppError(msg) {
+      var alertBox = document.getElementById('checkoutErrorAlert');
+      var msgSpan = document.getElementById('checkoutErrorMsg');
+      if (alertBox && msgSpan) {
+        msgSpan.innerText = msg;
+        alertBox.classList.remove('hidden');
+        alertBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+
    // 🌟 មុខងារបិទផ្ទាំងអបអរសាទរពេលដឹកដល់
    function dismissDeliveredCard(shouldReorder) {
      localStorage.removeItem('kc_active_order_id');
