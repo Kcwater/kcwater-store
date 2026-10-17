@@ -45,6 +45,7 @@ async function renderSettlementModule() {
   currentSettlementCustomer = "";
   currentSettlementItems = [];
   currentSettlementPayMode = "Cash";
+  currentSettlementOldDebt = 0; // ✅ កំណត់បំណុលចាស់ឱ្យស្មើ 0 ពេលបើកផ្ទាំងឡើងវិញ
   currentActivePendingPaymentId = null;
 
   var custOptions = '<option value="">-- សូមជ្រើសរើសឈ្មោះម៉ូយ --</option><option value="Walk-in">🛒 -- លក់នៅកន្លែង (Walk-in) --</option>';
@@ -540,6 +541,7 @@ async function loadSettlementDebtorsList() {
 async function selectCustomerForSettlement(custName) {
   if (!custName) {
     document.getElementById('settlement_ui').classList.add('hidden');
+    currentSettlementOldDebt = 0; // ✅ សម្អាតបំណុលចាស់ឱ្យស្មើ 0 បើមិនបានរើសឈ្មោះម៉ូយ
     return;
   }
 
