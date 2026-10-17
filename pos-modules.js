@@ -1652,8 +1652,9 @@ async function loadAllUnpaidHistory() {
     var html = '';
     unpaids.forEach(function(i) {
       var dateStr = new Date(i.created_at).toLocaleString('km-KH', { dateStyle: 'short', timeStyle: 'short' });
-      var recTag = (i.recorded_by && i.recorded_by !== currentUser.fullName && i.recorded_by !== 'Admin') ? 
-        ('<br><span class="text-[9.5px] text-amber-950 font-black bg-amber-100 border border-amber-300 px-1.5 py-0.5 rounded-md inline-flex items-center gap-1 mt-0.5"><i class="fas fa-truck text-[9px] text-amber-600"></i>ដកដោយ៖ ' + i.recorded_by + '</span>') : '';
+      var isWithdrawnByOther = (i.recorded_by && i.recorded_by !== currentUser.fullName);
+var recTag = isWithdrawnByOther ? 
+  ('<br><span class="text-[9.5px] text-blue-950 font-black bg-blue-100 border border-blue-300 px-1.5 py-0.5 rounded-md inline-flex items-center gap-1 mt-0.5"><i class="fas fa-truck text-[9px] text-blue-600"></i>ដកដោយ៖ ' + i.recorded_by + '</span>') : '';
 
       html += '<tr class="border-b hover:bg-orange-50/40">' +
         '<td class="p-2.5 text-gray-500 text-[10px] whitespace-nowrap">' + dateStr + '</td>' +
