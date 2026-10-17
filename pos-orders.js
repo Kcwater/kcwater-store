@@ -233,10 +233,11 @@ function renderAdminOnlineOrdersUI() {
     return;
   }
 
-  // ៤. ស្រង់ឈ្មោះអ្នកដឹកជញ្ជូនរោងចក្រ (Company Drivers) សម្រាប់ Dropdown
+  // ៤. ស្រង់តែឈ្មោះអ្នកដឹកជញ្ជូនផ្លូវការរបស់រោងចក្រ KC WATER ប៉ុណ្ណោះ (មិនយកកូនចៅម៉ូយឡើយ)
   var driverOptions = '<option value="">-- រើសអ្នកដឹករបស់រោងចក្រ --</option>';
   allCustomers.forEach(function(c) {
-    if (c.role === 'Driver' || c.type === 'CompanyDriver' || c.linked_boss === 'KC WATER') {
+    var isCompanyDriver = (c.type === 'CompanyDriver' || c.linked_boss === 'KC WATER');
+    if (isCompanyDriver) {
       var dPhone = c.phone ? (' (' + c.phone + ')') : '';
       driverOptions += '<option value="' + c.full_name + '" data-phone="' + (c.phone || '') + '">' + c.full_name + dPhone + '</option>';
     }
