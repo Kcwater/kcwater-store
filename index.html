@@ -1603,6 +1603,16 @@
         hint.innerHTML = '<span class="text-amber-600 font-bold">' + d.gpsFail + '</span>';
       }, { enableHighAccuracy: true, timeout: 10000 });
     }
+
+    function showInAppError(msg) {
+      var alertBox = document.getElementById('checkoutErrorAlert');
+      var msgSpan = document.getElementById('checkoutErrorMsg');
+      if (alertBox && msgSpan) {
+        msgSpan.innerText = msg;
+        alertBox.classList.remove('hidden');
+        alertBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
       // 📷 មុខងារបង្ហាញ & បង្រួមរូបថតមុខផ្ទះ (ប្រើ ObjectURL ល្បឿនលឿន មិនគាំងទូរស័ព្ទ និងបង្ហាញ Preview ១០០%)
     function previewHousePhotoFile(input) {
       if (!input.files || !input.files[0]) return;
@@ -1699,16 +1709,7 @@
       }, { enableHighAccuracy: true, timeout: 10000 });
     }
 
-    function showInAppError(msg) {
-      var alertBox = document.getElementById('checkoutErrorAlert');
-      var msgSpan = document.getElementById('checkoutErrorMsg');
-      if (alertBox && msgSpan) {
-        msgSpan.innerText = msg;
-        alertBox.classList.remove('hidden');
-        alertBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      }
-    }
-
+  
    // 🌟 មុខងារបិទផ្ទាំងអបអរសាទរពេលដឹកដល់ (ដាក់នៅខាងក្រៅ)
     function dismissDeliveredCard(shouldReorder) {
       localStorage.removeItem('kc_active_order_id');
