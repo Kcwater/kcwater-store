@@ -757,14 +757,14 @@ function openDriverDirectQr(amount, custName) {
   }
 }
 
-// 🚚 មុខងារបង្ហាញបេសកកម្មដឹកទឹករបស់អ្នកដឹកជញ្ជូនរោងចក្រ (Company Driver Cockpit - ទំនើប & ងាយស្រួល)
+// 🚚 មុខងារបង្ហាញបេសកកម្មដឹកទឹករបស់អ្នកដឹកជញ្ជូនរោងចក្រ (Company Driver Cockpit + សង្ខេបលុយប្រចាំថ្ងៃ)
 async function renderCompanyDeliveriesModule() {
   var area = document.getElementById('contentArea');
   if (!area) return;
 
   var driverName = (currentUser && currentUser.fullName) ? currentUser.fullName : '';
 
-  area.innerHTML = '<div class="max-w-2xl mx-auto space-y-4">' +
+  area.innerHTML = '<div class="max-w-2xl mx-auto space-y-3.5">' +
     '<div class="flex justify-between items-center bg-white p-4 rounded-2xl border shadow-sm">' +
       '<div>' +
         '<h2 class="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">' +
@@ -777,6 +777,10 @@ async function renderCompanyDeliveriesModule() {
         '<i class="fas fa-sync-alt"></i> Refresh' +
       '</button>' +
     '</div>' +
+    
+    // ប្រអប់សង្ខេបលុយ និងជើងដឹកថ្ងៃនេះ
+    '<div id="driverDailySummaryBox" class="grid grid-cols-3 gap-2 text-center text-xs"></div>' +
+
     '<div id="driverOrdersContainer" class="space-y-3">' +
       '<div class="text-center py-10 text-slate-400 italic text-xs">' +
         '<i class="fas fa-spinner fa-spin mr-1.5 text-emerald-600 text-base"></i> កំពុងទាញយកការងារដឹកជញ្ជូន...' +
@@ -785,8 +789,12 @@ async function renderCompanyDeliveriesModule() {
   '</div>';
 
   var container = document.getElementById('driverOrdersContainer');
+  var summaryBox = document.getElementById('driverDailySummaryBox');
 
   try {
+    var todayStr = new Date().toISOString().split('T')[0];
+
+    // ១. ទាញការងារកំពុងដឹក (Assigned) របស់អ្នកដឹកនេះ
     const { data: list, error } = await supabaseClient
       .from('orders')
       .select('*')
@@ -795,6 +803,44 @@ async function renderCompanyDeliveriesModule() {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
+
+    // ២. ទាញការងារដែលបានដឹកជោគជ័យថ្ងៃនេះ (Delivered Today) ដើម្បីបូកសរុបលុយផ្ទៀងផ្ទាត់
+    const { data: deliveredToday } = await supabaseClient
+      .from('orders')
+      .select('*')
+      .eq('status', 'Delivered')
+      .eq('driver_name', driverName)
+      .gte('created_at', todayStr + 'T00:00:00Z');
+
+    var deliveredCount = (deliveredToday || []).length;
+    var cashToHandover = 0;
+    var abaCollected = 0;
+
+    (deliveredToday || []).forEach(function(o) {
+      var amt = parseFloat(o.total || 0);
+      var isABA = String(o.payment_method || '').indexOf('ABA') !== -1;
+      if (isABA) {
+        abaCollected += amt;
+      } else {
+        cashToHandover += amt;
+      }
+    });
+
+    // បង្ហាញរបារសង្ខេបប្រាក់
+    if (summaryBox) {
+      summaryBox.innerHTML = '<div class="p-2.5 bg-emerald-50 border border-emerald-200 rounded-2xl shadow-2xs">' +
+        '<span class="text-[10px] text-emerald-700 font-bold block">💵 លុយសុទ្ធក្នុងដៃ</span>' +
+        '<b class="text-xs sm:text-sm font-black text-emerald-950">៛ ' + cashToHandover.toLocaleString() + '</b>' +
+      '</div>' +
+      '<div class="p-2.5 bg-blue-50 border border-blue-200 rounded-2xl shadow-2xs">' +
+        '<span class="text-[10px] text-blue-700 font-bold block">📱 ស្កេន ABA</span>' +
+        '<b class="text-xs sm:text-sm font-black text-blue-950">៛ ' + abaCollected.toLocaleString() + '</b>' +
+      '</div>' +
+      '<div class="p-2.5 bg-amber-50 border border-amber-200 rounded-2xl shadow-2xs">' +
+        '<span class="text-[10px] text-amber-800 font-bold block">🎉 ជោគជ័យថ្ងៃនេះ</span>' +
+        '<b class="text-xs sm:text-sm font-black text-amber-950">' + deliveredCount + ' ជើង</b>' +
+      '</div>';
+    }
 
     if (!list || list.length === 0) {
       container.innerHTML = '<div class="p-8 text-center bg-white rounded-3xl border border-slate-200 space-y-2">' +
@@ -817,7 +863,7 @@ async function renderCompanyDeliveriesModule() {
       // បង្កើតតំណភ្ជាប់ Telegram និង WhatsApp ទៅកាន់លេខទូរស័ព្ទភ្ញៀវ (+855)
       var intlPhone = cleanPhone.startsWith('0') ? ('855' + cleanPhone.substring(1)) : ('855' + cleanPhone);
       var tgChatLink = "https://t.me/+" + intlPhone;
-      var waChatLink = "https://wa.me/" + intlPhone; // WhatsApp Link
+      var waChatLink = "https://wa.me/" + intlPhone;
 
       html += '<div class="bg-white p-4 rounded-3xl border-2 border-emerald-400 shadow-md space-y-3 animate-in zoom-in duration-200">' +
         // ក្បាលកាត
@@ -848,7 +894,7 @@ async function renderCompanyDeliveriesModule() {
           (task.address ? 
           '<div class="flex items-start gap-1.5 pt-0.5">' +
             '<span class="text-slate-400 font-bold whitespace-nowrap">📍 ទីតាំង & ចំណាំ៖</span>' +
-            '<span class="text-slate-700 font-bold text-[11px] line-clamp-2">' + task.address + '</span>' +
+            '<span class="text-slate-800 font-bold text-[11px] leading-snug">' + task.address + '</span>' +
           '</div>' : '') +
         '</div>' +
 
