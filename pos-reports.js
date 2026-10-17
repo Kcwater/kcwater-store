@@ -104,25 +104,41 @@ async function fetchCompanySummaryFromSupabase() {
   if (!sd || !ed) return;
 
   try {
+    // ១. ទាញទិន្នន័យប្រតិបត្តិការលក់ (Transactions) ក្នុងចន្លោះថ្ងៃ
     const { data: trans } = await supabaseClient
       .from('transactions')
       .select('*')
       .gte('created_at', sd + 'T00:00:00Z')
       .lte('created_at', ed + 'T23:59:59Z');
 
+    // ២. ទាញទិន្នន័យសាច់ប្រាក់ដែលប្រមូលបានពីការទូទាត់បំណុល (Settlements) ក្នុងចន្លោះថ្ងៃ
+    const { data: settles } = await supabaseClient
+      .from('settlements')
+      .select('*')
+      .gte('settled_at', sd + 'T00:00:00Z')
+      .lte('settled_at', ed + 'T23:59:59Z');
+
     var salesTotal = 0, cashTotal = 0, debtTotal = 0;
     var prodQty = {};
 
+    // គណនាពីការលក់ទំនិញ
     if (trans) {
       trans.forEach(function(t) {
         var tot = parseFloat(t.total || 0);
         var paid = parseFloat(t.paid_khr || 0);
         salesTotal += tot;
-        cashTotal += paid;
+        cashTotal += paid; // សាច់ប្រាក់បានទទួលពេលលក់ភ្លាមៗ
         if (t.status === 'Unpaid') debtTotal += tot;
         if (t.product_name) {
           prodQty[t.product_name] = (prodQty[t.product_name] || 0) + parseFloat(t.qty || 0);
         }
+      });
+    }
+
+    // ✅ បូកបន្ថែមសាច់ប្រាក់ដែលប្រមូលបានពីការទូទាត់បំណុលរបស់ម៉ូយ (Settlements) ឱ្យត្រូវលេខ ១០០%
+    if (settles) {
+      settles.forEach(function(s) {
+        cashTotal += parseFloat(s.paid_khr || 0);
       });
     }
 
@@ -136,7 +152,9 @@ async function fetchCompanySummaryFromSupabase() {
       html += '<tr class="border-b hover:bg-gray-50"><td class="p-3 font-bold text-gray-800">' + p + '</td><td class="p-3 text-center font-black text-blue-700">' + prodQty[p].toLocaleString() + '</td></tr>';
     }
     tbody.innerHTML = html || '<tr><td colspan="2" class="p-4 text-center text-gray-400 italic">គ្មានការលក់ក្នុងចន្លោះថ្ងៃនេះ</td></tr>';
-  } catch(e) {}
+  } catch(e) {
+    console.error("Company summary error:", e);
+  }
 }
 
 async function fetchFullStatementFromSupabase() {
