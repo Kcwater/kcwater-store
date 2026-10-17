@@ -58,12 +58,12 @@ function renderStockModule() {
           '</div>' +
         '</div>' +
 
-        // 🌟 ផ្នែកថ្មី៖ កំណត់ផ្លាកសម្គាល់ (Badge) & ប៉ុស្តិ៍លក់
+        // 🏷️ ផ្នែកកំណត់ផ្លាកសម្គាល់ (Badge) & ប៉ុស្តិ៍លក់
         '<div class="grid grid-cols-2 gap-2">' +
           '<div>' +
             '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">🏷️ ផ្លាកសម្គាល់លើ Web (Badge)</label>' +
             '<select id="pBadge" class="border p-2.5 rounded-xl font-bold w-full text-xs bg-white">' +
-              '<option value="គុណភាពខ្ពស់">🏆 គុណភាពខ្ពស់ (លំនាំដើម)</option>' +
+              '<option value="គុណភាពខ្ពស់">🏆 គុណភាពខ្ពស់</option>' +
               '<option value="ពេញនិយម">⭐ ពេញនិយម (Popular)</option>' +
               '<option value="លក់ដាច់">🔥 លក់ដាច់ (Best Seller)</option>' +
               '<option value="ទំនិញថ្មី">✨ ទំនិញថ្មី (New Arrival)</option>' +
@@ -80,7 +80,7 @@ function renderStockModule() {
           '</div>' +
         '</div>' +
 
-        // ✍️ ផ្នែកថ្មី៖ ប្រអប់សរសេរការពិពណ៌នាទំនិញផ្ទាល់ខ្លួន (Product Description)
+        // ✍️ ផ្នែកសរសេរការពិពណ៌នាទំនិញ (Product Description)
         '<div>' +
           '<label class="text-[10px] font-bold text-emerald-900 uppercase block mb-1"><i class="fas fa-file-lines text-emerald-600 mr-1"></i> ការរៀបរាប់ពីមុខទំនិញ (Description បង្ហាញលើ Web ពេលភ្ញៀវចុចមើល)</label>' +
           '<textarea id="pDesc" rows="2" placeholder="ឧទាហរណ៍៖ ក្រដាសអនាម័យគុណភាពខ្ពស់ ទន់ ស្វិត ស្រូបទឹកបានល្អ ប្រើប្រាស់បានច្រើនយ៉ាង..." class="border-2 border-emerald-200 focus:border-emerald-600 p-2.5 rounded-xl font-bold w-full text-xs outline-none bg-white"></textarea>' +
@@ -141,7 +141,107 @@ function renderStockModule() {
 
   tCF();
   initStockModuleDropdowns();
-  renderStockTableRows();
+
+  // ធានាថាបើ allProducts អត់ទាន់មកដល់ ឱ្យទាញ Database មកបង្ហាញភ្លាម
+  if (!allProducts || allProducts.length === 0) {
+    fetchInitialPOSData().then(function() {
+      renderStockTableRows();
+      initStockModuleDropdowns();
+    });
+  } else {
+    renderStockTableRows();
+  }
+}
+
+function tCF() {
+  var pTy = document.getElementById('pTy');
+  var c = document.getElementById('cSec');
+  if (pTy && c) c.style.display = (pTy.value === 'ផលិតឯង' ? 'none' : 'block');
+}
+
+function initStockModuleDropdowns() {
+  var siSel = document.getElementById('si_prod');
+  if (!siSel) return;
+  siSel.innerHTML = '<option value="">-- រើសទំនិញ --</option>';
+  allProducts.forEach(function(p) {
+    if (p.type === 'ទិញគេ') siSel.innerHTML += '<option value="' + p.id + '">' + p.name + '</option>';
+  });
+}
+
+function onStockInProductSelected() {
+  var id = document.getElementById('si_prod') ? document.getElementById('si_prod').value : '';
+  var costInp = document.getElementById('si_cost');
+  var hint = document.getElementById('si_cost_hint');
+  if (!id || !costInp) return;
+
+  var prod = allProducts.find(p => p.id === id);
+  if (prod) {
+    costInp.value = prod.cost || '';
+    if (hint) hint.innerText = '*ថ្លៃដើមបច្ចុប្បន្ន៖ ' + Number(prod.cost || 0).toLocaleString() + ' ៛ (អាចកែប្រែបានបើតម្លៃឡើង/ចុះ)';
+  }
+}
+
+function previewProductImageFile(input) {
+  if (input.files && input.files[0]) {
+    var file = input.files[0];
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var img = new Image();
+      img.onload = function() {
+        var canvas = document.createElement('canvas');
+        var maxDim = 400;
+        var w = img.width, h = img.height;
+        if (w > h) {
+          if (w > maxDim) { h = Math.round((h * maxDim) / w); w = maxDim; }
+        } else {
+          if (h > maxDim) { w = Math.round((w * maxDim) / h); h = maxDim; }
+        }
+        canvas.width = w; canvas.height = h;
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        var base64 = canvas.toDataURL('image/jpeg', 0.8);
+        document.getElementById('pImgPreview').src = base64;
+        document.getElementById('pImgBase64').value = base64;
+        document.getElementById('pImgNote').innerHTML = '<span class="text-green-600 font-bold">✔️ រូបភាពបានរួចរាល់</span>';
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+// 📋 មុខងារទាញទំនិញមកបង្ហាញក្នុងតារាងស្តុក (ដែលខ្វះកាលពីមិញ)
+function renderStockTableRows() {
+  var tbody = document.getElementById('stockModuleTableBody');
+  if (!tbody) return;
+  var html = '';
+
+  allProducts.forEach(function(p) {
+    var imgUrl = p.img || "https://cdn-icons-png.flaticon.com/512/3100/3100566.png";
+    var prWholesale = Number(p.price || 0).toLocaleString() + ' ៛';
+    var prOnline = Number(p.online_price || p.price || 0).toLocaleString() + ' ៛';
+    var ch = String(p.channel || 'ALL').toUpperCase();
+    var chBadge = (ch === 'ONLINE') ? '<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-sky-100 text-sky-800 border border-sky-300">🌐 Web</span>' :
+                  (ch === 'POS') ? '<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-900 border border-amber-300">🚚 ដេប៉ូ</span>' :
+                  '<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">🔄 ទាំងពីរ</span>';
+
+    var stockDisplay = (p.type === 'ផលិតឯង') ? '<span class="text-blue-700 font-bold text-xs">-</span>' : 
+      ('<span class="font-black ' + (parseFloat(p.stock || 0) <= parseFloat(p.min_stock || 5) ? 'text-red-600' : 'text-blue-800') + '">' + p.stock + '</span>');
+
+    html += '<tr class="border-b hover:bg-gray-50">' +
+      '<td class="p-2.5"><img src="' + imgUrl + '" class="w-9 h-9 object-contain rounded border"></td>' +
+      '<td class="p-2.5 font-bold text-gray-800">' + p.name + '<br><span class="text-[9px] text-gray-400 font-normal">' + p.type + '</span></td>' +
+      '<td class="p-2.5 text-center">' + chBadge + '</td>' +
+      '<td class="p-2.5 text-center text-[10px]">🚚 ' + prWholesale + '<br><span class="text-emerald-700 font-bold">🌐 ' + prOnline + '</span></td>' +
+      '<td class="p-2.5 text-center">' + stockDisplay + '</td>' +
+      '<td class="p-2.5 text-center"><div class="flex items-center justify-center gap-2">' +
+        '<button onclick="prepareEditProduct(\'' + p.id + '\')" class="text-blue-600 hover:text-blue-800 p-1" title="កែប្រែ"><i class="fas fa-edit text-xs"></i></button>' +
+        '<button onclick="delProductFromSupabase(\'' + p.id + '\')" class="text-red-500 hover:text-red-700 p-1" title="លុប"><i class="fas fa-trash-can text-xs"></i></button>' +
+      '</div></td>' +
+    '</tr>';
+  });
+
+  tbody.innerHTML = html || '<tr><td colspan="6" class="p-4 text-center text-gray-400 italic">គ្មានទំនិញក្នុងស្តុកឡើយ</td></tr>';
 }
 
 function prepareEditProduct(id) {
@@ -166,7 +266,6 @@ function prepareEditProduct(id) {
   document.getElementById('pMin').value = p.min_stock || 5;
   document.getElementById('pChannel').value = p.channel || 'ALL';
   
-  // បញ្ចូលតម្លៃចាស់របស់ Badge & Description
   if (document.getElementById('pBadge')) document.getElementById('pBadge').value = p.badge || 'គុណភាពខ្ពស់';
   if (document.getElementById('pDesc')) document.getElementById('pDesc').value = p.description || p.desc || '';
 
@@ -199,7 +298,6 @@ function cancelEditProduct() {
   tCF();
 }
 
-// 💾 រក្សាទុកទំនិញ (កត់ត្រាការពិពណ៌នាផ្ទាល់ខ្លួន & ផ្លាកសម្គាល់ដោយសុវត្ថិភាពខ្ពស់)
 async function saveProductToSupabase() {
   var name = document.getElementById('pN').value.trim();
   if (!name) { showToast("សូមបញ្ចូលឈ្មោះទំនិញ!", "error"); return; }
@@ -221,7 +319,6 @@ async function saveProductToSupabase() {
     img: imgData
   };
 
-  // បន្ថែមការពិពណ៌នា & ផ្លាក
   if (descVal) payload.description = descVal;
   if (badgeVal && badgeVal !== 'NONE') payload.badge = badgeVal;
 
@@ -235,7 +332,6 @@ async function saveProductToSupabase() {
         .update(payload)
         .eq('id', editingProductId);
       if (error) {
-        // បើសិនជា Supabase មិនទាន់មាន column description ឬ badge ឱ្យ update ធម្មតា
         delete payload.description;
         delete payload.badge;
         await supabaseClient.from('products').update(payload).eq('id', editingProductId);
