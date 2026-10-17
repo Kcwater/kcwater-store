@@ -891,25 +891,25 @@
             var cat = 'EQUIP';
             var isBarrel = false;
 
-            // បែងចែកប្រភេទទំនិញឆ្លាតវៃ
             if (nameLower.indexOf('ធុង') !== -1 || nameLower.indexOf('20l') !== -1 || nameLower.indexOf('២០') !== -1) {
               cat = 'BARREL';
               isBarrel = true;
             } else if (nameLower.indexOf('យួរ') !== -1 || nameLower.indexOf('ដប') !== -1 || nameLower.indexOf('កេស') !== -1) {
               cat = 'PACK';
-            } else if (nameLower.indexOf('ក្រដាស') !== -1 || nameLower.indexOf('អង្ករ') !== -1 || nameLower.indexOf('មី') !== -1 || nameLower.indexOf('ត្រីខ') !== -1 || nameLower.indexOf('ប្រេង') !== -1) {
-              cat = 'GENERAL'; // ទំនិញទូទៅ / គ្រឿងទេស
+            } else if (nameLower.indexOf('ក្រដាស') !== -1 || nameLower.indexOf('អង្ករ') !== -1 || nameLower.indexOf('មី') !== -1 || nameLower.indexOf('ប្រេង') !== -1) {
+              cat = 'GENERAL';
             } else {
-              cat = 'EQUIP'; // ជើងទម្រ / បរិក្ខារ
+              cat = 'EQUIP';
             }
 
             var imgDisplay = '';
             var rawImg = (p.img || '').trim();
 
+            // 🖼️ កំណត់រូបភាពទំនិញទំហំធំល្មមស្អាតស្តង់ដារ (Standard Product Size)
             if (rawImg && (rawImg.startsWith('http') || rawImg.startsWith('data:image'))) {
-              imgDisplay = '<img src="' + rawImg + '" class="max-h-24 max-w-full object-contain rounded-2xl drop-shadow-md mx-auto" onerror="this.onerror=null; this.src=\'https://cdn-icons-png.flaticon.com/512/3100/3100566.png\';">';
+              imgDisplay = '<img src="' + rawImg + '" class="max-h-28 max-w-full object-contain mx-auto drop-shadow-sm group-hover:scale-105 transition-transform duration-200" onerror="this.onerror=null; this.src=\'https://cdn-icons-png.flaticon.com/512/3100/3100566.png\';">';
             } else {
-              imgDisplay = '<img src="https://cdn-icons-png.flaticon.com/512/3100/3100566.png" class="max-h-20 max-w-full object-contain opacity-80 mx-auto my-2 drop-shadow-sm">';
+              imgDisplay = '<img src="https://cdn-icons-png.flaticon.com/512/3100/3100566.png" class="max-h-24 max-w-full object-contain opacity-80 mx-auto drop-shadow-sm group-hover:scale-105 transition-transform duration-200">';
             }
 
             var onlinePrice = parseFloat(p.online_price || p.price || 0);
@@ -923,7 +923,8 @@
               isBarrel20L: isBarrel,
               price: onlinePrice,
               svg: imgDisplay,
-              desc: (p.description || p.desc || '').trim() // ទាញយកព័ត៌មានលម្អិតបើមានក្នុង DB
+              desc: (p.description || p.desc || '').trim(), // ទាញយកការពិពណ៌នាផ្ទាល់ខ្លួនពី POS
+              badge: (p.badge || '').trim() // ទាញយកផ្លាកដែលបងបានកំណត់
             };
           });
 
@@ -938,7 +939,7 @@
       }
     }
 
-    // 🖼️ បង្ហាញកាតទំនិញ (កែសម្រួលដោះស្រាយបញ្ហារូបបាំងអក្សរផ្លាក ១០០%)
+    // 🎨 បង្ហាញកាតទំនិញ (រូបធំស្តង់ដារ + ផ្លាកអក្សរអណ្តែតលើរូបស្អាត គ្មានថ្ងៃបាំងអក្សរឡើយ)
     function renderCatalogGrid(filterCat) {
       filterCat = filterCat || 'ALL';
       var grid = document.getElementById('catalogGrid');
@@ -950,31 +951,33 @@
         if (filterCat !== 'ALL' && item.cat !== filterCat) return;
         var localizedName = getLocalizedProductName({ name: item.raw_name }, currentLang);
         var inCart = (cartItems[item.id] && cartItems[item.id].qty > 0) ? cartItems[item.id].qty : 0;
-        var inCartBadge = inCart > 0 ? '<span class="absolute top-2.5 right-2.5 z-20 w-6 h-6 rounded-full bg-emerald-600 text-white font-black text-xs flex items-center justify-center shadow">' + inCart + '</span>' : '';
+        var inCartBadge = inCart > 0 ? '<span class="absolute top-2 right-2 z-20 w-6 h-6 rounded-full bg-emerald-600 text-white font-black text-xs flex items-center justify-center shadow-md">' + inCart + '</span>' : '';
 
         var isOutOfStock = (item.type === 'ទិញគេ' && item.stock <= 0);
 
-        // 🏷️ ដាក់ z-10 ឱ្យផ្លាកអក្សរនៅពីលើជានិច្ច មិនឱ្យរូបបាំងឡើយ
+        // 🏷️ ផ្លាកអក្សរអណ្តែតពីលើជ្រុងរូបភាពទំនិញផ្ទាល់ (Floating Badge over Image)
+        var badgeText = item.badge || (item.cat === 'BARREL' ? (currentLang === 'km' ? 'ពេញនិយម' : 'Popular') : (currentLang === 'km' ? 'គុណភាពខ្ពស់' : 'Premium'));
+
         var badgeLabel = isOutOfStock ? 
-          '<span class="absolute top-2.5 left-2.5 z-10 bg-red-100 text-red-700 text-[9px] font-black px-2 py-0.5 rounded-full border border-red-300 shadow-2xs">❌ អស់ពីស្តុក</span>' : 
-          ((item.cat === 'BARREL') ? 
-            '<span class="absolute top-2.5 left-2.5 z-10 bg-emerald-50 text-emerald-800 text-[9px] font-black px-2 py-0.5 rounded-full border border-emerald-200 shadow-2xs">' + (currentLang === 'km' ? 'ពេញនិយម' : (currentLang === 'zh' ? '热销' : 'Popular')) + '</span>' : 
-            '<span class="absolute top-2.5 left-2.5 z-10 bg-emerald-50 text-emerald-800 text-[9px] font-black px-2 py-0.5 rounded-full border border-emerald-200 shadow-2xs">' + (currentLang === 'km' ? 'គុណភាពខ្ពស់' : (currentLang === 'zh' ? '优选' : 'Premium')) + '</span>');
+          '<span class="absolute top-2 left-2 z-20 bg-red-600/90 backdrop-blur-xs text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-xs">❌ អស់ពីស្តុក</span>' : 
+          '<span class="absolute top-2 left-2 z-20 bg-white/95 backdrop-blur-xs text-emerald-800 text-[9px] font-black px-2 py-0.5 rounded-full border border-emerald-300 shadow-xs">' + badgeText + '</span>';
 
         var clickAction = isOutOfStock ? '' : 'onclick="openProductDetailModal(\'' + item.id + '\')"';
         var cardOpacity = isOutOfStock ? 'opacity-65 grayscale-[30%]' : '';
 
         var btnAction = isOutOfStock ? 
-          '<button type="button" disabled class="mt-2.5 w-full py-1.5 rounded-xl bg-slate-200 text-slate-400 font-black text-[11px] cursor-not-allowed flex items-center justify-center gap-1"><i class="fas fa-ban text-[10px]"></i> អស់ស្តុក</button>' : 
-          '<button type="button" class="mt-2.5 w-full py-1.5 rounded-xl bg-slate-100 group-hover:bg-emerald-600 text-slate-700 group-hover:text-white font-black text-[11px] transition flex items-center justify-center gap-1"><i class="fas fa-plus text-[10px]"></i> ' + (inCart > 0 ? (d.btnSelect + ' (' + inCart + ')') : d.btnSelect) + '</button>';
+          '<button type="button" disabled class="mt-2.5 w-full py-2 rounded-xl bg-slate-200 text-slate-400 font-black text-[11px] cursor-not-allowed flex items-center justify-center gap-1"><i class="fas fa-ban text-[10px]"></i> អស់ស្តុក</button>' : 
+          '<button type="button" class="mt-2.5 w-full py-2 rounded-xl bg-slate-100 group-hover:bg-emerald-600 text-slate-700 group-hover:text-white font-black text-[11px] transition flex items-center justify-center gap-1 shadow-2xs"><i class="fas fa-plus text-[10px]"></i> ' + (inCart > 0 ? (d.btnSelect + ' (' + inCart + ')') : d.btnSelect) + '</button>';
 
-        // 💡 បន្ថែម mt-5 លើប្រអប់រូបភាព ដើម្បីកុំឱ្យរូបរុញទៅប៉ះ ឬបាំងអក្សរផ្លាកខាងលើ
+        // 🌟 រចនាបថថ្មី៖ ប្រអប់រូបភាពទំនិញទំហំធំស្តង់ដារ h-32 មានផ្ទៃស្រាល រួចផ្លាកអក្សរអណ្តែតពីលើរូបច្បាស់ៗ
         html += '<div ' + clickAction + ' class="kc-glass-card p-3 flex flex-col justify-between cursor-pointer relative group ' + cardOpacity + '">' +
-          badgeLabel +
-          inCartBadge +
-          '<div class="h-24 flex items-center justify-center mt-5 mb-2 group-hover:scale-105 transition-transform overflow-hidden">' + item.svg + '</div>' +
-          '<div class="space-y-1">' +
-            '<h4 class="text-xs font-bold text-slate-800 line-clamp-2 h-8 leading-snug">' + localizedName + '</h4>' +
+          '<div class="relative w-full h-32 bg-slate-50 rounded-2xl overflow-hidden flex items-center justify-center p-2 mb-2 border border-slate-100 group-hover:bg-emerald-50/40 transition">' +
+            badgeLabel +
+            inCartBadge +
+            item.svg +
+          '</div>' +
+          '<div class="space-y-1 text-left px-0.5">' +
+            '<h4 class="text-xs font-bold text-slate-900 line-clamp-2 h-8 leading-snug">' + localizedName + '</h4>' +
             '<div class="text-xs font-black text-emerald-700">៛ ' + Number(item.price).toLocaleString() + '</div>' +
           '</div>' +
           btnAction +
