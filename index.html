@@ -1583,25 +1583,78 @@
     function detectGPSLocation() {
       var hint = document.getElementById('gpsStatusHint');
       var inpUrl = document.getElementById('inp_custMapUrl');
-      var d = DICT[currentLang];
+      var btnLabel = document.getElementById('btnGpsLabel');
+      var btn = document.getElementById('btnDetectGPSAction');
+      var d = DICT[currentLang] || DICT.km;
 
+      // ១. ពិនិត្យមើលថាតើ Browser គាំទ្រ Geolocation ដែរឬទេ
       if (!navigator.geolocation) {
-        hint.innerHTML = '<span class="text-red-500 font-bold">' + d.gpsFail + '</span>';
+        if (hint) hint.innerHTML = '<span class="text-red-500 font-bold">⚠️ Browser នេះមិនគាំទ្រ GPS ទេ (សូមវាយចំណាំទីតាំងដោយដៃ)</span>';
         return;
       }
 
-      hint.innerHTML = '<span class="text-blue-600 font-bold"><i class="fas fa-spinner fa-spin"></i> ' + d.gpsDetecting + '</span>';
+      // ២. ពិនិត្យមើល HTTPS (Browser ទូរស័ព្ទតម្រូវឱ្យមាន HTTPS ទើបអនុញ្ញាតឱ្យចាប់ GPS)
+      if (!window.isSecureContext && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+        if (hint) hint.innerHTML = '<span class="text-amber-700 font-bold">🔒 GPS ដំណើរការតែលើវេបសាយមាន HTTPS (មានសញ្ញារូបសោរ)។ សូមវាយទីតាំងដោយដៃខាងក្រោម!</span>';
+        return;
+      }
 
-      navigator.geolocation.getCurrentPosition(function(pos) {
+      if (btn) btn.disabled = true;
+      if (btnLabel) btnLabel.innerText = "កំពុងចាប់ទីតាំង GPS...";
+      if (hint) hint.innerHTML = '<span class="text-blue-600 font-bold"><i class="fas fa-spinner fa-spin mr-1"></i> កំពុងចាប់ទីតាំង GPS...</span>';
+
+      function onGpsSuccess(pos) {
         var lat = pos.coords.latitude.toFixed(6);
         var lng = pos.coords.longitude.toFixed(6);
         var googleMapUrl = "https://www.google.com/maps?q=" + lat + "," + lng;
 
-        inpUrl.value = googleMapUrl;
-        hint.innerHTML = '<span class="text-emerald-700 font-bold">' + d.gpsSuccess + '</span> <a href="' + googleMapUrl + '" target="_blank" class="text-blue-600 underline font-bold ml-1">(Map)</a>';
-      }, function(err) {
-        hint.innerHTML = '<span class="text-amber-600 font-bold">' + d.gpsFail + '</span>';
-      }, { enableHighAccuracy: true, timeout: 10000 });
+        if (inpUrl) inpUrl.value = googleMapUrl;
+        if (btn) {
+          btn.disabled = false;
+          btn.className = "w-full py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-xs flex items-center justify-center gap-2 active:scale-95 transition";
+        }
+        if (btnLabel) btnLabel.innerText = "✅ ចាប់បានទីតាំងផ្ទះជោគជ័យ!";
+        if (hint) {
+          hint.innerHTML = '<span class="text-emerald-700 font-bold">✅ ចាប់បានទីតាំងជោគជ័យ!</span> <a href="' + googleMapUrl + '" target="_blank" class="text-blue-600 underline font-bold ml-1">(មើលផែនទី)</a>';
+        }
+      }
+
+      function onGpsError(err) {
+        // បើចាប់ផ្កាយរណបកម្រិតខ្ពស់មិនទាន់ (ឧទាហរណ៍ នៅក្នុងផ្ទះបាំងសេវា) ➔ សាកល្បងចាប់តាម Network/Wi-Fi ម្តងទៀតអូតូ
+        if (err.code === err.TIMEOUT || err.code === err.POSITION_UNAVAILABLE) {
+          if (hint) hint.innerHTML = '<span class="text-blue-600 font-bold"><i class="fas fa-spinner fa-spin mr-1"></i> កំពុងប្តូរមកចាប់តាមសេវា Wi-Fi/ទូរស័ព្ទ...</span>';
+          navigator.geolocation.getCurrentPosition(onGpsSuccess, function(fallbackErr) {
+            handleFinalGpsError(fallbackErr);
+          }, { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 });
+        } else {
+          handleFinalGpsError(err);
+        }
+      }
+
+      function handleFinalGpsError(err) {
+        if (btn) btn.disabled = false;
+        if (btnLabel) btnLabel.innerText = "📍 ចុចចាប់ GPS ផ្ទះខ្ញុំ (*ចាំបាច់)";
+
+        var errorMsg = "⚠️ មិនអាចចាប់ GPS បានទេ (សូមវាយទីតាំងដោយដៃ)";
+        if (err.code === 1) { // PERMISSION_DENIED
+          errorMsg = "⚠️ អ្នកបានបដិសេធសិទ្ធិ (សូមចុច Allow Location លើ Browser របស់អ្នក)!";
+        } else if (err.code === 2) { // POSITION_UNAVAILABLE
+          errorMsg = "⚠️ មិនមានសញ្ញា GPS ទេ (សូមបើក Location លើទូរស័ព្ទដៃ)!";
+        } else if (err.code === 3) { // TIMEOUT
+          errorMsg = "⚠️ ការចាប់ទីតាំងយឺតពេក (សូមចុចសាកល្បងម្តងទៀត ឬវាយទីតាំងដោយដៃ)!";
+        }
+
+        if (hint) {
+          hint.innerHTML = '<span class="text-amber-700 font-bold">' + errorMsg + '</span>';
+        }
+      }
+
+      // សាកល្បងចាប់ផ្កាយរណប (High Accuracy)
+      navigator.geolocation.getCurrentPosition(onGpsSuccess, onGpsError, {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 30000
+      });
     }
 
     function showInAppError(msg) {
