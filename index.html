@@ -1589,6 +1589,20 @@
         hint.innerHTML = '<span class="text-red-500 font-bold">' + d.gpsFail + '</span>';
         return;
       }
+
+      hint.innerHTML = '<span class="text-blue-600 font-bold"><i class="fas fa-spinner fa-spin"></i> ' + d.gpsDetecting + '</span>';
+
+      navigator.geolocation.getCurrentPosition(function(pos) {
+        var lat = pos.coords.latitude.toFixed(6);
+        var lng = pos.coords.longitude.toFixed(6);
+        var googleMapUrl = "https://www.google.com/maps?q=" + lat + "," + lng;
+
+        inpUrl.value = googleMapUrl;
+        hint.innerHTML = '<span class="text-emerald-700 font-bold">' + d.gpsSuccess + '</span> <a href="' + googleMapUrl + '" target="_blank" class="text-blue-600 underline font-bold ml-1">(Map)</a>';
+      }, function(err) {
+        hint.innerHTML = '<span class="text-amber-600 font-bold">' + d.gpsFail + '</span>';
+      }, { enableHighAccuracy: true, timeout: 10000 });
+    }
       // 📷 មុខងារបង្ហាញ & បង្រួមរូបថតមុខផ្ទះ (ប្រើ ObjectURL ល្បឿនលឿន មិនគាំងទូរស័ព្ទ និងបង្ហាញ Preview ១០០%)
     function previewHousePhotoFile(input) {
       if (!input.files || !input.files[0]) return;
