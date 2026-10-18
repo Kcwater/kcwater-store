@@ -870,7 +870,7 @@
       checkActiveOrderLiveStatus();
     }
 
-    // 📦 ១. ទាញយកទំនិញ + Description និង Badge ពី Database & Settings
+    // 📦 ១. ទាញយកទំនិញ + អត្ថបទ Description ដែលបានវាយក្នុង POS
     async function loadStoreOnlineProducts() {
       var grid = document.getElementById('catalogGrid');
       if (grid) {
@@ -886,12 +886,12 @@
 
         if (error) throw error;
 
-        // ទាញយក Description (ការពិពណ៌នា) និង Badge ដែលបាន Save ក្នុង Settings
-        var extraMap = {};
+        // ទាញយកការពិពណ៌នា និង Badge ពី Settings
+        var setMap = {};
         try {
-          const { data: setList } = await supabaseClient.from('settings').select('*');
+          const { data: setList } = await supabaseClient.from('settings').select('key, value');
           if (setList) {
-            setList.forEach(r => { extraMap[r.key] = r.value; });
+            setList.forEach(r => { setMap[r.key] = r.value; });
           }
         } catch(se) {}
 
@@ -922,10 +922,8 @@
             }
 
             var onlinePrice = parseFloat(p.online_price || p.price || 0);
-
-            // ចាប់យកអត្ថបទពិពណ៌នាផ្ទាល់ខ្លួន (ឧទាហរណ៍៖ "ផលិតនៅកម្ពុជា")
-            var customDesc = extraMap['DESC_' + p.id] || p.description || p.desc || '';
-            var customBadge = extraMap['BADGE_' + p.id] || p.badge || '';
+            var customDesc = (setMap['DESC_' + p.id] || p.description || p.desc || '').trim();
+            var customBadge = (setMap['BADGE_' + p.id] || p.badge || '').trim();
 
             return {
               id: String(p.id || ''),
@@ -936,8 +934,8 @@
               isBarrel20L: isBarrel,
               price: onlinePrice,
               svg: imgDisplay,
-              desc: customDesc.trim(),
-              badge: customBadge.trim()
+              desc: customDesc,
+              badge: customBadge
             };
           });
 
@@ -952,7 +950,7 @@
       }
     }
 
-    // 🎨 ២. បង្ហាញកាតទំនិញ (ប្លង់ថ្មី៖ ផ្លាកអក្សរនៅជួរលើដាច់ដោយឡែក គ្មានថ្ងៃរូបភាពបាំងឡើយ ១០០%)
+    // 🎨 ២. បង្ហាញកាតទំនិញ (ប្លង់បំបែកជាជួរៗដាច់ពីគ្នា គ្មានថ្ងៃរូបភាពបាំងអក្សរបានឡើយ ១០០%)
     function renderCatalogGrid(filterCat) {
       filterCat = filterCat || 'ALL';
       var grid = document.getElementById('catalogGrid');
@@ -968,7 +966,6 @@
 
         var isOutOfStock = (item.type === 'ទិញគេ' && item.stock <= 0);
 
-        // 🏷️ ផ្លាកអក្សរតាមអ្វីដែលបងបានជ្រើសរើសក្នុង POS
         var badgeText = item.badge || (item.cat === 'BARREL' ? (currentLang === 'km' ? 'ពេញនិយម' : 'Popular') : (currentLang === 'km' ? 'គុណភាពខ្ពស់' : 'Premium'));
 
         var badgeLabel = isOutOfStock ? 
@@ -983,18 +980,18 @@
           '<button type="button" disabled class="mt-2 w-full py-2 rounded-xl bg-slate-200 text-slate-400 font-black text-[11px] cursor-not-allowed flex items-center justify-center gap-1"><i class="fas fa-ban text-[10px]"></i> អស់ស្តុក</button>' : 
           '<button type="button" class="mt-2 w-full py-2 rounded-xl bg-slate-100 group-hover:bg-emerald-600 text-slate-700 group-hover:text-white font-black text-[11px] transition flex items-center justify-center gap-1 shadow-2xs"><i class="fas fa-plus text-[10px]"></i> ' + (inCart > 0 ? (d.btnSelect + ' (' + inCart + ')') : d.btnSelect) + '</button>';
 
-        // 🌟 ប្លង់កាតបំបែកជាជួរៗ (ជួរលើជាផ្លាកអក្សរ ជួរកណ្តាលជារូបភាព)
+        // 🌟 ប្លង់កាតថ្មី៖ ជួរទី ១ ជាផ្លាកអក្សរ និងជួរទី ២ ជារូបភាព (នៅដាច់ពីគ្នា មិនបាំងអក្សរឡើយ)
         html += '<div ' + clickAction + ' class="kc-glass-card p-3 flex flex-col justify-between cursor-pointer group ' + cardOpacity + '">' +
-          // ជួរទី ១៖ ផ្លាកអក្សរ & ចំនួនក្នុងកន្ត្រក (នៅដាច់ដោយឡែកពីលើរូបភាព ១០០% គ្មានថ្ងៃបាំងឡើយ)
-          '<div class="flex justify-between items-center w-full mb-1 min-h-[20px]">' +
+          // ជួរទី ១៖ ផ្លាកអក្សរ
+          '<div class="flex justify-between items-center w-full mb-1 min-h-[22px]">' +
             badgeLabel +
             inCartBadge +
           '</div>' +
-          // ជួរទី ២៖ ប្រអប់រូបភាពទំនិញស្អាត
+          // ជួរទី ២៖ ប្រអប់រូបភាពទំនិញ
           '<div class="w-full h-28 flex items-center justify-center p-1 my-1 bg-slate-50/70 rounded-2xl overflow-hidden border border-slate-100 group-hover:bg-emerald-50/40 transition">' + 
             item.svg + 
           '</div>' +
-          // ជួរទី ៣៖ ឈ្មោះទំនិញ & តម្លៃ
+          // ជួរទី ៣៖ ឈ្មោះ & តម្លៃ
           '<div class="space-y-1 text-left px-0.5 mt-1">' +
             '<h4 class="text-xs font-bold text-slate-900 line-clamp-2 h-8 leading-snug">' + localizedName + '</h4>' +
             '<div class="text-xs font-black text-emerald-700">៛ ' + Number(item.price).toLocaleString() + '</div>' +
@@ -1005,7 +1002,7 @@
       grid.innerHTML = html;
     }
 
-    // 📋 ៣. បង្ហាញផ្ទាំងព័ត៌មានទំនិញ (យកអក្សរ Description តាមអ្វីដែលបងបានវាយក្នុង POS)
+    // 📋 ៣. បង្ហាញព័ត៌មានទំនិញក្នុង Modal (បង្ហាញអក្សរដែលបងបានវាយ ១០០%)
     function openProductDetailModal(id) {
       var item = STORE_CATALOG.find(function(p){ return p.id === id; });
       if (!item) return;
@@ -1014,10 +1011,10 @@
       var localizedName = getLocalizedProductName({ name: item.raw_name }, currentLang);
       var curQty = (cartItems[item.id] && cartItems[item.id].qty > 0) ? cartItems[item.id].qty : 1;
 
-      // ✍️ យកអត្ថបទពិពណ៌នាដែលបងបានវាយក្នុង POS (ឧទាហរណ៍៖ "ផលិតនៅកម្ពុជា")
+      // ✍️ យកអត្ថបទ Description ដែលបងបានវាយក្នុង POS (ឧទាហរណ៍៖ "ផលិតនៅកម្ពុជា")
       var descText = (item.desc && item.desc.trim()) ? item.desc.trim() : '';
 
-      // បើទំនិញនោះមិនទាន់បានវាយ Description ទេ ទើបឱ្យចេញពាក្យណែនាំទូទៅ
+      // បើមិនទាន់បានវាយ Description ទេ ទើបឱ្យចេញពាក្យណែនាំទូទៅ
       if (!descText) {
         var n = (item.raw_name || '').toLowerCase();
         if (n.indexOf('ក្រដាស') !== -1) {
@@ -1031,7 +1028,7 @@
         }
       }
 
-      // បង្ហាញផ្លាក Badge លើផ្ទាំង Pop-up
+      // បង្ហាញផ្លាក Badge
       var modalBadgeEl = document.getElementById('modalBadge');
       if (modalBadgeEl) {
         modalBadgeEl.innerText = item.badge || 'KC WATER Standard';
