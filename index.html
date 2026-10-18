@@ -1010,7 +1010,48 @@
       renderCatalogGrid(cat);
     }
 
-  
+    // 📋 បង្ហាញផ្ទាំងព័ត៌មានទំនិញ (បង្ហាញអក្សរ Description តាមអ្វីដែលបងបានវាយក្នុង POS)
+    function openProductDetailModal(id) {
+      var item = STORE_CATALOG.find(function(p){ return p.id === id; });
+      if (!item) return;
+      activeModalProduct = item;
+
+      var localizedName = getLocalizedProductName({ name: item.raw_name }, currentLang);
+      var curQty = (cartItems[item.id] && cartItems[item.id].qty > 0) ? cartItems[item.id].qty : 1;
+
+      // ✍️ យកអត្ថបទ Description ដែលបងបានវាយក្នុង POS (ឧទាហរណ៍៖ "ផលិតនៅកម្ពុជា")
+      var descText = (item.desc && item.desc.trim()) ? item.desc.trim() : '';
+
+      // បើទំនិញណាដែលបងមិនទាន់បានវាយ Description ទេ ទើបឱ្យចេញពាក្យណែនាំទូទៅ
+      if (!descText) {
+        var n = (item.raw_name || '').toLowerCase();
+        if (n.indexOf('ក្រដាស') !== -1) {
+          descText = 'ក្រដាសគុណភាពខ្ពស់ ទន់ ស្វិត អនាម័យ និងសុវត្ថិភាព។ សេវាដឹកជូនដល់មុខផ្ទះដោយ KC WATER។';
+        } else if (n.indexOf('អង្ករ') !== -1) {
+          descText = 'អង្ករគុណភាពខ្ពស់ ថ្មី ក្រអូបឆ្ងាញ់ ស្តង់ដារសុវត្ថិភាព។ ដឹកជូនដល់មុខផ្ទះដោយ KC WATER។';
+        } else if (item.cat === 'EQUIP') {
+          descText = 'បរិក្ខារ និងជើងទម្រធុងទឹកគុណភាពរឹងមាំ ប្រើប្រាស់បានយូរអង្វែង។';
+        } else {
+          descText = 'ទឹកពិសាបរិសុទ្ធស្តង់ដារអនាម័យខ្ពស់ ឆ្លងកាត់ការចម្រោះ ៧ ដំណាក់កាល UV និងអូហ្សូន។ ដឹកជញ្ជូនរហ័សដោយ KC WATER។';
+        }
+      }
+
+      // បង្ហាញផ្លាក Badge
+      var modalBadgeEl = document.getElementById('modalBadge');
+      if (modalBadgeEl) {
+        modalBadgeEl.innerText = item.badge || 'KC WATER Standard';
+      }
+
+      document.getElementById('modalSvgArea').innerHTML = item.svg;
+      document.getElementById('modalTitle').innerText = localizedName;
+      document.getElementById('modalDesc').innerText = descText; // ✅ បង្ហាញ "ផលិតនៅកម្ពុជា" ត្រឹមត្រូវ ១០០%
+      document.getElementById('modalPrice').innerText = '៛ ' + Number(item.price).toLocaleString();
+      document.getElementById('modalQtyDisplay').innerText = curQty;
+
+      updateModalButtonText(curQty);
+      document.getElementById('productDetailModal').classList.remove('hidden');
+    }
+
     function closeProductDetailModal() {
       document.getElementById('productDetailModal').classList.add('hidden');
       activeModalProduct = null;
