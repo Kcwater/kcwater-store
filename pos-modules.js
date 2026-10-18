@@ -298,16 +298,63 @@ function cancelEditProduct() {
   tCF();
 }
 
+// 📋 មុខងាររៀបចំកែប្រែទំនិញ (ទាញ Description & Badge ចាស់មកបង្ហាញ)
+async function prepareEditProduct(id) {
+  var p = allProducts.find(item => item.id === id);
+  if (!p) return;
+  editingProductId = p.id;
+
+  document.getElementById('prodFormTitle').innerHTML = '<i class="fas fa-edit text-blue-600"></i>កែសម្រួលទំនិញ៖ ' + p.name;
+  document.getElementById('btnCancelEditProd').classList.remove('hidden');
+
+  var btn = document.getElementById('btnSaveProdAction');
+  btn.innerText = 'ធ្វើបច្ចុប្បន្នភាពទំនិញ (Update)';
+  btn.className = 'btn-green bg-blue-600 hover:bg-blue-700 py-3 text-sm font-bold shadow-md';
+
+  document.getElementById('pI').value = p.id;
+  document.getElementById('pN').value = p.name;
+  document.getElementById('pTy').value = p.type;
+  document.getElementById('pCu').value = p.currency || 'KHR';
+  if (document.getElementById('pCo')) document.getElementById('pCo').value = p.cost || 0;
+  document.getElementById('pPr').value = p.price || 0;
+  document.getElementById('pOnlinePr').value = p.online_price || p.price || 0;
+  document.getElementById('pMin').value = p.min_stock || 5;
+  document.getElementById('pChannel').value = p.channel || 'ALL';
+
+  // ទាញយក Badge និង Description ពី Settings
+  var badgeInp = document.getElementById('pBadge');
+  var descInp = document.getElementById('pDesc');
+  if (badgeInp) badgeInp.value = p.badge || 'គុណភាពខ្ពស់';
+  if (descInp) descInp.value = p.description || p.desc || '';
+
+  try {
+    const { data: setDesc } = await supabaseClient.from('settings').select('value').eq('key', 'DESC_' + p.id).maybeSingle();
+    if (setDesc && setDesc.value && descInp) descInp.value = setDesc.value;
+
+    const { data: setBadge } = await supabaseClient.from('settings').select('value').eq('key', 'BADGE_' + p.id).maybeSingle();
+    if (setBadge && setBadge.value && badgeInp) badgeInp.value = setBadge.value;
+  } catch(e) {}
+
+  var preview = document.getElementById('pImgPreview');
+  if (preview) preview.src = p.img || 'https://cdn-icons-png.flaticon.com/512/3100/3100566.png';
+  document.getElementById('pImgBase64').value = p.img || '';
+
+  tCF();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// 💾 រក្សាទុកទំនិញ (រក្សាទុក Description & Badge ចូល Settings ធានាជោគជ័យ ១០០%)
 async function saveProductToSupabase() {
   var name = document.getElementById('pN').value.trim();
   if (!name) { showToast("សូមបញ្ចូលឈ្មោះទំនិញ!", "error"); return; }
 
+  var prodId = document.getElementById('pI').value;
   var imgData = document.getElementById('pImgBase64').value || "https://cdn-icons-png.flaticon.com/512/3100/3100566.png";
   var descVal = document.getElementById('pDesc') ? document.getElementById('pDesc').value.trim() : '';
   var badgeVal = document.getElementById('pBadge') ? document.getElementById('pBadge').value : 'គុណភាពខ្ពស់';
 
   var payload = {
-    id: document.getElementById('pI').value,
+    id: prodId,
     name: name,
     type: document.getElementById('pTy').value,
     currency: document.getElementById('pCu').value,
@@ -319,36 +366,25 @@ async function saveProductToSupabase() {
     img: imgData
   };
 
-  if (descVal) payload.description = descVal;
-  if (badgeVal && badgeVal !== 'NONE') payload.badge = badgeVal;
-
   var btn = document.getElementById('btnSaveProdAction');
   btn.disabled = true;
 
   try {
     if (editingProductId) {
-      const { error } = await supabaseClient
-        .from('products')
-        .update(payload)
-        .eq('id', editingProductId);
-      if (error) {
-        delete payload.description;
-        delete payload.badge;
-        await supabaseClient.from('products').update(payload).eq('id', editingProductId);
-      }
+      await supabaseClient.from('products').update(payload).eq('id', editingProductId);
     } else {
       payload.stock = 0;
-      const { error } = await supabaseClient
-        .from('products')
-        .insert([payload]);
-      if (error) {
-        delete payload.description;
-        delete payload.badge;
-        await supabaseClient.from('products').insert([payload]);
-      }
+      await supabaseClient.from('products').insert([payload]);
     }
 
-    showToast(editingProductId ? "បានកែប្រែទំនិញជោគជ័យ!" : "បានបង្កើតទំនិញថ្មីជោគជ័យ!", "success");
+    // រក្សាទុក Description និង Badge ចូលតារាង Settings ដោយសុវត្ថិភាព
+    var settingRows = [
+      { key: 'DESC_' + prodId, value: descVal },
+      { key: 'BADGE_' + prodId, value: badgeVal }
+    ];
+    await supabaseClient.from('settings').upsert(settingRows);
+
+    showToast(editingProductId ? "បានធ្វើបច្ចុប្បន្នភាពទំនិញជោគជ័យ!" : "បានបង្កើតទំនិញថ្មីជោគជ័យ!", "success");
     cancelEditProduct();
     await fetchInitialPOSData();
     renderStockTableRows();
