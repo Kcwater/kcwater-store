@@ -950,49 +950,7 @@
       }
     }
     
-    function renderCatalogGrid(filterCat) {
-      filterCat = filterCat || 'ALL';
-      var grid = document.getElementById('catalogGrid');
-      if (!grid) return;
-      var d = DICT[currentLang];
-      var html = '';
-
-     STORE_CATALOG.forEach(function(item) {
-        if (filterCat !== 'ALL' && item.cat !== filterCat) return;
-        var localizedName = getLocalizedProductName({ name: item.raw_name }, currentLang);
-        var inCart = (cartItems[item.id] && cartItems[item.id].qty > 0) ? cartItems[item.id].qty : 0;
-        var inCartBadge = inCart > 0 ? '<span class="absolute top-3 right-3 w-6 h-6 rounded-full bg-emerald-600 text-white font-black text-xs flex items-center justify-center shadow">' + inCart + '</span>' : '';
-
-        // 🛡️ ឆែកមើលថាតើទំនិញនេះអស់ពីស្តុកឬនៅ
-        var isOutOfStock = (item.type === 'ទិញគេ' && item.stock <= 0);
-
-        var badgeLabel = isOutOfStock ? 
-          '<span class="absolute top-3 left-3 bg-red-100 text-red-700 text-[9px] font-black px-2 py-0.5 rounded-full border border-red-300">❌ អស់ពីស្តុក</span>' : 
-          ((item.cat === 'BARREL') ? 
-            '<span class="absolute top-3 left-3 bg-emerald-50 text-emerald-800 text-[9px] font-black px-2 py-0.5 rounded-full border border-emerald-200">' + (currentLang === 'km' ? 'ពេញនិយម' : (currentLang === 'zh' ? '热销' : 'Popular')) + '</span>' : 
-            '<span class="absolute top-3 left-3 bg-emerald-50 text-emerald-800 text-[9px] font-black px-2 py-0.5 rounded-full border border-emerald-200">' + (currentLang === 'km' ? 'គុណភាពខ្ពស់' : (currentLang === 'zh' ? '优选' : 'Premium')) + '</span>');
-
-        var clickAction = isOutOfStock ? '' : 'onclick="openProductDetailModal(\'' + item.id + '\')"';
-        var cardOpacity = isOutOfStock ? 'opacity-65 grayscale-[30%]' : '';
-
-        var btnAction = isOutOfStock ? 
-          '<button type="button" disabled class="mt-2.5 w-full py-1.5 rounded-xl bg-slate-200 text-slate-400 font-black text-[11px] cursor-not-allowed flex items-center justify-center gap-1"><i class="fas fa-ban text-[10px]"></i> អស់ស្តុក</button>' : 
-          '<button type="button" class="mt-2.5 w-full py-1.5 rounded-xl bg-slate-100 group-hover:bg-emerald-600 text-slate-700 group-hover:text-white font-black text-[11px] transition flex items-center justify-center gap-1"><i class="fas fa-plus text-[10px]"></i> ' + (inCart > 0 ? (d.btnSelect + ' (' + inCart + ')') : d.btnSelect) + '</button>';
-
-        html += '<div ' + clickAction + ' class="kc-glass-card p-3.5 flex flex-col justify-between cursor-pointer relative group ' + cardOpacity + '">' +
-          badgeLabel +
-          inCartBadge +
-          '<div class="h-24 flex items-center justify-center my-2 group-hover:scale-105 transition-transform">' + item.svg + '</div>' +
-          '<div class="space-y-1">' +
-            '<h4 class="text-xs font-bold text-slate-800 line-clamp-2 h-8 leading-snug">' + localizedName + '</h4>' +
-            '<div class="text-xs font-black text-emerald-700">៛ ' + Number(item.price).toLocaleString() + '</div>' +
-          '</div>' +
-          btnAction +
-        '</div>';
-      });
-      grid.innerHTML = html;
-    }
-
+  
     function filterCatalog(cat, btn) {
       document.querySelectorAll('.cat-chip').forEach(function(b) {
         b.className = 'cat-chip px-4 py-2 rounded-2xl bg-white text-slate-600 border border-slate-200 whitespace-nowrap active:scale-95 transition';
@@ -1001,30 +959,7 @@
       renderCatalogGrid(cat);
     }
 
-    function openProductDetailModal(id) {
-      var item = STORE_CATALOG.find(function(p){ return p.id === id; });
-      if (!item) return;
-      activeModalProduct = item;
-
-      var localizedName = getLocalizedProductName({ name: item.raw_name }, currentLang);
-      var curQty = (cartItems[item.id] && cartItems[item.id].qty > 0) ? cartItems[item.id].qty : 1;
-
-      var descMap = {
-        km: 'ទឹកពិសាបរិសុទ្ធស្តង់ដារអនាម័យខ្ពស់ ឆ្លងកាត់ការចម្រោះ ៧ ដំណាក់កាល UV និងអូហ្សូន។ ដឹកជញ្ជូនរហ័សដោយ KC WATER។',
-        en: 'KC WATER premium pure drinking water, filtered through 7 stages with UV & Ozone. Fast home delivery.',
-        zh: 'KC WATER 优质纯净饮用水，采用7道深层过滤及紫外线臭氧杀菌消毒，健康卫生，快速送达。'
-      };
-
-      document.getElementById('modalSvgArea').innerHTML = item.svg;
-      document.getElementById('modalTitle').innerText = localizedName;
-      document.getElementById('modalDesc').innerText = descMap[currentLang];
-      document.getElementById('modalPrice').innerText = '៛ ' + Number(item.price).toLocaleString();
-      document.getElementById('modalQtyDisplay').innerText = curQty;
-
-      updateModalButtonText(curQty);
-      document.getElementById('productDetailModal').classList.remove('hidden');
-    }
-
+  
     function closeProductDetailModal() {
       document.getElementById('productDetailModal').classList.add('hidden');
       activeModalProduct = null;
