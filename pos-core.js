@@ -598,8 +598,10 @@ async function confirmQuickRestockSubmit() {
 }
 
 // ==========================================
-// 🛒 ៣. ផ្ទាំងលក់ POS & របៀបដកទំនិញជំនួសម៉ូយ (SMART PROXY MODE)
+// 🛒 ៣. ផ្ទាំងលក់ POS (មានប្រអប់ SEARCH & ប្រភេទ «ទំនិញទូទៅ/គ្រឿងទេស»)
 // ==========================================
+var currentPosSearchKeyword = '';
+
 function renderPOSModule() {
   var area = document.getElementById('contentArea');
   
@@ -678,7 +680,7 @@ function renderPOSModule() {
     '</div>';
   }
 
-  // ផ្នែកបង់លុយ (Payment Section)
+  // ផ្នែកបង់លុយ
   var paymentSectionHTML = '';
   if (isAdmin || isSeller) {
     paymentSectionHTML = '<div id="posPaymentSectionWrapper"><div class="bg-blue-50/60 p-4 rounded-2xl border border-blue-200 space-y-3 mt-3">' +
@@ -704,18 +706,30 @@ function renderPOSModule() {
   } else if (isSeller) {
     submitBtnHTML = '<button onclick="confirmSale()" id="sBtn" class="btn-green shadow-xl active:scale-95 transition mt-4 py-3.5 text-base flex items-center justify-center w-full font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-2xl"><i class="fas fa-file-pen mr-2 text-lg"></i>កត់ត្រាការលក់ (រង់ចាំ Admin ពិនិត្យ)</button>';
   } else {
-    // 👑 ប៊ូតុងសម្រាប់ Admin (ប្តូរអត្ថបទអូតូតាមអតិថិជនដែលបានជ្រើសរើស)
     submitBtnHTML = '<button onclick="confirmSale()" id="sBtn" class="btn-green shadow-xl active:scale-95 transition mt-4 py-3.5 text-base flex items-center justify-center w-full font-bold">រក្សាទុកការលក់ (Save Sale)</button>';
   }
 
   area.innerHTML = '<div class="max-w-4xl mx-auto space-y-4">' +
     customerHeaderHTML +
+
+    // 🏷️ ប៊ូតុងប្រភេទ ៤ (ទាំងអស់ / ទឹកធុង ២០L / ទឹកយួរ/ដប / ទំនិញទូទៅ/គ្រឿងទេស)
     '<div class="flex flex-wrap gap-2 pb-1">' +
       '<button onclick="setPosCategoryFilter(\'ALL\')" id="catTab_ALL" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-green-700 text-white shadow-md active:scale-95 transition"><i class="fas fa-border-all mr-1"></i> ទាំងអស់</button>' +
       '<button onclick="setPosCategoryFilter(\'BARREL\')" id="catTab_BARREL" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-white text-gray-700 border hover:bg-gray-50 active:scale-95 transition"><i class="fas fa-wine-bottle text-blue-600 mr-1"></i> ទឹកធុង ២០L</button>' +
       '<button onclick="setPosCategoryFilter(\'PACK\')" id="catTab_PACK" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-white text-gray-700 border hover:bg-gray-50 active:scale-95 transition"><i class="fas fa-box-open text-amber-600 mr-1"></i> ទឹកយួរ/ដប</button>' +
+      '<button onclick="setPosCategoryFilter(\'GENERAL\')" id="catTab_GENERAL" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-white text-slate-700 border hover:bg-gray-50 active:scale-95 transition"><i class="fas fa-boxes-stacked text-emerald-600 mr-1"></i> ទំនិញទូទៅ/គ្រឿងទេស</button>' +
     '</div>' +
-    '<div id="pGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5"></div>' +
+
+    // 🔍 ប្រអប់ Search រកទំនិញរហ័សលើ POS
+    '<div class="relative">' +
+      '<input type="text" id="posProductSearchInp" oninput="onPosSearchInput(this.value)" placeholder="🔍 វាយឈ្មោះទំនិញដើម្បីស្វែងរក (ឧ៖ ក្រដាស, អង្ករ, 500ml, ធុងស)..." class="w-full border-2 border-gray-200 focus:border-green-600 rounded-2xl p-2.5 pl-9 font-bold text-xs outline-none bg-white shadow-2xs">' +
+      '<i class="fas fa-search absolute left-3 top-3.5 text-gray-400 text-xs pointer-events-none"></i>' +
+    '</div>' +
+
+    // ក្រឡាចត្រង្គទំនិញ
+    '<div id="pGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5 pt-1"></div>' +
+
+    // កន្ត្រកទំនិញ
     '<div class="card border-t-4 border-green-600 shadow-xl p-4 sm:p-5">' +
       '<div class="flex justify-between items-center mb-3"><h3 class="font-extrabold text-gray-800 text-sm sm:text-base flex items-center"><i class="fas fa-shopping-cart mr-2 text-green-600"></i>បញ្ជីទំនិញក្នុងកន្ត្រក</h3><span id="cartCountBadge" class="bg-green-100 text-green-800 text-xs px-2.5 py-0.5 rounded-full font-bold">0 មុខ</span></div>' +
       '<div class="overflow-x-auto rounded-xl border border-gray-100 mb-3"><table class="w-full text-left text-xs border-collapse"><thead><tr class="bg-gray-100 text-gray-700 font-bold border-b"><th class="p-2.5">ទំនិញ</th><th class="p-2.5 text-center">ចំនួន</th><th class="p-2.5 text-right">តម្លៃរាយ</th><th class="p-2.5 text-right">សរុប</th><th class="p-2.5 text-center">លុប</th></tr></thead><tbody id="cItemsTableBody"><tr><td colspan="5" class="p-4 text-center text-gray-400 italic">កន្ត្រកទទេ</td></tr></tbody></table></div>' +
@@ -728,6 +742,12 @@ function renderPOSModule() {
 
   rPG();
   rC();
+}
+
+// 🔍 មុខងារ Search រកទំនិញលើ POS ភ្លាមៗ
+function onPosSearchInput(val) {
+  currentPosSearchKeyword = (val || '').toLowerCase().trim();
+  rPG();
 }
 
 // 🚚 មុខងារឆ្លាតវៃពេល Admin ជ្រើសរើសឈ្មោះម៉ូយក្នុង POS (Smart Proxy Handler)
@@ -783,6 +803,7 @@ function onAdminPosCustomerChange(val) {
   rPG();
   rC();
 }
+
 function setDiscountType(type) {
   currentPosDiscount.type = type;
   var row = document.getElementById('discountInputRow');
@@ -812,7 +833,7 @@ function applyDiscountValue(val) {
 
 function setPosCategoryFilter(cat) {
   currentPosCategoryFilter = cat;
-  ['ALL', 'BARREL', 'PACK'].forEach(function(t) {
+  ['ALL', 'BARREL', 'PACK', 'GENERAL'].forEach(function(t) {
     var btn = document.getElementById('catTab_' + t);
     if (!btn) return;
     if (t === cat) btn.className = "px-3.5 py-2 rounded-xl text-xs font-bold bg-green-700 text-white shadow-md active:scale-95 transition";
@@ -821,6 +842,7 @@ function setPosCategoryFilter(cat) {
   rPG();
 }
 
+// 📦 មុខងារទាញទំនិញមកបង្ហាញក្នុងក្រឡាចត្រង្គ POS (មាន Filter ប្រភេទ & Search)
 function rPG() {
   var grid = document.getElementById('pGrid');
   if (!grid) return;
@@ -839,8 +861,25 @@ function rPG() {
     }
 
     var nameLower = (p.name || '').toLowerCase();
-    if (currentPosCategoryFilter === 'BARREL') return (nameLower.indexOf('ធុង') !== -1 || nameLower.indexOf('20l') !== -1);
-    if (currentPosCategoryFilter === 'PACK') return (nameLower.indexOf('យួរ') !== -1 || nameLower.indexOf('ដប') !== -1);
+
+    // ១. ចម្រាញ់តាមប្រភេទ Category
+    if (currentPosCategoryFilter === 'BARREL') {
+      if (nameLower.indexOf('ធុង') === -1 && nameLower.indexOf('20l') === -1 && nameLower.indexOf('២០') === -1) return false;
+    } else if (currentPosCategoryFilter === 'PACK') {
+      if (nameLower.indexOf('យួរ') === -1 && nameLower.indexOf('ដប') === -1 && nameLower.indexOf('កេស') === -1) return false;
+    } else if (currentPosCategoryFilter === 'GENERAL') {
+      var isBarrel = (nameLower.indexOf('ធុង') !== -1 || nameLower.indexOf('20l') !== -1 || nameLower.indexOf('២០') !== -1);
+      var isPack = (nameLower.indexOf('យួរ') !== -1 || nameLower.indexOf('ដប') !== -1 || nameLower.indexOf('កេស') !== -1);
+      if (isBarrel || isPack) return false;
+    }
+
+    // ២. ចម្រាញ់តាមពាក្យ Search
+    if (currentPosSearchKeyword) {
+      if (nameLower.indexOf(currentPosSearchKeyword) === -1 && String(p.id || '').toLowerCase().indexOf(currentPosSearchKeyword) === -1) {
+        return false;
+      }
+    }
+
     return true;
   });
 
@@ -859,7 +898,7 @@ function rPG() {
 
     html += '<div onclick="openProductModal(\'' + p.id + '\')" class="bg-white p-3 rounded-2xl shadow-sm hover:shadow-xl border border-gray-100 hover:border-green-400 transition-all cursor-pointer active:scale-95 flex flex-col items-center justify-between text-center relative group">' +
       spBadge +
-      '<span class="absolute top-2 right-2 bg-green-100 text-green-800 text-[9px] font-bold px-1.5 py-0.2 rounded-full">សល់ ' + p.stock + '</span>' +
+      '<span class="absolute top-2 right-2 bg-green-100 text-green-800 text-[9px] font-bold px-1.5 py-0.2 rounded-full">' + (p.type === 'ផលិតឯង' ? 'ផលិតឯង' : ('សល់ ' + p.stock)) + '</span>' +
       '<div class="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center mb-1"><img src="' + imgUrl + '" class="max-w-full max-h-full object-contain drop-shadow-sm"></div>' +
       '<h4 class="text-xs sm:text-sm font-bold text-gray-800 line-clamp-2 h-8 flex items-center justify-center">' + p.name + '</h4>' +
       '<p class="text-xs sm:text-sm font-extrabold text-green-600 mt-1">' + Number(unitPrice).toLocaleString() + ' ៛</p>' +
@@ -867,8 +906,9 @@ function rPG() {
     '</div>';
   });
 
-  grid.innerHTML = html || '<p class="col-span-full py-8 text-center text-gray-400 text-xs italic">មិនមានទំនិញក្នុងប្រភេទនេះឡើយ</p>';
+  grid.innerHTML = html || '<p class="col-span-full py-8 text-center text-gray-400 text-xs italic">រកមិនឃើញទំនិញត្រូវនឹងការស្វែងរកឡើយ</p>';
 }
+
 
 // ==========================================
 // 💵 ប្រព័ន្ធគ្រប់គ្រង ៣ រូបិយប័ណ្ណ, ប្តូរពណ៌ & ថែម 00 (MODAL LOGIC)
