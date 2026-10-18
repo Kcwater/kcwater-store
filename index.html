@@ -870,7 +870,7 @@
       checkActiveOrderLiveStatus();
     }
 
-    // 📦 ១. ទាញយកទំនិញ + អត្ថបទ Description ដែលបានវាយក្នុង POS
+   // 📦 ១. ទាញយកទំនិញ + អត្ថបទ Description ដែលបានវាយក្នុង POS
     async function loadStoreOnlineProducts() {
       var grid = document.getElementById('catalogGrid');
       if (grid) {
@@ -1042,8 +1042,7 @@
 
       updateModalButtonText(curQty);
       document.getElementById('productDetailModal').classList.remove('hidden');
-    }
-    
+    }    
     function renderCatalogGrid(filterCat) {
       filterCat = filterCat || 'ALL';
       var grid = document.getElementById('catalogGrid');
