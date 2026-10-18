@@ -870,6 +870,7 @@
       checkActiveOrderLiveStatus();
     }
 
+    // 📦 ១. ទាញយកទំនិញ + Description និង Badge ពី Database & Settings
     async function loadStoreOnlineProducts() {
       var grid = document.getElementById('catalogGrid');
       if (grid) {
@@ -885,7 +886,7 @@
 
         if (error) throw error;
 
-        // ទាញយកការពិពណ៌នា និង Badge ពីតារាង Settings
+        // ទាញយក Description (ការពិពណ៌នា) និង Badge ដែលបាន Save ក្នុង Settings
         var extraMap = {};
         try {
           const { data: setList } = await supabaseClient.from('settings').select('*');
@@ -915,12 +916,14 @@
             var rawImg = (p.img || '').trim();
 
             if (rawImg && (rawImg.startsWith('http') || rawImg.startsWith('data:image'))) {
-              imgDisplay = '<img src="' + rawImg + '" class="h-28 w-28 object-contain rounded-2xl mx-auto drop-shadow-sm group-hover:scale-105 transition-transform duration-200" onerror="this.onerror=null; this.src=\'https://cdn-icons-png.flaticon.com/512/3100/3100566.png\';">';
+              imgDisplay = '<img src="' + rawImg + '" class="max-h-24 max-w-[120px] object-contain rounded-xl mx-auto drop-shadow-sm group-hover:scale-105 transition-transform duration-200" onerror="this.onerror=null; this.src=\'https://cdn-icons-png.flaticon.com/512/3100/3100566.png\';">';
             } else {
-              imgDisplay = '<img src="https://cdn-icons-png.flaticon.com/512/3100/3100566.png" class="h-24 w-24 object-contain opacity-80 mx-auto drop-shadow-sm group-hover:scale-105 transition-transform duration-200">';
+              imgDisplay = '<img src="https://cdn-icons-png.flaticon.com/512/3100/3100566.png" class="max-h-20 max-w-[100px] object-contain opacity-80 mx-auto drop-shadow-sm group-hover:scale-105 transition-transform duration-200">';
             }
 
             var onlinePrice = parseFloat(p.online_price || p.price || 0);
+
+            // ចាប់យកអត្ថបទពិពណ៌នាផ្ទាល់ខ្លួន (ឧទាហរណ៍៖ "ផលិតនៅកម្ពុជា")
             var customDesc = extraMap['DESC_' + p.id] || p.description || p.desc || '';
             var customBadge = extraMap['BADGE_' + p.id] || p.badge || '';
 
@@ -949,7 +952,7 @@
       }
     }
 
-    // 🎨 បង្ហាញកាតទំនិញ (ប្លង់ថ្មី៖ ផ្លាកអក្សរនៅជួរខាងលើដាច់ដោយឡែក មិនប៉ះពាល់រូបភាព ១០០%)
+    // 🎨 ២. បង្ហាញកាតទំនិញ (ប្លង់ថ្មី៖ ផ្លាកអក្សរនៅជួរលើដាច់ដោយឡែក គ្មានថ្ងៃរូបភាពបាំងឡើយ ១០០%)
     function renderCatalogGrid(filterCat) {
       filterCat = filterCat || 'ALL';
       var grid = document.getElementById('catalogGrid');
@@ -961,37 +964,38 @@
         if (filterCat !== 'ALL' && item.cat !== filterCat) return;
         var localizedName = getLocalizedProductName({ name: item.raw_name }, currentLang);
         var inCart = (cartItems[item.id] && cartItems[item.id].qty > 0) ? cartItems[item.id].qty : 0;
-        var inCartBadge = inCart > 0 ? '<span class="w-6 h-6 rounded-full bg-emerald-600 text-white font-black text-xs flex items-center justify-center shadow-md">' + inCart + '</span>' : '<span></span>';
+        var inCartBadge = inCart > 0 ? '<span class="w-6 h-6 rounded-full bg-emerald-600 text-white font-black text-xs flex items-center justify-center shadow-md shrink-0">' + inCart + '</span>' : '<span></span>';
 
         var isOutOfStock = (item.type === 'ទិញគេ' && item.stock <= 0);
 
+        // 🏷️ ផ្លាកអក្សរតាមអ្វីដែលបងបានជ្រើសរើសក្នុង POS
         var badgeText = item.badge || (item.cat === 'BARREL' ? (currentLang === 'km' ? 'ពេញនិយម' : 'Popular') : (currentLang === 'km' ? 'គុណភាពខ្ពស់' : 'Premium'));
 
         var badgeLabel = isOutOfStock ? 
-          '<span class="bg-red-100 text-red-700 text-[9.5px] font-black px-2 py-0.5 rounded-full border border-red-200">❌ អស់ពីស្តុក</span>' : 
+          '<span class="bg-red-100 text-red-700 text-[9px] font-black px-2 py-0.5 rounded-full border border-red-200">❌ អស់ស្តុក</span>' : 
           ((badgeText !== 'NONE') ? 
-            '<span class="bg-emerald-50 text-emerald-800 text-[9.5px] font-black px-2 py-0.5 rounded-full border border-emerald-200">' + badgeText + '</span>' : '<span></span>');
+            '<span class="bg-emerald-50 text-emerald-800 text-[9px] font-black px-2 py-0.5 rounded-full border border-emerald-200">' + badgeText + '</span>' : '<span></span>');
 
         var clickAction = isOutOfStock ? '' : 'onclick="openProductDetailModal(\'' + item.id + '\')"';
         var cardOpacity = isOutOfStock ? 'opacity-65 grayscale-[30%]' : '';
 
         var btnAction = isOutOfStock ? 
-          '<button type="button" disabled class="mt-2.5 w-full py-2 rounded-xl bg-slate-200 text-slate-400 font-black text-[11px] cursor-not-allowed flex items-center justify-center gap-1"><i class="fas fa-ban text-[10px]"></i> អស់ស្តុក</button>' : 
-          '<button type="button" class="mt-2.5 w-full py-2 rounded-xl bg-slate-100 group-hover:bg-emerald-600 text-slate-700 group-hover:text-white font-black text-[11px] transition flex items-center justify-center gap-1 shadow-2xs"><i class="fas fa-plus text-[10px]"></i> ' + (inCart > 0 ? (d.btnSelect + ' (' + inCart + ')') : d.btnSelect) + '</button>';
+          '<button type="button" disabled class="mt-2 w-full py-2 rounded-xl bg-slate-200 text-slate-400 font-black text-[11px] cursor-not-allowed flex items-center justify-center gap-1"><i class="fas fa-ban text-[10px]"></i> អស់ស្តុក</button>' : 
+          '<button type="button" class="mt-2 w-full py-2 rounded-xl bg-slate-100 group-hover:bg-emerald-600 text-slate-700 group-hover:text-white font-black text-[11px] transition flex items-center justify-center gap-1 shadow-2xs"><i class="fas fa-plus text-[10px]"></i> ' + (inCart > 0 ? (d.btnSelect + ' (' + inCart + ')') : d.btnSelect) + '</button>';
 
-        // 🌟 ប្លង់កាតស្តង់ដារ៖ មានជួរខាងលើផ្ទុកផ្លាកអក្សរដាច់ដោយឡែក ហើយរូបភាពនៅចំកណ្តាលយ៉ាងស្អាត
-        html += '<div ' + clickAction + ' class="kc-glass-card p-3 flex flex-col justify-between cursor-pointer relative group ' + cardOpacity + '">' +
-          // ជួរក្បាលកាត (ផ្លាកអក្សរ និងចំនួនកន្ត្រក)
-          '<div class="flex justify-between items-center w-full mb-1 min-h-[22px]">' +
+        // 🌟 ប្លង់កាតបំបែកជាជួរៗ (ជួរលើជាផ្លាកអក្សរ ជួរកណ្តាលជារូបភាព)
+        html += '<div ' + clickAction + ' class="kc-glass-card p-3 flex flex-col justify-between cursor-pointer group ' + cardOpacity + '">' +
+          // ជួរទី ១៖ ផ្លាកអក្សរ & ចំនួនក្នុងកន្ត្រក (នៅដាច់ដោយឡែកពីលើរូបភាព ១០០% គ្មានថ្ងៃបាំងឡើយ)
+          '<div class="flex justify-between items-center w-full mb-1 min-h-[20px]">' +
             badgeLabel +
             inCartBadge +
           '</div>' +
-          // ប្រអប់រូបភាពទំនិញ
-          '<div class="h-32 w-full flex items-center justify-center overflow-hidden my-1">' + 
+          // ជួរទី ២៖ ប្រអប់រូបភាពទំនិញស្អាត
+          '<div class="w-full h-28 flex items-center justify-center p-1 my-1 bg-slate-50/70 rounded-2xl overflow-hidden border border-slate-100 group-hover:bg-emerald-50/40 transition">' + 
             item.svg + 
           '</div>' +
-          // ឈ្មោះ និងតម្លៃ
-          '<div class="space-y-1 text-left px-0.5">' +
+          // ជួរទី ៣៖ ឈ្មោះទំនិញ & តម្លៃ
+          '<div class="space-y-1 text-left px-0.5 mt-1">' +
             '<h4 class="text-xs font-bold text-slate-900 line-clamp-2 h-8 leading-snug">' + localizedName + '</h4>' +
             '<div class="text-xs font-black text-emerald-700">៛ ' + Number(item.price).toLocaleString() + '</div>' +
           '</div>' +
@@ -1000,7 +1004,8 @@
       });
       grid.innerHTML = html;
     }
-    // 📋 បង្ហាញព័ត៌មានលម្អិតទំនិញ (ពិពណ៌នាត្រូវតាមមុខទំនិញនីមួយៗ មិនច្រឡំក្រដាសជាទឹកពិសាទៀតឡើយ)
+
+    // 📋 ៣. បង្ហាញផ្ទាំងព័ត៌មានទំនិញ (យកអក្សរ Description តាមអ្វីដែលបងបានវាយក្នុង POS)
     function openProductDetailModal(id) {
       var item = STORE_CATALOG.find(function(p){ return p.id === id; });
       if (!item) return;
@@ -1009,34 +1014,32 @@
       var localizedName = getLocalizedProductName({ name: item.raw_name }, currentLang);
       var curQty = (cartItems[item.id] && cartItems[item.id].qty > 0) ? cartItems[item.id].qty : 1;
 
-      // ✍️ កំណត់ការពិពណ៌នាឆ្លាតវៃតាមមុខទំនិញជាក់ស្តែង
-      var descText = '';
-      if (item.desc && item.desc.length > 0) {
-        descText = item.desc;
-      } else {
+      // ✍️ យកអត្ថបទពិពណ៌នាដែលបងបានវាយក្នុង POS (ឧទាហរណ៍៖ "ផលិតនៅកម្ពុជា")
+      var descText = (item.desc && item.desc.trim()) ? item.desc.trim() : '';
+
+      // បើទំនិញនោះមិនទាន់បានវាយ Description ទេ ទើបឱ្យចេញពាក្យណែនាំទូទៅ
+      if (!descText) {
         var n = (item.raw_name || '').toLowerCase();
         if (n.indexOf('ក្រដាស') !== -1) {
-          descText = (currentLang === 'km') ? 
-            'ក្រដាសគុណភាពខ្ពស់ ទន់ ស្វិត ស្រូបទឹកបានល្អ អនាម័យ និងសុវត្ថិភាពខ្ពស់។ សេវាដឹកជញ្ជូនរហ័សដល់មុខផ្ទះដោយ KC WATER។' : 
-            'Premium quality tissue/paper, soft, hygienic and strong. Fast home delivery by KC WATER.';
+          descText = 'ក្រដាសគុណភាពខ្ពស់ ទន់ ស្វិត អនាម័យ និងសុវត្ថិភាព។ សេវាដឹកជូនដល់មុខផ្ទះដោយ KC WATER។';
         } else if (n.indexOf('អង្ករ') !== -1) {
-          descText = (currentLang === 'km') ? 
-            'អង្ករគុណភាពខ្ពស់ គ្រាប់វែង ថ្មី ក្រអូបឈ្ងុយឆ្ងាញ់ ស្តង់ដារសុវត្ថិភាពម្ហូបអាហារ ១០០%។ ដឹកជញ្ជូនរហ័សដោយ KC WATER។' : 
-            'High quality premium rice, fragrant, fresh and delicious. Fast home delivery by KC WATER.';
+          descText = 'អង្ករគុណភាពខ្ពស់ ថ្មី ក្រអូបឆ្ងាញ់ ស្តង់ដារសុវត្ថិភាព។ ដឹកជូនដល់មុខផ្ទះដោយ KC WATER។';
         } else if (item.cat === 'EQUIP') {
-          descText = (currentLang === 'km') ? 
-            'បរិក្ខារ និងជើងទម្រធុងទឹកគុណភាពរឹងមាំ ប្រើប្រាស់បានយូរអង្វែង និងងាយស្រួលដំឡើង។' : 
-            'Durable water equipment and barrel stands, long-lasting and easy to install.';
+          descText = 'បរិក្ខារ និងជើងទម្រធុងទឹកគុណភាពរឹងមាំ ប្រើប្រាស់បានយូរអង្វែង។';
         } else {
-          descText = (currentLang === 'km') ? 
-            'ទឹកពិសាបរិសុទ្ធស្តង់ដារអនាម័យខ្ពស់ ឆ្លងកាត់ការចម្រោះ ៧ ដំណាក់កាល UV និងអូហ្សូន។ ដឹកជញ្ជូនរហ័សដោយ KC WATER។' : 
-            'KC WATER premium pure drinking water, filtered through 7 stages with UV & Ozone. Fast home delivery.';
+          descText = 'ទឹកពិសាបរិសុទ្ធស្តង់ដារអនាម័យខ្ពស់ ឆ្លងកាត់ការចម្រោះ ៧ ដំណាក់កាល UV និងអូហ្សូន។ ដឹកជញ្ជូនរហ័សដោយ KC WATER។';
         }
+      }
+
+      // បង្ហាញផ្លាក Badge លើផ្ទាំង Pop-up
+      var modalBadgeEl = document.getElementById('modalBadge');
+      if (modalBadgeEl) {
+        modalBadgeEl.innerText = item.badge || 'KC WATER Standard';
       }
 
       document.getElementById('modalSvgArea').innerHTML = item.svg;
       document.getElementById('modalTitle').innerText = localizedName;
-      document.getElementById('modalDesc').innerText = descText;
+      document.getElementById('modalDesc').innerText = descText; // ✅ បង្ហាញ "ផលិតនៅកម្ពុជា" ត្រឹមត្រូវ ១០០%
       document.getElementById('modalPrice').innerText = '៛ ' + Number(item.price).toLocaleString();
       document.getElementById('modalQtyDisplay').innerText = curQty;
 
