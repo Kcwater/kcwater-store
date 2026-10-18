@@ -885,6 +885,15 @@
 
         if (error) throw error;
 
+        // ទាញយកការពិពណ៌នា និង Badge ពីតារាង Settings
+        var extraMap = {};
+        try {
+          const { data: setList } = await supabaseClient.from('settings').select('*');
+          if (setList) {
+            setList.forEach(r => { extraMap[r.key] = r.value; });
+          }
+        } catch(se) {}
+
         if (list && list.length > 0) {
           STORE_CATALOG = list.map(function(p) {
             var nameLower = (p.name || '').toLowerCase();
@@ -905,14 +914,15 @@
             var imgDisplay = '';
             var rawImg = (p.img || '').trim();
 
-            // 🖼️ កំណត់រូបភាពទំនិញទំហំធំល្មមស្អាតស្តង់ដារ (Standard Product Size)
             if (rawImg && (rawImg.startsWith('http') || rawImg.startsWith('data:image'))) {
-              imgDisplay = '<img src="' + rawImg + '" class="max-h-28 max-w-full object-contain mx-auto drop-shadow-sm group-hover:scale-105 transition-transform duration-200" onerror="this.onerror=null; this.src=\'https://cdn-icons-png.flaticon.com/512/3100/3100566.png\';">';
+              imgDisplay = '<img src="' + rawImg + '" class="h-28 w-28 object-contain rounded-2xl mx-auto drop-shadow-sm group-hover:scale-105 transition-transform duration-200" onerror="this.onerror=null; this.src=\'https://cdn-icons-png.flaticon.com/512/3100/3100566.png\';">';
             } else {
-              imgDisplay = '<img src="https://cdn-icons-png.flaticon.com/512/3100/3100566.png" class="max-h-24 max-w-full object-contain opacity-80 mx-auto drop-shadow-sm group-hover:scale-105 transition-transform duration-200">';
+              imgDisplay = '<img src="https://cdn-icons-png.flaticon.com/512/3100/3100566.png" class="h-24 w-24 object-contain opacity-80 mx-auto drop-shadow-sm group-hover:scale-105 transition-transform duration-200">';
             }
 
             var onlinePrice = parseFloat(p.online_price || p.price || 0);
+            var customDesc = extraMap['DESC_' + p.id] || p.description || p.desc || '';
+            var customBadge = extraMap['BADGE_' + p.id] || p.badge || '';
 
             return {
               id: String(p.id || ''),
@@ -923,8 +933,8 @@
               isBarrel20L: isBarrel,
               price: onlinePrice,
               svg: imgDisplay,
-              desc: (p.description || p.desc || '').trim(), // ទាញយកការពិពណ៌នាផ្ទាល់ខ្លួនពី POS
-              badge: (p.badge || '').trim() // ទាញយកផ្លាកដែលបងបានកំណត់
+              desc: customDesc.trim(),
+              badge: customBadge.trim()
             };
           });
 
@@ -939,7 +949,7 @@
       }
     }
 
-    // 🎨 បង្ហាញកាតទំនិញ (រូបធំស្តង់ដារ + ផ្លាកអក្សរអណ្តែតលើរូបស្អាត គ្មានថ្ងៃបាំងអក្សរឡើយ)
+    // 🎨 បង្ហាញកាតទំនិញ (ប្លង់ថ្មី៖ ផ្លាកអក្សរនៅជួរខាងលើដាច់ដោយឡែក មិនប៉ះពាល់រូបភាព ១០០%)
     function renderCatalogGrid(filterCat) {
       filterCat = filterCat || 'ALL';
       var grid = document.getElementById('catalogGrid');
@@ -951,16 +961,16 @@
         if (filterCat !== 'ALL' && item.cat !== filterCat) return;
         var localizedName = getLocalizedProductName({ name: item.raw_name }, currentLang);
         var inCart = (cartItems[item.id] && cartItems[item.id].qty > 0) ? cartItems[item.id].qty : 0;
-        var inCartBadge = inCart > 0 ? '<span class="absolute top-2 right-2 z-20 w-6 h-6 rounded-full bg-emerald-600 text-white font-black text-xs flex items-center justify-center shadow-md">' + inCart + '</span>' : '';
+        var inCartBadge = inCart > 0 ? '<span class="w-6 h-6 rounded-full bg-emerald-600 text-white font-black text-xs flex items-center justify-center shadow-md">' + inCart + '</span>' : '<span></span>';
 
         var isOutOfStock = (item.type === 'ទិញគេ' && item.stock <= 0);
 
-        // 🏷️ ផ្លាកអក្សរអណ្តែតពីលើជ្រុងរូបភាពទំនិញផ្ទាល់ (Floating Badge over Image)
         var badgeText = item.badge || (item.cat === 'BARREL' ? (currentLang === 'km' ? 'ពេញនិយម' : 'Popular') : (currentLang === 'km' ? 'គុណភាពខ្ពស់' : 'Premium'));
 
         var badgeLabel = isOutOfStock ? 
-          '<span class="absolute top-2 left-2 z-20 bg-red-600/90 backdrop-blur-xs text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-xs">❌ អស់ពីស្តុក</span>' : 
-          '<span class="absolute top-2 left-2 z-20 bg-white/95 backdrop-blur-xs text-emerald-800 text-[9px] font-black px-2 py-0.5 rounded-full border border-emerald-300 shadow-xs">' + badgeText + '</span>';
+          '<span class="bg-red-100 text-red-700 text-[9.5px] font-black px-2 py-0.5 rounded-full border border-red-200">❌ អស់ពីស្តុក</span>' : 
+          ((badgeText !== 'NONE') ? 
+            '<span class="bg-emerald-50 text-emerald-800 text-[9.5px] font-black px-2 py-0.5 rounded-full border border-emerald-200">' + badgeText + '</span>' : '<span></span>');
 
         var clickAction = isOutOfStock ? '' : 'onclick="openProductDetailModal(\'' + item.id + '\')"';
         var cardOpacity = isOutOfStock ? 'opacity-65 grayscale-[30%]' : '';
@@ -969,13 +979,18 @@
           '<button type="button" disabled class="mt-2.5 w-full py-2 rounded-xl bg-slate-200 text-slate-400 font-black text-[11px] cursor-not-allowed flex items-center justify-center gap-1"><i class="fas fa-ban text-[10px]"></i> អស់ស្តុក</button>' : 
           '<button type="button" class="mt-2.5 w-full py-2 rounded-xl bg-slate-100 group-hover:bg-emerald-600 text-slate-700 group-hover:text-white font-black text-[11px] transition flex items-center justify-center gap-1 shadow-2xs"><i class="fas fa-plus text-[10px]"></i> ' + (inCart > 0 ? (d.btnSelect + ' (' + inCart + ')') : d.btnSelect) + '</button>';
 
-        // 🌟 រចនាបថថ្មី៖ ប្រអប់រូបភាពទំនិញទំហំធំស្តង់ដារ h-32 មានផ្ទៃស្រាល រួចផ្លាកអក្សរអណ្តែតពីលើរូបច្បាស់ៗ
+        // 🌟 ប្លង់កាតស្តង់ដារ៖ មានជួរខាងលើផ្ទុកផ្លាកអក្សរដាច់ដោយឡែក ហើយរូបភាពនៅចំកណ្តាលយ៉ាងស្អាត
         html += '<div ' + clickAction + ' class="kc-glass-card p-3 flex flex-col justify-between cursor-pointer relative group ' + cardOpacity + '">' +
-          '<div class="relative w-full h-32 bg-slate-50 rounded-2xl overflow-hidden flex items-center justify-center p-2 mb-2 border border-slate-100 group-hover:bg-emerald-50/40 transition">' +
+          // ជួរក្បាលកាត (ផ្លាកអក្សរ និងចំនួនកន្ត្រក)
+          '<div class="flex justify-between items-center w-full mb-1 min-h-[22px]">' +
             badgeLabel +
             inCartBadge +
-            item.svg +
           '</div>' +
+          // ប្រអប់រូបភាពទំនិញ
+          '<div class="h-32 w-full flex items-center justify-center overflow-hidden my-1">' + 
+            item.svg + 
+          '</div>' +
+          // ឈ្មោះ និងតម្លៃ
           '<div class="space-y-1 text-left px-0.5">' +
             '<h4 class="text-xs font-bold text-slate-900 line-clamp-2 h-8 leading-snug">' + localizedName + '</h4>' +
             '<div class="text-xs font-black text-emerald-700">៛ ' + Number(item.price).toLocaleString() + '</div>' +
@@ -985,7 +1000,6 @@
       });
       grid.innerHTML = html;
     }
-
     // 📋 បង្ហាញព័ត៌មានលម្អិតទំនិញ (ពិពណ៌នាត្រូវតាមមុខទំនិញនីមួយៗ មិនច្រឡំក្រដាសជាទឹកពិសាទៀតឡើយ)
     function openProductDetailModal(id) {
       var item = STORE_CATALOG.find(function(p){ return p.id === id; });
