@@ -244,39 +244,6 @@ function renderStockTableRows() {
   tbody.innerHTML = html || '<tr><td colspan="6" class="p-4 text-center text-gray-400 italic">គ្មានទំនិញក្នុងស្តុកឡើយ</td></tr>';
 }
 
-function prepareEditProduct(id) {
-  var p = allProducts.find(item => item.id === id);
-  if (!p) return;
-  editingProductId = p.id;
-
-  document.getElementById('prodFormTitle').innerHTML = '<i class="fas fa-edit text-blue-600"></i>កែសម្រួលទំនិញ៖ ' + p.name;
-  document.getElementById('btnCancelEditProd').classList.remove('hidden');
-
-  var btn = document.getElementById('btnSaveProdAction');
-  btn.innerText = 'ធ្វើបច្ចុប្បន្នភាពទំនិញ (Update)';
-  btn.className = 'btn-green bg-blue-600 hover:bg-blue-700 py-3 text-sm font-bold shadow-md';
-
-  document.getElementById('pI').value = p.id;
-  document.getElementById('pN').value = p.name;
-  document.getElementById('pTy').value = p.type;
-  document.getElementById('pCu').value = p.currency || 'KHR';
-  if (document.getElementById('pCo')) document.getElementById('pCo').value = p.cost || 0;
-  document.getElementById('pPr').value = p.price || 0;
-  document.getElementById('pOnlinePr').value = p.online_price || p.price || 0;
-  document.getElementById('pMin').value = p.min_stock || 5;
-  document.getElementById('pChannel').value = p.channel || 'ALL';
-  
-  if (document.getElementById('pBadge')) document.getElementById('pBadge').value = p.badge || 'គុណភាពខ្ពស់';
-  if (document.getElementById('pDesc')) document.getElementById('pDesc').value = p.description || p.desc || '';
-
-  var preview = document.getElementById('pImgPreview');
-  if (preview) preview.src = p.img || 'https://cdn-icons-png.flaticon.com/512/3100/3100566.png';
-  document.getElementById('pImgBase64').value = p.img || '';
-
-  tCF();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
 function cancelEditProduct() {
   editingProductId = null;
   document.getElementById('prodFormTitle').innerHTML = '<i class="fas fa-boxes-stacked text-green-600"></i>គ្រប់គ្រងទំនិញ (Products)';
