@@ -1262,20 +1262,7 @@
   loadSavedCustomerProfile(); // ✅ ទាញយកព័ត៌មានដែលបាន Save និងបង្ហាញកាតបង្រួមតូច
   document.getElementById('checkoutModal').classList.remove('hidden');
 }
-
-
-      try {
-        var sName = localStorage.getItem('kc_order_name') || '';
-        var sPhone = localStorage.getItem('kc_order_phone') || '';
-        var sAddr = localStorage.getItem('kc_order_addr') || '';
-        if (sName && !document.getElementById('inp_custName').value) document.getElementById('inp_custName').value = sName;
-        if (sPhone && !document.getElementById('inp_custPhone').value) document.getElementById('inp_custPhone').value = sPhone;
-        if (sAddr && !document.getElementById('inp_custAddress').value) document.getElementById('inp_custAddress').value = sAddr;
-      } catch(e) {}
-
-      document.getElementById('checkoutModal').classList.remove('hidden');
-    }
-
+  
     function closeCheckoutModal() {
       document.getElementById('checkoutModal').classList.add('hidden');
     }
