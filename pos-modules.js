@@ -691,10 +691,15 @@ async function delExpenseFromSupabase(id) {
     showToast("កំហុស៖ " + err.message, "error");
   }
 }
-// 👥 ៤. គ្រប់គ្រងគណនី & តម្លៃពិសេស (មានប្រអប់ Search & Tabs បែងចែកដាច់ដោយឡែក)
+// ==========================================
+// 👥 ៤. គ្រប់គ្រងគណនី & តម្លៃពិសេស (មានប៊ូតុង EDIT & SEARCH)
+// ==========================================
+var editingCustomerId = null;
+
 function renderCustomersModule() {
   var area = document.getElementById('contentArea');
   if (!area) return;
+  editingCustomerId = null;
   
   var custOptions = '<option value="">-- រើសអតិថិជន / ម៉ូយ --</option>';
   (allCustomers || []).forEach(function(c) {
@@ -717,11 +722,16 @@ function renderCustomersModule() {
   });
 
   area.innerHTML = '<div class="max-w-3xl mx-auto space-y-4">' +
-    // កាត បង្កើតគណនីថ្មី
+    // កាត បង្កើត/កែប្រែគណនី
     '<div class="card border-t-4 border-blue-600 shadow-xl p-5 mb-0">' +
-      '<h2 class="font-extrabold text-blue-900 text-base mb-3 flex items-center gap-2">' +
-        '<i class="fas fa-user-plus text-blue-600"></i>បង្កើតគណនី Admin / អ្នកដឹក / អតិថិជន' +
-      '</h2>' +
+      '<div class="flex justify-between items-center mb-3">' +
+        '<h2 id="custFormTitle" class="font-extrabold text-blue-900 text-base flex items-center gap-2">' +
+          '<i class="fas fa-user-plus text-blue-600"></i>បង្កើតគណនី Admin / អ្នកដឹក / អតិថិជន' +
+        '</h2>' +
+        '<button type="button" id="btnCancelEditCust" onclick="cancelEditCustomer()" class="text-xs font-bold text-gray-500 hover:text-red-600 hidden">' +
+          '<i class="fas fa-times mr-1"></i>បោះបង់ការកែប្រែ' +
+        '</button>' +
+      '</div>' +
       '<div class="space-y-3">' +
         '<div>' +
           '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">ប្រភេទគណនីដែលត្រូវបង្កើត</label>' +
@@ -792,20 +802,20 @@ function renderCustomersModule() {
       '<div class="overflow-x-auto rounded-xl border"><table class="w-full text-left text-xs border-collapse"><thead><tr class="bg-gray-100 text-gray-700 font-bold border-b"><th class="p-2.5">អតិថិជន</th><th class="p-2.5">មុខទំនិញ</th><th class="p-2.5 text-right">តម្លៃពិសេស</th><th class="p-2.5 text-center">លុប</th></tr></thead><tbody id="specialPricesTableBody"></tbody></table></div>' +
     '</div>' +
 
-    // 🔍 កាត បញ្ជីគណនីទាំងអស់ (មាន SEARCH BAR & TABS បែងចែកដាច់ពីគ្នា)
+    // 🔍 កាត បញ្ជីគណនីទាំងអស់ (មាន Search, Tabs, និងប៊ូតុងកែប្រែ EDIT)
     '<div class="card border-t-4 border-gray-700 shadow-xl p-5 mb-0 space-y-3">' +
       '<div class="flex justify-between items-center">' +
         '<h3 class="font-bold text-gray-800 text-sm flex items-center gap-2"><i class="fas fa-users text-blue-600"></i>បញ្ជីគណនីទាំងអស់</h3>' +
         '<span id="userTotalCountBadge" class="text-xs font-black bg-blue-100 text-blue-900 px-2.5 py-0.5 rounded-full">0 នាក់</span>' +
       '</div>' +
 
-      // 🔍 ប្រអប់ Search ស្វែងរកតាមឈ្មោះ ឬលេខទូរស័ព្ទ
+      // 🔍 ប្រអប់ Search
       '<div class="relative">' +
-        '<input type="text" id="custModuleSearchInp" oninput="filterUsersModuleTable()" placeholder="🔍 វាយឈ្មោះ, លេខទូរស័ព្ទ ឬ Username ដើម្បីស្វែងរកភ្លាមៗ..." class="w-full border-2 border-gray-200 rounded-xl p-2.5 pl-9 outline-none focus:border-blue-500 font-bold text-xs">' +
-        '<i class="fas fa-search absolute left-3 top-3 text-gray-400 text-xs pointer-events-none"></i>' +
+        '<input type="text" id="custModuleSearchInp" oninput="filterUsersModuleTable()" placeholder="🔍 វាយឈ្មោះ, លេខទូរស័ព្ទ ឬ Username ដើម្បីស្វែងរកភ្លាមៗ..." class="w-full border-2 border-gray-200 rounded-xl p-2.5 pl-9 outline-none focus:border-blue-500 font-bold text-xs bg-slate-50 focus:bg-white">' +
+        '<i class="fas fa-search absolute left-3 top-3.5 text-gray-400 text-xs pointer-events-none"></i>' +
       '</div>' +
 
-      // 📑 Tabs បែងចែកប្រភេទ (All, Reseller, Monthly, Online, Driver, Staff)
+      // 📑 Tabs
       '<div class="flex flex-wrap gap-1.5 text-xs">' +
         '<button type="button" onclick="switchUserTab(\'ALL\')" id="uTab_ALL" class="px-2.5 py-1.5 rounded-xl font-bold bg-blue-700 text-white shadow-2xs active:scale-95 transition">ទាំងអស់</button>' +
         '<button type="button" onclick="switchUserTab(\'RESELLER\')" id="uTab_RESELLER" class="px-2.5 py-1.5 rounded-xl font-bold bg-white text-gray-700 border hover:bg-gray-50 active:scale-95 transition">🚚 អ្នកលក់បន្ត</button>' +
@@ -818,7 +828,7 @@ function renderCustomersModule() {
       '<div class="overflow-x-auto max-h-96 overflow-y-auto rounded-xl border border-gray-200 shadow-inner">' +
         '<table class="w-full text-left text-xs border-collapse">' +
           '<thead class="sticky top-0 bg-gray-100 text-gray-700 font-bold border-b z-10 shadow-2xs">' +
-            '<tr><th class="p-2.5">ឈ្មោះ / ទូរស័ព្ទ</th><th class="p-2.5">ព័ត៌មានគណនី (Login)</th><th class="p-2.5 text-center">តួនាទី / ប្រភេទ</th><th class="p-2.5 text-center">លុប</th></tr>' +
+            '<tr><th class="p-2.5">ឈ្មោះ / ទូរស័ព្ទ</th><th class="p-2.5">ព័ត៌មានគណនី (Login)</th><th class="p-2.5 text-center">តួនាទី / ប្រភេទ</th><th class="p-2.5 text-center">សកម្មភាព</th></tr>' +
           '</thead>' +
           '<tbody id="usersModuleTableBody"></tbody>' +
         '</table>' +
@@ -831,6 +841,74 @@ function renderCustomersModule() {
   fetchSpecialPricesTable();
 }
 
+// ✏️ មុខងាររៀបចំកែប្រែគណនី (ទាញទិន្នន័យឡើងប្រអប់ខាងលើ)
+function prepareEditCustomer(id) {
+  var u = cachedUsersModuleList.find(item => item.id == id);
+  if (!u) return;
+  editingCustomerId = u.id;
+
+  var titleEl = document.getElementById('custFormTitle');
+  var btnCancel = document.getElementById('btnCancelEditCust');
+  var btnSave = document.getElementById('btnSaveUserAction');
+
+  if (titleEl) titleEl.innerHTML = '<i class="fas fa-user-pen text-amber-600"></i>កែប្រែគណនី៖ ' + u.full_name;
+  if (btnCancel) btnCancel.classList.remove('hidden');
+  if (btnSave) {
+    btnSave.innerText = 'ធ្វើបច្ចុប្បន្នភាពគណនី (Update Account)';
+    btnSave.className = 'btn-green bg-amber-600 hover:bg-amber-700 py-3 text-sm font-bold shadow-md';
+  }
+
+  // បំពេញឈ្មោះ & លេខទូរស័ព្ទ
+  document.getElementById('mem_name').value = u.full_name || '';
+  document.getElementById('mem_phone').value = u.phone || '';
+
+  // កំណត់ប្រភេទគណនី
+  var roleSel = document.getElementById('mem_role_type');
+  if (u.type === 'Monthly') roleSel.value = 'MONTHLY';
+  else if (u.type === 'CompanyDriver') roleSel.value = 'COMPANY_DRIVER';
+  else if (u.role === 'Driver') roleSel.value = 'DRIVER';
+  else if (u.role === 'Seller') roleSel.value = 'SELLER';
+  else if (u.role === 'Admin') roleSel.value = 'ADMIN';
+  else roleSel.value = 'RESELLER';
+
+  toggleCustTypeFields();
+
+  // បំពេញកូនចៅមេ & ព័ត៌មាន Login
+  if (u.role === 'Driver') {
+    var bossInp = document.getElementById('mem_boss_custom');
+    if (bossInp) bossInp.value = u.linked_boss || '';
+  }
+
+  var userInp = document.getElementById('mem_user');
+  var passInp = document.getElementById('mem_pass');
+  if (userInp) userInp.value = u.username || '';
+  if (passInp) passInp.value = u.password || '';
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ❌ មុខងារបោះបង់ការកែប្រែគណនី
+function cancelEditCustomer() {
+  editingCustomerId = null;
+  var titleEl = document.getElementById('custFormTitle');
+  var btnCancel = document.getElementById('btnCancelEditCust');
+  var btnSave = document.getElementById('btnSaveUserAction');
+
+  if (titleEl) titleEl.innerHTML = '<i class="fas fa-user-plus text-blue-600"></i>បង្កើតគណនី Admin / អ្នកដឹក / អតិថិជន';
+  if (btnCancel) btnCancel.classList.add('hidden');
+  if (btnSave) {
+    btnSave.innerText = 'រក្សាទុកគណនី (Save Account)';
+    btnSave.className = 'btn-green shadow-lg py-3 text-sm font-bold';
+  }
+
+  document.getElementById('mem_name').value = '';
+  document.getElementById('mem_phone').value = '';
+  document.getElementById('mem_role_type').value = 'MONTHLY';
+  toggleCustTypeFields();
+  if (document.getElementById('mem_boss_custom')) document.getElementById('mem_boss_custom').value = '';
+  if (document.getElementById('mem_user')) document.getElementById('mem_user').value = '';
+  if (document.getElementById('mem_pass')) document.getElementById('mem_pass').value = '';
+}
 // 🛠️ មុខងារជំនួយទាញយកតម្លៃពី Input
 function getElVal(id) {
   var el = document.getElementById(id);
@@ -852,6 +930,7 @@ function toggleCustTypeFields() {
     else loginBox.classList.remove('hidden');
   }
 }
+// 💾 មុខងាររក្សាទុក ឬ Update គណនី
 async function saveUserToSupabase() {
   var name = getElVal('mem_name');
   var roleType = getElVal('mem_role_type') || 'MONTHLY';
@@ -911,7 +990,7 @@ async function saveUserToSupabase() {
   if (btn) { btn.disabled = true; btn.innerText = "កំពុងរក្សាទុក..."; }
 
   try {
-    var insertPayload = {
+    var payload = {
       full_name: name,
       role: role,
       type: type,
@@ -919,28 +998,34 @@ async function saveUserToSupabase() {
       linked_boss: linkedBoss
     };
 
-    if (user !== null && user !== '') insertPayload.username = user;
-    if (pass !== null && pass !== '') insertPayload.password = pass;
+    if (user !== null && user !== '') payload.username = user;
+    if (pass !== null && pass !== '') payload.password = pass;
 
-    const { error } = await supabaseClient.from('users').insert([insertPayload]);
-    if (error) throw error;
+    // ✅ បើជាការកែប្រែ ប្រើ Update, បើបង្កើតថ្មី ប្រើ Insert
+    if (editingCustomerId) {
+      const { error } = await supabaseClient
+        .from('users')
+        .update(payload)
+        .eq('id', editingCustomerId);
+      if (error) throw error;
+      showToast("បានកែប្រែគណនី [" + name + "] ជោគជ័យ!", "success");
+    } else {
+      const { error } = await supabaseClient
+        .from('users')
+        .insert([payload]);
+      if (error) throw error;
+      showToast("បានបង្កើតគណនី [" + name + "] ជោគជ័យ!", "success");
+    }
 
-    showToast("បានបង្កើត [" + name + "] ជោគជ័យ!", "success");
-    var elName = document.getElementById('mem_name'); if (elName) elName.value = "";
-    var elPhone = document.getElementById('mem_phone'); if (elPhone) elPhone.value = "";
-    var elUser = document.getElementById('mem_user'); if (elUser) elUser.value = "";
-    var elPass = document.getElementById('mem_pass'); if (elPass) elPass.value = "";
-    var elBoss = document.getElementById('mem_boss_custom'); if (elBoss) elBoss.value = "";
-
+    cancelEditCustomer();
     await fetchInitialPOSData();
-    renderCustomersModule();
+    fetchUsersModuleTable();
   } catch(err) {
     showToast("កំហុស៖ " + (err.message || err), "error");
   } finally {
-    if (btn) { btn.disabled = false; btn.innerText = "រក្សាទុកគណនី (Save Account)"; }
+    if (btn) { btn.disabled = false; }
   }
 }
-
 // 🔍 មុខងារទាញយក និងចម្រាញ់តារាងគណនី (Search តាមឈ្មោះ/លេខ & Tabs បែងចែកដាច់ពីគ្នា)
 var cachedUsersModuleList = [];
 var activeUserModuleTab = 'ALL';
@@ -979,7 +1064,7 @@ function switchUserTab(tab) {
   filterUsersModuleTable();
 }
 
-// 🔍 មុខងារចម្រាញ់ & Search (រក្សាឈ្មោះស្ទួនទាំងអស់, វាយអក្សរ "ក" ចេញទាំងអស់ & បង្ហាញព័ត៌មានភ្ញៀវ Online ពេញលេញ)
+// 📋 បង្ហាញតារាងបញ្ជីគណនី (មានប៊ូតុង [✏️ កែប្រែ] & [🗑️ លុប])
 function filterUsersModuleTable() {
   var tbody = document.getElementById('usersModuleTableBody');
   var searchInp = document.getElementById('custModuleSearchInp');
@@ -988,18 +1073,15 @@ function filterUsersModuleTable() {
 
   var q = searchInp ? searchInp.value.toLowerCase().trim() : '';
 
-  // ១. រក្សាទុកភ្ញៀវទាំងអស់ (ដាច់ខាតមិនលុបឈ្មោះ ឬលេខទូរស័ព្ទស្ទួនឡើយ)
   var filtered = cachedUsersModuleList.filter(function(u) {
     if (!u.full_name || u.full_name === 'Walk-in') return false;
 
-    // ចម្រាញ់តាម Tab
     if (activeUserModuleTab === 'RESELLER' && (u.role === 'Admin' || u.role === 'Seller' || u.role === 'Driver' || u.type === 'CompanyDriver' || u.type === 'Monthly' || u.type === 'Retail')) return false;
     if (activeUserModuleTab === 'MONTHLY' && u.type !== 'Monthly') return false;
     if (activeUserModuleTab === 'RETAIL' && u.type !== 'Retail' && u.role !== 'Retail' && !String(u.username || '').startsWith('online_')) return false;
     if (activeUserModuleTab === 'DRIVER' && (u.role !== 'Driver' && u.type !== 'Driver' && u.type !== 'CompanyDriver')) return false;
     if (activeUserModuleTab === 'STAFF' && (u.role !== 'Admin' && u.role !== 'Seller')) return false;
 
-    // ២. Search តាមតួអក្សរ (វាយ "ក" លោតចេញរាល់ឈ្មោះ និងលេខទូរស័ព្ទណាដែលមានអក្សរ "ក")
     if (q) {
       var matchName = String(u.full_name || '').toLowerCase().indexOf(q) !== -1;
       var matchPhone = String(u.phone || '').toLowerCase().indexOf(q) !== -1;
@@ -1039,12 +1121,10 @@ function filterUsersModuleTable() {
       badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-green-100 text-green-800">🚚 អ្នកលក់បន្ត</span>';
     }
 
-    // ៣. បង្ហាញព័ត៌មានពេញលេញរបស់ភ្ញៀវ Online (ឈ្មោះ, លេខទូរស័ព្ទ, អាសយដ្ឋាន & Link Google Maps)
     var credsText = '';
     if (isOnlineRetail) {
       var locInfo = u.linked_boss ? String(u.linked_boss).trim() : '';
       var mapDisplay = '';
-
       if (locInfo.indexOf('http') !== -1) {
         mapDisplay = '<a href="' + locInfo + '" target="_blank" class="text-blue-600 hover:underline font-bold text-[10px] flex items-center gap-1"><i class="fas fa-map-location-dot text-emerald-600"></i> បើកផែនទី Google Maps</a>';
       } else if (locInfo) {
@@ -1052,11 +1132,7 @@ function filterUsersModuleTable() {
       } else {
         mapDisplay = '<span class="text-gray-400 text-[10px] italic">មិនមានទីតាំង</span>';
       }
-
-      credsText = '<div class="space-y-1 text-left">' +
-        '<div class="text-[10px] text-emerald-800 font-black flex items-center gap-1"><i class="fas fa-bag-shopping text-emerald-600"></i> ភ្ញៀវកុម្ម៉ង់លើ Website</div>' +
-        mapDisplay +
-      '</div>';
+      credsText = '<div class="space-y-1 text-left"><div class="text-[10px] text-emerald-800 font-black flex items-center gap-1"><i class="fas fa-bag-shopping text-emerald-600"></i> ភ្ញៀវកុម្ម៉ង់លើ Web</div>' + mapDisplay + '</div>';
     } else if (u.type === 'Monthly') {
       credsText = '<span class="text-gray-400 text-[11px] italic">ម៉ូយប្រចាំខែ (គ្មាន Login)</span>';
     } else {
@@ -1065,17 +1141,20 @@ function filterUsersModuleTable() {
 
     var phoneDisplay = u.phone ? ('<span class="text-emerald-700 font-bold text-xs"><i class="fas fa-phone text-[10px] mr-1"></i>' + u.phone + '</span>') : '<span class="text-gray-400 text-[10px]">-</span>';
 
+    // 🌟 ប៊ូតុង [✏️ កែប្រែ] & [🗑️ លុប] ក្នុងជួរនីមួយៗ
     html += '<tr class="border-b hover:bg-gray-50 transition">' +
       '<td class="p-2.5"><b class="text-gray-800 text-xs">' + u.full_name + '</b><br>' + phoneDisplay + '</td>' +
       '<td class="p-2.5">' + credsText + '</td>' +
       '<td class="p-2.5 text-center">' + badgeHtml + '</td>' +
-      '<td class="p-2.5 text-center"><button onclick="delUserFromSupabase(' + u.id + ')" class="text-red-400 hover:text-red-600 p-1" title="លុប"><i class="fas fa-trash-can"></i></button></td>' +
+      '<td class="p-2.5 text-center whitespace-nowrap">' +
+        '<button type="button" onclick="prepareEditCustomer(' + u.id + ')" class="text-blue-600 hover:text-blue-800 p-1.5 hover:bg-blue-50 rounded-lg active:scale-90 transition mr-1" title="កែប្រែគណនី"><i class="fas fa-pen-to-square"></i></button>' +
+        '<button type="button" onclick="delUserFromSupabase(' + u.id + ')" class="text-red-400 hover:text-red-600 p-1.5 hover:bg-red-50 rounded-lg active:scale-90 transition" title="លុបគណនី"><i class="fas fa-trash-can"></i></button>' +
+      '</td>' +
     '</tr>';
   });
 
   tbody.innerHTML = html;
-}
-async function fetchSpecialPricesTable() {
+}async function fetchSpecialPricesTable() {
   var tbody = document.getElementById('specialPricesTableBody');
   if (!tbody) return;
 
