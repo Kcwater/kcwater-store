@@ -1031,7 +1031,7 @@ function switchUserTab(tab) {
   filterUsersModuleTable();
 }
 
-// 📋 បង្ហាញតារាងបញ្ជីគណនី (មានប៊ូតុង [✏️ កែប្រែ] & [🗑️ លុប])
+// 📋 បង្ហាញតារាងបញ្ជីគណនី (មានប៊ូតុង [✏️ កែប្រែ] ច្បាស់ៗ & [🗑️ លុប])
 function filterUsersModuleTable() {
   var tbody = document.getElementById('usersModuleTableBody');
   var searchInp = document.getElementById('custModuleSearchInp');
@@ -1108,20 +1108,26 @@ function filterUsersModuleTable() {
 
     var phoneDisplay = u.phone ? ('<span class="text-emerald-700 font-bold text-xs"><i class="fas fa-phone text-[10px] mr-1"></i>' + u.phone + '</span>') : '<span class="text-gray-400 text-[10px]">-</span>';
 
-    // 🌟 ប៊ូតុង [✏️ កែប្រែ] & [🗑️ លុប] ក្នុងជួរនីមួយៗ
+    // 🌟 ប៊ូតុង [✏️ កែប្រែ] ធំៗច្បាស់ៗ & [🗑️ លុប]
     html += '<tr class="border-b hover:bg-gray-50 transition">' +
       '<td class="p-2.5"><b class="text-gray-800 text-xs">' + u.full_name + '</b><br>' + phoneDisplay + '</td>' +
       '<td class="p-2.5">' + credsText + '</td>' +
       '<td class="p-2.5 text-center">' + badgeHtml + '</td>' +
       '<td class="p-2.5 text-center whitespace-nowrap">' +
-        '<button type="button" onclick="prepareEditCustomer(' + u.id + ')" class="text-blue-600 hover:text-blue-800 p-1.5 hover:bg-blue-50 rounded-lg active:scale-90 transition mr-1" title="កែប្រែគណនី"><i class="fas fa-pen-to-square"></i></button>' +
-        '<button type="button" onclick="delUserFromSupabase(' + u.id + ')" class="text-red-400 hover:text-red-600 p-1.5 hover:bg-red-50 rounded-lg active:scale-90 transition" title="លុបគណនី"><i class="fas fa-trash-can"></i></button>' +
+        '<div class="flex items-center justify-center gap-1.5">' +
+          '<button type="button" onclick="prepareEditCustomer(' + u.id + ')" class="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-xl text-xs font-bold shadow-2xs active:scale-95 transition flex items-center gap-1" title="ចុចដើម្បីកែប្រែគណនី">' +
+            '<i class="fas fa-pen-to-square text-amber-600"></i> កែប្រែ' +
+          '</button>' +
+          '<button type="button" onclick="delUserFromSupabase(' + u.id + ')" class="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-xl text-xs active:scale-90 transition" title="លុបគណនី">' +
+            '<i class="fas fa-trash-can"></i>' +
+          '</button>' +
+        '</div>' +
       '</td>' +
     '</tr>';
   });
 
   tbody.innerHTML = html;
-}async function fetchSpecialPricesTable() {
+}}async function fetchSpecialPricesTable() {
   var tbody = document.getElementById('specialPricesTableBody');
   if (!tbody) return;
 
