@@ -1064,6 +1064,7 @@
       recalcCartDock();
     }
 
+    // 🛒 មុខងារគណនាកន្ត្រកអណ្តែត (មាន Safe Check ការពារកុំឱ្យ Error 100%)
     function recalcCartDock() {
       var totalUnits = 0, totalPrice = 0;
       for (var k in cartItems) {
@@ -1073,17 +1074,22 @@
         }
       }
 
-      // 💾 រក្សាទុកកន្ត្រកក្នុង Memory ទូរស័ព្ទអូតូ (ការពារកុំឱ្យបាត់ទោះបី Android Reload ទំព័រ)
+      // 💾 រក្សាទុកកន្ត្រកក្នុង Memory ទូរស័ព្ទអូតូ
       try {
         localStorage.setItem('kc_auto_cart_backup', JSON.stringify(cartItems));
       } catch(e) {}
 
       var dock = document.getElementById('floatingCartDock');
-      var d = DICT[currentLang];
+      var countEl = document.getElementById('dockItemCount');
+      var priceEl = document.getElementById('dockTotalPrice');
+      var d = DICT[currentLang] || DICT.km;
+
+      // 🛡️ ប្រព័ន្ធការពារ៖ បើមិនទាន់មានប្រអប់កន្ត្រក មិនឱ្យ Crash ដាច់ខាត
+      if (!dock) return;
 
       if (totalUnits > 0) {
-        document.getElementById('dockItemCount').innerText = totalUnits + ' ' + d.dockItems;
-        document.getElementById('dockTotalPrice').innerText = '៛ ' + totalPrice.toLocaleString();
+        if (countEl) countEl.innerText = totalUnits + ' ' + (d.dockItems || 'មុខទំនិញ');
+        if (priceEl) priceEl.innerText = '៛ ' + totalPrice.toLocaleString();
         dock.classList.remove('translate-y-32', 'opacity-0', 'pointer-events-none');
       } else {
         dock.classList.add('translate-y-32', 'opacity-0', 'pointer-events-none');
