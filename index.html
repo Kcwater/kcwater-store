@@ -362,15 +362,29 @@
 
           <!-- ផ្នែកបន្ថែមពេលរើស ខុនដូ/បន្ទប់ជួល -->
           <div id="buildingAdvancedDetailsBox" class="hidden space-y-2 pt-1 border-t border-slate-200/80">
+           <!-- រើសជាន់ពី G ដល់ 10 និងជាន់ខ្ពស់ផ្សេងៗ -->
             <div>
-              <span class="text-[10px] font-bold text-slate-600 block mb-1">ជាន់ទីប៉ុន្មាន (Floor / 楼层)៖</span>
-              <div class="flex gap-1.5 overflow-x-auto no-scrollbar font-bold">
-                <button type="button" onclick="selectFloorChip('G', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-blue-600 bg-blue-600 text-white shadow-2xs">G</button>
-                <button type="button" onclick="selectFloorChip('1', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700">1</button>
-                <button type="button" onclick="selectFloorChip('2', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700">2</button>
-                <button type="button" onclick="selectFloorChip('3', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700">3</button>
-                <button type="button" onclick="selectFloorChip('4', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700">4</button>
-                <button type="button" onclick="selectFloorChip('5+', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700">5+</button>
+              <div class="flex justify-between items-center mb-1">
+                <span class="text-[10px] font-bold text-slate-600">ជាន់ទីប៉ុន្មាន (Floor / 楼层)៖</span>
+                <span id="selectedFloorDisplayBadge" class="text-[9.5px] font-black text-blue-800 bg-blue-100 px-2 py-0.5 rounded-full">ជាន់ G (ផ្ទាល់ដី)</span>
+              </div>
+              <div class="flex gap-1.5 overflow-x-auto no-scrollbar font-bold py-0.5">
+                <button type="button" onclick="selectFloorChip('G', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-blue-600 bg-blue-600 text-white shadow-2xs shrink-0">G</button>
+                <button type="button" onclick="selectFloorChip('1', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 shrink-0">1</button>
+                <button type="button" onclick="selectFloorChip('2', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 shrink-0">2</button>
+                <button type="button" onclick="selectFloorChip('3', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 shrink-0">3</button>
+                <button type="button" onclick="selectFloorChip('4', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 shrink-0">4</button>
+                <button type="button" onclick="selectFloorChip('5', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 shrink-0">5</button>
+                <button type="button" onclick="selectFloorChip('6', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 shrink-0">6</button>
+                <button type="button" onclick="selectFloorChip('7', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 shrink-0">7</button>
+                <button type="button" onclick="selectFloorChip('8', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 shrink-0">8</button>
+                <button type="button" onclick="selectFloorChip('9', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 shrink-0">9</button>
+                <button type="button" onclick="selectFloorChip('10', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 shrink-0">10</button>
+                <button type="button" onclick="selectFloorChip('OTHER', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 shrink-0">✍️ 10+ (ជាន់ផ្សេងៗ)</button>
+              </div>
+              <!-- ប្រអប់វាយជាន់ដោយដៃ (លោតចេញមកពេលចុចរើសជាន់ទី 10+ ឡើង) -->
+              <div id="customFloorInputRow" class="hidden pt-1.5">
+                <input type="number" id="inp_customFloorManual" oninput="onCustomFloorInput(this.value)" placeholder="វាយលេខជាន់ជាក់ស្តែង (ឧ៖ 12 ឬ 15)..." class="w-full p-2 bg-white border-2 border-blue-400 rounded-xl font-bold text-xs text-blue-950 outline-none">
               </div>
             </div>
 
@@ -821,28 +835,40 @@
       autoSaveCustomerInput();
     }
 
-    // ៣. រើសជាន់ Floor
+   // ៣. រើសជាន់ Floor (គាំទ្រពី G ដល់ 10 និងជាន់ខ្ពស់ផ្សេងៗ)
     function selectFloorChip(floor, btn) {
       currentFloorSelected = floor;
       document.querySelectorAll('.floor-chip').forEach(b => {
-        b.className = "floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700";
+        b.className = "floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 shrink-0";
       });
-      btn.className = "floor-chip px-3 py-1.5 rounded-xl border-2 border-blue-600 bg-blue-600 text-white shadow-2xs";
+      btn.className = "floor-chip px-3 py-1.5 rounded-xl border-2 border-blue-600 bg-blue-600 text-white shadow-2xs shrink-0";
+
+      var customRow = document.getElementById('customFloorInputRow');
+      var badge = document.getElementById('selectedFloorDisplayBadge');
+
+      if (floor === 'OTHER') {
+        if (badge) badge.innerText = "✍️ ជាន់ទី ១០ ឡើង";
+        if (customRow) {
+          customRow.classList.remove('hidden');
+          var inp = document.getElementById('inp_customFloorManual');
+          if (inp) setTimeout(() => inp.focus(), 100);
+        }
+      } else {
+        if (badge) badge.innerText = (floor === 'G' ? 'ជាន់ G (ផ្ទាល់ដី)' : 'ជាន់ទី ' + floor);
+        if (customRow) customRow.classList.add('hidden');
+      }
       autoSaveCustomerInput();
     }
 
-    // ៤. រើសជណ្តើរយន្ត
-    function selectElevatorChip(val, btn) {
-      currentElevatorSelected = val;
-      document.querySelectorAll('.lift-chip').forEach(b => {
-        b.className = "lift-chip py-1.5 px-2 rounded-xl border-2 border-slate-200 bg-white text-slate-700 flex items-center justify-center gap-1";
-      });
-      btn.className = (val === 'YES') ?
-        "lift-chip py-1.5 px-2 rounded-xl border-2 border-emerald-600 bg-emerald-50 text-emerald-950 flex items-center justify-center gap-1" :
-        "lift-chip py-1.5 px-2 rounded-xl border-2 border-amber-600 bg-amber-50 text-amber-950 flex items-center justify-center gap-1";
+    // វាយលេខជាន់ដោយដៃពេលជាន់លើសពី ១០
+    function onCustomFloorInput(val) {
+      if (val && val.trim()) {
+        currentFloorSelected = val.trim();
+        var badge = document.getElementById('selectedFloorDisplayBadge');
+        if (badge) badge.innerText = 'ជាន់ទី ' + val.trim();
+      }
       autoSaveCustomerInput();
     }
-
     // ៥. ផ្គុំព័ត៌មានអគារលម្អិត
     function getFormattedBuildingDetails() {
       if (currentBuildingType === 'HOUSE') return '🏠 ផ្ទះផ្ទាល់ដី (Ground Floor)';
