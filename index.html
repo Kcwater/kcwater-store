@@ -269,145 +269,158 @@
     </button>
   </div>
 
-  <!-- ៧. ផ្ទាំង CHECKOUT ពេញលេញ (អាចរំកិល Scroll បានរលូន) -->
-  <div id="checkoutModal" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden overflow-y-auto">
-    <div class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs" onclick="closeCheckoutModal()"></div>
-    <div class="bg-white rounded-t-[32px] sm:rounded-[32px] shadow-2xl z-10 w-full max-w-md modal-scrollable p-5 space-y-3.5 relative border border-slate-100 animate-in slide-in-from-bottom duration-300 text-xs select-auto">
-      
-      <div class="flex justify-between items-center border-b border-slate-100 pb-2.5">
-        <div>
-          <h4 class="font-black text-slate-900 text-sm sm:text-base" id="coHeading">ព័ត៌មានដឹកជញ្ជូនទឹក (ប៉ោយប៉ែត)</h4>
-          <p class="text-[10px] text-emerald-700 font-bold" id="coSub">ដឹកជូនដល់មុខផ្ទះរហ័សដោយអ្នកដឹក KC WATER</p>
+  <!-- 🌟 កាតអាសយដ្ឋានបង្រួមតូច (បង្ហាញពេលភ្ញៀវធ្លាប់ទិញម្តង ដើម្បីកុំឱ្យផ្ទាំងធ្លាក់វែងអន្លាយ) -->
+      <div id="compactSavedProfileBox" class="hidden p-3 bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 rounded-2xl border-2 border-emerald-300 space-y-2 animate-in zoom-in-95 duration-200">
+        <div class="flex justify-between items-center border-b border-emerald-200 pb-1.5">
+          <span class="text-xs font-black text-emerald-950 flex items-center gap-1.5">
+            <i class="fas fa-house-circle-check text-emerald-600"></i> ទីតាំងដឹកជញ្ជូនដែលបានរក្សាទុក
+          </span>
+          <button type="button" onclick="toggleEditCheckoutAddress(true)" class="px-2.5 py-1 bg-white hover:bg-emerald-100 text-emerald-800 rounded-lg text-[10px] font-black border border-emerald-300 shadow-2xs active:scale-95 transition">
+            <i class="fas fa-pen-to-square"></i> កែប្រែ
+          </button>
         </div>
-        <button onclick="closeCheckoutModal()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-400 font-bold flex items-center justify-center">&times;</button>
-      </div>
-
-      <!-- សារដំណឹង Error -->
-      <div id="checkoutErrorAlert" class="hidden p-2.5 bg-red-50 border border-red-200 rounded-xl text-red-700 font-bold text-[11px] flex items-center gap-2">
-        <i class="fas fa-circle-exclamation text-red-600 text-sm"></i>
-        <span id="checkoutErrorMsg"></span>
-      </div>
-
-      <!-- បញ្ជីទំនិញក្នុងកន្ត្រក -->
-      <div id="checkoutCartItemsList" class="bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-1.5"></div>
-
-      <!-- ១. ព័ត៌មានអ្នកទទួល -->
-      <div class="space-y-1.5">
-        <div class="font-black text-slate-800 uppercase text-[11px] flex items-center gap-1">
-          <i class="fas fa-user-circle text-emerald-600"></i>
-          <span id="coSectionUser">១. ព័ត៌មានអ្នកទទួលទឹក</span>
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          <input type="text" id="inp_custName" placeholder="ឈ្មោះអ្នកទទួល (*)" class="font-bold p-2.5 rounded-xl border border-slate-300 bg-white outline-none focus:border-emerald-600 transition">
-          <input type="tel" id="inp_custPhone" placeholder="លេខទូរស័ព្ទ (*)" class="font-bold p-2.5 rounded-xl border border-slate-300 bg-white outline-none focus:border-emerald-600 transition">
+        <div class="text-xs text-slate-800 space-y-1">
+          <div class="flex justify-between"><span class="text-slate-500">អ្នកទទួល៖</span><b id="cProfName">-</b></div>
+          <div class="flex justify-between"><span class="text-slate-500">ទូរស័ព្ទ៖</span><b id="cProfPhone" class="text-emerald-700 font-mono">-</b></div>
+          <div class="flex justify-between"><span class="text-slate-500">ទីកន្លែង៖</span><b id="cProfBuilding" class="text-blue-900">-</b></div>
+          <div class="flex justify-between"><span class="text-slate-500">ចំណាំផ្ទះ៖</span><span id="cProfAddress" class="font-bold truncate max-w-[200px]">-</span></div>
         </div>
       </div>
 
-      <!-- ២. ⏰ ជម្រើសម៉ោងដឹកជញ្ជូន (DELIVERY TIME SLOT) -->
-      <div class="space-y-1.5 p-3 bg-emerald-50/60 rounded-2xl border border-emerald-200">
-        <div class="font-black text-emerald-950 uppercase text-[11px] flex items-center gap-1">
-          <i class="fas fa-clock text-emerald-600"></i>
-          <span id="coSectionTime">២. ម៉ោងចង់ទទួលទឹក (Delivery Time)</span>
-        </div>
-        <div class="grid grid-cols-2 gap-2 text-[11px]">
-          <label class="p-2 rounded-xl border-2 border-emerald-600 bg-white flex items-center gap-1.5 cursor-pointer font-bold text-slate-800">
-            <input type="radio" name="co_timeSlot" value="ASAP" checked onchange="onTimeSlotChanged()" class="accent-emerald-600">
-            <span id="optTimeAsap">⚡ ដឹកភ្លាមៗ (៣០-៤៥ នាទី)</span>
-          </label>
-          <label class="p-2 rounded-xl border-2 border-slate-200 bg-white flex items-center gap-1.5 cursor-pointer font-bold text-slate-800">
-            <input type="radio" name="co_timeSlot" value="SCHEDULE" onchange="onTimeSlotChanged()" class="accent-emerald-600">
-            <span id="optTimeSchedule">⏰ កំណត់ម៉ោងដឹក</span>
-          </label>
-        </div>
-        <div id="scheduleTimePickerRow" class="hidden pt-1 space-y-1.5">
-          <select id="inp_timeSlotSelect" onchange="onSchedulePresetChange(this.value)" class="w-full p-2 bg-white border border-emerald-300 rounded-xl font-bold text-xs text-slate-800 outline-none">
-            <option value="11:30 - 12:30">🕒 ថ្ងៃត្រង់ (១១:៣០ - ១២:៣០)</option>
-            <option value="14:00 - 15:30">🕒 រសៀល (១៤:០០ - ១៥:៣០)</option>
-            <option value="17:00 - 18:30">🕒 ល្ងាច (១៧:០០ - ១៨:៣០)</option>
-            <option value="ស្អែកព្រឹក (08:00 - 10:00)">🌅 ព្រឹកស្អែក (០៨:០០ - ១០:០០)</option>
-            <option value="CUSTOM">✍️ វាយបញ្ចូលម៉ោងដោយដៃ (Custom Time)</option>
-          </select>
-          <!-- ប្រអប់វាយម៉ោងដោយដៃ នឹងលោតចេញមកពេលភ្ញៀវរើស Custom -->
-          <div id="customTimeManualInputRow" class="hidden">
-            <input type="text" id="inp_customTimeManual" placeholder="វាយម៉ោងចង់ឱ្យដឹក (ឧ៖ ម៉ោង 2:15 រសៀល ឬ 14:15)..." class="w-full p-2 bg-white border-2 border-emerald-400 rounded-xl font-bold text-xs text-emerald-950 outline-none">
+      <!-- 📝 ទម្រង់បំពេញលម្អិត (លាក់អូតូបើមានទិន្នន័យចាស់ស្រាប់ ដើម្បីកុំឱ្យរញ៉េរញ៉ៃ) -->
+      <div id="fullCheckoutFormSection" class="space-y-3">
+        <!-- ១. ព័ត៌មានអ្នកទទួល -->
+        <div class="space-y-1.5">
+          <div class="font-black text-slate-800 uppercase text-[11px] flex items-center gap-1">
+            <i class="fas fa-user-circle text-emerald-600"></i>
+            <span>១. ព័ត៌មានអ្នកទទួលទឹក</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <input type="text" id="inp_custName" oninput="autoSaveCustomerInput()" placeholder="ឈ្មោះអ្នកទទួល (*)" class="font-bold p-2.5 rounded-xl border border-slate-300 bg-white outline-none focus:border-emerald-600 transition">
+            <input type="tel" id="inp_custPhone" oninput="autoSaveCustomerInput()" placeholder="លេខទូរស័ព្ទ (*)" class="font-bold p-2.5 rounded-xl border border-slate-300 bg-white outline-none focus:border-emerald-600 transition">
           </div>
         </div>
-      </div>
-      <!-- ៣. 🏢 ប្រភេទលំនៅដ្ឋាន & ជាន់ផ្ទះ (BUILDING & FLOOR DETAILS) -->
-      <div class="space-y-1.5 p-3 bg-slate-50 rounded-2xl border border-slate-200">
-        <div class="font-black text-slate-800 uppercase text-[11px] flex items-center gap-1">
-          <i class="fas fa-building text-blue-600"></i>
-          <span id="coSectionBuilding">៣. ប្រភេទកន្លែងស្នាក់នៅ (Building Type)</span>
-        </div>
-        <div class="grid grid-cols-2 gap-2 text-[11px]">
-          <label class="p-2 rounded-xl border-2 border-slate-300 bg-white flex items-center gap-1.5 cursor-pointer font-bold text-slate-800">
-            <input type="radio" name="co_bldType" value="GROUND" checked onchange="onBuildingTypeChanged()" class="accent-blue-600">
-            <span id="optBldGround">🏠 ផ្ទះផ្ទាល់ដី</span>
-          </label>
-          <label class="p-2 rounded-xl border-2 border-slate-200 bg-white flex items-center gap-1.5 cursor-pointer font-bold text-slate-800">
-            <input type="radio" name="co_bldType" value="FLOOR" onchange="onBuildingTypeChanged()" class="accent-blue-600">
-            <span id="optBldFloor">🏢 បន្ទប់ជួល / អាគារ</span>
-          </label>
-        </div>
-        <div id="buildingFloorDetailRow" class="hidden pt-1">
-          <input type="text" id="inp_bldFloorDetail" placeholder="ឧ៖ ជាន់ទី២ បន្ទប់ ២០៤ (មានជណ្តើរយន្ត)" class="w-full p-2 bg-white border border-blue-300 rounded-xl font-bold text-xs outline-none">
-        </div>
-      </div>
 
-      <!-- ៤. ទីតាំង GPS & រូបថតមុខផ្ទះ (GPS & House Photo) -->
-      <div class="space-y-2 p-3 bg-blue-50/60 rounded-2xl border border-blue-200 text-left">
-        <div class="flex justify-between items-center">
-          <span class="font-black text-blue-950 uppercase text-[11px] flex items-center gap-1">
-            <i class="fas fa-map-location-dot text-blue-600"></i>
-            <span id="coSectionLoc">៤. ទីតាំងផ្ទះ (GPS & រូបថតមុខផ្ទះ)</span>
-          </span>
-          <span class="text-[9px] bg-blue-100 text-blue-800 font-bold px-2 py-0.5 rounded-full">ប៉ោយប៉ែត</span>
+        <!-- ២. ⏰ ជម្រើសម៉ោងដឹកទំនើប (Modern Time Selector) -->
+        <div class="space-y-2 p-3 bg-emerald-50/60 rounded-2xl border border-emerald-200">
+          <div class="font-black text-emerald-950 uppercase text-[11px] flex items-center justify-between">
+            <span class="flex items-center gap-1"><i class="fas fa-clock text-emerald-600"></i> ២. ម៉ោងចង់ទទួលទឹក (Delivery Time)</span>
+            <span id="selectedTimeSlotBadge" class="text-[9.5px] bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded-full font-bold">⚡ ដឹកភ្លាមៗ</span>
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-1.5 text-xs font-bold">
+            <button type="button" onclick="selectTimeSlotChip('ASAP', this)" class="time-chip py-2 px-1.5 rounded-xl border-2 border-emerald-600 bg-emerald-700 text-white shadow-2xs active:scale-95 transition">⚡ ដឹកភ្លាមៗ</button>
+            <button type="button" onclick="selectTimeSlotChip('11:30 - 12:30', this)" class="time-chip py-2 px-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 active:scale-95 transition">🕒 ថ្ងៃត្រង់ (12h)</button>
+            <button type="button" onclick="selectTimeSlotChip('14:00 - 15:30', this)" class="time-chip py-2 px-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 active:scale-95 transition">⛅ រសៀល (14h)</button>
+            <button type="button" onclick="selectTimeSlotChip('17:00 - 18:30', this)" class="time-chip py-2 px-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 active:scale-95 transition">🌇 ល្ងាច (17h)</button>
+            <button type="button" onclick="selectTimeSlotChip('ស្អែកព្រឹក (08:00 - 10:00)', this)" class="time-chip py-2 px-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 active:scale-95 transition">🌅 ព្រឹកស្អែក</button>
+            <button type="button" onclick="selectTimeSlotChip('CUSTOM', this)" class="time-chip py-2 px-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 active:scale-95 transition">✍️ កំណត់ម៉ោង</button>
+          </div>
+          <input type="hidden" id="inp_selectedTimeSlotValue" value="ASAP">
+          <div id="customTimeManualInputRow" class="hidden pt-1">
+            <input type="text" id="inp_customTimeManual" oninput="autoSaveCustomerInput()" placeholder="វាយម៉ោងចង់ឱ្យដឹក (ឧ៖ ម៉ោង 2:15 រសៀល ឬ 14:15)..." class="w-full p-2.5 bg-white border-2 border-emerald-400 rounded-xl font-bold text-xs text-emerald-950 outline-none">
+          </div>
         </div>
 
-        <!-- 📍 ប៊ូតុងចាប់ GPS ច្បាស់ៗ (មិនបាច់ស្គាល់ផ្លូវក៏កុម្ម៉ង់បាន) -->
-        <button type="button" onclick="detectGPSLocation()" id="btnDetectGPSAction" class="w-full py-2.5 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs shadow-xs flex items-center justify-center gap-2 active:scale-95 transition">
-          <i class="fas fa-crosshairs text-sm text-yellow-300"></i>
-          <span id="btnGpsLabel">📍 ចុចចាប់ទីតាំង GPS ផ្ទះខ្ញុំ (*ចាំបាច់)</span>
-        </button>
-        <input type="hidden" id="inp_custMapUrl" value="">
-        <div id="gpsStatusHint" class="text-[10px] text-slate-500 font-bold italic text-center">💡 ចុចប៊ូតុងខៀវ ដើម្បីឱ្យទូរស័ព្ទចាប់កូអរដោនេផ្ទះអូតូ (មិនបាច់ស្គាល់ផ្លូវ)</div>
+        <!-- ៣. 🏢 ប្រភេទកន្លែង, ជាន់, ជណ្តើរយន្ត សម្រាប់ជនបរទេស (KM / EN / ZH) -->
+        <div class="space-y-2 p-3 bg-slate-50 rounded-2xl border border-slate-200 text-xs">
+          <div class="font-black text-slate-900 uppercase text-[11px] flex items-center justify-between">
+            <span class="flex items-center gap-1"><i class="fas fa-building text-blue-600"></i> ៣. ព័ត៌មានអគារ & ជាន់ផ្ទះ (Building/Floor)</span>
+            <span class="text-[9px] text-slate-400 font-bold">ចុចជ្រើសរើសលឿន</span>
+          </div>
 
-        <!-- 📷 កន្លែងភ្ជាប់រូបថតមុខផ្ទះ (មានទាំងកាមេរ៉ាផ្ទាល់លើ Web & រើសរូបពី Gallery) -->
-        <div class="pt-2 border-t border-blue-200/60 space-y-2">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2 min-w-0">
-              <div id="housePhotoThumbBox" class="w-12 h-12 rounded-xl bg-white border-2 border-dashed border-blue-300 flex items-center justify-center overflow-hidden shrink-0 shadow-2xs">
-                <i class="fas fa-house-chimney text-slate-400 text-base" id="housePhotoDefaultIcon"></i>
-                <img id="housePhotoImgPreview" src="" class="w-full h-full object-cover hidden">
-              </div>
-              <div class="min-w-0">
-                <span class="text-[11px] font-bold text-slate-800 block">រូបថតមុខផ្ទះ / ច្រកចូល</span>
-                <span class="text-[9.5px] text-slate-500 font-normal block truncate" id="housePhotoStatusText">ភ្ជាប់រូបទុកឱ្យអ្នកដឹកចំណាំផ្ទះ</span>
+          <!-- ប្រភេទអគារ -->
+          <div class="grid grid-cols-2 gap-1.5 font-bold">
+            <button type="button" onclick="selectBuildingTypeChip('HOUSE', this)" class="bld-chip py-2 px-2 rounded-xl border-2 border-blue-600 bg-blue-50 text-blue-950 flex items-center justify-center gap-1 active:scale-95 transition">🏠 ផ្ទះផ្ទាល់ដី (House)</button>
+            <button type="button" onclick="selectBuildingTypeChip('CONDO', this)" class="bld-chip py-2 px-2 rounded-xl border-2 border-slate-200 bg-white text-slate-700 flex items-center justify-center gap-1 active:scale-95 transition">🏢 ខុនដូ/បន្ទប់ជួល (Apt/公寓)</button>
+          </div>
+
+          <!-- ផ្នែកបន្ថែមពេលរើស ខុនដូ/បន្ទប់ជួល/សណ្ឋាគារ -->
+          <div id="buildingAdvancedDetailsBox" class="hidden space-y-2 pt-1 border-t border-slate-200/80">
+            <!-- រើសជាន់ Floor Chips -->
+            <div>
+              <span class="text-[10px] font-bold text-slate-600 block mb-1">ជាន់ទីប៉ុន្មាន (Floor / 楼层)៖</span>
+              <div class="flex gap-1.5 overflow-x-auto no-scrollbar font-bold">
+                <button type="button" onclick="selectFloorChip('G', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-blue-600 bg-blue-600 text-white shadow-2xs">G</button>
+                <button type="button" onclick="selectFloorChip('1', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700">1</button>
+                <button type="button" onclick="selectFloorChip('2', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700">2</button>
+                <button type="button" onclick="selectFloorChip('3', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700">3</button>
+                <button type="button" onclick="selectFloorChip('4', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700">4</button>
+                <button type="button" onclick="selectFloorChip('5+', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700">5+</button>
               </div>
             </div>
-            <button type="button" onclick="removeHousePhoto()" id="btnRemoveHousePhoto" class="w-8 h-8 text-red-500 hover:text-red-700 rounded-lg hover:bg-red-50 flex items-center justify-center hidden" title="លុបរូប">
-              <i class="fas fa-trash-can text-sm"></i>
-            </button>
-          </div>
 
-          <!-- ប៊ូតុងរើសរូបពី Gallery & ប៊ូតុងបើកកាមេរ៉ាផ្ទាល់ -->
-          <div class="grid grid-cols-2 gap-2 pt-0.5">
-            <button type="button" onclick="document.getElementById('inpHousePhotoGallery').click()" class="py-2 px-2.5 bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-300 rounded-xl text-[11px] font-bold shadow-2xs flex items-center justify-center gap-1.5 active:scale-95 transition">
-              <i class="fas fa-images text-blue-600 text-xs"></i>
-              <span>🖼️ រើសរូបពីទូរស័ព្ទ</span>
-            </button>
-            <input type="file" id="inpHousePhotoGallery" accept="image/*" onchange="previewGalleryPhoto(this)" class="hidden">
+            <!-- ជណ្តើរយន្ត vs ជណ្តើរជើង -->
+            <div class="grid grid-cols-2 gap-1.5 font-bold">
+              <button type="button" onclick="selectElevatorChip('YES', this)" class="lift-chip py-1.5 px-2 rounded-xl border-2 border-emerald-600 bg-emerald-50 text-emerald-950 flex items-center justify-center gap-1">🛗 មានជណ្តើរយន្ត (Lift/电梯)</button>
+              <button type="button" onclick="selectElevatorChip('NO', this)" class="lift-chip py-1.5 px-2 rounded-xl border-2 border-slate-200 bg-white text-slate-700 flex items-center justify-center gap-1">🪜 ជណ្តើរជើង (Stairs/走楼梯)</button>
+            </div>
 
-            <button type="button" onclick="openLiveCamera()" class="py-2 px-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-[11px] font-bold shadow-2xs flex items-center justify-center gap-1.5 active:scale-95 transition">
-              <i class="fas fa-camera text-xs"></i>
-              <span>📷 ថតផ្ទាល់</span>
-            </button>
+            <!-- លេខបន្ទប់ & ច្រកចូល -->
+            <div class="grid grid-cols-2 gap-2">
+              <input type="text" id="inp_bldRoomNo" oninput="autoSaveCustomerInput()" placeholder="លេខបន្ទប់ (Room No/房号 ឧ: 204)" class="w-full p-2 bg-white border border-slate-300 rounded-xl font-bold text-xs outline-none">
+              <select id="inp_bldHandover" onchange="autoSaveCustomerInput()" class="w-full p-2 bg-white border border-slate-300 rounded-xl font-bold text-xs outline-none">
+                <option value="ដាក់មុខបន្ទប់">🚪 ដាក់មុខបន្ទប់ (Door/门口)</option>
+                <option value="ប្រគល់ផ្ទាល់ដៃ">🤝 ប្រគល់ផ្ទាល់ដៃ (In Person)</option>
+                <option value="ផ្ញើ Reception/សន្តិសុខ">🛎️ Reception/សន្តិសុខ (Front desk)</option>
+              </select>
+            </div>
           </div>
-          <input type="hidden" id="inp_custPhotoUrl" value="">
         </div>
-        <!-- ចំណាំអាសយដ្ឋាន (មិនបង្ខំឱ្យវាយទេ - Optional) -->
-        <input type="text" id="inp_custAddress" placeholder="ចំណាំទីតាំងបន្ថែម ដូចជាក្បែរហាង ឬលេខផ្ទះ (បើមាន / Optional)..." class="font-bold p-2 rounded-xl border border-blue-200 bg-white outline-none focus:border-blue-600 w-full text-xs">
+
+        <!-- ៤. ទីតាំង GPS & រូបថតមុខផ្ទះ -->
+        <div class="space-y-2 p-3 bg-blue-50/60 rounded-2xl border border-blue-200 text-left">
+          <div class="flex justify-between items-center">
+            <span class="font-black text-blue-950 uppercase text-[11px] flex items-center gap-1">
+              <i class="fas fa-map-location-dot text-blue-600"></i>
+              <span>៤. ទីតាំងផ្ទះ (GPS & រូបថតមុខផ្ទះ)</span>
+            </span>
+            <span class="text-[9px] bg-blue-100 text-blue-800 font-bold px-2 py-0.5 rounded-full">ប៉ោយប៉ែត</span>
+          </div>
+
+          <button type="button" onclick="detectGPSLocation()" id="btnDetectGPSAction" class="w-full py-2.5 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs shadow-xs flex items-center justify-center gap-2 active:scale-95 transition">
+            <i class="fas fa-crosshairs text-sm text-yellow-300"></i>
+            <span id="btnGpsLabel">📍 ចុចចាប់ GPS ផ្ទះខ្ញុំ (ឬភ្ជាប់រូបផ្ទះ + វាយទីតាំង)</span>
+          </button>
+          <input type="hidden" id="inp_custMapUrl" value="">
+          <div id="gpsStatusHint" class="text-[10px] text-slate-500 font-bold italic text-center">💡 ចុចប៊ូតុងខៀវ ដើម្បីចាប់ GPS ឬថតរូបមុខផ្ទះ + វាយចំណាំខាងក្រោម</div>
+
+          <!-- រូបថតមុខផ្ទះ -->
+          <div class="pt-2 border-t border-blue-200/60 space-y-2">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2 min-w-0">
+                <div id="housePhotoThumbBox" class="w-12 h-12 rounded-xl bg-white border-2 border-dashed border-blue-300 flex items-center justify-center overflow-hidden shrink-0 shadow-2xs">
+                  <i class="fas fa-house-chimney text-slate-400 text-base" id="housePhotoDefaultIcon"></i>
+                  <img id="housePhotoImgPreview" src="" class="w-full h-full object-cover hidden">
+                </div>
+                <div class="min-w-0">
+                  <span class="text-[11px] font-bold text-slate-800 block">រូបថតមុខផ្ទះ / ច្រកចូល</span>
+                  <span class="text-[9.5px] text-slate-500 font-normal block truncate" id="housePhotoStatusText">ភ្ជាប់រូបទុកឱ្យអ្នកដឹកចំណាំផ្ទះ</span>
+                </div>
+              </div>
+              <button type="button" onclick="removeHousePhoto()" id="btnRemoveHousePhoto" class="w-8 h-8 text-red-500 hover:text-red-700 rounded-lg hover:bg-red-50 flex items-center justify-center hidden" title="លុបរូប">
+                <i class="fas fa-trash-can text-sm"></i>
+              </button>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 pt-0.5">
+              <button type="button" onclick="document.getElementById('inpHousePhotoGallery').click()" class="py-2 px-2.5 bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-300 rounded-xl text-[11px] font-bold shadow-2xs flex items-center justify-center gap-1.5 active:scale-95 transition">
+                <i class="fas fa-images text-blue-600 text-xs"></i>
+                <span>🖼️ រើសរូបពីទូរស័ព្ទ</span>
+              </button>
+              <input type="file" id="inpHousePhotoGallery" accept="image/*" onchange="previewGalleryPhoto(this)" class="hidden">
+
+              <button type="button" onclick="openLiveCamera()" class="py-2 px-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-[11px] font-bold shadow-2xs flex items-center justify-center gap-1.5 active:scale-95 transition">
+                <i class="fas fa-camera text-xs"></i>
+                <span>📷 ថតផ្ទាល់</span>
+              </button>
+            </div>
+            <input type="hidden" id="inp_custPhotoUrl" value="">
+          </div>
+
+          <input type="text" id="inp_custAddress" oninput="autoSaveCustomerInput()" placeholder="ចំណាំទីតាំង ដូចជាក្បែរហាង ឬលេខផ្ទះ (បើមាន)..." class="font-bold p-2 rounded-xl border border-blue-200 bg-white outline-none focus:border-blue-600 w-full text-xs">
+        </div>
       </div>
+  
       <!-- ៥. ជម្រើសសំបកធុង -->
       <div class="p-3 bg-amber-50/90 rounded-2xl border border-amber-200 space-y-1.5">
         <div class="font-black text-amber-950 text-[11px] flex justify-between items-center">
@@ -725,13 +738,37 @@
       if (box) box.classList.toggle('hidden');
     }
 
-    function onTimeSlotChanged() {
-      var val = document.querySelector('input[name="co_timeSlot"]:checked').value;
-      var picker = document.getElementById('scheduleTimePickerRow');
-      if (picker) {
-        if (val === 'SCHEDULE') picker.classList.remove('hidden');
-        else picker.classList.add('hidden');
+    // ==========================================
+    // 🧠 មុខងារថ្មី៖ កាលវិភាគទំនើប, ជាន់ផ្ទះអន្តរជាតិ & AUTOSAVE PROFILE
+    // ==========================================
+    var currentBuildingType = 'HOUSE';
+    var currentFloorSelected = 'G';
+    var currentElevatorSelected = 'YES';
+
+    // ១. រើសវេនម៉ោងដឹក (Time Slot Chips)
+    function selectTimeSlotChip(val, btn) {
+      document.querySelectorAll('.time-chip').forEach(b => {
+        b.className = "time-chip py-2 px-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 active:scale-95 transition";
+      });
+      btn.className = "time-chip py-2 px-1.5 rounded-xl border-2 border-emerald-600 bg-emerald-700 text-white shadow-2xs active:scale-95 transition";
+
+      var hiddenVal = document.getElementById('inp_selectedTimeSlotValue');
+      var badge = document.getElementById('selectedTimeSlotBadge');
+      var manualRow = document.getElementById('customTimeManualInputRow');
+      if (hiddenVal) hiddenVal.value = val;
+
+      if (val === 'CUSTOM') {
+        if (badge) badge.innerText = "✍️ កំណត់ម៉ោង";
+        if (manualRow) {
+          manualRow.classList.remove('hidden');
+          var inp = document.getElementById('inp_customTimeManual');
+          if (inp) setTimeout(() => inp.focus(), 100);
+        }
+      } else {
+        if (badge) badge.innerText = (val === 'ASAP' ? '⚡ ដឹកភ្លាមៗ' : '⏰ ' + val);
+        if (manualRow) manualRow.classList.add('hidden');
       }
+      autoSaveCustomerInput();
     }
 
     // ✍️ មុខងារបើកប្រអប់វាយម៉ោងដោយដៃពេលភ្ញៀវរើស Custom
@@ -747,12 +784,117 @@
         }
       }
     }
-    function onBuildingTypeChanged() {
-      var val = document.querySelector('input[name="co_bldType"]:checked').value;
-      var row = document.getElementById('buildingFloorDetailRow');
-      if (row) {
-        if (val === 'FLOOR') row.classList.remove('hidden');
-        else row.classList.add('hidden');
+    // ២. រើសប្រភេទអគារ (Building Type Chips)
+    function selectBuildingTypeChip(type, btn) {
+      currentBuildingType = type;
+      document.querySelectorAll('.bld-chip').forEach(b => {
+        b.className = "bld-chip py-2 px-2 rounded-xl border-2 border-slate-200 bg-white text-slate-700 flex items-center justify-center gap-1 active:scale-95 transition";
+      });
+      btn.className = "bld-chip py-2 px-2 rounded-xl border-2 border-blue-600 bg-blue-50 text-blue-950 flex items-center justify-center gap-1 active:scale-95 transition";
+
+      var advBox = document.getElementById('buildingAdvancedDetailsBox');
+      if (advBox) {
+        if (type === 'CONDO') advBox.classList.remove('hidden');
+        else advBox.classList.add('hidden');
+      }
+      autoSaveCustomerInput();
+    }
+
+    // ៣. រើសជាន់ Floor
+    function selectFloorChip(floor, btn) {
+      currentFloorSelected = floor;
+      document.querySelectorAll('.floor-chip').forEach(b => {
+        b.className = "floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700";
+      });
+      btn.className = "floor-chip px-3 py-1.5 rounded-xl border-2 border-blue-600 bg-blue-600 text-white shadow-2xs";
+      autoSaveCustomerInput();
+    }
+
+    // ៤. រើសជណ្តើរយន្ត
+    function selectElevatorChip(val, btn) {
+      currentElevatorSelected = val;
+      document.querySelectorAll('.lift-chip').forEach(b => {
+        b.className = "lift-chip py-1.5 px-2 rounded-xl border-2 border-slate-200 bg-white text-slate-700 flex items-center justify-center gap-1";
+      });
+      btn.className = (val === 'YES') ?
+        "lift-chip py-1.5 px-2 rounded-xl border-2 border-emerald-600 bg-emerald-50 text-emerald-950 flex items-center justify-center gap-1" :
+        "lift-chip py-1.5 px-2 rounded-xl border-2 border-amber-600 bg-amber-50 text-amber-950 flex items-center justify-center gap-1";
+      autoSaveCustomerInput();
+    }
+
+    // ៥. ផ្គុំព័ត៌មានអគារលម្អិត
+    function getFormattedBuildingDetails() {
+      if (currentBuildingType === 'HOUSE') return '🏠 ផ្ទះផ្ទាល់ដី (Ground Floor)';
+      var roomNo = document.getElementById('inp_bldRoomNo') ? document.getElementById('inp_bldRoomNo').value.trim() : '';
+      var handover = document.getElementById('inp_bldHandover') ? document.getElementById('inp_bldHandover').value : '';
+      var liftText = (currentElevatorSelected === 'YES') ? '🛗 មានជណ្តើរយន្ត' : '🪜 ឡើងជណ្តើរជើង';
+      return '🏢 ជាន់ទី' + currentFloorSelected + (roomNo ? (' បន្ទប់ ' + roomNo) : '') + ' [' + liftText + '] [' + handover + ']';
+    }
+
+    // ៦. មុខងារ Autosave រក្សាទុកទិន្នន័យភ្លាមៗក្នុងទូរស័ព្ទ (កុំឱ្យបាត់ពេល Refresh)
+    function autoSaveCustomerInput() {
+      try {
+        var profile = {
+          name: document.getElementById('inp_custName') ? document.getElementById('inp_custName').value.trim() : '',
+          phone: document.getElementById('inp_custPhone') ? document.getElementById('inp_custPhone').value.trim() : '',
+          address: document.getElementById('inp_custAddress') ? document.getElementById('inp_custAddress').value.trim() : '',
+          mapUrl: document.getElementById('inp_custMapUrl') ? document.getElementById('inp_custMapUrl').value.trim() : '',
+          photoUrl: document.getElementById('inp_custPhotoUrl') ? document.getElementById('inp_custPhotoUrl').value.trim() : '',
+          bldType: currentBuildingType,
+          floor: currentFloorSelected,
+          elevator: currentElevatorSelected,
+          roomNo: document.getElementById('inp_bldRoomNo') ? document.getElementById('inp_bldRoomNo').value.trim() : '',
+          handover: document.getElementById('inp_bldHandover') ? document.getElementById('inp_bldHandover').value : '',
+          timeSlot: document.getElementById('inp_selectedTimeSlotValue') ? document.getElementById('inp_selectedTimeSlotValue').value : 'ASAP',
+          customTime: document.getElementById('inp_customTimeManual') ? document.getElementById('inp_customTimeManual').value.trim() : ''
+        };
+        localStorage.setItem('kc_saved_customer_profile', JSON.stringify(profile));
+      } catch(e) {}
+    }
+
+    // ៧. មុខងារទាញទិន្នន័យមកបំពេញអូតូពេលបើក Checkout (និងបង្ហាញកាតបង្រួមតូច)
+    function loadSavedCustomerProfile() {
+      try {
+        var raw = localStorage.getItem('kc_saved_customer_profile');
+        if (!raw) {
+          toggleEditCheckoutAddress(true);
+          return;
+        }
+
+        var p = JSON.parse(raw);
+        if (p.name && document.getElementById('inp_custName')) document.getElementById('inp_custName').value = p.name;
+        if (p.phone && document.getElementById('inp_custPhone')) document.getElementById('inp_custPhone').value = p.phone;
+        if (p.address && document.getElementById('inp_custAddress')) document.getElementById('inp_custAddress').value = p.address;
+        if (p.mapUrl && document.getElementById('inp_custMapUrl')) document.getElementById('inp_custMapUrl').value = p.mapUrl;
+        if (p.roomNo && document.getElementById('inp_bldRoomNo')) document.getElementById('inp_bldRoomNo').value = p.roomNo;
+        if (p.photoUrl && typeof applyHousePhotoToUI === 'function') applyHousePhotoToUI(p.photoUrl);
+
+        // បើមានឈ្មោះ និងលេខទូរស័ព្ទស្រាប់ ➔ បង្ហាញកាតបង្រួមតូចកុំឱ្យធ្លាក់វែងអន្លាយ
+        if (p.name && p.phone) {
+          document.getElementById('cProfName').innerText = p.name;
+          document.getElementById('cProfPhone').innerText = p.phone;
+          document.getElementById('cProfBuilding').innerText = getFormattedBuildingDetails();
+          document.getElementById('cProfAddress').innerText = p.address || 'មិនមានចំណាំបន្ថែម';
+          toggleEditCheckoutAddress(false);
+        } else {
+          toggleEditCheckoutAddress(true);
+        }
+      } catch(e) {
+        toggleEditCheckoutAddress(true);
+      }
+    }
+
+    function toggleEditCheckoutAddress(showFull) {
+      var compactBox = document.getElementById('compactSavedProfileBox');
+      var fullForm = document.getElementById('fullCheckoutFormSection');
+      if (compactBox && fullForm) {
+        if (showFull) {
+          compactBox.classList.add('hidden');
+          fullForm.classList.remove('hidden');
+        } else {
+          compactBox.classList.remove('hidden');
+          fullForm.classList.add('hidden');
+        }
       }
     }
 
@@ -1115,8 +1257,11 @@
       }
     }
     function openCheckoutModal() {
-      document.getElementById('checkoutErrorAlert').classList.add('hidden');
-      updateCheckoutCalculation();
+  document.getElementById('checkoutErrorAlert').classList.add('hidden');
+  updateCheckoutCalculation();
+  loadSavedCustomerProfile(); // ✅ ទាញយកព័ត៌មានដែលបាន Save និងបង្ហាញកាតបង្រួមតូច
+  document.getElementById('checkoutModal').classList.remove('hidden');
+}
 
       try {
         var sName = localStorage.getItem('kc_order_name') || '';
