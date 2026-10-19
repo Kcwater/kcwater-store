@@ -226,302 +226,81 @@
     </div>
   </div>
 
-  <!-- ៥. របារកន្ត្រកអណ្តែត FLOATING DOCK -->
-  <div id="floatingCartDock" class="fixed bottom-4 left-4 right-4 max-w-md mx-auto z-40 transition-all duration-300 transform translate-y-32 opacity-0 pointer-events-none">
-    <div class="kc-floating-cart px-4 py-3 flex justify-between items-center text-white">
-      <div class="flex items-center gap-2.5">
-        <div class="w-10 h-10 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 text-emerald-400 flex items-center justify-center text-base">
-          <i class="fas fa-basket-shopping"></i>
+  <!-- 📱 របារម៉ឺនុយនៅបាតខាងក្រោម (BOTTOM NAVIGATION BAR - ទំនើប & ទូលាយអេក្រង់) -->
+  <nav class="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/90 shadow-2xl pb-safe">
+    <div class="max-w-md mx-auto px-4 py-2 flex justify-around items-center text-xs font-bold">
+      <!-- Tab 1: ហាងទំនិញ -->
+      <button type="button" onclick="switchStoreAppTab('STORE', this)" id="bnav_STORE" class="bnav-btn flex flex-col items-center gap-1 text-emerald-700 transition active:scale-95">
+        <div class="w-8 h-8 rounded-2xl flex items-center justify-center text-base bg-emerald-100 text-emerald-800 shadow-xs">
+          <i class="fas fa-store"></i>
         </div>
-        <div>
-          <span class="text-[10px] text-slate-300 font-bold block" id="dockItemCount">0 មុខទំនិញ</span>
-          <b class="text-sm font-black text-white" id="dockTotalPrice">0 ៛</b>
+        <span class="text-[10px]">ហាងទំនិញ</span>
+      </button>
+
+      <!-- Tab 2: តាមដានទឹក (Live Tracking) -->
+      <button type="button" onclick="switchStoreAppTab('TRACKING', this)" id="bnav_TRACKING" class="bnav-btn flex flex-col items-center gap-1 text-slate-500 hover:text-slate-900 transition active:scale-95 relative">
+        <div class="w-8 h-8 rounded-2xl flex items-center justify-center text-base text-slate-600">
+          <i class="fas fa-motorcycle"></i>
         </div>
-      </div>
-      <button onclick="openCheckoutModal()" class="px-5 py-2.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs shadow-md active:scale-95 transition flex items-center gap-1.5">
-        <span id="dockCheckoutLabel">គិតលុយ</span>
-        <i class="fas fa-arrow-right text-[10px]"></i>
+        <span class="text-[10px]">តាមដានទឹក</span>
+        <span id="bnavTrackBadge" class="hidden absolute top-0 right-3 w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+      </button>
+
+      <!-- Tab 3: ប្រវត្តិទិញ -->
+      <button type="button" onclick="switchStoreAppTab('HISTORY', this)" id="bnav_HISTORY" class="bnav-btn flex flex-col items-center gap-1 text-slate-500 hover:text-slate-900 transition active:scale-95">
+        <div class="w-8 h-8 rounded-2xl flex items-center justify-center text-base text-slate-600">
+          <i class="fas fa-clock-rotate-left"></i>
+        </div>
+        <span class="text-[10px]">ប្រវត្តិទិញ</span>
+      </button>
+
+      <!-- Tab 4: គណនីខ្ញុំ -->
+      <button type="button" onclick="switchStoreAppTab('PROFILE', this)" id="bnav_PROFILE" class="bnav-btn flex flex-col items-center gap-1 text-slate-500 hover:text-slate-900 transition active:scale-95">
+        <div class="w-8 h-8 rounded-2xl flex items-center justify-center text-base text-slate-600">
+          <i class="fas fa-user-circle"></i>
+        </div>
+        <span class="text-[10px]">គណនីខ្ញុំ</span>
       </button>
     </div>
-  </div>
+  </nav>
 
-  <!-- 💬 ៦. ប៊ូតុងជំនួយអណ្តែត (FLOATING SUPPORT WIDGET - TELEGRAM & CALL) -->
-  <div class="fixed bottom-20 right-4 z-30 flex flex-col items-end gap-2">
-    <!-- Popup តូចពេលចុចបើកជំនួយ -->
-    <div id="supportPopupBox" class="hidden bg-white p-3 rounded-2xl shadow-2xl border border-emerald-200 text-xs space-y-2 mb-1 animate-in zoom-in duration-200 w-52 text-left">
-      <div class="flex justify-between items-center border-b pb-1.5">
-        <b class="text-slate-800 text-[11px] flex items-center gap-1"><i class="fas fa-headset text-emerald-600"></i> KC Support</b>
-        <button onclick="toggleSupportWidget()" class="text-slate-400 hover:text-slate-600 text-sm font-bold">&times;</button>
+  <!-- 📜 ផ្ទាំងប្រវត្តិទិញទឹករបស់ភ្ញៀវ (CUSTOMER ORDER HISTORY MODAL) -->
+  <div id="customerHistoryModal" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden overflow-y-auto">
+    <div class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs" onclick="closeCustomerHistoryModal()"></div>
+    <div class="bg-white rounded-t-[32px] sm:rounded-[32px] shadow-2xl z-10 w-full max-w-md modal-scrollable p-5 space-y-3.5 relative border border-slate-100 animate-in slide-in-from-bottom duration-300 text-xs my-auto">
+      <div class="flex justify-between items-center border-b pb-2">
+        <b class="text-sm font-black text-slate-900 flex items-center gap-1.5">
+          <i class="fas fa-clock-rotate-left text-emerald-600"></i> ប្រវត្តិការកុម្ម៉ង់ទឹករបស់ខ្ញុំ
+        </b>
+        <button type="button" onclick="closeCustomerHistoryModal()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-400 font-bold flex items-center justify-center">&times;</button>
       </div>
-      <a href="https://t.me/KcWater" target="_blank" class="flex items-center gap-2 p-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-900 font-bold transition" style="text-decoration:none;">
-        <i class="fab fa-telegram text-blue-600 text-base"></i>
-        <span>ឆាត Telegram ផ្លូវការ</span>
-      </a>
-      <a href="tel:077934748" class="flex items-center gap-2 p-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-900 font-bold transition" style="text-decoration:none;">
-        <i class="fas fa-phone text-emerald-600 text-sm"></i>
-        <span>ខល 077 934 748</span>
-      </a>
+      <div id="custHistoryListArea" class="space-y-2.5 max-h-[60vh] overflow-y-auto pr-1">
+        <div class="text-center py-8 text-slate-400 italic text-xs">កំពុងទាញប្រវត្តិកុម្ម៉ង់...</div>
+      </div>
+      <button type="button" onclick="closeCustomerHistoryModal()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs">បិទ</button>
     </div>
-
-    <!-- ប៊ូតុងរង្វង់អណ្តែត -->
-    <button type="button" onclick="toggleSupportWidget()" class="w-12 h-12 rounded-full bg-gradient-to-tr from-emerald-600 to-green-500 text-white shadow-xl flex items-center justify-center text-xl active:scale-90 transition border-2 border-white animate-pulse">
-      <i class="fas fa-comment-dots"></i>
-    </button>
   </div>
 
-  <!-- ៧. ផ្ទាំង CHECKOUT ពេញលេញ (លាក់ទុកជា Pop-up ចេញមកតែពេលភ្ញៀវចុច "គិតលុយ") -->
-  <div id="checkoutModal" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden overflow-y-auto">
-    <!-- ផ្ទៃខាងក្រោយងងឹតពេលបើក Pop-up -->
-    <div class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity" onclick="closeCheckoutModal()"></div>
-    
-    <!-- តួខ្លួនផ្ទាំង Pop-up អាច Scroll បានរលូន -->
-    <div class="bg-white rounded-t-[32px] sm:rounded-[32px] shadow-2xl z-10 w-full max-w-md modal-scrollable p-5 space-y-3.5 relative border border-slate-100 animate-in slide-in-from-bottom duration-300 text-xs select-auto my-auto">
-      
-      <!-- ក្បាលផ្ទាំង Pop-up -->
-      <div class="flex justify-between items-center border-b border-slate-100 pb-2.5">
-        <div>
-          <h4 class="font-black text-slate-900 text-sm sm:text-base" id="coHeading">ព័ត៌មានដឹកជញ្ជូនទឹក (ប៉ោយប៉ែត)</h4>
-          <p class="text-[10px] text-emerald-700 font-bold" id="coSub">ដឹកជូនដល់មុខផ្ទះរហ័សដោយអ្នកដឹក KC WATER</p>
-        </div>
-        <button type="button" onclick="closeCheckoutModal()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-400 font-bold flex items-center justify-center">&times;</button>
+  <!-- 👤 ផ្ទាំងគណនីខ្ញុំ & ទីតាំងផ្ទះ (CUSTOMER PROFILE MODAL) -->
+  <div id="customerProfileModal" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden overflow-y-auto">
+    <div class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs" onclick="closeCustomerProfileModal()"></div>
+    <div class="bg-white rounded-t-[32px] sm:rounded-[32px] shadow-2xl z-10 w-full max-w-md modal-scrollable p-5 space-y-3.5 relative border border-slate-100 animate-in slide-in-from-bottom duration-300 text-xs my-auto">
+      <div class="flex justify-between items-center border-b pb-2">
+        <b class="text-sm font-black text-slate-900 flex items-center gap-1.5">
+          <i class="fas fa-user-circle text-emerald-600"></i> ព័ត៌មានដឹកជញ្ជូនដែលបានរក្សាទុក
+        </b>
+        <button type="button" onclick="closeCustomerProfileModal()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-400 font-bold flex items-center justify-center">&times;</button>
       </div>
-
-      <!-- សារដំណឹង Error -->
-      <div id="checkoutErrorAlert" class="hidden p-2.5 bg-red-50 border border-red-200 rounded-xl text-red-700 font-bold text-[11px] flex items-center gap-2">
-        <i class="fas fa-circle-exclamation text-red-600 text-sm"></i>
-        <span id="checkoutErrorMsg"></span>
-      </div>
-
-      <!-- បញ្ជីទំនិញក្នុងកន្ត្រក -->
-      <div id="checkoutCartItemsList" class="bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-1.5"></div>
-
-      <!-- 🌟 កាតអាសយដ្ឋានបង្រួមតូច (បង្ហាញពេលភ្ញៀវធ្លាប់ទិញម្តង ដើម្បីកុំឱ្យផ្ទាំងធ្លាក់វែងអន្លាយ) -->
-      <div id="compactSavedProfileBox" class="hidden p-3 bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 rounded-2xl border-2 border-emerald-300 space-y-2 animate-in zoom-in-95 duration-200">
-        <div class="flex justify-between items-center border-b border-emerald-200 pb-1.5">
-          <span class="text-xs font-black text-emerald-950 flex items-center gap-1.5">
-            <i class="fas fa-house-circle-check text-emerald-600"></i> ទីតាំងដឹកជញ្ជូនដែលបានរក្សាទុក
-          </span>
-          <button type="button" onclick="toggleEditCheckoutAddress(true)" class="px-2.5 py-1 bg-white hover:bg-emerald-100 text-emerald-800 rounded-lg text-[10px] font-black border border-emerald-300 shadow-2xs active:scale-95 transition">
-            <i class="fas fa-pen-to-square"></i> កែប្រែ
-          </button>
-        </div>
-        <div class="text-xs text-slate-800 space-y-1">
-          <div class="flex justify-between"><span class="text-slate-500">អ្នកទទួល៖</span><b id="cProfName">-</b></div>
-          <div class="flex justify-between"><span class="text-slate-500">ទូរស័ព្ទ៖</span><b id="cProfPhone" class="text-emerald-700 font-mono">-</b></div>
-          <div class="flex justify-between"><span class="text-slate-500">ទីកន្លែង៖</span><b id="cProfBuilding" class="text-blue-900">-</b></div>
-          <div class="flex justify-between"><span class="text-slate-500">ចំណាំផ្ទះ៖</span><span id="cProfAddress" class="font-bold truncate max-w-[200px]">-</span></div>
-        </div>
-      </div>
-
-      <!-- 📝 ទម្រង់បំពេញលម្អិត -->
-      <div id="fullCheckoutFormSection" class="space-y-3">
-        <!-- ១. ព័ត៌មានអ្នកទទួល -->
-        <div class="space-y-1.5">
-          <div class="font-black text-slate-800 uppercase text-[11px] flex items-center gap-1">
-            <i class="fas fa-user-circle text-emerald-600"></i>
-            <span>១. ព័ត៌មានអ្នកទទួលទឹក</span>
-          </div>
-          <div class="grid grid-cols-2 gap-2">
-            <input type="text" id="inp_custName" oninput="autoSaveCustomerInput()" placeholder="ឈ្មោះអ្នកទទួល (*)" class="font-bold p-2.5 rounded-xl border border-slate-300 bg-white outline-none focus:border-emerald-600 transition">
-            <input type="tel" id="inp_custPhone" oninput="autoSaveCustomerInput()" placeholder="លេខទូរស័ព្ទ (*)" class="font-bold p-2.5 rounded-xl border border-slate-300 bg-white outline-none focus:border-emerald-600 transition">
-          </div>
-        </div>
-
-        <!-- ២. ⏰ ជម្រើសម៉ោងដឹកទំនើប (Modern Time Selector) -->
-        <div class="space-y-2 p-3 bg-emerald-50/60 rounded-2xl border border-emerald-200">
-          <div class="font-black text-emerald-950 uppercase text-[11px] flex items-center justify-between">
-            <span class="flex items-center gap-1"><i class="fas fa-clock text-emerald-600"></i> ២. ម៉ោងចង់ទទួលទឹក (Delivery Time)</span>
-            <span id="selectedTimeSlotBadge" class="text-[9.5px] bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded-full font-bold">⚡ ដឹកភ្លាមៗ</span>
-          </div>
-          <div class="grid grid-cols-2 sm:grid-cols-3 gap-1.5 text-xs font-bold">
-            <button type="button" onclick="selectTimeSlotChip('ASAP', this)" class="time-chip py-2 px-1.5 rounded-xl border-2 border-emerald-600 bg-emerald-700 text-white shadow-2xs active:scale-95 transition">⚡ ដឹកភ្លាមៗ</button>
-            <button type="button" onclick="selectTimeSlotChip('11:30 - 12:30', this)" class="time-chip py-2 px-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 active:scale-95 transition">🕒 ថ្ងៃត្រង់ (12h)</button>
-            <button type="button" onclick="selectTimeSlotChip('14:00 - 15:30', this)" class="time-chip py-2 px-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 active:scale-95 transition">⛅ រសៀល (14h)</button>
-            <button type="button" onclick="selectTimeSlotChip('17:00 - 18:30', this)" class="time-chip py-2 px-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 active:scale-95 transition">🌇 ល្ងាច (17h)</button>
-            <button type="button" onclick="selectTimeSlotChip('ស្អែកព្រឹក (08:00 - 10:00)', this)" class="time-chip py-2 px-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 active:scale-95 transition">🌅 ព្រឹកស្អែក</button>
-            <button type="button" onclick="selectTimeSlotChip('CUSTOM', this)" class="time-chip py-2 px-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 active:scale-95 transition">✍️ កំណត់ម៉ោង</button>
-          </div>
-          <input type="hidden" id="inp_selectedTimeSlotValue" value="ASAP">
-          <div id="customTimeManualInputRow" class="hidden pt-1">
-            <input type="text" id="inp_customTimeManual" oninput="autoSaveCustomerInput()" placeholder="វាយម៉ោងចង់ឱ្យដឹក (ឧ៖ ម៉ោង 2:15 រសៀល ឬ 14:15)..." class="w-full p-2.5 bg-white border-2 border-emerald-400 rounded-xl font-bold text-xs text-emerald-950 outline-none">
-          </div>
-        </div>
-
-        <!-- ៣. 🏢 ប្រភេទកន្លែង, ជាន់, ជណ្តើរយន្ត សម្រាប់ជនបរទេស (KM / EN / ZH) -->
-        <div class="space-y-2 p-3 bg-slate-50 rounded-2xl border border-slate-200 text-xs">
-          <div class="font-black text-slate-900 uppercase text-[11px] flex items-center justify-between">
-            <span class="flex items-center gap-1"><i class="fas fa-building text-blue-600"></i> ៣. ព័ត៌មានអគារ & ជាន់ផ្ទះ (Building/Floor)</span>
-            <span class="text-[9px] text-slate-400 font-bold">ចុចជ្រើសរើសលឿន</span>
-          </div>
-
-          <!-- ប្រភេទអគារ -->
-          <div class="grid grid-cols-2 gap-1.5 font-bold">
-            <button type="button" onclick="selectBuildingTypeChip('HOUSE', this)" class="bld-chip py-2 px-2 rounded-xl border-2 border-blue-600 bg-blue-50 text-blue-950 flex items-center justify-center gap-1 active:scale-95 transition">🏠 ផ្ទះផ្ទាល់ដី (House)</button>
-            <button type="button" onclick="selectBuildingTypeChip('CONDO', this)" class="bld-chip py-2 px-2 rounded-xl border-2 border-slate-200 bg-white text-slate-700 flex items-center justify-center gap-1 active:scale-95 transition">🏢 ខុនដូ/បន្ទប់ជួល (Apt/公寓)</button>
-          </div>
-
-          <!-- ផ្នែកបន្ថែមពេលរើស ខុនដូ/បន្ទប់ជួល -->
-          <div id="buildingAdvancedDetailsBox" class="hidden space-y-2 pt-1 border-t border-slate-200/80">
-           <!-- រើសជាន់ពី G ដល់ 10 និងជាន់ខ្ពស់ផ្សេងៗ -->
-            <div>
-              <div class="flex justify-between items-center mb-1">
-                <span class="text-[10px] font-bold text-slate-600">ជាន់ទីប៉ុន្មាន (Floor / 楼层)៖</span>
-                <span id="selectedFloorDisplayBadge" class="text-[9.5px] font-black text-blue-800 bg-blue-100 px-2 py-0.5 rounded-full">ជាន់ G (ផ្ទាល់ដី)</span>
-              </div>
-              <div class="flex gap-1.5 overflow-x-auto no-scrollbar font-bold py-0.5">
-                <button type="button" onclick="selectFloorChip('G', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-blue-600 bg-blue-600 text-white shadow-2xs shrink-0">G</button>
-                <button type="button" onclick="selectFloorChip('1', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 shrink-0">1</button>
-                <button type="button" onclick="selectFloorChip('2', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 shrink-0">2</button>
-                <button type="button" onclick="selectFloorChip('3', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 shrink-0">3</button>
-                <button type="button" onclick="selectFloorChip('4', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 shrink-0">4</button>
-                <button type="button" onclick="selectFloorChip('5', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 shrink-0">5</button>
-                <button type="button" onclick="selectFloorChip('6', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 shrink-0">6</button>
-                <button type="button" onclick="selectFloorChip('7', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 shrink-0">7</button>
-                <button type="button" onclick="selectFloorChip('8', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 shrink-0">8</button>
-                <button type="button" onclick="selectFloorChip('9', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 shrink-0">9</button>
-                <button type="button" onclick="selectFloorChip('10', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 shrink-0">10</button>
-                <button type="button" onclick="selectFloorChip('OTHER', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 shrink-0">✍️ 10+ (ជាន់ផ្សេងៗ)</button>
-              </div>
-              <!-- ប្រអប់វាយជាន់ដោយដៃ (លោតចេញមកពេលចុចរើសជាន់ទី 10+ ឡើង) -->
-              <div id="customFloorInputRow" class="hidden pt-1.5">
-                <input type="number" id="inp_customFloorManual" oninput="onCustomFloorInput(this.value)" placeholder="វាយលេខជាន់ជាក់ស្តែង (ឧ៖ 12 ឬ 15)..." class="w-full p-2 bg-white border-2 border-blue-400 rounded-xl font-bold text-xs text-blue-950 outline-none">
-              </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-1.5 font-bold">
-              <button type="button" onclick="selectElevatorChip('YES', this)" class="lift-chip py-1.5 px-2 rounded-xl border-2 border-emerald-600 bg-emerald-50 text-emerald-950 flex items-center justify-center gap-1">🛗 មានជណ្តើរយន្ត (Lift/电梯)</button>
-              <button type="button" onclick="selectElevatorChip('NO', this)" class="lift-chip py-1.5 px-2 rounded-xl border-2 border-slate-200 bg-white text-slate-700 flex items-center justify-center gap-1">🪜 ជណ្តើរជើង (Stairs/走楼梯)</button>
-            </div>
-
-            <div class="grid grid-cols-2 gap-2">
-              <input type="text" id="inp_bldRoomNo" oninput="autoSaveCustomerInput()" placeholder="លេខបន្ទប់ (Room No/房号 ឧ: 204)" class="w-full p-2 bg-white border border-slate-300 rounded-xl font-bold text-xs outline-none">
-              <select id="inp_bldHandover" onchange="autoSaveCustomerInput()" class="w-full p-2 bg-white border border-slate-300 rounded-xl font-bold text-xs outline-none">
-                <option value="ដាក់មុខបន្ទប់">🚪 ដាក់មុខបន្ទប់ (Door/门口)</option>
-                <option value="ប្រគល់ផ្ទាល់ដៃ">🤝 ប្រគល់ផ្ទាល់ដៃ (In Person)</option>
-                <option value="ផ្ញើ Reception/សន្តិសុខ">🛎️ Reception/សន្តិសុខ (Front desk)</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <!-- ៤. ទីតាំង GPS & រូបថតមុខផ្ទះ -->
-        <div class="space-y-2 p-3 bg-blue-50/60 rounded-2xl border border-blue-200 text-left">
-          <div class="flex justify-between items-center">
-            <span class="font-black text-blue-950 uppercase text-[11px] flex items-center gap-1">
-              <i class="fas fa-map-location-dot text-blue-600"></i>
-              <span>៤. ទីតាំងផ្ទះ (GPS & រូបថតមុខផ្ទះ)</span>
-            </span>
-            <span class="text-[9px] bg-blue-100 text-blue-800 font-bold px-2 py-0.5 rounded-full">ប៉ោយប៉ែត</span>
-          </div>
-
-          <button type="button" onclick="detectGPSLocation()" id="btnDetectGPSAction" class="w-full py-2.5 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs shadow-xs flex items-center justify-center gap-2 active:scale-95 transition">
-            <i class="fas fa-crosshairs text-sm text-yellow-300"></i>
-            <span id="btnGpsLabel">📍 ចុចចាប់ GPS ផ្ទះខ្ញុំ (ឬភ្ជាប់រូបផ្ទះ + វាយទីតាំង)</span>
-          </button>
-          <input type="hidden" id="inp_custMapUrl" value="">
-          <div id="gpsStatusHint" class="text-[10px] text-slate-500 font-bold italic text-center">💡 ចុចប៊ូតុងខៀវ ដើម្បីចាប់ GPS ឬថតរូបមុខផ្ទះ + វាយចំណាំខាងក្រោម</div>
-
-          <div class="pt-2 border-t border-blue-200/60 space-y-2">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2 min-w-0">
-                <div id="housePhotoThumbBox" class="w-12 h-12 rounded-xl bg-white border-2 border-dashed border-blue-300 flex items-center justify-center overflow-hidden shrink-0 shadow-2xs">
-                  <i class="fas fa-house-chimney text-slate-400 text-base" id="housePhotoDefaultIcon"></i>
-                  <img id="housePhotoImgPreview" src="" class="w-full h-full object-cover hidden">
-                </div>
-                <div class="min-w-0">
-                  <span class="text-[11px] font-bold text-slate-800 block">រូបថតមុខផ្ទះ / ច្រកចូល</span>
-                  <span class="text-[9.5px] text-slate-500 font-normal block truncate" id="housePhotoStatusText">ភ្ជាប់រូបទុកឱ្យអ្នកដឹកចំណាំផ្ទះ</span>
-                </div>
-              </div>
-              <button type="button" onclick="removeHousePhoto()" id="btnRemoveHousePhoto" class="w-8 h-8 text-red-500 hover:text-red-700 rounded-lg hover:bg-red-50 flex items-center justify-center hidden" title="លុបរូប">
-                <i class="fas fa-trash-can text-sm"></i>
-              </button>
-            </div>
-
-            <div class="grid grid-cols-2 gap-2 pt-0.5">
-              <button type="button" onclick="document.getElementById('inpHousePhotoGallery').click()" class="py-2 px-2.5 bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-300 rounded-xl text-[11px] font-bold shadow-2xs flex items-center justify-center gap-1.5 active:scale-95 transition">
-                <i class="fas fa-images text-blue-600 text-xs"></i>
-                <span>🖼️ រើសរូបពីទូរស័ព្ទ</span>
-              </button>
-              <input type="file" id="inpHousePhotoGallery" accept="image/*" onchange="previewGalleryPhoto(this)" class="hidden">
-
-              <button type="button" onclick="openLiveCamera()" class="py-2 px-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-[11px] font-bold shadow-2xs flex items-center justify-center gap-1.5 active:scale-95 transition">
-                <i class="fas fa-camera text-xs"></i>
-                <span>📷 ថតផ្ទាល់</span>
-              </button>
-            </div>
-            <input type="hidden" id="inp_custPhotoUrl" value="">
-          </div>
-
-          <input type="text" id="inp_custAddress" oninput="autoSaveCustomerInput()" placeholder="ចំណាំទីតាំង ដូចជាក្បែរហាង ឬលេខផ្ទះ (បើមាន)..." class="font-bold p-2 rounded-xl border border-blue-200 bg-white outline-none focus:border-blue-600 w-full text-xs">
-        </div>
-      </div>
-
-      <!-- ៥. ជម្រើសសំបកធុង -->
-      <div class="p-3 bg-amber-50/90 rounded-2xl border border-amber-200 space-y-1.5">
-        <div class="font-black text-amber-950 text-[11px] flex justify-between items-center">
-          <span class="flex items-center gap-1">
-            <i class="fas fa-recycle text-amber-700"></i>
-            <span id="coSectionSwap">៥. ការដោះដូរសំបកធុងទឹក (Empty Barrel Swap)</span>
-          </span>
-          <span id="barrelCountSummaryBadge" class="text-[9px] bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full font-bold"></span>
-        </div>
-        <div class="space-y-1 text-[11px]">
-          <label class="flex items-center gap-2 cursor-pointer font-bold text-slate-800">
-            <input type="radio" name="co_swapOption" value="YES" onchange="onSwapOptionChanged()" checked class="accent-emerald-600">
-            <span id="optSwapYes">✅ ខ្ញុំមានសំបកធុងដូរ (មិនគិតថ្លៃសំបក)</span>
-          </label>
-          <label class="flex items-center gap-2 cursor-pointer font-bold text-slate-800">
-            <input type="radio" name="co_swapOption" value="NO" onchange="onSwapOptionChanged()" class="accent-emerald-600">
-            <span id="optSwapNo">🛒 គ្មានសំបកធុងដូរទេ (ទិញសំបកថ្មីដាច់ +១២,០០០៛/ធុង)</span>
-          </label>
-        </div>
-      </div>
-
-      <!-- ៦. វិធីទូទាត់ប្រាក់ & ABA KHQR -->
-      <div class="space-y-2">
-        <div class="font-black text-slate-800 uppercase text-[11px] flex items-center gap-1">
-          <i class="fas fa-wallet text-purple-600"></i>
-          <span id="coSectionPay">៦. វិធីទូទាត់ប្រាក់</span>
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          <label id="cardPayCOD" class="p-2.5 rounded-xl border-2 border-emerald-600 bg-emerald-50/70 flex items-center gap-2 cursor-pointer font-bold text-slate-900 transition">
-            <input type="radio" name="co_payMethod" value="COD" onchange="onPayMethodChanged('COD')" checked class="accent-emerald-600">
-            <span id="optCodLabel">💵 លុយសុទ្ធពេលដល់</span>
-          </label>
-          <label id="cardPayABA" class="p-2.5 rounded-xl border-2 border-slate-200 bg-white flex items-center gap-2 cursor-pointer font-bold text-slate-700 hover:border-blue-300 transition">
-            <input type="radio" name="co_payMethod" value="ABA" onchange="onPayMethodChanged('ABA')" class="accent-blue-600">
-            <span id="optAbaLabel">📱 ស្កេន ABA KHQR</span>
-          </label>
-        </div>
-
-        <!-- ផ្ទាំង ABA KHQR -->
-        <div id="abaKhqrDisplayArea" class="hidden p-3 bg-red-50/70 border-2 border-red-300 rounded-2xl space-y-2 text-center animate-in zoom-in duration-200">
-          <div class="flex justify-between items-center text-xs font-bold text-red-950 border-b border-red-200 pb-1.5">
-            <span class="flex items-center gap-1"><i class="fas fa-qrcode text-red-600"></i> ABA KHQR ផ្លូវការ (KEALY IENG)</span>
-            <span class="font-black text-red-700" id="khqrDueAmountText">៛ 0</span>
-          </div>
-          <div class="p-1 bg-white rounded-xl border border-red-200 shadow-inner max-w-[180px] mx-auto">
-            <img src="https://i.postimg.cc/DzHPhnmQ/photo-2026-09-06-20-44-57.jpg" alt="ABA KHQR" class="w-full rounded-lg shadow-xs">
-          </div>
-          <p class="text-[10px] text-slate-500 font-bold" id="abaInstructionText">ស្កេនទូទាត់រួចហើយ សូមចុចប៊ូតុងកុម្ម៉ង់ខាងក្រោម</p>
-        </div>
-      </div>
-
-      <!-- សរុបទឹកប្រាក់ & ប៊ូតុងបញ្ជាទិញ -->
-      <div class="pt-2 border-t border-slate-100 space-y-2">
-        <div class="flex justify-between items-center text-sm font-black text-slate-900">
-          <span id="coTotalLabel">សរុបទឹកប្រាក់ត្រូវបង់៖</span>
-          <span id="coGrandTotalText" class="text-base text-emerald-700 font-black">0 ៛</span>
-        </div>
-        <button type="button" onclick="submitFinalWaterOrder()" id="btnSubmitOrderAction" class="w-full py-3.5 kc-btn-primary flex items-center justify-center gap-2 text-xs sm:text-sm">
-          <i class="fas fa-paper-plane"></i>
-          <span id="btnSubmitOrderText">បញ្ជាក់ការកុម្ម៉ង់ទឹកឥឡូវនេះ (Order Now)</span>
+      <div id="custProfileDisplayArea" class="space-y-2.5 bg-slate-50 p-3 rounded-2xl border border-slate-200"></div>
+      <div class="grid grid-cols-2 gap-2">
+        <button type="button" onclick="openCheckoutModal(); closeCustomerProfileModal(); toggleEditCheckoutAddress(true);" class="py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1 shadow-xs">
+          <i class="fas fa-pen-to-square"></i> កែប្រែព័ត៌មាន
         </button>
+        <button type="button" onclick="closeCustomerProfileModal()" class="py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl text-xs">បិទ</button>
       </div>
-
     </div>
   </div>
+  
   <!-- ==============================================
        ៨. JAVASCRIPT LOGIC (ADVANCED DELIVERY & 100% TRANSLATION)
        ============================================== -->
@@ -2083,11 +1862,18 @@
          driverInfoHtml +
 
          '<div class="pt-1">' +
-           '<a href="' + tgSlipLink + '" target="_blank" class="w-full py-2.5 px-3 bg-gradient-to-r from-blue-600 to-sky-600 hover:from-blue-700 text-white rounded-xl text-xs font-black shadow-xs flex items-center justify-center gap-2 active:scale-95 transition" style="text-decoration:none;">' +
-             '<i class="fab fa-telegram text-sm"></i> ' + d.trackSendSlip +
-           '</a>' +
-         '</div>' +
-         '<div class="flex justify-between items-center text-[11px] pt-1 text-slate-700 font-bold">' +
+            '<a href="' + tgSlipLink + '" target="_blank" class="w-full py-2.5 px-3 bg-gradient-to-r from-blue-600 to-sky-600 hover:from-blue-700 text-white rounded-xl text-xs font-black shadow-xs flex items-center justify-center gap-2 active:scale-95 transition" style="text-decoration:none;">' +
+              '<i class="fab fa-telegram text-sm"></i> ' + d.trackSendSlip +
+            '</a>' +
+          '</div>' +
+
+          // ❌ ប៊ូតុងបោះបង់ការកុម្ម៉ង់ (ដាក់ត្រង់នេះ៖ ក្រោមប៊ូតុង Telegram ខាងលើ)
+          (isPending ? 
+          '<button type="button" onclick="cancelCustomerActiveOrder(\'' + orderId + '\')" class="w-full mt-2 py-2 bg-red-50 hover:bg-red-100 text-red-700 font-bold text-xs rounded-xl border border-red-200 transition active:scale-95 flex items-center justify-center gap-1.5">' +
+            '<i class="fas fa-circle-xmark"></i> បោះបង់ការកុម្ម៉ង់នេះ' +
+          '</button>' : '') +
+
+          '<div class="flex justify-between items-center text-[11px] pt-1 text-slate-700 font-bold">' +
            '<span>' + d.trackTotal + ' <b class="text-emerald-800 font-black text-xs">៛ ' + Number(info.total || 0).toLocaleString() + '</b></span>' +
            '<span class="text-slate-400 text-[10px]">KC WATER Poipet</span>' +
          '</div>' +
@@ -2351,6 +2137,175 @@
       if (hiddenInput) { hiddenInput.value = ''; }
       if (removeBtn) { removeBtn.style.display = 'none'; removeBtn.classList.add('hidden'); }
       if (statusText) { statusText.innerText = 'ភ្ជាប់រូបទុកឱ្យអ្នកដឹកចំណាំផ្ទះ'; }
+    }
+
+    // ==========================================
+    // 📱 មុខងារគ្រប់គ្រង BOTTOM NAVIGATION & ប្រវត្តិទិញទឹក
+    // ==========================================
+
+    // ១. ប្តូរ Tab លើ Bottom Navigation Bar
+    function switchStoreAppTab(tab, btn) {
+      document.querySelectorAll('.bnav-btn').forEach(b => {
+        b.className = "bnav-btn flex flex-col items-center gap-1 text-slate-500 hover:text-slate-900 transition active:scale-95";
+        var iconBox = b.querySelector('div');
+        if (iconBox) iconBox.className = "w-8 h-8 rounded-2xl flex items-center justify-center text-base text-slate-600";
+      });
+
+      if (btn) {
+        btn.className = "bnav-btn flex flex-col items-center gap-1 text-emerald-700 transition active:scale-95";
+        var activeIcon = btn.querySelector('div');
+        if (activeIcon) activeIcon.className = "w-8 h-8 rounded-2xl flex items-center justify-center text-base bg-emerald-100 text-emerald-800 shadow-xs";
+      }
+
+      if (tab === 'STORE') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else if (tab === 'TRACKING') {
+        var trackCard = document.getElementById('activeOrderCardBox');
+        if (trackCard && !trackCard.classList.contains('hidden')) {
+          trackCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else {
+          alert("បច្ចុប្បន្នលោកអ្នកមិនមានការកុម្ម៉ង់ទឹកដែលកំពុងដឹកជញ្ជូនឡើយ!");
+        }
+      } else if (tab === 'HISTORY') {
+        openCustomerHistoryModal();
+      } else if (tab === 'PROFILE') {
+        openCustomerProfileModal();
+      }
+    }
+
+    // ២. បើកផ្ទាំងប្រវត្តិទិញទឹករបស់ភ្ញៀវ
+    async function openCustomerHistoryModal() {
+      var modal = document.getElementById('customerHistoryModal');
+      var listArea = document.getElementById('custHistoryListArea');
+      if (modal) modal.classList.remove('hidden');
+
+      var phone = localStorage.getItem('kc_order_phone') || '';
+      if (!phone) {
+        if (listArea) listArea.innerHTML = '<div class="text-center py-8 text-slate-400 italic text-xs">លោកអ្នកមិនទាន់ធ្លាប់មានប្រវត្តិកុម្ម៉ង់ទឹកឡើយ។</div>';
+        return;
+      }
+
+      if (listArea) listArea.innerHTML = '<div class="text-center py-8 text-slate-400 italic text-xs"><i class="fas fa-spinner fa-spin mr-1"></i> កំពុងទាញប្រវត្តិកុម្ម៉ង់...</div>';
+
+      try {
+        const { data: orders, error } = await supabaseClient
+          .from('orders')
+          .select('*')
+          .eq('phone', phone)
+          .order('created_at', { ascending: false })
+          .limit(20);
+
+        if (error) throw error;
+
+        if (!orders || orders.length === 0) {
+          listArea.innerHTML = '<div class="text-center py-8 text-slate-400 italic text-xs">មិនមានប្រវត្តិកុម្ម៉ង់សម្រាប់លេខទូរស័ព្ទ ' + phone + ' ឡើយ។</div>';
+          return;
+        }
+
+        var html = '';
+        orders.forEach(function(o) {
+          var dateStr = new Date(o.created_at).toLocaleString('km-KH', { dateStyle: 'short', timeStyle: 'short' });
+          var isDelivered = (o.status === 'Delivered');
+          var isCancelled = (o.status === 'Cancelled');
+
+          var statusBadge = isDelivered ? 
+            '<span class="px-2 py-0.5 rounded-full text-[9px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300">✅ ដឹកដល់រួចរាល់</span>' : 
+            (isCancelled ? 
+              '<span class="px-2 py-0.5 rounded-full text-[9px] font-black bg-red-100 text-red-700 border border-red-300">❌ បានបោះបង់</span>' : 
+              '<span class="px-2 py-0.5 rounded-full text-[9px] font-black bg-amber-100 text-amber-900 border border-amber-300">⏳ ' + o.status + '</span>');
+
+          html += '<div class="p-3 bg-slate-50 rounded-2xl border border-slate-200 space-y-1.5 text-xs hover:border-emerald-300 transition">' +
+            '<div class="flex justify-between items-center border-b pb-1.5">' +
+              '<span class="font-mono text-[10px] text-slate-400">កូដ៖ <b>' + o.order_id + '</b></span>' +
+              statusBadge +
+            '</div>' +
+            '<div class="text-slate-800 font-bold">' + o.items + '</div>' +
+            '<div class="flex justify-between items-center pt-1">' +
+              '<span class="text-[10px] text-slate-400">' + dateStr + '</span>' +
+              '<b class="text-emerald-700 font-black">៛ ' + Number(o.total || 0).toLocaleString() + '</b>' +
+            '</div>' +
+          '</div>';
+        });
+
+        listArea.innerHTML = html;
+      } catch(e) {
+        if (listArea) listArea.innerHTML = '<div class="text-center py-4 text-red-500 font-bold text-xs">កំហុសទាញទិន្នន័យ៖ ' + e.message + '</div>';
+      }
+    }
+
+    function closeCustomerHistoryModal() {
+      var modal = document.getElementById('customerHistoryModal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    // ៣. បើកផ្ទាំងព័ត៌មានគណនីភ្ញៀវ
+    function openCustomerProfileModal() {
+      var modal = document.getElementById('customerProfileModal');
+      var area = document.getElementById('custProfileDisplayArea');
+      if (modal) modal.classList.remove('hidden');
+
+      var raw = localStorage.getItem('kc_saved_customer_profile');
+      if (!raw) {
+        if (area) area.innerHTML = '<div class="text-center py-6 text-slate-400 italic text-xs">មិនទាន់មានព័ត៌មានរក្សាទុកឡើយ។ សូមកុម្ម៉ង់ទឹកម្តងដើម្បីរក្សាទុកអូតូ!</div>';
+        return;
+      }
+
+      var p = JSON.parse(raw);
+      if (area) {
+        area.innerHTML = '<div class="space-y-1.5 text-xs text-slate-800">' +
+          '<div class="flex justify-between"><span class="text-slate-500">ឈ្មោះអ្នកទទួល៖</span><b class="text-sm font-black text-slate-900">' + (p.name || '-') + '</b></div>' +
+          '<div class="flex justify-between"><span class="text-slate-500">លេខទូរស័ព្ទ៖</span><b class="text-emerald-700 font-mono text-sm">' + (p.phone || '-') + '</b></div>' +
+          '<div class="flex justify-between"><span class="text-slate-500">ប្រភេទកន្លែង៖</span><b class="text-blue-900">' + (typeof getFormattedBuildingDetails === 'function' ? getFormattedBuildingDetails() : '-') + '</b></div>' +
+          '<div class="flex justify-between"><span class="text-slate-500">ចំណាំអាសយដ្ឋាន៖</span><span class="font-bold">' + (p.address || 'មិនមាន') + '</span></div>' +
+          (p.photoUrl ? '<div class="pt-1.5 border-t"><span class="text-[10px] text-slate-500 block mb-1">រូបថតមុខផ្ទះ៖</span><img src="' + p.photoUrl + '" class="w-16 h-16 rounded-xl object-cover border"></div>' : '') +
+        '</div>';
+      }
+    }
+
+    function closeCustomerProfileModal() {
+      var modal = document.getElementById('customerProfileModal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    // ៤. មុខងារបោះបង់ការកុម្ម៉ង់ដោយខ្លួនឯងសម្រាប់ភ្ញៀវ (Cancel Order ពេល Pending)
+    async function cancelCustomerActiveOrder(orderId) {
+      if (!confirm("តើលោកអ្នកពិតជាចង់បោះបង់ការកុម្ម៉ង់ទឹកលេខកូដ [" + orderId + "] នេះមែនទេ?")) return;
+
+      try {
+        const { error } = await supabaseClient
+          .from('orders')
+          .update({ status: 'Cancelled' })
+          .eq('order_id', orderId);
+
+        if (error) throw error;
+
+        localStorage.removeItem('kc_active_order_id');
+        currentTrackingOrderId = null;
+        var box = document.getElementById('activeOrderCardBox');
+        if (box) box.classList.add('hidden');
+
+        var badge = document.getElementById('bnavTrackBadge');
+        if (badge) badge.classList.add('hidden');
+
+        alert("ការកុម្ម៉ង់របស់អ្នកត្រូវបានបោះបង់ជោគជ័យ!");
+
+        // ផ្ញើ Telegram Alert ទៅរោងចក្រ
+        try {
+          if (telegramSettings && telegramSettings.token && telegramSettings.chatId) {
+            var msg = "🔔 <b>[KC WATER - ភ្ញៀវបានបោះបង់ការកុម្ម៉ង់ដោយខ្លួនឯង]</b>\n\n" +
+                      "🆔 <b>កូដ៖</b> <code>" + orderId + "</code>\n" +
+                      "🕒 <b>ម៉ោង៖</b> " + new Date().toLocaleTimeString('km-KH');
+            fetch("https://api.telegram.org/bot" + telegramSettings.token + "/sendMessage", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ chat_id: telegramSettings.chatId, text: msg, parse_mode: "HTML" })
+            }).catch(function(){});
+          }
+        } catch(tgE) {}
+
+      } catch(err) {
+        alert("កំហុសបោះបង់ការកុម្ម៉ង់៖ " + err.message);
+      }
     }
   </script>
 </body>
