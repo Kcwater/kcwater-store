@@ -225,6 +225,217 @@
       </button>
     </div>
   </div>
+  <!-- 🛒 ១. របារកន្ត្រកអណ្តែត (FLOATING CART DOCK) -->
+  <div id="floatingCartDock" class="fixed bottom-16 left-0 right-0 z-40 max-w-md mx-auto px-4 pb-2 transition-all duration-300 transform translate-y-32 opacity-0 pointer-events-none">
+    <div class="kc-floating-cart p-3 text-white flex items-center justify-between shadow-2xl border border-white/20">
+      <div class="flex items-center gap-3 pl-2">
+        <div class="w-10 h-10 rounded-2xl bg-emerald-500/30 flex items-center justify-center text-emerald-400 text-lg border border-emerald-400/40">
+          <i class="fas fa-cart-shopping"></i>
+        </div>
+        <div>
+          <span id="dockItemCount" class="text-xs text-emerald-300 font-bold block">0 មុខទំនិញ</span>
+          <b id="dockTotalPrice" class="text-sm font-black text-white">៛ 0</b>
+        </div>
+      </div>
+      <button type="button" onclick="openCheckoutModal()" class="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black text-xs rounded-2xl shadow-lg active:scale-95 transition flex items-center gap-1.5">
+        <span id="dockCheckoutLabel">គិតលុយ</span>
+        <i class="fas fa-chevron-right text-[10px]"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- 💳 ២. ផ្ទាំង CHECKOUT MODAL ពេញលេញ (ព័ត៌មានដឹកជញ្ជូន & គិតលុយ) -->
+  <div id="checkoutModal" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden overflow-y-auto">
+    <div class="fixed inset-0 bg-slate-950/65 backdrop-blur-xs" onclick="closeCheckoutModal()"></div>
+    <div class="bg-white rounded-t-[32px] sm:rounded-[32px] shadow-2xl z-10 w-full max-w-md modal-scrollable p-5 space-y-3.5 relative border border-slate-100 animate-in slide-in-from-bottom duration-300 my-auto text-xs">
+      
+      <!-- ក្បាលផ្ទាំង -->
+      <div class="flex justify-between items-start border-b pb-2.5">
+        <div>
+          <h3 class="font-black text-slate-900 text-sm sm:text-base flex items-center gap-1.5" id="coHeading">
+            <i class="fas fa-truck-fast text-emerald-600"></i> ព័ត៌មានដឹកជញ្ជូនទឹក (ប៉ោយប៉ែត)
+          </h3>
+          <p class="text-[10px] text-slate-500 font-bold mt-0.5" id="coSub">ដឹកជូនដល់មុខផ្ទះរហ័សដោយអ្នកដឹក KC WATER</p>
+        </div>
+        <button type="button" onclick="closeCheckoutModal()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-400 font-bold flex items-center justify-center">&times;</button>
+      </div>
+
+      <!-- ដំណឹង Error ក្នុងផ្ទាំង -->
+      <div id="checkoutErrorAlert" class="hidden p-3 bg-red-50 border border-red-200 text-red-700 rounded-2xl font-bold flex items-center gap-2">
+        <i class="fas fa-circle-exclamation text-red-500 text-sm"></i>
+        <span id="checkoutErrorMsg"></span>
+      </div>
+
+      <!-- បញ្ជីទំនិញក្នុងកន្ត្រក -->
+      <div id="checkoutCartItemsList" class="bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-1.5"></div>
+
+      <!-- 👤 កាតព័ត៌មានភ្ញៀវបង្រួមតូច (បើធ្លាប់ Save ពីមុន) -->
+      <div id="compactSavedProfileBox" class="hidden p-3 bg-emerald-50/70 border border-emerald-300 rounded-2xl flex items-center justify-between">
+        <div class="space-y-0.5">
+          <div class="flex items-center gap-1.5">
+            <b id="cProfName" class="text-slate-900 font-black text-xs"></b>
+            <span class="text-slate-400">|</span>
+            <span id="cProfPhone" class="text-emerald-800 font-bold font-mono"></span>
+          </div>
+          <div id="cProfBuilding" class="text-[11px] text-blue-900 font-bold"></div>
+          <div id="cProfAddress" class="text-[10px] text-slate-500 truncate max-w-[230px]"></div>
+        </div>
+        <button type="button" onclick="toggleEditCheckoutAddress(true)" class="px-2.5 py-1.5 bg-white border border-emerald-300 text-emerald-800 rounded-xl font-bold text-[10px] shadow-2xs active:scale-95">
+          <i class="fas fa-pen text-[9px]"></i> កែប្រែ
+        </button>
+      </div>
+
+      <!-- 📝 ទម្រង់បែបបទពេញលេញ (បង្ហាញពេលភ្ញៀវថ្មី ឬចុចកែប្រែ) -->
+      <div id="fullCheckoutFormSection" class="space-y-3">
+        <!-- ១. ព័ត៌មានអ្នកទទួល -->
+        <div class="space-y-1.5">
+          <label class="font-black text-slate-700 uppercase tracking-wider block" id="coSectionUser">១. ព័ត៌មានអ្នកទទួលទឹក</label>
+          <div class="grid grid-cols-2 gap-2">
+            <input type="text" id="inp_custName" oninput="autoSaveCustomerInput()" placeholder="ឈ្មោះអ្នកទទួល (*)" class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold outline-none focus:bg-white focus:border-emerald-600">
+            <input type="tel" id="inp_custPhone" oninput="autoSaveCustomerInput()" placeholder="លេខទូរស័ព្ទ (*)" class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold outline-none focus:bg-white focus:border-emerald-600">
+          </div>
+        </div>
+
+        <!-- ២. ម៉ោងចង់ទទួល -->
+        <div class="space-y-1.5">
+          <label class="font-black text-slate-700 uppercase tracking-wider block" id="coSectionTime">២. ម៉ោងចង់ទទួលទឹក (Delivery Time)</label>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="p-2 bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-1.5 cursor-pointer font-bold">
+              <input type="radio" name="co_timeSlot" value="ASAP" checked class="accent-emerald-600">
+              <span id="optTimeAsap">⚡ ដឹកភ្លាមៗ (៣០-៤៥ នាទី)</span>
+            </label>
+            <label class="p-2 bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-1.5 cursor-pointer font-bold">
+              <input type="radio" name="co_timeSlot" value="SCHEDULE" class="accent-emerald-600">
+              <span id="optTimeSchedule">⏰ កំណត់ម៉ោងដឹក</span>
+            </label>
+          </div>
+          <div class="flex gap-1.5 pt-1">
+            <select id="inp_timeSlotSelect" onchange="onSchedulePresetChange(this.value)" class="p-2 bg-white border border-slate-200 rounded-xl font-bold flex-1 outline-none">
+              <option value="ព្រឹក (08:00 - 11:30)">🌅 ពេលព្រឹក (08:00 - 11:30)</option>
+              <option value="រសៀល (13:00 - 17:30)">🌇 ពេលរសៀល (13:00 - 17:30)</option>
+              <option value="CUSTOM">✍️ កំណត់ម៉ោងជាក់លាក់</option>
+            </select>
+          </div>
+          <div id="customTimeManualInputRow" class="hidden pt-1">
+            <input type="text" id="inp_customTimeManual" oninput="autoSaveCustomerInput()" placeholder="វាយម៉ោងដែលចង់ឱ្យដឹក (ឧ៖ ម៉ោង ៤ រសៀល)..." class="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl font-bold outline-none">
+          </div>
+        </div>
+
+        <!-- ៣. ប្រភេទកន្លែងស្នាក់នៅ -->
+        <div class="space-y-1.5">
+          <label class="font-black text-slate-700 uppercase tracking-wider block" id="coSectionBuilding">៣. ប្រភេទកន្លែងស្នាក់នៅ (Building Type)</label>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="p-2 bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-1.5 cursor-pointer font-bold">
+              <input type="radio" name="co_bldType" value="GROUND" checked onchange="document.getElementById('bldFloorDetailRow').classList.add('hidden')" class="accent-emerald-600">
+              <span id="optBldGround">🏠 ផ្ទះផ្ទាល់ដី</span>
+            </label>
+            <label class="p-2 bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-1.5 cursor-pointer font-bold">
+              <input type="radio" name="co_bldType" value="FLOOR" onchange="document.getElementById('bldFloorDetailRow').classList.remove('hidden')" class="accent-emerald-600">
+              <span id="optBldFloor">🏢 បន្ទប់ជួល / អាគារ</span>
+            </label>
+          </div>
+          <div id="bldFloorDetailRow" class="hidden pt-1">
+            <input type="text" id="inp_bldFloorDetail" oninput="autoSaveCustomerInput()" placeholder="ឧ៖ ជាន់ទី២ បន្ទប់ ២០៤ (មានជណ្តើរយន្ត)" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl font-bold outline-none">
+          </div>
+        </div>
+
+        <!-- ៤. ទីតាំង GPS & រូបថតមុខផ្ទះ -->
+        <div class="space-y-1.5">
+          <label class="font-black text-slate-700 uppercase tracking-wider block" id="coSectionLoc">៤. ទីតាំងផ្ទះនៅក្រុងប៉ោយប៉ែត</label>
+          <button type="button" id="btnDetectGPSAction" onclick="detectGPSLocation()" class="w-full py-2.5 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs shadow-xs flex items-center justify-center gap-2 active:scale-95 transition">
+            <i class="fas fa-location-crosshairs"></i>
+            <span id="btnGpsLabel">📍 ចុចចាប់ GPS ផ្ទះខ្ញុំ</span>
+          </button>
+          <p id="gpsStatusHint" class="text-[10px] text-slate-400 font-bold"></p>
+          <input type="hidden" id="inp_custMapUrl" value="">
+          <input type="text" id="inp_custAddress" oninput="autoSaveCustomerInput()" placeholder="ភូមិ, សង្កាត់, ឬចំណាំទីតាំងសម្គាល់ក្បែរផ្ទះ..." class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold outline-none focus:bg-white focus:border-emerald-600">
+
+          <!-- 📷 ភ្ជាប់រូបថតមុខផ្ទះ (In-Page Camera / Gallery) -->
+          <div class="p-2.5 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+              <div id="housePhotoThumbBox" class="w-10 h-10 rounded-xl bg-slate-200 flex items-center justify-center overflow-hidden shrink-0">
+                <i id="housePhotoDefaultIcon" class="fas fa-camera text-slate-400"></i>
+                <img id="housePhotoImgPreview" src="" class="w-full h-full object-cover hidden">
+              </div>
+              <div>
+                <span id="housePhotoStatusText" class="text-[11px] text-slate-600 font-bold block">ភ្ជាប់រូបទុកឱ្យអ្នកដឹកចំណាំផ្ទះ</span>
+                <input type="hidden" id="inp_custPhotoUrl" value="">
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <button type="button" onclick="openLiveCamera()" class="px-2.5 py-1.5 bg-emerald-600 text-white rounded-xl font-bold text-[10px] active:scale-95 transition">
+                <i class="fas fa-camera"></i> ថតរូប
+              </button>
+              <label class="px-2.5 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl font-bold text-[10px] cursor-pointer active:scale-95 transition">
+                <i class="fas fa-image"></i> រើសរូប
+                <input type="file" id="inpHousePhotoGallery" accept="image/*" onchange="previewGalleryPhoto(this)" class="hidden">
+              </label>
+              <button type="button" id="btnRemoveHousePhoto" onclick="removeHousePhoto()" class="hidden text-red-500 hover:text-red-700 p-1">
+                <i class="fas fa-trash-can"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ៥. ការដោះដូរសំបកធុង -->
+        <div class="space-y-1.5">
+          <div class="flex justify-between items-center">
+            <label class="font-black text-slate-700 uppercase tracking-wider block" id="coSectionSwap">៥. ការដោះដូរសំបកធុងទឹក (Barrel Swap)</label>
+            <span id="barrelCountSummaryBadge" class="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full"></span>
+          </div>
+          <div class="space-y-1.5">
+            <label class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-2 cursor-pointer font-bold">
+              <input type="radio" name="co_swapOption" value="YES" checked onchange="onSwapOptionChanged()" class="accent-emerald-600">
+              <span id="optSwapYes">✅ ខ្ញុំមានសំបកធុងដូរ (មិនគិតថ្លៃសំបក)</span>
+            </label>
+            <label class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-2 cursor-pointer font-bold">
+              <input type="radio" name="co_swapOption" value="NO" onchange="onSwapOptionChanged()" class="accent-emerald-600">
+              <span id="optSwapNo">🛒 គ្មានសំបកធុងដូរទេ (+១២,០០០៛/ធុង)</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- ៦. វិធីទូទាត់ប្រាក់ -->
+        <div class="space-y-1.5">
+          <label class="font-black text-slate-700 uppercase tracking-wider block" id="coSectionPay">៦. វិធីទូទាត់ប្រាក់</label>
+          <div class="grid grid-cols-2 gap-2">
+            <label id="cardPayCOD" class="p-2.5 rounded-xl border-2 border-emerald-600 bg-emerald-50/70 flex items-center gap-2 cursor-pointer font-bold text-slate-900 transition">
+              <input type="radio" name="co_payMethod" value="COD" checked onchange="onPayMethodChanged('COD')" class="accent-emerald-600">
+              <span id="optCodLabel">💵 លុយសុទ្ធពេលដល់</span>
+            </label>
+            <label id="cardPayABA" class="p-2.5 rounded-xl border-2 border-slate-200 bg-white flex items-center gap-2 cursor-pointer font-bold text-slate-700 hover:border-blue-300 transition">
+              <input type="radio" name="co_payMethod" value="ABA" onchange="onPayMethodChanged('ABA')" class="accent-blue-600">
+              <span id="optAbaLabel">📱 ស្កេន ABA KHQR</span>
+            </label>
+          </div>
+
+          <!-- ABA KHQR Image Display -->
+          <div id="abaKhqrDisplayArea" class="hidden p-3 bg-blue-50/70 border-2 border-blue-200 rounded-2xl text-center space-y-2">
+            <span class="text-[11px] font-black text-blue-900 block" id="abaInstructionText">ស្កេនទូទាត់រួចហើយ សូមចុចប៊ូតុងកុម្ម៉ង់ខាងក្រោម</span>
+            <div class="p-2 bg-white rounded-xl border border-blue-200 shadow-sm max-w-[180px] mx-auto">
+              <img src="https://i.postimg.cc/DzHPhnmQ/photo-2026-09-06-20-44-57.jpg" class="w-full rounded-lg">
+            </div>
+            <div class="text-xs font-black text-blue-950">
+              <span>ទឹកប្រាក់ត្រូវបង់៖ </span>
+              <b id="khqrDueAmountText" class="text-emerald-700 text-sm">៛ 0</b>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- សរុបទឹកប្រាក់ & ប៊ូតុងបញ្ជាក់កុម្ម៉ង់ -->
+      <div class="p-3 bg-emerald-50 rounded-2xl border border-emerald-200 flex justify-between items-center">
+        <span class="font-black text-emerald-950" id="coTotalLabel">សរុបទឹកប្រាក់ត្រូវបង់៖</span>
+        <b id="coGrandTotalText" class="text-base sm:text-lg font-black text-emerald-700">៛ 0</b>
+      </div>
+
+      <button type="button" id="btnSubmitOrderAction" onclick="submitFinalWaterOrder()" class="w-full py-3.5 kc-btn-primary flex items-center justify-center gap-2 text-xs sm:text-sm">
+        <i class="fas fa-paper-plane"></i>
+        <span id="btnSubmitOrderText">បញ្ជាក់ការកុម្ម៉ង់ទឹកឥឡូវនេះ (Order Now)</span>
+      </button>
+
+    </div>
+  </div>
 
   <!-- 📱 របារម៉ឺនុយនៅបាតខាងក្រោម (BOTTOM NAVIGATION BAR - ទំនើប & ទូលាយអេក្រង់) -->
   <nav class="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/90 shadow-2xl pb-safe">
