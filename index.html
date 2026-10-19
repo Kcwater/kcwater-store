@@ -269,7 +269,33 @@
     </button>
   </div>
 
-  <!-- 🌟 កាតអាសយដ្ឋានបង្រួមតូច (បង្ហាញពេលភ្ញៀវធ្លាប់ទិញម្តង ដើម្បីកុំឱ្យផ្ទាំងធ្លាក់វែងអន្លាយ) -->
+  <!-- ៧. ផ្ទាំង CHECKOUT ពេញលេញ (លាក់ទុកជា Pop-up ចេញមកតែពេលភ្ញៀវចុច "គិតលុយ") -->
+  <div id="checkoutModal" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden overflow-y-auto">
+    <!-- ផ្ទៃខាងក្រោយងងឹតពេលបើក Pop-up -->
+    <div class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity" onclick="closeCheckoutModal()"></div>
+    
+    <!-- តួខ្លួនផ្ទាំង Pop-up អាច Scroll បានរលូន -->
+    <div class="bg-white rounded-t-[32px] sm:rounded-[32px] shadow-2xl z-10 w-full max-w-md modal-scrollable p-5 space-y-3.5 relative border border-slate-100 animate-in slide-in-from-bottom duration-300 text-xs select-auto my-auto">
+      
+      <!-- ក្បាលផ្ទាំង Pop-up -->
+      <div class="flex justify-between items-center border-b border-slate-100 pb-2.5">
+        <div>
+          <h4 class="font-black text-slate-900 text-sm sm:text-base" id="coHeading">ព័ត៌មានដឹកជញ្ជូនទឹក (ប៉ោយប៉ែត)</h4>
+          <p class="text-[10px] text-emerald-700 font-bold" id="coSub">ដឹកជូនដល់មុខផ្ទះរហ័សដោយអ្នកដឹក KC WATER</p>
+        </div>
+        <button type="button" onclick="closeCheckoutModal()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-400 font-bold flex items-center justify-center">&times;</button>
+      </div>
+
+      <!-- សារដំណឹង Error -->
+      <div id="checkoutErrorAlert" class="hidden p-2.5 bg-red-50 border border-red-200 rounded-xl text-red-700 font-bold text-[11px] flex items-center gap-2">
+        <i class="fas fa-circle-exclamation text-red-600 text-sm"></i>
+        <span id="checkoutErrorMsg"></span>
+      </div>
+
+      <!-- បញ្ជីទំនិញក្នុងកន្ត្រក -->
+      <div id="checkoutCartItemsList" class="bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-1.5"></div>
+
+      <!-- 🌟 កាតអាសយដ្ឋានបង្រួមតូច (បង្ហាញពេលភ្ញៀវធ្លាប់ទិញម្តង ដើម្បីកុំឱ្យផ្ទាំងធ្លាក់វែងអន្លាយ) -->
       <div id="compactSavedProfileBox" class="hidden p-3 bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 rounded-2xl border-2 border-emerald-300 space-y-2 animate-in zoom-in-95 duration-200">
         <div class="flex justify-between items-center border-b border-emerald-200 pb-1.5">
           <span class="text-xs font-black text-emerald-950 flex items-center gap-1.5">
@@ -287,7 +313,7 @@
         </div>
       </div>
 
-      <!-- 📝 ទម្រង់បំពេញលម្អិត (លាក់អូតូបើមានទិន្នន័យចាស់ស្រាប់ ដើម្បីកុំឱ្យរញ៉េរញ៉ៃ) -->
+      <!-- 📝 ទម្រង់បំពេញលម្អិត -->
       <div id="fullCheckoutFormSection" class="space-y-3">
         <!-- ១. ព័ត៌មានអ្នកទទួល -->
         <div class="space-y-1.5">
@@ -334,9 +360,8 @@
             <button type="button" onclick="selectBuildingTypeChip('CONDO', this)" class="bld-chip py-2 px-2 rounded-xl border-2 border-slate-200 bg-white text-slate-700 flex items-center justify-center gap-1 active:scale-95 transition">🏢 ខុនដូ/បន្ទប់ជួល (Apt/公寓)</button>
           </div>
 
-          <!-- ផ្នែកបន្ថែមពេលរើស ខុនដូ/បន្ទប់ជួល/សណ្ឋាគារ -->
+          <!-- ផ្នែកបន្ថែមពេលរើស ខុនដូ/បន្ទប់ជួល -->
           <div id="buildingAdvancedDetailsBox" class="hidden space-y-2 pt-1 border-t border-slate-200/80">
-            <!-- រើសជាន់ Floor Chips -->
             <div>
               <span class="text-[10px] font-bold text-slate-600 block mb-1">ជាន់ទីប៉ុន្មាន (Floor / 楼层)៖</span>
               <div class="flex gap-1.5 overflow-x-auto no-scrollbar font-bold">
@@ -349,13 +374,11 @@
               </div>
             </div>
 
-            <!-- ជណ្តើរយន្ត vs ជណ្តើរជើង -->
             <div class="grid grid-cols-2 gap-1.5 font-bold">
               <button type="button" onclick="selectElevatorChip('YES', this)" class="lift-chip py-1.5 px-2 rounded-xl border-2 border-emerald-600 bg-emerald-50 text-emerald-950 flex items-center justify-center gap-1">🛗 មានជណ្តើរយន្ត (Lift/电梯)</button>
               <button type="button" onclick="selectElevatorChip('NO', this)" class="lift-chip py-1.5 px-2 rounded-xl border-2 border-slate-200 bg-white text-slate-700 flex items-center justify-center gap-1">🪜 ជណ្តើរជើង (Stairs/走楼梯)</button>
             </div>
 
-            <!-- លេខបន្ទប់ & ច្រកចូល -->
             <div class="grid grid-cols-2 gap-2">
               <input type="text" id="inp_bldRoomNo" oninput="autoSaveCustomerInput()" placeholder="លេខបន្ទប់ (Room No/房号 ឧ: 204)" class="w-full p-2 bg-white border border-slate-300 rounded-xl font-bold text-xs outline-none">
               <select id="inp_bldHandover" onchange="autoSaveCustomerInput()" class="w-full p-2 bg-white border border-slate-300 rounded-xl font-bold text-xs outline-none">
@@ -384,7 +407,6 @@
           <input type="hidden" id="inp_custMapUrl" value="">
           <div id="gpsStatusHint" class="text-[10px] text-slate-500 font-bold italic text-center">💡 ចុចប៊ូតុងខៀវ ដើម្បីចាប់ GPS ឬថតរូបមុខផ្ទះ + វាយចំណាំខាងក្រោម</div>
 
-          <!-- រូបថតមុខផ្ទះ -->
           <div class="pt-2 border-t border-blue-200/60 space-y-2">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2 min-w-0">
@@ -420,7 +442,7 @@
           <input type="text" id="inp_custAddress" oninput="autoSaveCustomerInput()" placeholder="ចំណាំទីតាំង ដូចជាក្បែរហាង ឬលេខផ្ទះ (បើមាន)..." class="font-bold p-2 rounded-xl border border-blue-200 bg-white outline-none focus:border-blue-600 w-full text-xs">
         </div>
       </div>
-  
+
       <!-- ៥. ជម្រើសសំបកធុង -->
       <div class="p-3 bg-amber-50/90 rounded-2xl border border-amber-200 space-y-1.5">
         <div class="font-black text-amber-950 text-[11px] flex justify-between items-center">
@@ -486,7 +508,6 @@
 
     </div>
   </div>
-
   <!-- ==============================================
        ៨. JAVASCRIPT LOGIC (ADVANCED DELIVERY & 100% TRANSLATION)
        ============================================== -->
