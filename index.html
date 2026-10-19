@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="km">
-<head>
+<head>function changeAppLanguage
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>KC WATER - ទឹកពិសាបរិសុទ្ធ ខេ ស៊ី (ប៉ោយប៉ែត)</title>
@@ -926,9 +926,20 @@
       return n;
     }
 
+    // 🌐 មុខងារប្តូរ ៣ ភាសា (ខ្មែរ / EN / 中文) ដោយសុវត្ថិភាព ១០០% គ្មានថ្ងៃគាំង Error ទៀតឡើយ
     function changeAppLanguage(lang) {
       currentLang = lang;
-      var d = DICT[lang];
+      var d = DICT[lang] || DICT.km;
+
+      // 🛡️ មុខងារជំនួយការពារកុំឱ្យគាំង (Safe Setter)
+      function setSafeText(id, text) {
+        var el = document.getElementById(id);
+        if (el && text !== undefined) el.innerText = text;
+      }
+      function setSafePlaceholder(id, text) {
+        var el = document.getElementById(id);
+        if (el && text !== undefined) el.placeholder = text;
+      }
 
       ['km', 'en', 'zh'].forEach(function(l) {
         var btn = document.getElementById('langBtn_' + l);
@@ -939,79 +950,75 @@
         }
       });
 
-      document.getElementById('txtTopSubtitle').innerText = d.topSub;
-      document.getElementById('txtBannerTag').innerText = d.bannerTag;
-      document.getElementById('txtBannerTitle').innerText = d.bannerTitle;
-      document.getElementById('txtBannerDesc').innerText = d.bannerDesc;
-      document.getElementById('tbSafe').innerText = d.tbSafe;
-      document.getElementById('tbSpeed').innerText = d.tbSpeed;
-      document.getElementById('tbSpeedSub').innerText = d.tbSpeedSub;
-      document.getElementById('tbStandard').innerText = d.tbStandard;
+      setSafeText('txtTopSubtitle', d.topSub);
+      setSafeText('txtBannerTag', d.bannerTag);
+      setSafeText('txtBannerTitle', d.bannerTitle);
+      setSafeText('txtBannerDesc', d.bannerDesc);
+      setSafeText('tbSafe', d.tbSafe);
+      setSafeText('tbSpeed', d.tbSpeed);
+      setSafeText('tbSpeedSub', d.tbSpeedSub);
+      setSafeText('tbStandard', d.tbStandard);
 
-      var rTag = document.getElementById('txtReorderTag');
-      var rBtn = document.getElementById('txtReorderBtn');
-      if (rTag) rTag.innerText = d.reorderTag;
-      if (rBtn) rBtn.innerText = d.reorderBtn;
+      setSafeText('txtReorderTag', d.reorderTag);
+      setSafeText('txtReorderBtn', d.reorderBtn);
 
-      document.getElementById('txtCatalogTitle').innerHTML = '<i class="fas fa-boxes-stacked text-emerald-600 mr-1.5"></i><span>' + d.catTitle + '</span>';
-      document.getElementById('txtCatalogAll').innerText = d.catAll;
-      document.getElementById('catBtn_ALL').innerText = d.catAll;
-      document.getElementById('catBtn_BARREL').innerText = d.catBarrel;
-      document.getElementById('catBtn_PACK').innerText = d.catPack;
-      document.getElementById('catBtn_EQUIP').innerText = d.catEquip;
+      var catTitleEl = document.getElementById('txtCatalogTitle');
+      if (catTitleEl) {
+        catTitleEl.innerHTML = '<i class="fas fa-boxes-stacked text-emerald-600 mr-1.5"></i><span>' + d.catTitle + '</span>';
+      }
+      setSafeText('txtCatalogAll', d.catAll);
+      setSafeText('catBtn_ALL', d.catAll);
+      setSafeText('catBtn_BARREL', d.catBarrel);
+      setSafeText('catBtn_PACK', d.catPack);
+      setSafeText('catBtn_GENERAL', (lang === 'km' ? 'ទំនិញទូទៅ / គ្រឿងទេស' : (lang === 'zh' ? '日常百货' : 'General Goods')));
+      setSafeText('catBtn_EQUIP', d.catEquip);
 
-      document.getElementById('modalBadge').innerText = d.modalBadge;
-      document.getElementById('modalQtyLabel').innerText = d.modalQty;
-      document.getElementById('dockCheckoutLabel').innerText = d.dockCheckout;
+      setSafeText('modalBadge', d.modalBadge);
+      setSafeText('modalQtyLabel', d.modalQty);
+      setSafeText('dockCheckoutLabel', d.dockCheckout);
 
-      document.getElementById('coHeading').innerText = d.coHeading;
-      document.getElementById('coSub').innerText = d.coSub;
-      document.getElementById('coSectionUser').innerText = d.coSecUser;
-      document.getElementById('inp_custName').placeholder = d.phName;
-      document.getElementById('inp_custPhone').placeholder = d.phPhone;
+      setSafeText('coHeading', d.coHeading);
+      setSafeText('coSub', d.coSub);
+      setSafeText('coSectionUser', d.coSecUser);
+      setSafePlaceholder('inp_custName', d.phName);
+      setSafePlaceholder('inp_custPhone', d.phPhone);
 
-      document.getElementById('coSectionTime').innerText = d.coSecTime;
-      document.getElementById('optTimeAsap').innerText = d.optTimeAsap;
-      document.getElementById('optTimeSchedule').innerText = d.optTimeSchedule;
+      setSafeText('coSectionTime', d.coSecTime);
+      setSafeText('coSectionBuilding', d.coSecBuilding);
 
-      document.getElementById('coSectionBuilding').innerText = d.coSecBuilding;
-      document.getElementById('optBldGround').innerText = d.optBldGround;
-      document.getElementById('optBldFloor').innerText = d.optBldFloor;
-      document.getElementById('inp_bldFloorDetail').placeholder = d.phFloorDetail;
-
-      document.getElementById('coSectionLoc').innerText = d.coSecLoc;
-      document.getElementById('btnGpsLabel').innerText = d.btnGps;
+      setSafeText('coSectionLoc', d.coSecLoc);
+      setSafeText('btnGpsLabel', d.btnGps);
       var gpsHint = document.getElementById('gpsStatusHint');
-      if (gpsHint && (!document.getElementById('inp_custMapUrl').value)) {
+      var mapUrlInp = document.getElementById('inp_custMapUrl');
+      if (gpsHint && (!mapUrlInp || !mapUrlInp.value)) {
         gpsHint.innerText = d.gpsHint;
       }
-      document.getElementById('inp_custAddress').placeholder = d.phAddress;
+      setSafePlaceholder('inp_custAddress', d.phAddress);
 
-      document.getElementById('coSectionSwap').innerText = d.coSecSwap;
-      document.getElementById('optSwapYes').innerText = d.optSwapYes;
-      document.getElementById('optSwapNo').innerText = d.optSwapNo;
+      setSafeText('coSectionSwap', d.coSecSwap);
+      setSafeText('optSwapYes', d.optSwapYes);
+      setSafeText('optSwapNo', d.optSwapNo);
 
-      document.getElementById('coSectionPay').innerText = d.coSecPay;
-      document.getElementById('optCodLabel').innerText = d.optCod;
-      document.getElementById('optAbaLabel').innerText = d.optAba;
-      document.getElementById('abaInstructionText').innerText = d.abaInstruction;
+      setSafeText('coSectionPay', d.coSecPay);
+      setSafeText('optCodLabel', d.optCod);
+      setSafeText('optAbaLabel', d.optAba);
+      setSafeText('abaInstructionText', d.abaInstruction);
 
-      document.getElementById('coTotalLabel').innerText = d.coTotal;
-      document.getElementById('btnSubmitOrderText').innerText = d.btnOrderNow;
+      setSafeText('coTotalLabel', d.coTotal);
+      setSafeText('btnSubmitOrderText', d.btnOrderNow);
 
       var closedTitle = document.getElementById('storeClosedTitle');
       var closedHint = document.getElementById('storeClosedTimeHint');
       if (closedTitle) closedTitle.innerText = d.closedTitle;
-      if (closedHint) {
+      if (closedHint && typeof storeOperatingConfig !== 'undefined') {
         closedHint.innerText = d.closedHint.replace('{open}', storeOperatingConfig.openTime).replace('{close}', storeOperatingConfig.closeTime);
       }
 
-      renderCatalogGrid();
-      recalcCartDock();
-      updateCheckoutCalculation();
-      checkActiveOrderLiveStatus();
+      if (typeof renderCatalogGrid === 'function') renderCatalogGrid();
+      if (typeof recalcCartDock === 'function') recalcCartDock();
+      if (typeof updateCheckoutCalculation === 'function') updateCheckoutCalculation();
+      if (typeof checkActiveOrderLiveStatus === 'function') checkActiveOrderLiveStatus();
     }
-
    // 📦 ១. ទាញយកទំនិញ + អត្ថបទ Description ដែលបានវាយក្នុង POS
     async function loadStoreOnlineProducts() {
       var grid = document.getElementById('catalogGrid');
