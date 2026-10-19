@@ -582,7 +582,7 @@ async function completeOnlineOrder(orderId, custName, total, itemsText, driverNa
   document.getElementById('completeDeliveryModal').classList.remove('hidden');
 }
 
-// 💾 មុខងារកត់ត្រាការដឹកដល់ បំបែកទំនិញចូល Transactions & កាត់ស្តុកត្រឹមត្រូវ ១០០%
+// 💾 មុខងារកត់ត្រាការដឹកដល់ បំបែកទំនិញ ចេញវិក្កយបត្រឌីជីថល & Realtime Refresh
 async function executeFinalCompleteDelivery() {
   if (!activeDeliveryTaskData) return;
 
@@ -602,7 +602,7 @@ async function executeFinalCompleteDelivery() {
   btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> កំពុងកត់ត្រា...';
 
   try {
-    // ១. ប្តូរ Status ក្នុង Orders ទៅ Delivered
+    // ១. ប្តូរ Status ក្នុងតារាង Orders ទៅ Delivered
     const { error: ordErr } = await supabaseClient
       .from('orders')
       .update({
@@ -613,7 +613,7 @@ async function executeFinalCompleteDelivery() {
 
     if (ordErr) throw ordErr;
 
-    // ២. ធានាថាមានបញ្ជីទំនិញក្នុងស្តុកដើម្បីផ្ទៀងផ្ទាត់
+    // ២. ធានាថាមានទិន្នន័យទំនិញក្នុងស្តុកដើម្បីផ្ទៀងផ្ទាត់
     if (!allProducts || allProducts.length === 0) {
       const { data: pList } = await supabaseClient.from('products').select('*');
       if (pList) allProducts = pList;
@@ -631,12 +631,10 @@ async function executeFinalCompleteDelivery() {
         var rawName = seg[0].trim();
         var qty = parseFloat(seg[1].trim() || 1);
 
-        // ស្វែងរកទំនិញក្នុងស្តុក
         var matchedProd = allProducts.find(function(p) {
           return p.name.trim().toLowerCase() === rawName.toLowerCase();
         });
 
-        // ស្វែងរកករណីសំបកធុង
         if (!matchedProd && (rawName.indexOf('សំបក') !== -1 || rawName.indexOf('ធុង') !== -1)) {
           matchedProd = allProducts.find(function(p) {
             var n = p.name.toLowerCase();
@@ -667,18 +665,32 @@ async function executeFinalCompleteDelivery() {
       }
     });
 
-    // បើមានថ្លៃដឹកជញ្ជូន ឬសល់ទឹកប្រាក់ខ្វះខាត ឱ្យបូកជាជួរថ្លៃដឹកជញ្ជូន
+    // គណនាផលខុសគ្នានៃថ្លៃដឹក ឬ Promotion
     var diff = total - totalAllocated;
     if (diff > 0) {
       rowsToInsert.push({
         transaction_id: tid,
         customer_name: custName,
-        product_name: "សេវាដឹកជញ្ជូនដល់ផ្ទះ",
+        product_name: "សេវាដឹកជញ្ជូន / សំបកធុង",
         qty: 1,
         price: diff,
         currency: "KHR",
         total: diff,
         paid_khr: diff,
+        recorded_by: driverName ? (driverName + " (អ្នកដឹក)") : "Admin",
+        status: "Paid",
+        payment_method: actualPayMethod
+      });
+    } else if (diff < 0) {
+      rowsToInsert.push({
+        transaction_id: tid,
+        customer_name: custName,
+        product_name: "បញ្ចុះតម្លៃ Promotion Online",
+        qty: 1,
+        price: diff,
+        currency: "KHR",
+        total: diff,
+        paid_khr: 0,
         recorded_by: driverName ? (driverName + " (អ្នកដឹក)") : "Admin",
         status: "Paid",
         payment_method: actualPayMethod
@@ -689,7 +701,7 @@ async function executeFinalCompleteDelivery() {
       await supabaseClient.from('transactions').insert(rowsToInsert);
     }
 
-    // ៤. កាត់ស្តុកទំនិញក្នុងឃ្លាំង Supabase (រួមទាំងសំបកធុងថ្មី និងទឹកយួរ)
+    // ៤. កាត់ស្តុកទំនិញទិញគេ
     for (var i = 0; i < rowsToInsert.length; i++) {
       var row = rowsToInsert[i];
       var prodToDeduct = allProducts.find(function(p) {
@@ -704,19 +716,32 @@ async function executeFinalCompleteDelivery() {
     }
 
     closeCompleteDeliveryModal();
-    showToast("បានកត់ត្រាការដឹកដល់ និងបំបែកទំនិញចូលបញ្ជីជោគជ័យ!", "success");
-    if (typeof confetti === 'function') confetti({ particleCount: 100, spread: 70 });
+    showToast("បានកត់ត្រាការដឹកដល់ និងប្រមូលប្រាក់ជោគជ័យ!", "success");
 
-    // ៥. Refresh អេក្រង់ទៅតាមអ្នកប្រើប្រាស់
-    if (currentUser && currentUser.type === 'CompanyDriver') {
-      if (typeof renderCompanyDeliveriesModule === 'function') renderCompanyDeliveriesModule();
-    } else {
-      openOnlineOrdersModal();
+    // ៥. 🧾 បង្កើត និងបង្ហាញរូបវិក្កយបត្រឌីជីថលភ្លាមៗ (Digital Receipt Pop-up)
+    if (typeof generateReceiptImage === 'function') {
+      generateReceiptImage(tid, custName, total, total, rowsToInsert, "វិក្កយបត្រដឹកជញ្ជូន (DELIVERY RECEIPT)");
     }
 
-    // ៦. ផ្ញើសារដំណឹង Telegram Alert
+    // ៦. សំឡេង Chime & បាញ់កាំជ្រួច
+    if (typeof playOrderChime === 'function') playOrderChime();
+    if (typeof confetti === 'function') confetti({ particleCount: 120, spread: 80 });
+
+    // ៧. Refresh ផ្ទាំងទាំងអស់ដោយស្វ័យប្រវត្តិ (លែងបាត់ ឬស្ងាត់ទៀតហើយ)
+    if (currentUser && currentUser.type === 'CompanyDriver') {
+      if (typeof renderCompanyDeliveriesModule === 'function') renderCompanyDeliveriesModule();
+    }
+    if (typeof openOnlineOrdersModal === 'function') {
+      var adminModal = document.getElementById('onlineOrdersAdminModal');
+      if (adminModal && !adminModal.classList.contains('hidden')) openOnlineOrdersModal();
+    }
+    if (typeof loadOnlineHubOrdersTab === 'function') loadOnlineHubOrdersTab();
+    if (typeof fetchOnlineAuditOrders === 'function') fetchOnlineAuditOrders();
+    if (typeof checkPendingOnlineOrdersBadge === 'function') checkPendingOnlineOrdersBadge();
+
+    // ៨. ផ្ញើ Telegram Alert ទៅថៅកែ
     try {
-      var tgMsg = "✅ <b>[KC WATER - ដឹកជញ្ជូនរួចរាល់ & ប្រមូលប្រាក់ជោគជ័យ!]</b>\n\n" +
+      var tgMsg = "✅ <b>[KC WATER - ដឹកជញ្ជូនដល់ & ប្រមូលប្រាក់ជោគជ័យ!]</b>\n\n" +
                   "🆔 <b>កូដកុម្ម៉ង់៖</b> <code>" + orderId + "</code>\n" +
                   "👤 <b>អតិថិជន៖</b> " + custName + "\n" +
                   "🛵 <b>អ្នកដឹក៖</b> " + driverName + "\n" +
@@ -734,6 +759,7 @@ async function executeFinalCompleteDelivery() {
     btn.innerHTML = '<i class="fas fa-check-circle"></i> ដឹកដល់រួចរាល់';
   }
 }
+
 // 🖼️ មុខងារបើកមើលរូបថតមុខផ្ទះរបស់ភ្ញៀវ (សម្រាប់ Admin & អ្នកដឹក)
 function viewOrderHousePhoto(photoUrl, custName) {
   if (!photoUrl) {
@@ -1163,6 +1189,7 @@ async function loadOnlineHubAuditTab() {
 
 var cachedAuditOrders = [];
 
+// 🔍 មុខងារទាញប្រវត្តិលក់ Online (កែសម្រួលតម្រៀបតាម created_at ធានាដំណើរការ Search ឃើញ ១០០%)
 async function fetchOnlineAuditOrders() {
   var resArea = document.getElementById('onlineAuditResultsArea');
   if (!resArea) return;
@@ -1171,14 +1198,14 @@ async function fetchOnlineAuditOrders() {
     const { data: list, error } = await supabaseClient
       .from('orders')
       .select('*')
-      .order('id', { ascending: false })
-      .limit(60);
+      .order('created_at', { ascending: false }) // ✅ ប្រើ created_at (គ្មាន Error ទៀតឡើយ)
+      .limit(80);
 
     if (error) throw error;
     cachedAuditOrders = list || [];
     renderOnlineAuditResultsList();
   } catch(e) {
-    if (resArea) resArea.innerHTML = '<div class="text-center py-4 text-red-500 font-bold text-xs">កំហុស៖ ' + e.message + '</div>';
+    if (resArea) resArea.innerHTML = '<div class="text-center py-4 text-red-500 font-bold text-xs">កំហុសទាញទិន្នន័យ៖ ' + e.message + '</div>';
   }
 }
 
@@ -1187,18 +1214,26 @@ function onOnlineAuditSearch(val) {
   renderOnlineAuditResultsList();
 }
 
+// 📋 បង្ហាញលទ្ធផល Search តាមលេខទូរស័ព្ទ, ឈ្មោះ, អាសយដ្ឋាន ឬកូដកុម្ម៉ង់
 function renderOnlineAuditResultsList() {
   var resArea = document.getElementById('onlineAuditResultsArea');
   if (!resArea) return;
 
-  var q = onlineAuditSearchKeyword;
+  var q = (onlineAuditSearchKeyword || '').toLowerCase().trim();
+  var cleanSearchDigits = q.replace(/[^0-9]/g, '');
+
   var filtered = cachedAuditOrders.filter(function(o) {
     if (!q) return true;
     var mId = String(o.order_id || '').toLowerCase().indexOf(q) !== -1;
     var mName = String(o.customer_name || '').toLowerCase().indexOf(q) !== -1;
-    var mPhone = String(o.phone || '').toLowerCase().indexOf(q) !== -1;
     var mDriver = String(o.driver_name || '').toLowerCase().indexOf(q) !== -1;
-    return mId || mName || mPhone || mDriver;
+    var mAddr = String(o.address || '').toLowerCase().indexOf(q) !== -1;
+
+    // ស្វែងរកតាមលេខទូរស័ព្ទ (ដក space ឬសញ្ញាដកចេញ វាយលេខណាក៏ត្រូវ)
+    var phoneDigits = String(o.phone || '').replace(/[^0-9]/g, '');
+    var mPhone = (cleanSearchDigits && phoneDigits.indexOf(cleanSearchDigits) !== -1);
+
+    return mId || mName || mPhone || mDriver || mAddr;
   });
 
   if (filtered.length === 0) {
@@ -1232,7 +1267,7 @@ function renderOnlineAuditResultsList() {
 
       // ភស្តុតាងលម្អិត
       '<div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-xs space-y-1 text-slate-700">' +
-        '<div><b>📞 ទូរស័ព្ទភ្ញៀវ៖</b> ' + (o.phone || '-') + '</div>' +
+        '<div><b>📞 ទូរស័ព្ទភ្ញៀវ៖</b> <span class="text-emerald-700 font-bold">' + (o.phone || '-') + '</span></div>' +
         '<div><b>📦 មុខទំនិញ៖</b> ' + o.items + '</div>' +
         '<div><b>🛵 អ្នកដឹកជញ្ជូន៖</b> ' + (o.driver_name ? (o.driver_name + ' (📞 ' + (o.driver_phone || '-') + ')') : 'មិនទាន់ចាត់ចែង') + '</div>' +
         '<div><b>💳 វិធីបង់ប្រាក់៖</b> ' + (o.payment_method || 'COD') + '</div>' +
@@ -1252,7 +1287,6 @@ function renderOnlineAuditResultsList() {
           '</button>' : '') +
         '</div>' +
 
-        // ⚠️ ប៊ូតុងដោះស្រាយវិវាទ / បង្វិលសងលុយ (បង្ហាញតែពេល Delivered ប៉ុណ្ណោះ)
         (isDelivered ? 
         '<button type="button" onclick="refundAndVoidOnlineOrder(\'' + o.order_id + '\', \'' + o.customer_name.replace(/'/g, "\\'") + '\', ' + (o.total || 0) + ', \'' + (o.items || '').replace(/'/g, "\\'") + '\')" class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-black shadow-xs flex items-center gap-1 active:scale-95 transition">' +
           '<i class="fas fa-rotate-left text-xs"></i> សងលុយវិញ / បោះបង់ (Refund)' +
@@ -1263,7 +1297,6 @@ function renderOnlineAuditResultsList() {
 
   resArea.innerHTML = html;
 }
-
 // ⚠️ មុខងារដោះស្រាយវិវាទ៖ បង្វិលសងលុយ & កាត់ស្តុកត្រឡប់មកវិញ (Refund / Dispute Handler)
 async function refundAndVoidOnlineOrder(orderId, custName, total, itemsText) {
   var ok = await kcConfirm({
