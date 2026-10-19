@@ -1693,12 +1693,12 @@
       }
     }
     
-   // 🚀 មុខងារបញ្ជាក់ការកុម្ម៉ង់ទឹក (ភ្ជាប់ទំនិញសំបកធុងពិតប្រាកដ & កាត់ស្តុកអូតូ)
+   // 🚀 មុខងារបញ្ជាក់ការកុម្ម៉ង់ទឹក (ភ្ជាប់ទិន្នន័យ Visual Chips, រូបផ្ទះ & ចងចាំម៉ូយ Autosave ១០០%)
     var isSubmittingOrderLock = false;
 
     async function submitFinalWaterOrder() {
       if (isSubmittingOrderLock) return;
-      var d = DICT[currentLang];
+      var d = DICT[currentLang] || DICT.km;
 
       var nameInp = document.getElementById('inp_custName');
       var phoneInp = document.getElementById('inp_custPhone');
@@ -1709,39 +1709,24 @@
       var phone = phoneInp ? phoneInp.value.trim() : '';
       var address = addrInp ? addrInp.value.trim() : '';
       var mapUrl = mapUrlInp ? mapUrlInp.value.trim() : '';
-      var photoUrl = document.getElementById('inp_custPhotoUrl') ? 
-      document.getElementById('inp_custPhotoUrl').value.trim() : '';
+      var photoUrl = document.getElementById('inp_custPhotoUrl') ? document.getElementById('inp_custPhotoUrl').value.trim() : '';
 
-      // ១. ចាប់យកព័ត៌មានម៉ោងដឹក & ព័ត៌មានជាន់ផ្ទះ
-      var timeSlotVal = document.querySelector('input[name="co_timeSlot"]:checked').value;
-      var timeDetail = '⚡ ដឹកភ្លាមៗ (ASAP)';
-      if (timeSlotVal === 'SCHEDULE') {
-        var preset = document.getElementById('inp_timeSlotSelect').value;
-        if (preset === 'CUSTOM') {
-          var customVal = document.getElementById('inp_customTimeManual').value.trim();
-          timeDetail = '⏰ ម៉ោង៖ ' + (customVal || 'តាមការកំណត់របស់ភ្ញៀវ');
-        } else {
-          timeDetail = '⏰ ម៉ោង៖ ' + preset;
-        }
-      }
+      // ១. ទាញយកព័ត៌មានម៉ោងដឹក និងព័ត៌មានអគារថ្មីពី Visual Chips
+      var timeDetail = typeof getFormattedTimeDetails === 'function' ? getFormattedTimeDetails() : '⚡ ដឹកភ្លាមៗ (ASAP)';
+      var floorDetail = typeof getFormattedBuildingDetails === 'function' ? getFormattedBuildingDetails() : '🏠 ផ្ទះផ្ទាល់ដី';
 
-      var bldTypeVal = document.querySelector('input[name="co_bldType"]:checked').value;
-      var floorDetail = (bldTypeVal === 'GROUND') ? '🏠 ផ្ទះផ្ទាល់ដី' : ('🏢 ' + (document.getElementById('inp_bldFloorDetail').value.trim() || 'បន្ទប់ជួល/អគារ'));
-
-      nameInp.classList.remove('border-red-500');
-      phoneInp.classList.remove('border-red-500');
+      if (nameInp) nameInp.classList.remove('border-red-500');
+      if (phoneInp) phoneInp.classList.remove('border-red-500');
 
       if (!name) {
-        nameInp.classList.add('border-red-500');
+        if (nameInp) { nameInp.classList.add('border-red-500'); nameInp.focus(); }
         showInAppError(d.errName);
-        nameInp.focus();
         return;
       }
 
       if (!phone) {
-        phoneInp.classList.add('border-red-500');
+        if (phoneInp) { phoneInp.classList.add('border-red-500'); phoneInp.focus(); }
         showInAppError(d.errPhone);
-        phoneInp.focus();
         return;
       }
 
@@ -1750,7 +1735,7 @@
         return;
       }
 
-      // ២. រៀបចំបញ្ជីទំនិញដែលបានកុម្ម៉ង់
+      // ២. រៀបចំទំនិញក្នុងកន្ត្រក
       var items = [];
       var total20LBarrels = 0;
 
@@ -1771,10 +1756,10 @@
       var calcResult = updateCheckoutCalculation();
       var grandTotal = calcResult.grandTotal;
 
-      var swapVal = document.querySelector('input[name="co_swapOption"]:checked').value;
-      var isNoSwap = (swapVal === 'NO');
+      var swapChecked = document.querySelector('input[name="co_swapOption"]:checked');
+      var isNoSwap = swapChecked ? (swapChecked.value === 'NO') : false;
 
-      // 🛢️ ភ្ជាប់ទំនិញសំបកធុងពិតប្រាកដចូលក្នុងបញ្ជាទិញ ដើម្បីកាត់ស្តុកអូតូ (បំបែកធុងខៀវ និងធុងសត្រឹមត្រូវ)
+      // ភ្ជាប់ទំនិញសំបកធុងបើភ្ញៀវគ្មានសំបកដូរ
       if (isNoSwap && calcResult.barrelFee > 0 && calcResult.barrelItemsToCharge && calcResult.barrelItemsToCharge.length > 0) {
         calcResult.barrelItemsToCharge.forEach(function(bItem) {
           items.push({
@@ -1786,7 +1771,7 @@
         });
       }
 
-      // 🚚 បញ្ចូលថ្លៃដឹកជញ្ជូន (បើមាន)
+      // ភ្ជាប់សេវាដឹកជញ្ជូន
       if (calcResult.deliveryFee > 0) {
         items.push({
           id: "DELIVERY_FEE",
@@ -1796,13 +1781,16 @@
         });
       }
 
-      var payVal = document.querySelector('input[name="co_payMethod"]:checked').value;
+      var payChecked = document.querySelector('input[name="co_payMethod"]:checked');
+      var payVal = payChecked ? payChecked.value : 'COD';
       var orderId = "ORD-" + new Date().getTime();
 
       isSubmittingOrderLock = true;
       var btn = document.getElementById('btnSubmitOrderAction');
-      btn.disabled = true;
-      btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i> ' + d.btnSubmitting;
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i> ' + d.btnSubmitting;
+      }
 
       var itemsSummaryText = items.map(function(item) {
         return item.raw_name + " x " + item.qty;
@@ -1826,7 +1814,7 @@
             total: grandTotal,
             barrel_swap: barrelSwapText,
             payment_method: payMethodText,
-             photo_url: photoUrl,
+            photo_url: photoUrl, // ✅ ធានាថារូបថតមុខផ្ទះត្រូវបានបញ្ជូនទៅជាប់ជានិច្ច
             status: "Pending",
             driver_name: "",
             driver_phone: ""
@@ -1834,7 +1822,10 @@
 
         if (insErr) throw insErr;
 
-        // 👤 ស្វ័យប្រវត្តិកត់ត្រាភ្ញៀវ Online ចូលតារាងអតិថិជន (users) ឱ្យ Admin ស្គាល់ម៉ូយ
+        // 💾 ចងចាំព័ត៌មានភ្ញៀវក្នុងទូរស័ព្ទ (Autosave Memory) លើកក្រោយមិនបាច់វាយឡើងវិញ
+        autoSaveCustomerInput();
+
+        // 👤 កត់ត្រាចូល users តារាងម៉ូយ
         try {
           const { data: existingUser } = await supabaseClient
             .from('users')
@@ -1857,11 +1848,9 @@
               linked_boss: mapUrl || address || ''
             }).eq('id', existingUser.id);
           }
-        } catch(custErr) {
-          console.warn("Auto save customer error:", custErr);
-        }
+        } catch(custErr) {}
 
-        // ផ្ញើសារដំណឹង Telegram ទៅរោងចក្រ និងអ្នកដឹក
+        // 🔔 ផ្ញើសារ Telegram Alert
         try {
           if (telegramSettings.token && telegramSettings.chatId && telegramSettings.status !== 'OFF') {
             var itemLines = items.map(function(it) {
@@ -1880,8 +1869,7 @@
                         "💳 <b>វិធីបង់ប្រាក់៖</b> " + payMethodText + "\n" +
                         (mapUrl ? "🗺️ <b>ទីតាំងផែនទី៖</b> <a href='" + mapUrl + "'>ចុចបើក Google Maps</a>\n" : "") +
                         (address ? "📝 <b>ចំណាំទីតាំង៖</b> " + address + "\n" : "") +
-                        "🕒 <b>ម៉ោងកុម្ម៉ង់៖</b> " + new Date().toLocaleTimeString('km-KH') + "\n\n" +
-                        "👉 <i>សូម Admin ចូលទៅផ្ទាំង POS ដើម្បីចាត់ចែងអ្នកដឹកជញ្ជូន!</i>";
+                        "🕒 <b>ម៉ោងកុម្ម៉ង់៖</b> " + new Date().toLocaleTimeString('km-KH');
 
             fetch("https://api.telegram.org/bot" + telegramSettings.token + "/sendMessage", {
               method: "POST",
@@ -1891,13 +1879,10 @@
           }
         } catch(tgE) {}
 
-        localStorage.setItem('kc_order_name', name);
-        localStorage.setItem('kc_order_phone', phone);
-        localStorage.setItem('kc_order_addr', address);
-        localStorage.setItem('kc_active_order_id', orderId);
-        localStorage.setItem('kc_last_order_items', JSON.stringify(cartItems));
-
+        // សម្អាតកន្ត្រក និងបិទផ្ទាំង
         cartItems = {};
+        localStorage.removeItem('kc_auto_cart_backup');
+        localStorage.setItem('kc_active_order_id', orderId);
         recalcCartDock();
         renderCatalogGrid();
         closeCheckoutModal();
@@ -1910,10 +1895,13 @@
         showInAppError("Error: " + err.message);
       } finally {
         isSubmittingOrderLock = false;
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-paper-plane mr-1.5"></i>' + d.btnOrderNow;
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fas fa-paper-plane mr-1.5"></i>' + d.btnOrderNow;
+        }
       }
     }
+    
     function onSwapOptionChanged() {
       updateCheckoutCalculation();
     }
