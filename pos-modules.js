@@ -1128,8 +1128,8 @@ function filterUsersModuleTable() {
 
   tbody.innerHTML = html;
 }
-  
-  function fetchSpecialPricesTable() {
+
+async function fetchSpecialPricesTable() {
   var tbody = document.getElementById('specialPricesTableBody');
   if (!tbody) return;
 
