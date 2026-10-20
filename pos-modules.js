@@ -1127,7 +1127,9 @@ function filterUsersModuleTable() {
   });
 
   tbody.innerHTML = html;
-}}async function fetchSpecialPricesTable() {
+}
+  
+  function fetchSpecialPricesTable() {
   var tbody = document.getElementById('specialPricesTableBody');
   if (!tbody) return;
 
