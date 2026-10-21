@@ -47,19 +47,16 @@ function renderStockModule() {
           '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">ថ្លៃដើមទិញចូល (Cost)</label>' +
           '<input type="number" id="pCo" placeholder="ថ្លៃដើម (ឧ៖ ៤,០០០)" class="border p-2.5 rounded-xl font-bold w-full text-xs">' +
         '</div>' +
-        '<div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 bg-emerald-50/60 p-3 rounded-2xl border border-emerald-200">' +
-          '<div>' +
-            '<label class="text-[10px] font-extrabold text-amber-900 uppercase block mb-1">🚚 តម្លៃបោះដុំដេប៉ូ (POS) *</label>' +
-            '<input type="number" id="pPr" placeholder="ឧ៖ ៦០០" class="font-black text-amber-900 bg-white border border-amber-300 rounded-xl p-2.5 w-full outline-none text-sm">' +
-          '</div>' +
-          '<div>' +
-            '<label class="text-[10px] font-extrabold text-emerald-900 uppercase block mb-1">🌐 តម្លៃលក់លើ Web តាមផ្ទះ *</label>' +
-            '<input type="number" id="pOnlinePr" placeholder="ឧ៖ ១៥០០" class="font-black text-emerald-800 bg-white border border-emerald-300 rounded-xl p-2.5 w-full outline-none text-sm">' +
-          '</div>' +
-        '</div>' +
-
-        // 🏷️ ផ្នែកកំណត់ផ្លាកសម្គាល់ (Badge) & ប៉ុស្តិ៍លក់
+        // 🏷️ ផ្នែកកំណត់ ប៉ុស្តិ៍លក់ & ផ្លាកសម្គាល់ (Badge)
         '<div class="grid grid-cols-2 gap-2">' +
+          '<div>' +
+            '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">ប៉ុស្តិ៍លក់ (Channel) *</label>' +
+            '<select id="pChannel" onchange="toggleChannelPrices()" class="border-2 border-emerald-400 p-2.5 rounded-xl font-bold w-full text-xs bg-white">' +
+              '<option value="ALL">🔄 លក់ទាំងសងខាង (POS + Web)</option>' +
+              '<option value="POS">🚚 លក់តែលើ POS ដេប៉ូ</option>' +
+              '<option value="ONLINE">🌐 លក់តែលើ Web</option>' +
+            '</select>' +
+          '</div>' +
           '<div>' +
             '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">🏷️ ផ្លាកសម្គាល់លើ Web (Badge)</label>' +
             '<select id="pBadge" class="border p-2.5 rounded-xl font-bold w-full text-xs bg-white">' +
@@ -70,25 +67,35 @@ function renderStockModule() {
               '<option value="NONE">❌ គ្មានផ្លាក</option>' +
             '</select>' +
           '</div>' +
-          '<div>' +
-            '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">ប៉ុស្តិ៍លក់ (Channel)</label>' +
-            '<select id="pChannel" class="border p-2.5 rounded-xl font-bold w-full text-xs bg-white">' +
-              '<option value="ALL">🔄 លក់ទាំងសងខាង (POS + Web)</option>' +
-              '<option value="ONLINE">🌐 លក់តែលើ Web</option>' +
-              '<option value="POS">🚚 លក់តែលើ POS ដេប៉ូ</option>' +
-            '</select>' +
-          '</div>' +
         '</div>' +
 
+        // 💵 ប្រអប់តម្លៃ (បង្ហាញ ឬលាក់តាមប៉ុស្តិ៍លក់)
+        '<div id="priceInputsContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 bg-emerald-50/60 p-3 rounded-2xl border border-emerald-200">' +
+          '<div id="secPosPrice">' +
+            '<label class="text-[10px] font-extrabold text-amber-900 uppercase block mb-1">🚚 តម្លៃបោះដុំដេប៉ូ (POS) *</label>' +
+            '<input type="number" id="pPr" placeholder="ឧ៖ ៦០០" class="font-black text-amber-900 bg-white border border-amber-300 rounded-xl p-2.5 w-full outline-none text-sm">' +
+          '</div>' +
+          '<div id="secOnlinePrice">' +
+            '<label class="text-[10px] font-extrabold text-emerald-900 uppercase block mb-1">🌐 តម្លៃលក់លើ Web តាមផ្ទះ *</label>' +
+            '<input type="number" id="pOnlinePr" placeholder="ឧ៖ ១៥០០" class="font-black text-emerald-800 bg-white border border-emerald-300 rounded-xl p-2.5 w-full outline-none text-sm">' +
+          '</div>' +
+        '</div>' +
+    
         // ✍️ ផ្នែកសរសេរការពិពណ៌នាទំនិញ (Product Description)
         '<div>' +
           '<label class="text-[10px] font-bold text-emerald-900 uppercase block mb-1"><i class="fas fa-file-lines text-emerald-600 mr-1"></i> ការរៀបរាប់ពីមុខទំនិញ (Description បង្ហាញលើ Web ពេលភ្ញៀវចុចមើល)</label>' +
           '<textarea id="pDesc" rows="2" placeholder="ឧទាហរណ៍៖ ក្រដាសអនាម័យគុណភាពខ្ពស់ ទន់ ស្វិត ស្រូបទឹកបានល្អ ប្រើប្រាស់បានច្រើនយ៉ាង..." class="border-2 border-emerald-200 focus:border-emerald-600 p-2.5 rounded-xl font-bold w-full text-xs outline-none bg-white"></textarea>' +
         '</div>' +
 
-        '<div>' +
-          '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">កម្រិតដំណឹងស្តុកទាប</label>' +
-          '<input type="number" id="pMin" placeholder="ឧ៖ 5" value="5" class="border p-2.5 rounded-xl font-bold w-full text-xs text-center">' +
+        '<div class="grid grid-cols-2 gap-2">' +
+          '<div>' +
+            '<label class="text-[10px] font-black text-blue-900 uppercase block mb-1">🔢 លេខរៀងបង្ហាញ (១, ២, ៣...)</label>' +
+            '<input type="number" id="pSort" placeholder="ឧ៖ 1" value="1" class="border-2 border-blue-300 focus:border-blue-600 p-2.5 rounded-xl font-black w-full text-xs text-center text-blue-900 bg-blue-50/50 outline-none">' +
+          '</div>' +
+          '<div>' +
+            '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">កម្រិតដំណឹងស្តុកទាប</label>' +
+            '<input type="number" id="pMin" placeholder="ឧ៖ 5" value="5" class="border p-2.5 rounded-xl font-bold w-full text-xs text-center outline-none">' +
+          '</div>' +
         '</div>' +
 
         // រូបភាព
@@ -140,6 +147,7 @@ function renderStockModule() {
   '</div>';
 
   tCF();
+  toggleChannelPrices();
   initStockModuleDropdowns();
 
   // ធានាថាបើ allProducts អត់ទាន់មកដល់ ឱ្យទាញ Database មកបង្ហាញភ្លាម
@@ -153,12 +161,27 @@ function renderStockModule() {
   }
 }
 
-function tCF() {
-  var pTy = document.getElementById('pTy');
-  var c = document.getElementById('cSec');
-  if (pTy && c) c.style.display = (pTy.value === 'ផលិតឯង' ? 'none' : 'block');
-}
+function toggleChannelPrices() {
+  var ch = document.getElementById('pChannel') ? document.getElementById('pChannel').value : 'ALL';
+  var posSec = document.getElementById('secPosPrice');
+  var onlineSec = document.getElementById('secOnlinePrice');
+  var cont = document.getElementById('priceInputsContainer');
 
+  if (ch === 'POS') {
+    if (posSec) posSec.style.display = 'block';
+    if (onlineSec) onlineSec.style.display = 'none';
+    if (cont) cont.className = 'grid grid-cols-1 gap-2.5 bg-amber-50/60 p-3 rounded-2xl border border-amber-200';
+  } else if (ch === 'ONLINE') {
+    if (posSec) posSec.style.display = 'none';
+    if (onlineSec) onlineSec.style.display = 'block';
+    if (cont) cont.className = 'grid grid-cols-1 gap-2.5 bg-sky-50/60 p-3 rounded-2xl border border-sky-200';
+  } else {
+    // 'ALL' បង្ហាញទាំងសងខាង
+    if (posSec) posSec.style.display = 'block';
+    if (onlineSec) onlineSec.style.display = 'block';
+    if (cont) cont.className = 'grid grid-cols-1 sm:grid-cols-2 gap-2.5 bg-emerald-50/60 p-3 rounded-2xl border border-emerald-200';
+  }
+}
 function initStockModuleDropdowns() {
   var siSel = document.getElementById('si_prod');
   if (!siSel) return;
@@ -257,12 +280,15 @@ function cancelEditProduct() {
   document.getElementById('pN').value = '';
   document.getElementById('pPr').value = '';
   document.getElementById('pOnlinePr').value = '';
+  if (document.getElementById('pSort')) document.getElementById('pSort').value = 1;
+  if (document.getElementById('pMin')) document.getElementById('pMin').value = 5;
   if (document.getElementById('pBadge')) document.getElementById('pBadge').value = 'គុណភាពខ្ពស់';
   if (document.getElementById('pDesc')) document.getElementById('pDesc').value = '';
   document.getElementById('pImgPreview').src = 'https://cdn-icons-png.flaticon.com/512/3100/3100566.png';
   document.getElementById('pImgBase64').value = '';
   document.getElementById('pImgNote').innerText = 'អាចថតរូប ឬជ្រើសរូបភាពពីទូរស័ព្ទ';
   tCF();
+  toggleChannelPrices();
 }
 
 // 📋 មុខងាររៀបចំកែប្រែទំនិញ (ទាញ Description & Badge ចាស់មកបង្ហាញ)
@@ -286,6 +312,7 @@ async function prepareEditProduct(id) {
   document.getElementById('pPr').value = p.price || 0;
   document.getElementById('pOnlinePr').value = p.online_price || p.price || 0;
   document.getElementById('pMin').value = p.min_stock || 5;
+  if (document.getElementById('pSort')) document.getElementById('pSort').value = p.sort_order || 1;
   document.getElementById('pChannel').value = p.channel || 'ALL';
 
   // ទាញយក Badge និង Description ពី Settings
@@ -307,6 +334,7 @@ async function prepareEditProduct(id) {
   document.getElementById('pImgBase64').value = p.img || '';
 
   tCF();
+  toggleChannelPrices();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -330,6 +358,7 @@ async function saveProductToSupabase() {
     online_price: parseFloat(document.getElementById('pOnlinePr').value || 0),
     min_stock: parseFloat(document.getElementById('pMin').value || 5),
     channel: document.getElementById('pChannel').value,
+    sort_order: parseInt(document.getElementById('pSort') ? document.getElementById('pSort').value || 99 : 99),
     img: imgData
   };
 
