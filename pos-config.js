@@ -1,12 +1,213 @@
 /** ==========================================================================
  *  KC WATER POS SYSTEM - CONFIGURATION & UTILITIES (pos-config.js)
- *  (Supabase Client, Global App State & Telegram Alerts)
+ *  (Supabase Client, Global App State & Dual Environment Engine)
  *  ========================================================================== */
 
-// 🔑 ១. SUPABASE CLIENT INITIALIZATION
-const SUPABASE_URL = "https://ntftdylkcnkxsytptket.supabase.co";
-const SUPABASE_KEY = "sb_publishable_58qNd6IpyWqlvuI5BpuHRw__pTm7g7v";
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// 🔑 ១. កំណត់គណនី Supabase ទាំង ២ (PROD & TEST)
+var SUPABASE_CONFIGS = {
+  // 🏢 ប្រព័ន្ធពិត (Production Live Database)
+  PROD: {
+    url: "https://hocndqkoumgjijtzpzby.supabase.co",
+    key: "sb_publishable_1vUpi09UnohGxYQfTvobww_brkR4HUI",
+    name: "ប្រព័ន្ធពិត (PROD)"
+  },
+  // 🧪 ប្រព័ន្ធសាកល្បង (Test Database)
+  TEST: {
+    url: "https://ntftdylkcnkxsytptket.supabase.co",
+    key: "sb_publishable_58qNd6IpyWqlvuI5BpuHRw__pTm7g7v",
+    name: "ប្រព័ន្ធសាកល្បង (TEST)"
+  }
+};
+
+// 🧠 ២. មុខងារស្គាល់ប្រព័ន្ធស្វ័យប្រវត្តិ (តាម Memory, URL ឬ Link វេបសាយ)
+function detectCurrentEnvironment() {
+  // ក. ពិនិត្យមើលតាម URL Query ?env= (ឧទាហរណ៍៖ ?env=test ឬ ?env=prod)
+  var urlParams = new URLSearchParams(window.location.search);
+  var envParam = urlParams.get('env');
+  if (envParam) {
+    var p = envParam.toUpperCase();
+    if (p === 'TEST' || p === 'PROD') {
+      localStorage.setItem('kc_current_env', p);
+      return p;
+    }
+  }
+
+  // ខ. ពិនិត្យមើលតាម Memory ដែលអ្នកធ្លាប់ចុចប្តូរ (LocalStorage)
+  var savedEnv = localStorage.getItem('kc_current_env');
+  if (savedEnv === 'TEST' || savedEnv === 'PROD') {
+    return savedEnv;
+  }
+
+  // គ. ពិនិត្យមើលតាមឈ្មោះ Link វេបសាយ (Hostname)
+  var host = window.location.hostname.toLowerCase();
+  if (host.includes('kcwater-store') || host.includes('test') || host.includes('dev') || host === 'localhost' || host === '127.0.0.1') {
+    return 'TEST';
+  }
+
+  // ឃ. លំនាំដើមគឺប្រព័ន្ធពិត (PROD)
+  return 'PROD';
+}
+
+var CURRENT_ENV = detectCurrentEnvironment();
+var activeEnv = SUPABASE_CONFIGS[CURRENT_ENV] || SUPABASE_CONFIGS.PROD;
+var SUPABASE_URL = activeEnv.url;
+var SUPABASE_KEY = activeEnv.key;
+var supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// 🔄 ៣. មុខងារចុចប្តូររវាង PROD និង TEST ភ្លាមៗ (មានសួរបញ្ជាក់តាម Popup POS)
+async function switchAppEnvironment(targetEnv) {
+  if (targetEnv !== 'TEST' && targetEnv !== 'PROD') return;
+  var targetName = (targetEnv === 'TEST') ? 'ប្រព័ន្ធសាកល្បង (TEST)' : 'ប្រព័ន្ធពិត (PROD)';
+  
+  var ok = true;
+  if (typeof kcConfirm === 'function') {
+    ok = await kcConfirm({
+      title: "ប្តូរប្រព័ន្ធទិន្នន័យ (Database)",
+      message: "តើអ្នកចង់ប្តូរទៅកាន់ [" + targetName + "] មែនទេ? ទំព័រនឹងដំណើរការឡើងវិញ។",
+      confirmText: "យល់ព្រមប្តូរ"
+    });
+  } else {
+    ok = confirm("តើអ្នកចង់ប្តូរទៅកាន់ [" + targetName + "] មែនទេ?");
+  }
+
+  if (ok) {
+    localStorage.setItem('kc_current_env', targetEnv);
+    // សម្អាត Query ?env= ចេញកុំឱ្យទាក់
+    var url = new URL(window.location.href);
+    url.searchParams.delete('env');
+    window.location.href = url.pathname;
+  }
+}
+
+// 🏷️ ៤. មុខងារបង្ហាញផ្លាកសម្គាល់ប្រព័ន្ធ (ទាំង TEST និង PROD)
+function renderEnvironmentBanner() {
+  var oldBanner = document.getElementById('kcTestModeBanner');
+  if (oldBanner) oldBanner.remove();
+
+  var oldBadge = document.getElementById('navTestBadge');
+  if (oldBadge) oldBadge.remove();
+
+  // ក. បង្ហាញរបារពណ៌ទឹកក្រូចធំពេលកំពុងនៅ TEST Mode
+  if (CURRENT_ENV === 'TEST') {
+    var bannerHtml = '<div id="kcTestModeBanner" style="background: linear-gradient(135deg, #d97706, #ea580c); color: white; padding: 7px 14px; text-align: center; font-size: 11px; font-weight: 900; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #fde047; z-index: 9999; width: 100%; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">' +
+      '<div style="display: flex; align-items: center; gap: 8px; margin: 0 auto;">' +
+        '<span style="display: inline-block; width: 8px; height: 8px; background: white; border-radius: 50%; box-shadow: 0 0 8px white;"></span>' +
+        '<span>🧪 កំពុងប្រើប្រព័ន្ធសាកល្បង (TEST MODE) — មិនប៉ះពាល់ទិន្នន័យលក់ពិតឡើយ</span>' +
+      '</div>' +
+      '<button type="button" onclick="switchAppEnvironment(\'PROD\')" style="background: white; color: #78350f; font-weight: 900; font-size: 10px; padding: 3px 9px; border-radius: 8px; border: none; cursor: pointer; white-space: nowrap;">' +
+        'ប្តូរទៅប្រព័ន្ធពិត ➔' +
+      '</button>' +
+    '</div>';
+
+    var mainApp = document.getElementById('mainApp');
+    var loginPage = document.getElementById('loginPage');
+    if (mainApp) mainApp.insertAdjacentHTML('afterbegin', bannerHtml);
+    else if (loginPage) loginPage.insertAdjacentHTML('beforebegin', bannerHtml);
+    else document.body.insertAdjacentHTML('afterbegin', bannerHtml);
+  }
+
+  // ខ. ដាក់ផ្លាក [🧪 TEST] ឬ [🏢 PROD] នៅក្បែរឈ្មោះ Admin លើ Navbar
+  var userInfo = document.getElementById('userInfo');
+  if (userInfo) {
+    var badgeColor = (CURRENT_ENV === 'TEST') ? 'background: #fbbf24; color: #78350f; border: 1px solid #f59e0b;' : 'background: #047857; color: #a7f3d0; border: 1px solid #059669;';
+    var badgeText = (CURRENT_ENV === 'TEST') ? '🧪 TEST' : '🏢 PROD';
+    var switchTarget = (CURRENT_ENV === 'TEST') ? 'PROD' : 'TEST';
+    var switchTitle = (CURRENT_ENV === 'TEST') ? 'ចុចប្តូរទៅប្រព័ន្ធពិត' : 'ចុចប្តូរទៅសាកល្បង';
+
+    var badgeHtml = '<button type="button" onclick="switchAppEnvironment(\'' + switchTarget + '\')" title="' + switchTitle + '" id="navTestBadge" style="' + badgeColor + ' font-size: 10px; font-weight: 900; padding: 2.5px 8px; border-radius: 9999px; margin-right: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">' +
+      badgeText + ' 🔄' +
+    '</button>';
+
+    userInfo.insertAdjacentHTML('beforebegin', badgeHtml);
+  }
+}
+
+// 🏷️ មុខងារបង្ហាញផ្លាកព្រមានពេលកំពុងនៅ Mode សាកល្បង (ធានាឃើញ ១០០% មិនឱ្យបាំងឡើយ)
+function renderEnvironmentBanner() {
+  var oldBanner = document.getElementById('kcTestModeBanner');
+  if (oldBanner) oldBanner.remove();
+
+  var oldBadge = document.getElementById('navTestBadge');
+  if (oldBadge) oldBadge.remove();
+
+  if (CURRENT_ENV !== 'TEST') return;
+
+  // ១. បង្កើតរបារពណ៌ទឹកក្រូចធំខាងលើបង្អស់
+  var bannerHtml = '<div id="kcTestModeBanner" style="background: linear-gradient(135deg, #d97706, #ea580c); color: white; padding: 8px 14px; text-align: center; font-size: 11px; font-weight: 900; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #fde047; z-index: 9999; width: 100%; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">' +
+    '<div style="display: flex; align-items: center; gap: 8px; margin: 0 auto;">' +
+      '<span style="display: inline-block; width: 8px; height: 8px; background: white; border-radius: 50%; box-shadow: 0 0 8px white;"></span>' +
+      '<span>🧪 នេះជាប្រព័ន្ធសាកល្បង (TEST MODE) — ភ្ជាប់ Database សាកល្បង (ntftdylk...)</span>' +
+    '</div>' +
+    '<button type="button" onclick="switchAppEnvironment(\'PROD\')" style="background: white; color: #78350f; font-weight: 900; font-size: 10px; padding: 4px 10px; border-radius: 8px; border: none; cursor: pointer; white-space: nowrap;">' +
+      'ប្តូរទៅប្រព័ន្ធពិត (PROD) ➔' +
+    '</button>' +
+  '</div>';
+
+  // ដាក់នៅពីលើរបារ Navbar ផ្ទាល់តែម្តង ធានាមិនឱ្យបាំង
+  var mainApp = document.getElementById('mainApp');
+  var loginPage = document.getElementById('loginPage');
+
+  if (mainApp) {
+    mainApp.insertAdjacentHTML('afterbegin', bannerHtml);
+  } else if (loginPage) {
+    loginPage.insertAdjacentHTML('beforebegin', bannerHtml);
+  } else {
+    document.body.insertAdjacentHTML('afterbegin', bannerHtml);
+  }
+
+  // ២. ដាក់ផ្លាកតូច [ 🧪 TEST ] នៅជាប់ឈ្មោះ Admin លើរបារបៃតង
+  var userInfo = document.getElementById('userInfo');
+  if (userInfo && !document.getElementById('navTestBadge')) {
+    userInfo.insertAdjacentHTML('beforebegin', '<span id="navTestBadge" style="background: #fbbf24; color: #78350f; font-size: 10px; font-weight: 900; padding: 3px 8px; border-radius: 9999px; border: 1px solid #f59e0b; margin-right: 6px; display: inline-flex; align-items: center; gap: 4px;">🧪 TEST</span>');
+  }
+}
+
+// ហៅឱ្យដំណើរការទាំងពេលបើកដំបូង និងពេលទំព័រដើរចប់
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', renderEnvironmentBanner);
+} else {
+  renderEnvironmentBanner();
+}
+window.addEventListener('load', renderEnvironmentBanner);
+
+// ==========================================
+// 🇰🇭 ប្រព័ន្ធគ្រប់គ្រងម៉ោងកម្ពុជាស្តង់ដារ (CAMBODIA TIMEZONE UTC+7 ENGINE)
+// ==========================================
+
+function getCambodiaToday() {
+  return new Intl.DateTimeFormat('en-CA', { 
+    timeZone: 'Asia/Phnom_Penh', 
+    year: 'numeric', 
+    month: '2-digit', 
+    day: '2-digit' 
+  }).format(new Date());
+}
+
+function toCambodiaDateStr(timestamp) {
+  if (!timestamp) return '';
+  var d = new Date(timestamp);
+  if (isNaN(d.getTime())) return '';
+  return new Intl.DateTimeFormat('en-CA', { 
+    timeZone: 'Asia/Phnom_Penh', 
+    year: 'numeric', 
+    month: '2-digit', 
+    day: '2-digit' 
+  }).format(d);
+}
+
+function isTodayInCambodia(timestamp) {
+  if (!timestamp) return false;
+  return toCambodiaDateStr(timestamp) === getCambodiaToday();
+}
+
+function getCambodiaQueryRange(dateStr) {
+  var d = dateStr || getCambodiaToday();
+  return {
+    start: d + 'T00:00:00+07:00',
+    end: d + 'T23:59:59.999+07:00'
+  };
+}
+
 
 // 🌐 ២. GLOBAL APP STATE (អថេររួមទូទាំងកម្មវិធី POS)
 var currentUser = {};
@@ -25,7 +226,7 @@ var currentSettlementItems = [];
 var currentSettlementPayMode = "Cash";
 var currentSettlementOldDebt = 0;
 
-// 🔔 ៣. មុខងារ TOAST NOTIFICATION (សារដំណឹង)
+// 🔔 ៣. មុខងារ TOAST NOTIFICATION (សារដំណឹងជ្រុងខាងក្រោម)
 function showToast(msg, type) {
   type = type || 'success';
   var toast = document.getElementById('toast');
@@ -75,6 +276,9 @@ function closeSidebar() {
 }
 
 // ⚙️ ៥. ទាញយកការកំណត់ SETTINGS & TELEGRAM BOT ពី SUPABASE
+var exchangeRateUSD = 4100;
+var exchangeRateTHB = 115;
+
 async function loadSettingsAndTelegram() {
   try {
     const { data } = await supabaseClient.from('settings').select('*');
@@ -83,6 +287,8 @@ async function loadSettingsAndTelegram() {
         if (r.key === 'Telegram_Token') telegramConfig.token = r.value;
         if (r.key === 'Telegram_ChatID') telegramConfig.chatId = r.value;
         if (r.key === 'Telegram_Alert_Status') telegramConfig.status = r.value.toUpperCase();
+        if (r.key === 'Exchange_Rate_USD') exchangeRateUSD = parseFloat(r.value) || 4100;
+        if (r.key === 'Exchange_Rate_THB') exchangeRateTHB = parseFloat(r.value) || 115;
       });
     }
   } catch(e) {
@@ -111,7 +317,6 @@ async function sendTelegramAlert(message) {
 // 📦 ៧. មុខងារទាញយកទិន្នន័យដំបូង (ទំនិញ, អតិថិជន និងតម្លៃពិសេស) ពី SUPABASE
 async function fetchInitialPOSData() {
   try {
-    // ១. ទាញទំនិញទាំងអស់
     const { data: prods } = await supabaseClient
       .from('products')
       .select('*')
@@ -120,14 +325,12 @@ async function fetchInitialPOSData() {
   allProducts = prods.sort((a, b) => (parseInt(a.sort_order) || 99) - (parseInt(b.sort_order) || 99));
 }
 
-    // ២. ទាញអតិថិជនទាំងអស់
     const { data: custs } = await supabaseClient
       .from('users')
       .select('*')
       .order('full_name', { ascending: true });
     if (custs) allCustomers = custs;
 
-    // ៣. ទាញតម្លៃពិសេស (Contract Prices) សម្រាប់ម៉ូយប្រចាំ និង Monthly
     const { data: prices } = await supabaseClient
       .from('customer_prices')
       .select('*');
@@ -139,11 +342,11 @@ async function fetchInitialPOSData() {
     console.error("Initial data load error:", e);
   }
 }
+
 // ==========================================
 // 🌟 ៨. KC POS CUSTOM DIALOG ENGINE (ALERT, CONFIRM & PROMPT)
 // ==========================================
 
-// 🛠️ មុខងារបង្កើត HTML Pop-up ដោយស្វ័យប្រវត្តិបើទំព័រមិនទាន់មាន
 function ensureKcDialogMarkup() {
   if (document.getElementById('kcDialogModal')) return;
   var html = '<div id="kcDialogModal" class="fixed inset-0 z-[8500] flex items-center justify-center p-4 hidden overflow-y-auto">' +
@@ -185,11 +388,11 @@ function kcAlert(opts) {
     var btnCancel = document.getElementById('kcDialogBtnCancel');
     var backdrop = document.getElementById('kcDialogBackdrop');
 
-    var type = opts.type || 'info'; // 'success', 'warning', 'danger', 'info'
+    var type = opts.type || 'info';
     titleEl.innerText = opts.title || (type === 'success' ? 'ជោគជ័យ' : (type === 'danger' ? 'កំហុស' : (type === 'warning' ? 'ដំណឹងព្រមាន' : 'ដំណឹង')));
     msgEl.innerText = opts.message || '';
     inputArea.classList.add('hidden');
-    btnCancel.classList.add('hidden'); // លាក់ប៊ូតុង Cancel ចេញ ទុកតែប៊ូតុង Ok មួយ
+    btnCancel.classList.add('hidden');
 
     btnConfirm.className = "w-full py-2.5 font-black rounded-xl text-xs shadow-md active:scale-95 transition text-white ";
     if (type === 'success') {
