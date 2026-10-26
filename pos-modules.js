@@ -1784,6 +1784,115 @@ function updateTelegramButtonUI(status) {
   }
 }
 
+// 🖼️ មុខងារ Preview រូប Banner Promotion
+function previewPromoBannerFile(input) {
+  if (input.files && input.files[0]) {
+    var file = input.files[0];
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var img = new Image();
+      img.onload = function() {
+        var canvas = document.createElement('canvas');
+        var maxDim = 800;
+        var w = img.width, h = img.height;
+        if (w > h) {
+          if (w > maxDim) { h = Math.round((h * maxDim) / w); w = maxDim; }
+        } else {
+          if (h > maxDim) { w = Math.round((w * maxDim) / h); h = maxDim; }
+        }
+        canvas.width = w; canvas.height = h;
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        var base64 = canvas.toDataURL('image/jpeg', 0.85);
+
+        var preview = document.getElementById('promoBannerImgPreview');
+        var hiddenInp = document.getElementById('set_promo_img_base64');
+        var note = document.getElementById('promoImgStatusNote');
+        if (preview) preview.src = base64;
+        if (hiddenInp) hiddenInp.value = base64;
+        if (note) note.innerHTML = '<span class="text-emerald-700 font-black">✔️ បានភ្ជាប់រូប Banner រួចរាល់</span>';
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+// 🔘 មុខងារជំនួយរើស ឬដោះធីក Checkboxes ក្នុង Promotion
+function toggleAllPromoCheckboxes(check) {
+  document.querySelectorAll('input[name="promo_buy_prod_cb"]').forEach(function(cb) {
+    cb.checked = check;
+  });
+}
+
+// ➕ មុខងារបន្ថែមលក្ខខណ្ឌ Promotion ថ្មី (គាំទ្រធីកទំនិញច្រើនមុខព្រមគ្នា)
+function addNewPromoRule() {
+  var checkedBoxes = document.querySelectorAll('input[name="promo_buy_prod_cb"]:checked');
+  var buyQ = parseFloat(document.getElementById('pr_buy_qty') ? document.getElementById('pr_buy_qty').value || 1 : 1);
+  var freeP = document.getElementById('pr_free_prod') ? document.getElementById('pr_free_prod').value : '';
+  var freeQ = parseFloat(document.getElementById('pr_free_qty') ? document.getElementById('pr_free_qty').value || 1 : 1);
+
+  if (checkedBoxes.length === 0) {
+    showToast("សូមធីកជ្រើសរើសមុខទំនិញដែលត្រូវទិញយ៉ាងហោចណាស់ ១ មុខ!", "error");
+    return;
+  }
+  if (!freeP) {
+    showToast("សូមជ្រើសរើសមុខទំនិញដែលត្រូវថែម Free!", "error");
+    return;
+  }
+
+  var addedCount = 0;
+  checkedBoxes.forEach(function(cb) {
+    var buyP = cb.value;
+    var exists = currentPromoRules.some(function(r) {
+      return r.buyProduct.trim().toLowerCase() === buyP.trim().toLowerCase() && r.freeProduct.trim().toLowerCase() === freeP.trim().toLowerCase();
+    });
+
+    if (!exists) {
+      currentPromoRules.push({
+        buyProduct: buyP,
+        buyQty: buyQ,
+        freeProduct: freeP,
+        freeQty: freeQ
+      });
+      addedCount++;
+    }
+  });
+
+  renderPromoRulesList();
+  toggleAllPromoCheckboxes(false);
+  showToast("បានបញ្ចូល Promotion ចំនួន " + addedCount + " មុខទំនិញជោគជ័យ!", "success");
+}
+
+// 🗑️ លុបលក្ខខណ្ឌ Promotion
+function deletePromoRule(idx) {
+  currentPromoRules.splice(idx, 1);
+  renderPromoRulesList();
+}
+
+// 📋 បង្ហាញបញ្ជីលក្ខខណ្ឌ Promotion កំពុងមាន
+function renderPromoRulesList() {
+  var container = document.getElementById('activePromoRulesContainer');
+  if (!container) return;
+
+  if (currentPromoRules.length === 0) {
+    container.innerHTML = '<div class="text-center py-2.5 text-gray-400 italic text-[11px] bg-white rounded-xl border border-dashed border-amber-200">មិនទាន់មានលក្ខខណ្ឌថែមទំនិញនៅឡើយទេ</div>';
+    return;
+  }
+
+  var html = '';
+  currentPromoRules.forEach(function(r, idx) {
+    html += '<div class="bg-white p-2.5 rounded-xl border border-amber-300 flex items-center justify-between text-xs shadow-2xs">' +
+      '<div class="space-y-0.5">' +
+        '<div class="text-slate-800 font-black">ទិញ <b>' + r.buyProduct + '</b> x ' + r.buyQty + '</div>' +
+        '<div class="text-emerald-700 font-bold flex items-center gap-1 text-[11px]"><i class="fas fa-gift text-amber-500"></i> ថែម Free <b>' + r.freeProduct + '</b> x ' + r.freeQty + '</div>' +
+      '</div>' +
+      '<button type="button" onclick="deletePromoRule(' + idx + ')" class="p-1.5 text-red-400 hover:text-red-600 active:scale-90 transition" title="លុប"><i class="fas fa-trash-can"></i></button>' +
+    '</div>';
+  });
+  container.innerHTML = html;
+}
+
 // 📥 ទាញយកទិន្នន័យការកំណត់ពី Supabase
 async function loadSettingsForm() {
   try {
