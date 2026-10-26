@@ -1534,35 +1534,58 @@ async function confirmSale() {
     const { error: insErr } = await supabaseClient.from('transactions').insert(rowsToInsert);
     if (insErr) throw insErr;
 
-    // កាត់ស្តុកទំនិញទិញគេ
-    for (var i = 0; i < cart.length; i++) {
-      var item = cart[i];
-      var prodObj = allProducts.find(p => p.id === item.id);
-      if (prodObj && prodObj.type === 'ទិញគេ') {
-        var newStock = Math.max(0, parseFloat(prodObj.stock || 0) - item.qty);
-        await supabaseClient.from('products').update({ stock: newStock }).eq('id', item.id);
-        prodObj.stock = newStock;
-      }
-    }
-
+    // 🔔 ដំណឹងទី ១៖ ផ្ញើទៅ Group ថៅកែ (ភ្ញៀវដកទឹក / លក់នៅកន្លែង)
     try {
-      var itemSummary = cart.map(item => "  • " + item.name + " x " + item.qty + " = ៛ " + (item.qty * item.price).toLocaleString()).join("\n");
-      var tgHeader = isDebtWithdrawal ? 
-        ("💧 <b>[KC WATER - Admin ដកទំនិញជំនួសម៉ូយ]</b>") : 
-        ("💧 <b>[KC WATER - លក់នៅកន្លែង POS]</b>");
+      var itemSummary = cart.map(function(item) {
+        return "  • <b>" + item.name + "</b> x " + item.qty + " = ៛ " + (item.qty * item.price).toLocaleString();
+      }).join("\n");
 
-      var tgMsg = tgHeader + "\n\n" +
-                  "🆔 <b>កូដ៖</b> <code>" + tid + "</code>\n" +
-                  "👤 <b>អតិថិជន៖</b> " + custName + "\n" +
-                  "✍️ <b>អ្នកកត់ត្រា៖</b> " + (isDebtWithdrawal && isAdmin ? "Admin (ដកជំនួស)" : (currentUser.fullName || "Admin")) + "\n" +
-                  "📦 <b>ទំនិញ៖</b>\n" + itemSummary + "\n" +
-                  (calc.discountK > 0 ? "🏷️ <b>បញ្ចុះតម្លៃ៖</b> -៛ " + calc.discountK.toLocaleString() + "\n" : "") +
-                  "💰 <b>សរុប៖</b> <b>៛ " + calc.finalTotal.toLocaleString() + "</b>\n" +
-                  "📌 <b>ស្ថានភាព៖</b> <b>" + (status === 'Paid' ? 'ទូទាត់រួច' : 'ជំពាក់ (Unpaid)') + "</b>\n" +
-                  "🕒 <b>ម៉ោង៖</b> " + new Date().toLocaleTimeString('km-KH');
+      // បែងចែកចំណងជើង និងអ្នកមកដកតាមស្ថានភាពពិតជាក់ស្តែង
+      var isDriverWithdraw = (currentUser && currentUser.role === 'Driver' && currentUser.linkedBoss);
+      var tgHeader = "💧 <b>[KC WATER - ដំណឹងដកទឹក / លក់ទំនិញ]</b>";
+      var withdrawPersonInfo = "";
+
+      if (isDriverWithdraw) {
+        tgHeader = "🛵 <b>[KC WATER - កូនចៅមកដកទឹកជំនួសមេ]</b>";
+        withdrawPersonInfo = "🚚 <b>អ្នកមកដកផ្ទាល់៖</b> <b>" + currentUser.fullName + " (កូនចៅ)</b>\n" +
+                             "🏢 <b>ដកជំនួសមេ៖</b> <b>" + currentUser.linkedBoss + "</b>\n";
+      } else if (isDebtWithdrawal && isAdmin) {
+        tgHeader = "🏢 <b>[KC WATER - Admin ដកទំនិញជំនួសម៉ូយ]</b>";
+        withdrawPersonInfo = "👤 <b>អតិថិជន / ម៉ូយ៖</b> <b>" + custName + "</b>\n" +
+                             "✍️ <b>អ្នកកត់ត្រា៖</b> <b>Admin (" + (currentUser.fullName || "Admin") + ")</b>\n";
+      } else if (isDebtWithdrawal) {
+        tgHeader = "🚚 <b>[KC WATER - ម៉ូយដកទំនិញ (Login)]</b>";
+        withdrawPersonInfo = "👤 <b>ម៉ូយដកផ្ទាល់៖</b> <b>" + custName + "</b>\n";
+      } else {
+        tgHeader = "🛒 <b>[KC WATER - លក់នៅកន្លែង (Walk-in)]</b>";
+        withdrawPersonInfo = "👤 <b>អតិថិជន៖</b> " + custName + "\n" +
+                             "✍️ <b>អ្នកគិតលុយ៖</b> " + (currentUser.fullName || "Admin") + "\n";
+      }
+
+      var statusText = (status === 'Paid') ? 
+        ("✅ <b>បង់ប្រាក់រួច (" + (currentPosPayMethod === 'ABA' ? '📱 ស្កេន ABA' : '💵 លុយសុទ្ធ') + ")</b>") : 
+        ("⚠️ <b>កត់ចូលបញ្ជីជំពាក់ (Unpaid)</b>");
+
+      // ម៉ោងកម្ពុជាច្បាស់លាស់
+      var timeKhNow = new Date().toLocaleString('km-KH', { 
+        timeZone: 'Asia/Phnom_Penh', 
+        dateStyle: 'short', 
+        timeStyle: 'short' 
+      });
+
+      var tgMsg = tgHeader + "\n" +
+                  "━━━━━━━━━━━━━━━━━━━━\n" +
+                  "🆔 <b>កូដប្រតិបត្តិការ៖</b> <code>" + tid + "</code>\n" +
+                  withdrawPersonInfo +
+                  "📦 <b>ទំនិញដែលបានដក៖</b>\n" + itemSummary + "\n" +
+                  (calc.discountK > 0 ? ("🏷️ <b>បញ្ចុះតម្លៃ៖</b> -៛ " + calc.discountK.toLocaleString() + "\n") : "") +
+                  "💰 <b>ទឹកប្រាក់សរុប៖</b> <b>៛ " + calc.finalTotal.toLocaleString() + "</b>\n" +
+                  "📌 <b>ស្ថានភាពទូទាត់៖</b> " + statusText + "\n" +
+                  "🕒 <b>កាលបរិច្ឆេទ៖</b> " + timeKhNow;
+
+      // ផ្ញើទៅ Group ថៅកែ (Chat ID ថៅកែ)
       sendTelegramAlert(tgMsg);
     } catch(e) {}
-
     generateReceiptImage(tid, custName, calc.finalTotal, (isDebtWithdrawal ? 0 : paid), cart, isDebtWithdrawal ? "ប័ណ្ណដកទំនិញ (WITHDRAWAL VOUCHER)" : "វិក្កយបត្រលក់ទំនិញ (RECEIPT)", calc.discountK);
 
     cart = [];
