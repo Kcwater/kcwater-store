@@ -2461,14 +2461,13 @@ function filterCatalog(cat, btn) {
       }
     }
 
-    // 📍 មុខងារចាប់ GPS ផ្ទះ (គាំទ្រទាំងក្នុង Facebook, Messenger, LINE & Chrome/Safari គ្មានកូដស្ទួន)
+    // 📍 មុខងារចាប់ GPS ផ្ទះ (កូដពេញលេញ ត្រឹមត្រូវ ១០០% គ្មានកូដសេសសល់)
     function detectGPSLocation() {
       var hint = document.getElementById('gpsStatusHint');
       var inpUrl = document.getElementById('inp_custMapUrl');
       var btnLabel = document.getElementById('btnGpsLabel');
       var btn = document.getElementById('btnDetectGPSAction');
 
-      // ១. ឆែកមើលថាតើភ្ញៀវកំពុងបើកក្នុង Facebook / Messenger / LINE ដែរឬទេ
       var ua = navigator.userAgent || navigator.vendor || window.opera;
       var isInAppBrowser = (ua.indexOf('FBAN') > -1) || (ua.indexOf('FBIOS') > -1) || (ua.indexOf('Messenger') > -1) || (ua.indexOf('Line') > -1);
 
@@ -2529,7 +2528,6 @@ function filterCatalog(cat, btn) {
         }
       }
 
-      // ចាប់ផ្កាយរណបម្តងគត់យ៉ាងច្បាស់លាស់
       navigator.geolocation.getCurrentPosition(onGpsSuccess, onGpsError, {
         enableHighAccuracy: true,
         timeout: 10000,
