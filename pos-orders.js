@@ -880,7 +880,6 @@ async function renderCompanyDeliveriesModule(isSilentRefresh) {
   var driverName = (currentUser && currentUser.fullName) ? currentUser.fullName : '';
   var existingContainer = document.getElementById('driverOrdersContainer');
 
-  // ✅ បើជាការ Refresh ស្ងាត់ៗ (Silent) គឺមិនបាច់ជម្រះផ្ទាំង ឬចេញរូបវិលៗឡើយ (មិនលោតកន្ត្រាក់)
   if (!existingContainer || !isSilentRefresh) {
     area.innerHTML = '<div class="max-w-2xl mx-auto space-y-3.5">' +
       '<div class="flex justify-between items-center bg-white p-4 rounded-2xl border shadow-sm">' +
@@ -943,7 +942,6 @@ async function renderCompanyDeliveriesModule(isSilentRefresh) {
       }
     });
 
-    // បង្ហាញរបារសង្ខេបប្រាក់
     if (summaryBox) {
       summaryBox.innerHTML = '<div class="p-2.5 bg-emerald-50 border border-emerald-200 rounded-2xl shadow-2xs">' +
         '<span class="text-[10px] text-emerald-700 font-bold block">💵 លុយសុទ្ធក្នុងដៃ</span>' +
@@ -1039,11 +1037,31 @@ async function renderCompanyDeliveriesModule(isSilentRefresh) {
           '</button>' : '') +
 
           (task.photo_url ? 
-          '<button type="button" onclick="viewOrderHousePhotoById(\'' + task.order_id + '\')"
+          '<button type="button" onclick="viewOrderHousePhotoById(\'' + task.order_id + '\')" class="py-2 px-2.5 bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-xl font-bold border border-amber-300 shadow-2xs flex items-center justify-center gap-1 active:scale-95 transition">' +
+            '<i class="fas fa-camera text-amber-600"></i> រូបមុខផ្ទះ' +
+          '</button>' : '') +
+
+          '<button type="button" onclick="openDriverDirectQr(' + (task.total || 0) + ', \'' + safeName + '\')" class="col-span-2 sm:col-span-1 py-2 px-2.5 bg-red-50 hover:bg-red-100 text-red-700 rounded-xl font-black border border-red-200 shadow-2xs flex items-center justify-center gap-1 active:scale-95 transition">' +
+            '<i class="fas fa-qrcode text-red-600"></i> ស្កេន ABA' +
+          '</button>' +
+        '</div>' +
+
+        '<button type="button" onclick="completeOnlineOrder(\'' + task.order_id + '\', \'' + safeName + '\', ' + (task.total || 0) + ', \'' + (task.items || '').replace(/'/g, "\\'") + '\', \'' + driverName.replace(/'/g, "\\'") + '\', \'' + (task.payment_method || 'COD').replace(/'/g, "\\'") + '\')" class="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-green-700 hover:from-emerald-700 hover:to-green-800 text-white rounded-2xl font-black text-xs sm:text-sm shadow-md flex items-center justify-center gap-2 active:scale-95 transition">' +
+          '<i class="fas fa-check-circle text-base"></i> ដឹកដល់ហើយ & ប្រមូលលុយរួច' +
+        '</button>' +
+      '</div>';
+    });
+
+    if (container) container.innerHTML = html;
+  } catch(e) {
+    if (container) container.innerHTML = '<div class="p-4 text-center text-red-500 font-bold text-xs">កំហុស៖ ' + e.message + '</div>';
+  }
+}
+
 // ==========================================
 // 🌐 ផ្ទាំងមជ្ឈមណ្ឌលលក់ ONLINE ពេញលេញ (ONLINE HUB - 3 IN 1)
 // ==========================================
-var activeOnlineHubTab = 'ORDERS'; // 'ORDERS', 'AUDIT', 'PRODUCTS'
+var activeOnlineHubTab = 'ORDERS';
 var onlineAuditSearchKeyword = '';
 
 function renderOnlineHubModule() {
@@ -1051,7 +1069,6 @@ function renderOnlineHubModule() {
   if (!area) return;
 
   area.innerHTML = '<div class="max-w-4xl mx-auto space-y-4">' +
-    // ១. ក្បាលផ្ទាំង & ប៊ូតុងបើកមើល Web ភ្ញៀវផ្ទាល់
     '<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-4 rounded-3xl border shadow-sm gap-3">' +
       '<div>' +
         '<h2 class="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">' +
