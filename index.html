@@ -2777,15 +2777,64 @@ function filterCatalog(cat, btn) {
       } catch(e) {}
     }
 
-    // 📥 មុខងារទាញយករូប QR ABA ទុកក្នុងទូរស័ព្ទ
-    function downloadAbaKhqrImage() {
+    // 📥 មុខងារទាញយករូប QR ABA ទុកក្នុងទូរស័ព្ទ (ទាញចេញជារូបភាពផ្ទាល់ ១០០% ដូចវិក្កយបត្រ)
+    async function downloadAbaKhqrImage() {
       var img = document.getElementById('abaKhqrImgPreview');
       if (!img || !img.src) return;
-      var link = document.createElement('a');
-      link.href = img.src;
-      link.download = 'KC-ABA-KHQR.jpg';
-      link.target = '_blank';
-      link.click();
+
+      var btn = document.querySelector('button[onclick="downloadAbaKhqrImage()"]');
+      var oldText = btn ? btn.innerHTML : '';
+      if (btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> កំពុងទាញយករូប...';
+
+      try {
+        // ទាញទិន្នន័យរូបភាពមកបំប្លែងជា File Blob ផ្ទាល់ក្នុងទូរស័ព្ទ (ដូចវិក្កយបត្រ)
+        var res = await fetch(img.src);
+        var blob = await res.blob();
+        var blobUrl = window.URL.createObjectURL(blob);
+
+        var link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = 'KC-ABA-KHQR.jpg';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        setTimeout(function() { window.URL.revokeObjectURL(blobUrl); }, 2000);
+
+        if (btn) {
+          btn.innerHTML = '<i class="fas fa-check text-green-300"></i> បានទាញយករូបជោគជ័យ!';
+          setTimeout(function() { btn.innerHTML = oldText; }, 2500);
+        }
+      } catch (err) {
+        // បច្ចេកទេសជំនួយទី ២ តាមរយៈ Canvas (ធានាចេញជារូបភាព ១០០%)
+        try {
+          var canvas = document.createElement('canvas');
+          var ctx = canvas.getContext('2d');
+          var tempImg = new Image();
+          tempImg.crossOrigin = 'anonymous';
+          tempImg.onload = function() {
+            canvas.width = tempImg.naturalWidth || 600;
+            canvas.height = tempImg.naturalHeight || 800;
+            ctx.drawImage(tempImg, 0, 0);
+            var dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+            var a = document.createElement('a');
+            a.href = dataUrl;
+            a.download = 'KC-ABA-KHQR.jpg';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            if (btn) btn.innerHTML = oldText;
+          };
+          tempImg.onerror = function() {
+            if (btn) btn.innerHTML = oldText;
+            window.open(img.src, '_blank');
+          };
+          tempImg.src = img.src;
+        } catch(e) {
+          if (btn) btn.innerHTML = oldText;
+          window.open(img.src, '_blank');
+        }
+      }
     }
     
     // 📥 ទាញយកការកំណត់ & បញ្ចូល Promotion ទៅក្នុង Slide ទី ១ តែមួយគត់ (កុំឱ្យធ្លាក់ទំនិញ)
