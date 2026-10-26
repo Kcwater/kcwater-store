@@ -1878,13 +1878,39 @@ async function saveSettingsToSupabase() {
   }
 }
 
-function testTelegramAlertNow() {
+// 🔔 មុខងារតេស្ត Telegram បាញ់សារទៅកាន់ Group ទាំង ២ (Group ថៅកែ និង Group អ្នកដឹក)
+async function testTelegramAlertNow() {
   if (currentTelegramAlertStatus === "OFF") {
     showToast("⚠️ ប្រព័ន្ធ Telegram កំពុងបិទ (OFF)! សូមចុចបើក (ON) ជាមុនសិន", "warning");
     return;
   }
-  sendTelegramAlert("🔔 <b>[KC WATER - តេស្តប្រព័ន្ធ Telegram]</b>\n\nTelegram Bot បានតភ្ជាប់ជោគជ័យ ១០០%!\n• 🏢 Group ថៅកែ៖ ទទួលដំណឹងលក់ និងដកទឹក\n• 🛵 Group អ្នកដឹក៖ ទទួលបេសកកម្មដឹកទឹក\n🕒 ម៉ោង៖ " + new Date().toLocaleTimeString('km-KH'));
-  showToast("បានផ្ញើសារតេស្តទៅ Telegram!", "success");
+
+  var token = document.getElementById('set_tg_token') ? document.getElementById('set_tg_token').value.trim() : (telegramConfig.token || '');
+  var bossId = document.getElementById('set_tg_chatid') ? document.getElementById('set_tg_chatid').value.trim() : (telegramConfig.chatId || '');
+  var driverId = document.getElementById('set_tg_driver_chatid') ? document.getElementById('set_tg_driver_chatid').value.trim() : (telegramConfig.driverChatId || '');
+
+  if (!token) {
+    showToast("សូមបញ្ចូល Telegram Bot Token ជាមុនសិន!", "error");
+    return;
+  }
+
+  var timeKhNow = new Date().toLocaleTimeString('km-KH', { 
+    timeZone: 'Asia/Phnom_Penh', 
+    dateStyle: 'short', 
+    timeStyle: 'short' 
+  });
+
+  // ១. ផ្ញើសារតេស្តទៅ Group ទី ១ (Group ថៅកែ)
+  if (bossId) {
+    sendTelegramAlert("🏢 <b>[KC WATER - តេស្ត Group ថៅកែ / រោងចក្រ]</b>\n\n✅ Group នេះត្រៀមទទួលដំណឹង៖\n• ភ្ញៀវដកទឹក / លក់នៅកន្លែង (POS)\n• ការទូទាត់លុយ, ចំណាយ និងស្តុក\n🕒 ម៉ោង៖ " + timeKhNow, bossId);
+  }
+
+  // ២. ផ្ញើសារតេស្តទៅ Group ទី ២ (Group អ្នកដឹក «Kc បេសកកម្មរបស់ខ្ញុំ»)
+  if (driverId) {
+    sendTelegramAlert("🛵 <b>[KC WATER - តេស្ត Group អ្នកដឹកជញ្ជូន]</b>\n\n✅ Group នេះត្រៀមទទួលដំណឹង៖\n• បេសកកម្មដឹកទឹក Online ថ្មីៗ\n• ឈ្មោះភ្ញៀវ លេខទូរស័ព្ទ និងចំនួនទឹក\n• Link ផែនទី Google Maps នាំផ្លូវ\n🕒 ម៉ោង៖ " + timeKhNow, driverId);
+  }
+
+  showToast("បានផ្ញើសារតេស្តទៅកាន់ Group ទាំង ២!", "success");
 }
 
 // ==========================================
