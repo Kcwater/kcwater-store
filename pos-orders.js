@@ -433,53 +433,59 @@ async function assignDriverToOnlineOrder(orderId, custName) {
     showToast("បានចាត់ចែងទៅឱ្យ " + driverName + " ជោគជ័យ!", "success");
     openOnlineOrdersModal();
 
-    // ៣. បាញ់សារ Telegram ជូនដំណឹងដល់អ្នកដឹកភ្លាមៗ (មានព័ត៌មានដឹកច្បាស់លាស់ គ្មានលេចធ្លាយលុយកាក់រោងចក្រឡើយ)
+    // 🔔 ដំណឹងទី ២៖ ផ្ញើទៅ Group អ្នកដឹកជញ្ជូន (បេសកកម្មដឹកទឹកថ្មី + Link ផែនទីនាំផ្លូវ)
     try {
       var phoneText = orderInfo && orderInfo.phone ? orderInfo.phone : '-';
       var itemsText = orderInfo && orderInfo.items ? orderInfo.items : '-';
       var totalText = orderInfo && orderInfo.total ? Number(orderInfo.total).toLocaleString() : '0';
-      var payText = orderInfo && orderInfo.payment_method ? orderInfo.payment_method : 'COD';
-      var mapUrl = orderInfo ? (orderInfo.location_url || orderInfo.address || '') : '';
+      var payText = orderInfo && orderInfo.payment_method ? orderInfo.payment_method : 'COD (លុយសុទ្ធ)';
+      var barrelText = orderInfo && orderInfo.barrel_swap ? orderInfo.barrel_swap : 'មានសំបកដូរ';
+      var rawLocation = orderInfo ? (orderInfo.location_url || orderInfo.address || '') : '';
 
+      // រៀបចំ Link ផែនទី Google Maps ឱ្យអ្នកដឹកចុចបើកនាំផ្លូវភ្លាមៗ
       var mapLine = '';
-      if (mapUrl) {
-        var matchLink = mapUrl.match(/https?:\/\/[^\s]+/);
+      if (rawLocation) {
+        var matchLink = rawLocation.match(/https?:\/\/[^\s]+/);
         if (matchLink) {
-          mapLine = "🗺️ <b>ផែនទីផ្ទះភ្ញៀវ៖</b> <a href='" + matchLink[0] + "'>ចុចបើក Google Maps នាំផ្លូវ</a>\n";
+          mapLine = "📍 <b>ផែនទីផ្ទះភ្ញៀវ៖</b> <a href='" + matchLink[0] + "'>👉 ចុចបើក Google Maps នាំផ្លូវ 🧭</a>\n";
         } else {
-          var searchMap = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(mapUrl + " ប៉ោយប៉ែត");
-          mapLine = "🗺️ <b>ផែនទីផ្ទះភ្ញៀវ៖</b> <a href='" + searchMap + "'>ចុចបើក Google Maps នាំផ្លូវ</a>\n";
+          var searchMap = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(rawLocation + " ប៉ោយប៉ែត");
+          mapLine = "📍 <b>ផែនទីផ្ទះភ្ញៀវ៖</b> <a href='" + searchMap + "'>👉 ចុចបើក Google Maps នាំផ្លូវ 🧭</a>\n";
         }
       }
 
       var tgHeader = (orderInfo && orderInfo.driver_name && orderInfo.driver_name !== driverName) ? 
         "⚠️ <b>[KC WATER - Admin បានប្តូរអ្នកដឹកជញ្ជូនថ្មី]</b>" : 
-        "🚚 <b>[KC WATER - បេសកកម្មដឹកទឹកថ្មី]</b>";
+        "🛵 <b>[KC WATER - បេសកកម្មដឹកទឹកថ្មី]</b>";
 
-      var tgMsg = tgHeader + "\n\n" +
-                  "🛵 <b>អ្នកដឹកជញ្ជូន៖</b> <b>" + driverName + "</b>" + (driverPhone ? " (📞 " + driverPhone + ")" : "") + "\n" +
+      // ម៉ោងចាត់ចែងកម្ពុជាច្បាស់លាស់
+      var timeKhNow = new Date().toLocaleString('km-KH', { 
+        timeZone: 'Asia/Phnom_Penh', 
+        dateStyle: 'short', 
+        timeStyle: 'short' 
+      });
+
+      var tgMsg = tgHeader + "\n" +
+                  "━━━━━━━━━━━━━━━━━━━━\n" +
+                  "🛵 <b>អ្នកដឹកជញ្ជូន៖</b> <b>" + driverName + "</b>" + (driverPhone ? (" (📞 " + driverPhone + ")") : "") + "\n" +
                   "🆔 <b>កូដកុម្ម៉ង់៖</b> <code>" + orderId + "</code>\n" +
-                  "👤 <b>អតិថិជន៖</b> " + custName + " (📞 " + phoneText + ")\n" +
-                  "📦 <b>ទំនិញត្រូវដឹក៖</b> " + itemsText + "\n" +
+                  "👤 <b>អតិថិជន៖</b> <b>" + custName + "</b>\n" +
+                  "📞 <b>លេខទូរស័ព្ទភ្ញៀវ៖</b> <b>" + phoneText + "</b>\n" +
+                  "📦 <b>ទំនិញត្រូវដឹក៖</b> <b>" + itemsText + "</b>\n" +
+                  "🛢️ <b>ការដូរសំបកធុង៖</b> " + barrelText + "\n" +
                   "💰 <b>ទឹកប្រាក់ត្រូវប្រមូល៖</b> <b>៛ " + totalText + "</b> (" + payText + ")\n" +
                   mapLine +
-                  (orderInfo && orderInfo.address ? "📝 <b>ចំណាំ៖</b> " + orderInfo.address + "\n" : "") +
-                  "🕒 <b>ម៉ោងចាត់ចែង៖</b> " + new Date().toLocaleTimeString('km-KH');
+                  (orderInfo && orderInfo.address ? ("📝 <b>ចំណាំទីតាំង៖</b> " + orderInfo.address + "\n") : "") +
+                  "🕒 <b>ម៉ោងចាត់ចែង៖</b> " + timeKhNow;
 
-      // 🛵 បាញ់សារការងារដឹកទឹក ចូលទៅកាន់ Telegram ក្រុមអ្នកដឹកជញ្ជូន (បើគ្មាន ទើបបាញ់ចូល Chat ID ថៅកែ)
-      var tgCfg = (typeof telegramConfig !== 'undefined') ? telegramConfig : ((typeof telegramSettings !== 'undefined') ? telegramSettings : {});
-      var targetChatId = tgCfg.driverChatId || tgCfg.driver_chat_id || tgCfg.chatId || '';
-      var tgToken = tgCfg.token || '';
-
-      if (tgToken && targetChatId && tgCfg.status !== 'OFF') {
-        fetch("https://api.telegram.org/bot" + tgToken + "/sendMessage", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ chat_id: targetChatId, text: tgMsg, parse_mode: "HTML" })
-        }).catch(function(){});
+      // 🎯 ផ្ញើត្រង់ទៅ Group អ្នកដឹកជញ្ជូន (បើគ្មាន driverChatId ទេ ទើបផ្ញើទៅ Group ថៅកែ)
+      var targetChatId = (telegramConfig && telegramConfig.driverChatId) ? telegramConfig.driverChatId : ((telegramConfig && telegramConfig.chatId) ? telegramConfig.chatId : '');
+      
+      if (typeof sendTelegramAlert === 'function') {
+        sendTelegramAlert(tgMsg, targetChatId);
       }
     } catch(tgErr) {}
-
+    
   } catch(err) {
     showToast("កំហុសចាត់ចែង៖ " + err.message, "error");
   }
