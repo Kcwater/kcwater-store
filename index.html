@@ -1705,9 +1705,12 @@ function getLocalizedProductName(p, lang) {
 
         var actionBtn = isOutOfStock ? 
           '<span class="text-[10px] font-bold text-red-500 bg-red-50 px-2 py-1 rounded-xl">អស់ស្តុក</span>' : 
-          '<button type="button" class="w-8 h-8 rounded-full bg-emerald-600 group-hover:bg-emerald-700 text-white flex items-center justify-center font-black shadow-md active:scale-90 transition shrink-0">' +
-            (inCart > 0 ? '<span class="text-xs font-black">' + inCart + '</span>' : '<i class="fas fa-plus text-xs"></i>') +
-          '</button>';
+          '<div class="relative shrink-0">' +
+            '<button type="button" class="w-8 h-8 rounded-full bg-emerald-600 group-hover:bg-emerald-700 text-white flex items-center justify-center font-black shadow-md active:scale-90 transition">' +
+              '<i class="fas fa-plus text-xs"></i>' +
+            '</button>' +
+            (inCart > 0 ? '<span class="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-rose-500 text-white text-[10px] font-black flex items-center justify-center border-2 border-white shadow-xs animate-in zoom-in duration-200">' + inCart + '</span>' : '') +
+          '</div>';
 
         var khrStr = '៛ ' + Number(item.priceKhr || 0).toLocaleString();
         var thbStr = '฿ ' + Number(item.priceThb || 0).toLocaleString();
@@ -1970,20 +1973,12 @@ function filterCatalog(cat, btn) {
       updateModalButtonText(val);
     }
 
-    // 🔘 មុខងារបូកសរុបតម្លៃលើប៊ូតុង "បញ្ចូលកន្ត្រក" ជា ៣ រូបិយប័ណ្ណ (៛, ฿, $)
+    // 🔘 មុខងារប៊ូតុង "បញ្ចូលកន្ត្រក" (ខ្លី ស្អាត គ្មានតម្លៃរញ៉េរញ៉ៃ)
     function updateModalButtonText(qty) {
-      if (!activeModalProduct) return;
-      var rateU = (typeof exchangeRateUSD !== 'undefined') ? exchangeRateUSD : 4100;
-      var rateT = (typeof exchangeRateTHB !== 'undefined') ? exchangeRateTHB : 115;
-
-      var totKhr = qty * (activeModalProduct.priceKhr || activeModalProduct.price || 0);
-      var totThb = Math.round(totKhr / rateT).toLocaleString();
-      var totUsd = (totKhr / rateU).toFixed(2);
       var d = DICT[currentLang] || DICT.km;
-      
       var btnLabel = document.getElementById('btnModalAddCartLabel');
       if (btnLabel) {
-        btnLabel.innerText = (d.modalAdd || 'បញ្ចូលកន្ត្រក') + ' (៛ ' + totKhr.toLocaleString() + ' | ฿ ' + totThb + ' | $' + totUsd + ')';
+        btnLabel.innerText = d.modalAdd || 'បញ្ចូលកន្ត្រក';
       }
     }
 
