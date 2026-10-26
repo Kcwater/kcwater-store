@@ -1741,7 +1741,7 @@ function renderSettingsModule() {
       '</div>' +
     '</div>' +
 
-    // 🔔 ៤. Telegram Bot Alert
+// 🔔 ៤. Telegram Bot Alert (គាំទ្រទាំង Group ថៅកែ និង Group អ្នកដឹក)
     '<div class="card border-t-4 border-green-600 shadow-xl p-5 mb-0 space-y-3">' +
       '<div class="flex justify-between items-center">' +
         '<h3 class="font-extrabold text-green-950 text-base flex items-center gap-2"><i class="fab fa-telegram text-blue-500"></i>Telegram Bot Alert</h3>' +
@@ -1751,8 +1751,9 @@ function renderSettingsModule() {
         '</div>' +
       '</div>' +
       '<div class="space-y-2 text-xs">' +
-        '<div><span class="text-[9.5px] font-bold text-gray-500 block mb-0.5">🏢 Chat ID ក្រុមថៅកែ (លុយកាក់, លក់ដូរ, ចំណាយ, ស្តុក)៖</span><input type="text" id="set_tg_chatid" placeholder="Chat ID ថៅកែ (ឧ៖ -100xxxxxxxxxx)" class="border p-2 rounded-xl w-full font-mono bg-white"></div>' +
-        '<div><span class="text-[9.5px] font-black text-blue-900 block mb-0.5">🛵 Chat ID ក្រុមអ្នកដឹកជញ្ជូន (ទទួលតែការងារដឹកទឹកសុទ្ធសាធ)៖</span><input type="text" id="set_tg_driver_chatid" placeholder="Chat ID ក្រុមអ្នកដឹក (ឧ៖ -100yyyyyyyyyy)" class="border-2 border-blue-300 p-2 rounded-xl w-full font-mono bg-blue-50/50 text-blue-950"></div>' +
+        '<div><span class="text-[9.5px] font-bold text-gray-500 block mb-0.5">🔑 Telegram Bot Token៖</span><input type="password" id="set_tg_token" placeholder="Bot Token (ឧ៖ 123456:ABC-DEF...)" class="border p-2 rounded-xl w-full font-mono bg-white"></div>' +
+        '<div><span class="text-[9.5px] font-bold text-gray-500 block mb-0.5">🏢 Chat ID ក្រុមថៅកែ (ដំណឹងទី១៖ ភ្ញៀវដកទឹក, លក់, ចំណាយ, ស្តុក)៖</span><input type="text" id="set_tg_chatid" placeholder="Chat ID ថៅកែ (ឧ៖ -100xxxxxxxxxx)" class="border p-2 rounded-xl w-full font-mono bg-white"></div>' +
+        '<div><span class="text-[9.5px] font-black text-blue-900 block mb-0.5">🛵 Chat ID ក្រុមអ្នកដឹកជញ្ជូន (ដំណឹងទី២៖ ចាត់ចែងការងារដឹកទឹក)៖</span><input type="text" id="set_tg_driver_chatid" placeholder="Chat ID ក្រុមអ្នកដឹក (ឧ៖ -100yyyyyyyyyy)" class="border-2 border-blue-300 p-2 rounded-xl w-full font-mono bg-blue-50/50 text-blue-950"></div>' +
       '</div>' +
       '<button onclick="saveSettingsToSupabase()" id="btnSaveAllSettings" class="btn-green py-3.5 text-sm font-black shadow-md flex items-center justify-center gap-2">' +
         '<i class="fas fa-floppy-disk"></i> រក្សាទុកការកំណត់ទាំងអស់ (Save All Settings)' +
@@ -1764,117 +1765,26 @@ function renderSettingsModule() {
   if (typeof updateRatePreviewLive === 'function') updateRatePreviewLive();
 }
 
-// 🖼️ មុខងារ Preview រូប Banner Promotion
-function previewPromoBannerFile(input) {
-  if (input.files && input.files[0]) {
-    var file = input.files[0];
-    var reader = new FileReader();
-    reader.onload = function(e) {
-      var img = new Image();
-      img.onload = function() {
-        var canvas = document.createElement('canvas');
-        var maxDim = 800;
-        var w = img.width, h = img.height;
-        if (w > h) {
-          if (w > maxDim) { h = Math.round((h * maxDim) / w); w = maxDim; }
-        } else {
-          if (h > maxDim) { w = Math.round((w * maxDim) / h); h = maxDim; }
-        }
-        canvas.width = w; canvas.height = h;
-        var ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, w, h);
-        var base64 = canvas.toDataURL('image/jpeg', 0.85);
+// 🔘 មុខងារប្តូរស្ថានភាព Telegram ON/OFF
+function toggleTelegramAlertStatusLive() {
+  currentTelegramAlertStatus = (currentTelegramAlertStatus === 'ON') ? 'OFF' : 'ON';
+  updateTelegramButtonUI(currentTelegramAlertStatus);
+}
 
-        var preview = document.getElementById('promoBannerImgPreview');
-        var hiddenInp = document.getElementById('set_promo_img_base64');
-        var note = document.getElementById('promoImgStatusNote');
-        if (preview) preview.src = base64;
-        if (hiddenInp) hiddenInp.value = base64;
-        if (note) note.innerHTML = '<span class="text-emerald-700 font-black">✔️ បានភ្ជាប់រូប Banner រួចរាល់</span>';
-      };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
+function updateTelegramButtonUI(status) {
+  currentTelegramAlertStatus = (status || 'ON').toUpperCase();
+  var btn = document.getElementById('btnToggleTelegramStatus');
+  if (!btn) return;
+  if (currentTelegramAlertStatus === 'ON') {
+    btn.className = "px-3 py-1.5 rounded-xl text-xs font-black shadow-xs active:scale-95 transition flex items-center gap-1.5 bg-emerald-600 text-white";
+    btn.innerHTML = '<i class="fas fa-bell"></i> បើក (ON)';
+  } else {
+    btn.className = "px-3 py-1.5 rounded-xl text-xs font-black shadow-xs active:scale-95 transition flex items-center gap-1.5 bg-slate-200 text-slate-600";
+    btn.innerHTML = '<i class="fas fa-bell-slash"></i> បិទ (OFF)';
   }
 }
 
-// 🔘 មុខងារជំនួយរើស ឬដោះធីក Checkboxes
-function toggleAllPromoCheckboxes(check) {
-  document.querySelectorAll('input[name="promo_buy_prod_cb"]').forEach(function(cb) {
-    cb.checked = check;
-  });
-}
-
-// ➕ មុខងារបន្ថែមលក្ខខណ្ឌ Promotion ថ្មី (គាំទ្រធីកទំនិញច្រើនមុខព្រមគ្នា)
-function addNewPromoRule() {
-  var checkedBoxes = document.querySelectorAll('input[name="promo_buy_prod_cb"]:checked');
-  var buyQ = parseFloat(document.getElementById('pr_buy_qty') ? document.getElementById('pr_buy_qty').value || 1 : 1);
-  var freeP = document.getElementById('pr_free_prod') ? document.getElementById('pr_free_prod').value : '';
-  var freeQ = parseFloat(document.getElementById('pr_free_qty') ? document.getElementById('pr_free_qty').value || 1 : 1);
-
-  if (checkedBoxes.length === 0) {
-    showToast("សូមធីកជ្រើសរើសមុខទំនិញដែលត្រូវទិញយ៉ាងហោចណាស់ ១ មុខ!", "error");
-    return;
-  }
-  if (!freeP) {
-    showToast("សូមជ្រើសរើសមុខទំនិញដែលត្រូវថែម Free!", "error");
-    return;
-  }
-
-  var addedCount = 0;
-  checkedBoxes.forEach(function(cb) {
-    var buyP = cb.value;
-    // ការពារកុំឱ្យស្ទួន
-    var exists = currentPromoRules.some(function(r) {
-      return r.buyProduct.trim().toLowerCase() === buyP.trim().toLowerCase() && r.freeProduct.trim().toLowerCase() === freeP.trim().toLowerCase();
-    });
-
-    if (!exists) {
-      currentPromoRules.push({
-        buyProduct: buyP,
-        buyQty: buyQ,
-        freeProduct: freeP,
-        freeQty: freeQ
-      });
-      addedCount++;
-    }
-  });
-
-  renderPromoRulesList();
-  toggleAllPromoCheckboxes(false); // ដោះធីកក្រោយបញ្ចូលរួច
-  showToast("បានបញ្ចូល Promotion ចំនួន " + addedCount + " មុខទំនិញជោគជ័យ!", "success");
-}
-
-// 🗑️ លុបលក្ខខណ្ឌ Promotion
-function deletePromoRule(idx) {
-  currentPromoRules.splice(idx, 1);
-  renderPromoRulesList();
-}
-
-// 📋 បង្ហាញបញ្ជីលក្ខខណ្ឌ Promotion កំពុងមាន
-function renderPromoRulesList() {
-  var container = document.getElementById('activePromoRulesContainer');
-  if (!container) return;
-
-  if (currentPromoRules.length === 0) {
-    container.innerHTML = '<div class="text-center py-2.5 text-gray-400 italic text-[11px] bg-white rounded-xl border border-dashed border-amber-200">មិនទាន់មានលក្ខខណ្ឌថែមទំនិញនៅឡើយទេ</div>';
-    return;
-  }
-
-  var html = '';
-  currentPromoRules.forEach(function(r, idx) {
-    html += '<div class="bg-white p-2.5 rounded-xl border border-amber-300 flex items-center justify-between text-xs shadow-2xs">' +
-      '<div class="space-y-0.5">' +
-        '<div class="text-slate-800 font-black">ទិញ <b>' + r.buyProduct + '</b> x ' + r.buyQty + '</div>' +
-        '<div class="text-emerald-700 font-bold flex items-center gap-1 text-[11px]"><i class="fas fa-gift text-amber-500"></i> ថែម Free <b>' + r.freeProduct + '</b> x ' + r.freeQty + '</div>' +
-      '</div>' +
-      '<button type="button" onclick="deletePromoRule(' + idx + ')" class="p-1.5 text-red-400 hover:text-red-600 active:scale-90 transition" title="លុប"><i class="fas fa-trash-can"></i></button>' +
-    '</div>';
-  });
-  container.innerHTML = html;
-}
-
-// 📥 ទាញយកទិន្នន័យពី Supabase
+// 📥 ទាញយកទិន្នន័យការកំណត់ពី Supabase
 async function loadSettingsForm() {
   try {
     const { data } = await supabaseClient.from('settings').select('*');
@@ -1882,17 +1792,17 @@ async function loadSettingsForm() {
     var tgStatus = "ON";
 
     data.forEach(function(r) {
-      if (r.key === 'Store_Open_Time') document.getElementById('set_open_time').value = r.value;
-      if (r.key === 'Store_Close_Time') document.getElementById('set_close_time').value = r.value;
-      if (r.key === 'Delivery_Fee_Standard') document.getElementById('set_del_fee').value = r.value;
-      if (r.key === 'Delivery_Free_Min_Qty') document.getElementById('set_del_min').value = r.value;
-      if (r.key === 'Delivery_Free_Min_Amount') { var fa = document.getElementById('set_del_free_amount'); if (fa) fa.value = r.value; }
+      if (r.key === 'Store_Open_Time') { var el = document.getElementById('set_open_time'); if (el) el.value = r.value; }
+      if (r.key === 'Store_Close_Time') { var el = document.getElementById('set_close_time'); if (el) el.value = r.value; }
+      if (r.key === 'Delivery_Fee_Standard') { var el = document.getElementById('set_del_fee'); if (el) el.value = r.value; }
+      if (r.key === 'Delivery_Free_Min_Qty') { var el = document.getElementById('set_del_min'); if (el) el.value = r.value; }
+      if (r.key === 'Delivery_Free_Min_Amount') { var el = document.getElementById('set_del_free_amount'); if (el) el.value = r.value; }
       
       // Promo
-      if (r.key === 'Promo_Status') document.getElementById('set_promo_status').value = r.value;
-      if (r.key === 'Promo_Start_Time') { var ps = document.getElementById('set_promo_start'); if (ps) ps.value = r.value; }
-      if (r.key === 'Promo_End_Time') { var pe = document.getElementById('set_promo_end'); if (pe) pe.value = r.value; }
-      if (r.key === 'Promo_Banner_Text') document.getElementById('set_promo_banner').value = r.value;
+      if (r.key === 'Promo_Status') { var el = document.getElementById('set_promo_status'); if (el) el.value = r.value; }
+      if (r.key === 'Promo_Start_Time') { var el = document.getElementById('set_promo_start'); if (el) el.value = r.value; }
+      if (r.key === 'Promo_End_Time') { var el = document.getElementById('set_promo_end'); if (el) el.value = r.value; }
+      if (r.key === 'Promo_Banner_Text') { var el = document.getElementById('set_promo_banner'); if (el) el.value = r.value; }
       if (r.key === 'Promo_Banner_Img') {
         var pi = document.getElementById('promoBannerImgPreview');
         var ph = document.getElementById('set_promo_img_base64');
@@ -1903,13 +1813,13 @@ async function loadSettingsForm() {
         try { currentPromoRules = JSON.parse(r.value || '[]'); } catch(e) { currentPromoRules = []; }
       }
 
-      // Telegram & Exchange
-      if (r.key === 'Telegram_Token') document.getElementById('set_tg_token').value = r.value;
-      if (r.key === 'Telegram_ChatID') document.getElementById('set_tg_chatid').value = r.value;
-      if (r.key === 'Telegram_Driver_ChatID') { var dc = document.getElementById('set_tg_driver_chatid'); if (dc) dc.value = r.value; }
+      // Telegram & Exchange Rates (ពិនិត្យសុវត្ថិភាពមិនឱ្យ Error null)
+      if (r.key === 'Telegram_Token') { var el = document.getElementById('set_tg_token'); if (el) el.value = r.value; }
+      if (r.key === 'Telegram_ChatID') { var el = document.getElementById('set_tg_chatid'); if (el) el.value = r.value; }
+      if (r.key === 'Telegram_Driver_ChatID') { var el = document.getElementById('set_tg_driver_chatid'); if (el) el.value = r.value; }
       if (r.key === 'Telegram_Alert_Status') tgStatus = r.value;
-      if (r.key === 'Exchange_Rate_USD') { var eu = document.getElementById('set_rate_usd'); if (eu) eu.value = r.value; }
-      if (r.key === 'Exchange_Rate_THB') { var et = document.getElementById('set_rate_thb'); if (et) et.value = r.value; }
+      if (r.key === 'Exchange_Rate_USD') { var el = document.getElementById('set_rate_usd'); if (el) el.value = r.value; }
+      if (r.key === 'Exchange_Rate_THB') { var el = document.getElementById('set_rate_thb'); if (el) el.value = r.value; }
     });
 
     renderPromoRulesList();
@@ -1917,37 +1827,46 @@ async function loadSettingsForm() {
   } catch(e) {}
 }
 
-// 💾 រក្សាទុកការកំណត់ទាំងអស់ចូល Supabase
+// 💾 រក្សាទុកការកំណត់ទាំងអស់ចូល Supabase (ធានា Save ទាំង Token, Chat ID ថៅកែ និង Chat ID អ្នកដឹក)
 async function saveSettingsToSupabase() {
   var btn = document.getElementById('btnSaveAllSettings');
   if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> កំពុងរក្សាទុក...'; }
 
+  var tokenVal = document.getElementById('set_tg_token') ? document.getElementById('set_tg_token').value.trim() : '';
+  var chatIdVal = document.getElementById('set_tg_chatid') ? document.getElementById('set_tg_chatid').value.trim() : '';
+  var driverChatIdVal = document.getElementById('set_tg_driver_chatid') ? document.getElementById('set_tg_driver_chatid').value.trim() : '';
+
   var rows = [
-    { key: 'Store_Open_Time', value: document.getElementById('set_open_time').value || "07:00" },
-    { key: 'Store_Close_Time', value: document.getElementById('set_close_time').value || "18:00" },
-    { key: 'Delivery_Fee_Standard', value: document.getElementById('set_del_fee').value || "2000" },
-    { key: 'Delivery_Free_Min_Qty', value: document.getElementById('set_del_min').value || "2" },
-    { key: 'Delivery_Free_Min_Amount', value: document.getElementById('set_del_free_amount') ? document.getElementById('set_del_free_amount').value || "50000" : "50000" },
+    { key: 'Store_Open_Time', value: document.getElementById('set_open_time') ? document.getElementById('set_open_time').value : "07:00" },
+    { key: 'Store_Close_Time', value: document.getElementById('set_close_time') ? document.getElementById('set_close_time').value : "18:00" },
+    { key: 'Delivery_Fee_Standard', value: document.getElementById('set_del_fee') ? document.getElementById('set_del_fee').value : "2000" },
+    { key: 'Delivery_Free_Min_Qty', value: document.getElementById('set_del_min') ? document.getElementById('set_del_min').value : "2" },
+    { key: 'Delivery_Free_Min_Amount', value: document.getElementById('set_del_free_amount') ? document.getElementById('set_del_free_amount').value : "50000" },
 
     // Promotion
-    { key: 'Promo_Status', value: document.getElementById('set_promo_status').value },
+    { key: 'Promo_Status', value: document.getElementById('set_promo_status') ? document.getElementById('set_promo_status').value : 'OFF' },
     { key: 'Promo_Start_Time', value: document.getElementById('set_promo_start') ? document.getElementById('set_promo_start').value : '' },
     { key: 'Promo_End_Time', value: document.getElementById('set_promo_end') ? document.getElementById('set_promo_end').value : '' },
-    { key: 'Promo_Banner_Text', value: document.getElementById('set_promo_banner').value.trim() },
+    { key: 'Promo_Banner_Text', value: document.getElementById('set_promo_banner') ? document.getElementById('set_promo_banner').value.trim() : '' },
     { key: 'Promo_Banner_Img', value: document.getElementById('set_promo_img_base64') ? document.getElementById('set_promo_img_base64').value : '' },
-    { key: 'Promo_Rules', value: JSON.stringify(currentPromoRules) },
+    { key: 'Promo_Rules', value: JSON.stringify(currentPromoRules || []) },
 
-    // Telegram & Rates
-    { key: 'Telegram_Token', value: document.getElementById('set_tg_token').value.trim() },
-    { key: 'Telegram_ChatID', value: document.getElementById('set_tg_chatid').value.trim() },
+    // Telegram Settings (រក្សាទុកទាំង ២ Group ត្រឹមត្រូវ ១០០%)
+    { key: 'Telegram_Token', value: tokenVal },
+    { key: 'Telegram_ChatID', value: chatIdVal },
+    { key: 'Telegram_Driver_ChatID', value: driverChatIdVal },
     { key: 'Telegram_Alert_Status', value: currentTelegramAlertStatus },
-    { key: 'Exchange_Rate_USD', value: document.getElementById('set_rate_usd').value || "4100" },
-    { key: 'Exchange_Rate_THB', value: document.getElementById('set_rate_thb').value || "115" }
+
+    // Exchange Rates
+    { key: 'Exchange_Rate_USD', value: document.getElementById('set_rate_usd') ? document.getElementById('set_rate_usd').value : "4100" },
+    { key: 'Exchange_Rate_THB', value: document.getElementById('set_rate_thb') ? document.getElementById('set_rate_thb').value : "115" }
   ];
 
   try {
-    await supabaseClient.from('settings').upsert(rows);
-    showToast("បានរក្សាទុកការកំណត់ Promotion & ដឹកជញ្ជូនជោគជ័យ!", "success");
+    const { error } = await supabaseClient.from('settings').upsert(rows);
+    if (error) throw error;
+
+    showToast("បានរក្សាទុកការកំណត់ Telegram & ដឹកជញ្ជូនជោគជ័យ!", "success");
     await loadSettingsAndTelegram();
   } catch(err) {
     showToast("កំហុស៖ " + err.message, "error");
@@ -1964,7 +1883,7 @@ function testTelegramAlertNow() {
     showToast("⚠️ ប្រព័ន្ធ Telegram កំពុងបិទ (OFF)! សូមចុចបើក (ON) ជាមុនសិន", "warning");
     return;
   }
-  sendTelegramAlert("🔔 <b>[KC WATER - តេស្តប្រព័ន្ធ]</b>\n\nTelegram Bot បានតភ្ជាប់ជាមួយប្រព័ន្ធ Vercel + Supabase ជោគជ័យ ១០០% ហើយ!\n🕒 ម៉ោង៖ " + new Date().toLocaleTimeString('km-KH'));
+  sendTelegramAlert("🔔 <b>[KC WATER - តេស្តប្រព័ន្ធ Telegram]</b>\n\nTelegram Bot បានតភ្ជាប់ជោគជ័យ ១០០%!\n• 🏢 Group ថៅកែ៖ ទទួលដំណឹងលក់ និងដកទឹក\n• 🛵 Group អ្នកដឹក៖ ទទួលបេសកកម្មដឹកទឹក\n🕒 ម៉ោង៖ " + new Date().toLocaleTimeString('km-KH'));
   showToast("បានផ្ញើសារតេស្តទៅ Telegram!", "success");
 }
 
