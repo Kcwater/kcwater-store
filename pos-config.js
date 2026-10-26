@@ -261,7 +261,7 @@ async function loadSettingsAndTelegram() {
   }
 }
 
-// 📲 មុខងារផ្ញើសារដំណឹង Telegram (មានប្រព័ន្ធប្រាប់មូលហេតុ Error ច្បាស់ៗ)
+// 📲 មុខងារផ្ញើសារដំណឹង Telegram (ស្គាល់ Supergroup និងចាប់ Chat ID ថ្មីអូតូ ១០០%)
 async function sendTelegramAlert(message, customChatId) {
   if (!telegramConfig.token || telegramConfig.status === 'OFF') return;
   var target = customChatId || telegramConfig.chatId;
@@ -280,6 +280,26 @@ async function sendTelegramAlert(message, customChatId) {
 
     var resData = await response.json();
     if (!resData.ok) {
+      // 🌟 បើ Telegram ប្រាប់ថា Group បាន Upgrade ទៅ Supergroup ➔ ចាប់យកលេខ ID ថ្មីអូតូភ្លាម!
+      if (resData.parameters && resData.parameters.migrate_to_chat_id) {
+        var newChatId = String(resData.parameters.migrate_to_chat_id);
+        
+        // បំពេញលេខ ID ថ្មីចូលប្រអប់អូតូ
+        var driverInp = document.getElementById('set_tg_driver_chatid');
+        if (driverInp) {
+          driverInp.value = newChatId;
+          telegramConfig.driverChatId = newChatId;
+          // រក្សាទុកចូល Supabase អូតូភ្លាម
+          if (supabaseClient) {
+            supabaseClient.from('settings').upsert([{ key: 'Telegram_Driver_ChatID', value: newChatId }]);
+          }
+        }
+        
+        showToast("💡 បានរកឃើញ Chat ID ថ្មី៖ " + newChatId, "info");
+        // ផ្ញើសារម្តងទៀតដោយប្រើលេខ ID ថ្មីភ្លាមៗ
+        return sendTelegramAlert(message, newChatId);
+      }
+
       console.warn("Telegram Error:", resData.description);
       showToast("Telegram Error (" + target + "): " + resData.description, "error");
     }
@@ -287,7 +307,6 @@ async function sendTelegramAlert(message, customChatId) {
     console.error("Telegram alert error:", e);
   }
 }
-
 // 📦 ៧. មុខងារទាញយកទិន្នន័យដំបូង (ទំនិញ, អតិថិជន និងតម្លៃពិសេស) ពី SUPABASE
 async function fetchInitialPOSData() {
   try {
