@@ -1894,7 +1894,7 @@ async function testTelegramAlertNow() {
     return;
   }
 
-  var timeKhNow = new Date().toLocaleTimeString('km-KH', { 
+  var timeKhNow = new Date().toLocaleString('km-KH', { 
     timeZone: 'Asia/Phnom_Penh', 
     dateStyle: 'short', 
     timeStyle: 'short' 
