@@ -45,7 +45,7 @@ function renderStockModule() {
           '</select>' +
         '</div>' +
 
-        '<div id="cSec" style="display:none">' +
+        '<div id="cSec" style="display:block">' +
           '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">ថ្លៃដើមទិញចូល (Cost)</label>' +
           '<input type="number" id="pCo" placeholder="ថ្លៃដើម (ឧ៖ ៤,០០០)" class="border p-2.5 rounded-xl font-bold w-full text-xs outline-none focus:border-green-600">' +
         '</div>' +
