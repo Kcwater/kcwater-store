@@ -72,10 +72,10 @@ async function checkPendingOnlineOrdersBadge() {
     lastKnownPendingOrderCount = c;
   } catch(e) {}
 }
-// ⚡ REALTIME LISTENER (ស្តាប់ការកុម្ម៉ង់ផ្ទាល់ពី SUPABASE - ការពារកុំឱ្យរោទ៍ត្រួតគ្នា)
+
+// ⚡ REALTIME LISTENER (មានរំញ័រទូរស័ព្ទ Vibration & សំឡេងរោទ៍ ដាស់តឿនអ្នកដឹក)
 function initOrdersRealtimeListener() {
   try {
-    // សម្អាត Channel ចាស់ចេញសិន ការពារកុំឱ្យបន្លឺសំឡេងរោទ៍ ២ ដង
     if (ordersRealtimeChannel) {
       supabaseClient.removeChannel(ordersRealtimeChannel);
       ordersRealtimeChannel = null;
@@ -84,24 +84,26 @@ function initOrdersRealtimeListener() {
     ordersRealtimeChannel = supabaseClient
       .channel('public:orders')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, function(payload) {
-        // ១. សម្រាប់ Admin និង Seller
         checkPendingOnlineOrdersBadge();
         var modal = document.getElementById('onlineOrdersAdminModal');
         if (modal && !modal.classList.contains('hidden')) {
           openOnlineOrdersModal();
         }
 
-        // 🛵 ២. សម្រាប់អ្នកដឹកជញ្ជូនរោងចក្រ (Company Driver)
+        // 🛵 សម្រាប់អ្នកដឹកជញ្ជូនរោងចក្រ (Company Driver)
         if (currentUser && currentUser.type === 'CompanyDriver') {
           var driverContainer = document.getElementById('driverOrdersContainer');
           if (driverContainer) {
-            renderCompanyDeliveriesModule();
+            renderCompanyDeliveriesModule(true); // Silent update រលូន មិនកន្ត្រាក់
           }
 
-          // បើ Admin ចាត់ចែងការងារមកឱ្យអ្នកដឹកនេះ ឱ្យបន្លឺសំឡេងរោទ៍ & សារដំណឹងភ្លាម
           var newRecord = payload.new || {};
           if (newRecord.status === 'Assigned' && newRecord.driver_name === currentUser.fullName) {
             playOrderChime();
+            // 📳 ញ័រទូរស័ព្ទដាស់តឿនអ្នកដឹកភ្លាមៗ
+            if (navigator.vibrate) {
+              navigator.vibrate([400, 200, 400, 200, 600]);
+            }
             showToast("🛵 [ការងារថ្មី] Admin បានចាត់ចែងការដឹកទឹកថ្មីឱ្យអ្នក!", "success");
           }
         }
@@ -109,6 +111,18 @@ function initOrdersRealtimeListener() {
       .subscribe();
   } catch(e) {}
 }
+
+// 🔄 Polling Auto-Sync ស្ងាត់ៗរៀងរាល់ ១៥ វិនាទីម្តង
+setInterval(function() {
+  checkPendingOnlineOrdersBadge();
+  if (currentUser && currentUser.type === 'CompanyDriver') {
+    var driverContainer = document.getElementById('driverOrdersContainer');
+    if (driverContainer) {
+      renderCompanyDeliveriesModule(true); // Silent update!
+    }
+  }
+}, 15000);
+
 // ==========================================
 // 📦 ២. ផ្ទាំង POPUP ពិនិត្យការកុម្ម៉ង់របស់ ADMIN
 // ==========================================
@@ -372,7 +386,7 @@ function closeOnlineOrdersModal() {
   checkPendingOnlineOrdersBadge();
 }
 
-// 🚚 មុខងារចាត់ចែងអ្នកដឹក (បាញ់ព័ត៌មានលម្អិត ទឹកប្រាក់ & ផែនទី Google Maps ទៅ Telegram អូតូ)
+// 🚚 មុខងារចាត់ចែងអ្នកដឹក (មានប្រព័ន្ធព្រមានការពារ Admin កុំឱ្យច្រឡំដៃដូរអ្នកដឹក)
 async function assignDriverToOnlineOrder(orderId, custName) {
   var sel = document.getElementById('driver_sel_' + orderId);
   var driverName = sel ? sel.value.trim() : "";
@@ -386,14 +400,25 @@ async function assignDriverToOnlineOrder(orderId, custName) {
   var driverPhone = selectedOpt ? selectedOpt.getAttribute('data-phone') : '';
 
   try {
-    // ១. ទាញព័ត៌មានកុម្ម៉ង់លម្អិតពី Supabase
+    // ១. ទាញព័ត៌មានកុម្ម៉ង់ចាស់មកឆែកជាមុនសិន
     const { data: orderInfo } = await supabaseClient
       .from('orders')
       .select('*')
       .eq('order_id', orderId)
       .maybeSingle();
 
-    // ២. Update ស្ថានភាពទៅជា Assigned ក្នុង Supabase
+    // ⚠️ បើការកុម្ម៉ង់នេះបានចាត់ចែងឱ្យអ្នកដឹកផ្សេងរួចហើយ ចេញផ្ទាំងព្រមានសួរ Admin សិន!
+    if (orderInfo && orderInfo.driver_name && orderInfo.driver_name.trim() !== "" && orderInfo.driver_name.trim() !== driverName) {
+      var okChange = await kcConfirm({
+        title: "ប្តូរអ្នកដឹកជញ្ជូន",
+        message: "ការកុម្ម៉ង់នេះបានចាត់ចែងឱ្យ [" + orderInfo.driver_name + "] រួចហើយ! តើអ្នកពិតជាចង់ដកចេញ ឬប្តូរទៅឱ្យ [" + driverName + "] វិញមែនទេ?",
+        type: "warning",
+        confirmText: "យល់ព្រមប្តូរអ្នកដឹក"
+      });
+      if (!okChange) return;
+    }
+
+    // ២. Update ទៅក្នុង Supabase
     const { error } = await supabaseClient
       .from('orders')
       .update({
@@ -408,7 +433,7 @@ async function assignDriverToOnlineOrder(orderId, custName) {
     showToast("បានចាត់ចែងទៅឱ្យ " + driverName + " ជោគជ័យ!", "success");
     openOnlineOrdersModal();
 
-    // ៣. បាញ់សារ Telegram Alert ពេញលេញ (មានលេខទូរស័ព្ទ, មុខទំនិញ, តម្លៃ & ផែនទីនាំផ្លូវ)
+    // ៣. បាញ់សារ Telegram ជូនដំណឹងដល់អ្នកដឹកភ្លាមៗ (មានព័ត៌មានដឹកច្បាស់លាស់ គ្មានលេចធ្លាយលុយកាក់រោងចក្រឡើយ)
     try {
       var phoneText = orderInfo && orderInfo.phone ? orderInfo.phone : '-';
       var itemsText = orderInfo && orderInfo.items ? orderInfo.items : '-';
@@ -427,25 +452,28 @@ async function assignDriverToOnlineOrder(orderId, custName) {
         }
       }
 
-      var tgMsg = "🚚 <b>[KC WATER - បានចាត់ចែងអ្នកដឹកជញ្ជូនរួចរាល់]</b>\n\n" +
-                  "🛵 <b>អ្នកដឹក៖</b> " + driverName + (driverPhone ? " (📞 " + driverPhone + ")" : "") + "\n" +
+      var tgHeader = (orderInfo && orderInfo.driver_name && orderInfo.driver_name !== driverName) ? 
+        "⚠️ <b>[KC WATER - Admin បានប្តូរអ្នកដឹកជញ្ជូនថ្មី]</b>" : 
+        "🚚 <b>[KC WATER - បេសកកម្មដឹកទឹកថ្មី]</b>";
+
+      var tgMsg = tgHeader + "\n\n" +
+                  "🛵 <b>អ្នកដឹកជញ្ជូន៖</b> <b>" + driverName + "</b>" + (driverPhone ? " (📞 " + driverPhone + ")" : "") + "\n" +
                   "🆔 <b>កូដកុម្ម៉ង់៖</b> <code>" + orderId + "</code>\n" +
                   "👤 <b>អតិថិជន៖</b> " + custName + " (📞 " + phoneText + ")\n" +
-                  "📦 <b>ទំនិញ៖</b> " + itemsText + "\n" +
+                  "📦 <b>ទំនិញត្រូវដឹក៖</b> " + itemsText + "\n" +
                   "💰 <b>ទឹកប្រាក់ត្រូវប្រមូល៖</b> <b>៛ " + totalText + "</b> (" + payText + ")\n" +
                   mapLine +
-                  (orderInfo && orderInfo.address ? "📝 <b>ចំណាំទីតាំង៖</b> " + orderInfo.address + "\n" : "") +
+                  (orderInfo && orderInfo.address ? "📝 <b>ចំណាំ៖</b> " + orderInfo.address + "\n" : "") +
                   "🕒 <b>ម៉ោងចាត់ចែង៖</b> " + new Date().toLocaleTimeString('km-KH');
 
       sendTelegramAlert(tgMsg);
-    } catch(tgErr) {
-      console.warn("Telegram alert error:", tgErr);
-    }
+    } catch(tgErr) {}
 
   } catch(err) {
     showToast("កំហុសចាត់ចែង៖ " + err.message, "error");
   }
 }
+
 async function cancelOnlineOrder(orderId, custName) {
   // 🌟 ប្រើ Pop-up ថ្មីរបស់ KC POS ពណ៌ក្រហមច្បាស់ៗ
   var ok = await kcConfirm({
@@ -844,42 +872,42 @@ function openDriverDirectQr(amount, custName) {
   }
 }
 
-// 🚚 មុខងារបង្ហាញបេសកកម្មដឹកទឹករបស់អ្នកដឹកជញ្ជូនរោងចក្រ (ប្រើម៉ោងកម្ពុជា UTC+7 ត្រឹមត្រូវ ១០០%)
-async function renderCompanyDeliveriesModule() {
+// 🚚 មុខងារបង្ហាញបេសកកម្មដឹកទឹករបស់អ្នកដឹកជញ្ជូនរោងចក្រ (Refresh ស្ងាត់ៗ មិនលោតកន្ត្រាក់ឡើយ)
+async function renderCompanyDeliveriesModule(isSilentRefresh) {
   var area = document.getElementById('contentArea');
   if (!area) return;
 
   var driverName = (currentUser && currentUser.fullName) ? currentUser.fullName : '';
+  var existingContainer = document.getElementById('driverOrdersContainer');
 
-  area.innerHTML = '<div class="max-w-2xl mx-auto space-y-3.5">' +
-    '<div class="flex justify-between items-center bg-white p-4 rounded-2xl border shadow-sm">' +
-      '<div>' +
-        '<h2 class="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">' +
-          '<i class="fas fa-motorcycle text-emerald-600"></i>' +
-          '<span>បេសកកម្មដឹកទឹករបស់ខ្ញុំថ្ងៃនេះ</span>' +
-        '</h2>' +
-        '<p class="text-[11px] text-slate-500 mt-0.5">អ្នកដឹកជញ្ជូន៖ <b class="text-emerald-800">' + driverName + '</b></p>' +
+  // ✅ បើជាការ Refresh ស្ងាត់ៗ (Silent) គឺមិនបាច់ជម្រះផ្ទាំង ឬចេញរូបវិលៗឡើយ (មិនលោតកន្ត្រាក់)
+  if (!existingContainer || !isSilentRefresh) {
+    area.innerHTML = '<div class="max-w-2xl mx-auto space-y-3.5">' +
+      '<div class="flex justify-between items-center bg-white p-4 rounded-2xl border shadow-sm">' +
+        '<div>' +
+          '<h2 class="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">' +
+            '<i class="fas fa-motorcycle text-emerald-600"></i>' +
+            '<span>បេសកកម្មដឹកទឹករបស់ខ្ញុំថ្ងៃនេះ</span>' +
+          '</h2>' +
+          '<p class="text-[11px] text-slate-500 mt-0.5">អ្នកដឹកជញ្ជូន៖ <b class="text-emerald-800">' + driverName + '</b></p>' +
+        '</div>' +
+        '<button onclick="renderCompanyDeliveriesModule(false)" class="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-xl text-xs font-bold border border-emerald-200 active:scale-95 transition flex items-center gap-1.5 shadow-2xs">' +
+          '<i class="fas fa-sync-alt"></i> Refresh' +
+        '</button>' +
       '</div>' +
-      '<button onclick="renderCompanyDeliveriesModule()" class="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-xl text-xs font-bold border border-emerald-200 active:scale-95 transition flex items-center gap-1.5 shadow-2xs">' +
-        '<i class="fas fa-sync-alt"></i> Refresh' +
-      '</button>' +
-    '</div>' +
-    
-    // ប្រអប់សង្ខេបលុយ និងជើងដឹកថ្ងៃនេះ
-    '<div id="driverDailySummaryBox" class="grid grid-cols-3 gap-2 text-center text-xs"></div>' +
-
-    '<div id="driverOrdersContainer" class="space-y-3">' +
-      '<div class="text-center py-10 text-slate-400 italic text-xs">' +
-        '<i class="fas fa-spinner fa-spin mr-1.5 text-emerald-600 text-base"></i> កំពុងទាញយកការងារដឹកជញ្ជូន...' +
+      '<div id="driverDailySummaryBox" class="grid grid-cols-3 gap-2 text-center text-xs"></div>' +
+      '<div id="driverOrdersContainer" class="space-y-3">' +
+        '<div class="text-center py-10 text-slate-400 italic text-xs">' +
+          '<i class="fas fa-spinner fa-spin mr-1.5 text-emerald-600 text-base"></i> កំពុងទាញយកការងារដឹកជញ្ជូន...' +
+        '</div>' +
       '</div>' +
-    '</div>' +
-  '</div>';
+    '</div>';
+  }
 
   var container = document.getElementById('driverOrdersContainer');
   var summaryBox = document.getElementById('driverDailySummaryBox');
 
   try {
-    // 🇰🇭 ប្រើប្រព័ន្ធម៉ោងកម្ពុជា UTC+7
     var todayStr = getCambodiaToday();
     var todayQueryStart = todayStr + 'T00:00:00+07:00';
 
@@ -888,17 +916,17 @@ async function renderCompanyDeliveriesModule() {
       .from('orders')
       .select('*')
       .eq('status', 'Assigned')
-      .eq('driver_name', driverName)
+      .ilike('driver_name', driverName.trim())
       .order('created_at', { ascending: false });
 
     if (error) throw error;
 
-    // ២. ទាញការងារដែលបានដឹកជោគជ័យថ្ងៃនេះ (Delivered Today) គិតតាមម៉ោងកម្ពុជា
+    // ២. ទាញការងារដែលបានដឹកជោគជ័យថ្ងៃនេះ
     const { data: deliveredToday } = await supabaseClient
       .from('orders')
       .select('*')
       .eq('status', 'Delivered')
-      .eq('driver_name', driverName)
+      .ilike('driver_name', driverName.trim())
       .gte('created_at', todayQueryStart);
 
     var deliveredCount = 0;
@@ -910,11 +938,8 @@ async function renderCompanyDeliveriesModule() {
         deliveredCount++;
         var amt = parseFloat(o.total || 0);
         var isABA = String(o.payment_method || '').indexOf('ABA') !== -1;
-        if (isABA) {
-          abaCollected += amt;
-        } else {
-          cashToHandover += amt;
-        }
+        if (isABA) abaCollected += amt;
+        else cashToHandover += amt;
       }
     });
 
@@ -935,13 +960,15 @@ async function renderCompanyDeliveriesModule() {
     }
 
     if (!list || list.length === 0) {
-      container.innerHTML = '<div class="p-8 text-center bg-white rounded-3xl border border-slate-200 space-y-2">' +
-        '<div class="w-14 h-14 mx-auto rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-2xl shadow-inner">' +
-          '<i class="fas fa-circle-check"></i>' +
-        '</div>' +
-        '<b class="text-slate-800 text-sm block">គ្មានការងារដឹកទឹកដែលនៅសល់ឡើយ!</b>' +
-        '<p class="text-xs text-slate-400">រាល់ការកុម្ម៉ង់ដែល Admin ចាត់ចែងឱ្យអ្នក នឹងបង្ហាញនៅទីនេះភ្លាមៗ។</p>' +
-      '</div>';
+      if (container) {
+        container.innerHTML = '<div class="p-8 text-center bg-white rounded-3xl border border-slate-200 space-y-2">' +
+          '<div class="w-14 h-14 mx-auto rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-2xl shadow-inner">' +
+            '<i class="fas fa-circle-check"></i>' +
+          '</div>' +
+          '<b class="text-slate-800 text-sm block">គ្មានការងារដឹកទឹកដែលនៅសល់ឡើយ!</b>' +
+          '<p class="text-xs text-slate-400">រាល់ការកុម្ម៉ង់ដែល Admin ចាត់ចែងឱ្យអ្នក នឹងបង្ហាញនៅទីនេះភ្លាមៗ។</p>' +
+        '</div>';
+      }
       return;
     }
 
@@ -950,7 +977,6 @@ async function renderCompanyDeliveriesModule() {
       var cleanPhone = String(task.phone || '').replace(/[^0-9]/g, '');
       var safeName = String(task.customer_name || '').replace(/'/g, "\\'");
       var mapTarget = task.location_url || task.address || '';
-      // 🇰🇭 ម៉ោងកម្ពុជា
       var timeStr = new Date(task.created_at).toLocaleString('km-KH', { 
         timeZone: 'Asia/Phnom_Penh', 
         dateStyle: 'short', 
@@ -989,10 +1015,10 @@ async function renderCompanyDeliveriesModule() {
             '<span class="text-slate-400 font-bold whitespace-nowrap">🛢️ សំបកធុង៖</span>' +
             '<span class="font-bold text-emerald-700">' + (task.barrel_swap || 'មានសំបកដូរ') + '</span>' +
           '</div>' +
-          (task.address ? 
+          (task.location_url ? 
           '<div class="flex items-start gap-1.5 pt-0.5">' +
             '<span class="text-slate-400 font-bold whitespace-nowrap">📍 ទីតាំង & ចំណាំ៖</span>' +
-            '<span class="text-slate-800 font-bold text-[11px] leading-snug">' + task.address + '</span>' +
+            '<span class="text-slate-800 font-bold text-[11px] leading-snug">' + task.location_url + '</span>' +
           '</div>' : '') +
         '</div>' +
 
@@ -1006,11 +1032,6 @@ async function renderCompanyDeliveriesModule() {
           '<a href="' + tgChatLink + '" target="_blank" class="py-2 px-2.5 bg-sky-50 hover:bg-sky-100 text-sky-900 rounded-xl font-bold border border-sky-300 shadow-2xs flex items-center justify-center gap-1 active:scale-95 transition" style="text-decoration:none;">' +
             '<i class="fab fa-telegram text-sky-600"></i> Telegram' +
           '</a>' : '') +
-          
-          (cleanPhone ? 
-          '<a href="' + waChatLink + '" target="_blank" class="py-2 px-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 rounded-xl font-bold border border-emerald-300 shadow-2xs flex items-center justify-center gap-1 active:scale-95 transition" style="text-decoration:none;">' +
-            '<i class="fab fa-whatsapp text-emerald-600"></i> WhatsApp' +
-          '</a>' : '') +
 
           (mapTarget ? 
           '<button type="button" onclick="openOrderMap(\'' + mapTarget.replace(/'/g, "\\'") + '\')" class="py-2 px-2.5 bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-xl font-bold border border-blue-200 shadow-2xs flex items-center justify-center gap-1 active:scale-95 transition">' +
@@ -1018,27 +1039,7 @@ async function renderCompanyDeliveriesModule() {
           '</button>' : '') +
 
           (task.photo_url ? 
-          '<button type="button" onclick="viewOrderHousePhotoById(\'' + task.order_id + '\')" class="py-2 px-2.5 bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-xl font-bold border border-amber-300 shadow-2xs flex items-center justify-center gap-1 active:scale-95 transition">' +
-            '<i class="fas fa-camera text-amber-600"></i> រូបមុខផ្ទះ' +
-          '</button>' : '') +
-
-          '<button type="button" onclick="openDriverDirectQr(' + (task.total || 0) + ', \'' + safeName + '\')" class="col-span-2 sm:col-span-1 py-2 px-2.5 bg-red-50 hover:bg-red-100 text-red-700 rounded-xl font-black border border-red-200 shadow-2xs flex items-center justify-center gap-1 active:scale-95 transition">' +
-            '<i class="fas fa-qrcode text-red-600"></i> ស្កេន ABA' +
-          '</button>' +
-        '</div>' +
-
-        '<button type="button" onclick="completeOnlineOrder(\'' + task.order_id + '\', \'' + safeName + '\', ' + (task.total || 0) + ', \'' + (task.items || '').replace(/'/g, "\\'") + '\', \'' + driverName.replace(/'/g, "\\'") + '\', \'' + (task.payment_method || 'COD').replace(/'/g, "\\'") + '\')" class="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-green-700 hover:from-emerald-700 hover:to-green-800 text-white rounded-2xl font-black text-xs sm:text-sm shadow-md flex items-center justify-center gap-2 active:scale-95 transition">' +
-          '<i class="fas fa-check-circle text-base"></i> ដឹកដល់ហើយ & ប្រមូលលុយរួច' +
-        '</button>' +
-      '</div>';
-    });
-
-    container.innerHTML = html;
-  } catch(e) {
-    container.innerHTML = '<div class="p-4 text-center text-red-500 font-bold text-xs">កំហុស៖ ' + e.message + '</div>';
-  }
-}
-
+          '<button type="button" onclick="viewOrderHousePhotoById(\'' + task.order_id + '\')"
 // ==========================================
 // 🌐 ផ្ទាំងមជ្ឈមណ្ឌលលក់ ONLINE ពេញលេញ (ONLINE HUB - 3 IN 1)
 // ==========================================
