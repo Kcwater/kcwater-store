@@ -853,7 +853,7 @@ function openOrderMap(mapUrl) {
     window.open("https://www.google.com/maps/search/?api=1&query=" + searchAddress, '_blank');
   }
 }
-// 🔄 ចាប់ផ្តើមដំណើរការស្កេន Realtime ពេលបើកទំព័រ
+// 🔄 ចាប់ផ្តើមដំណើរការស្កេន Realtime ពេលបើកទំព័រ (កូដស្តង់ដារ គ្មានស្ទួន)
 window.addEventListener('load', function() {
   var navBtn = document.getElementById('navOnlineOrdersBtn');
   if (navBtn) {
@@ -861,18 +861,8 @@ window.addEventListener('load', function() {
   }
   checkPendingOnlineOrdersBadge();
   initOrdersRealtimeListener();
-
-  // Polling រៀងរាល់ ១៥ វិនាទីម្តង (Auto-Sync ទាំង Admin និងអ្នកដឹក)
-  setInterval(function() {
-    checkPendingOnlineOrdersBadge();
-    if (currentUser && currentUser.type === 'CompanyDriver') {
-      var driverContainer = document.getElementById('driverOrdersContainer');
-      if (driverContainer) {
-        renderCompanyDeliveriesModule();
-      }
-    }
-  }, 15000);
 });
+
 // 📱 មុខងារបើក ABA QR ផ្ទាល់សម្រាប់អ្នកដឹក
 function openDriverDirectQr(amount, custName) {
   var qrModal = document.getElementById('posKhqrModal');
