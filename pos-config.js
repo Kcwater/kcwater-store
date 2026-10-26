@@ -261,13 +261,14 @@ async function loadSettingsAndTelegram() {
   }
 }
 
-// 📲 មុខងារផ្ញើសារដំណឹង Telegram (បាញ់ចូល Group ថៅកែ ឬ Group អ្នកដឹកតាមគោលដៅ)
+// 📲 មុខងារផ្ញើសារដំណឹង Telegram (មានប្រព័ន្ធប្រាប់មូលហេតុ Error ច្បាស់ៗ)
 async function sendTelegramAlert(message, customChatId) {
   if (!telegramConfig.token || telegramConfig.status === 'OFF') return;
   var target = customChatId || telegramConfig.chatId;
   if (!target) return;
+
   try {
-    await fetch("https://api.telegram.org/bot" + telegramConfig.token + "/sendMessage", {
+    var response = await fetch("https://api.telegram.org/bot" + telegramConfig.token + "/sendMessage", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ 
@@ -276,10 +277,16 @@ async function sendTelegramAlert(message, customChatId) {
         parse_mode: "HTML" 
       })
     });
+
+    var resData = await response.json();
+    if (!resData.ok) {
+      console.warn("Telegram Error:", resData.description);
+      showToast("Telegram Error (" + target + "): " + resData.description, "error");
+    }
   } catch(e) {
     console.error("Telegram alert error:", e);
   }
-}  
+}
 
 // 📦 ៧. មុខងារទាញយកទិន្នន័យដំបូង (ទំនិញ, អតិថិជន និងតម្លៃពិសេស) ពី SUPABASE
 async function fetchInitialPOSData() {
