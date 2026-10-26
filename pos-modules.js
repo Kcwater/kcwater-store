@@ -1751,9 +1751,8 @@ function renderSettingsModule() {
         '</div>' +
       '</div>' +
       '<div class="space-y-2 text-xs">' +
-        '<input type="text" id="set_tg_token" placeholder="Telegram Bot Token" class="border p-2 rounded-xl w-full font-mono">' +
-        '<div><span class="text-[9.5px] font-bold text-gray-500 block mb-0.5">🏢 Chat ID ក្រុមថៅកែ (លុយកាក់, លក់ដូរ, ចំណាយ, ស្តុក)៖</span><input type="text" id="set_tg_chatid" placeholder="Chat ID ថៅកែ (ឧ៖ -100xxxxxxxxxx)" class="border p-2 rounded-xl w-full font-mono bg-white"></div>
-<div><span class="text-[9.5px] font-black text-blue-900 block mb-0.5">🛵 Chat ID ក្រុមអ្នកដឹកជញ្ជូន (ទទួលតែការងារដឹកទឹកសុទ្ធសាធ)៖</span><input type="text" id="set_tg_driver_chatid" placeholder="Chat ID ក្រុមអ្នកដឹក (ឧ៖ -100yyyyyyyyyy)" class="border-2 border-blue-300 p-2 rounded-xl w-full font-mono bg-blue-50/50 text-blue-950"></div>' +
+        '<div><span class="text-[9.5px] font-bold text-gray-500 block mb-0.5">🏢 Chat ID ក្រុមថៅកែ (លុយកាក់, លក់ដូរ, ចំណាយ, ស្តុក)៖</span><input type="text" id="set_tg_chatid" placeholder="Chat ID ថៅកែ (ឧ៖ -100xxxxxxxxxx)" class="border p-2 rounded-xl w-full font-mono bg-white"></div>' +
+        '<div><span class="text-[9.5px] font-black text-blue-900 block mb-0.5">🛵 Chat ID ក្រុមអ្នកដឹកជញ្ជូន (ទទួលតែការងារដឹកទឹកសុទ្ធសាធ)៖</span><input type="text" id="set_tg_driver_chatid" placeholder="Chat ID ក្រុមអ្នកដឹក (ឧ៖ -100yyyyyyyyyy)" class="border-2 border-blue-300 p-2 rounded-xl w-full font-mono bg-blue-50/50 text-blue-950"></div>' +
       '</div>' +
       '<button onclick="saveSettingsToSupabase()" id="btnSaveAllSettings" class="btn-green py-3.5 text-sm font-black shadow-md flex items-center justify-center gap-2">' +
         '<i class="fas fa-floppy-disk"></i> រក្សាទុកការកំណត់ទាំងអស់ (Save All Settings)' +
