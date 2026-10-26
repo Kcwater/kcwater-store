@@ -584,19 +584,23 @@
             </label>
           </div>
 
-          <!-- ABA KHQR Image Display -->
+          <!-- ABA KHQR Image Display (មានប៊ូតុងទាញយករូបភាព) -->
           <div id="abaKhqrDisplayArea" class="hidden p-3 bg-blue-50/70 border-2 border-blue-200 rounded-2xl text-center space-y-2">
             <span class="text-[11px] font-black text-blue-900 block" id="abaInstructionText">ស្កេនទូទាត់រួចហើយ សូមចុចប៊ូតុងកុម្ម៉ង់ខាងក្រោម</span>
             <div class="p-2 bg-white rounded-xl border border-blue-200 shadow-sm max-w-[180px] mx-auto">
-              <img src="https://i.postimg.cc/DzHPhnmQ/photo-2026-09-06-20-44-57.jpg" class="w-full rounded-lg">
+              <img id="abaKhqrImgPreview" src="https://i.postimg.cc/DzHPhnmQ/photo-2026-09-06-20-44-57.jpg" class="w-full rounded-lg" alt="ABA KHQR">
             </div>
-            <div class="text-xs font-black text-blue-950">
+            
+            <!-- 📥 ប៊ូតុងទាញយករូបភាព QR ទុកស្កេនក្នុង App ABA -->
+            <button type="button" onclick="downloadAbaKhqrImage()" class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs shadow-xs active:scale-95 transition inline-flex items-center gap-1.5 mx-auto">
+              <i class="fas fa-download text-[11px]"></i> 📥 ទាញយករូប QR ទុកស្កេន
+            </button>
+
+            <div class="text-xs font-black text-blue-950 pt-1">
               <span>ទឹកប្រាក់ត្រូវបង់៖ </span>
-              <b id="khqrDueAmountText" class="text-emerald-700 text-sm">៛ 0</b>
+              <div id="khqrDueAmountText" class="text-emerald-700 text-sm mt-0.5">៛ 0</div>
             </div>
           </div>
-        </div>
-      </div>
 
       <!-- សរុបទឹកប្រាក់ & ប៊ូតុងបញ្ជាក់កុម្ម៉ង់ -->
       <div class="p-3 bg-emerald-50 rounded-2xl border border-emerald-200 flex justify-between items-center">
@@ -2138,26 +2142,52 @@ function filterCatalog(cat, btn) {
         });
       }
 
-      // 🛢️ ៣. គណនាសំបកធុង
-      var blueBarrelProd = STORE_CATALOG.find(p => (p.raw_name || '').includes('ខៀវ') && (p.raw_name || '').includes('សំបក'));
+      // 🛢️ ៣. គណនាសំបកធុង (ទាញយកតម្លៃពិតប្រាកដពីទំនិញក្នុងស្តុក STORE_CATALOG ស្វ័យប្រវត្តិ)
+      var blueBarrelProd = STORE_CATALOG.find(function(p) {
+        var n = (p.raw_name || '').toLowerCase();
+        return (n.indexOf('សំបក') !== -1 || n.indexOf('empty') !== -1) && (n.indexOf('ខៀវ') !== -1 || n.indexOf('blue') !== -1);
+      });
+      var whiteBarrelProd = STORE_CATALOG.find(function(p) {
+        var n = (p.raw_name || '').toLowerCase();
+        return (n.indexOf('សំបក') !== -1 || n.indexOf('empty') !== -1) && (n.indexOf('ស') !== -1 || n.indexOf('white') !== -1);
+      });
+
+      // 🪙 ទាញតម្លៃចេញពីស្តុកទំនិញជាក់ស្តែង (បើគ្មានក្នុងស្តុក ទើបយកតម្លៃស្តង់ដារ)
       var blueBarrelPrice = blueBarrelProd ? parseFloat(blueBarrelProd.price || 0) : 10000;
+      var whiteBarrelPrice = whiteBarrelProd ? parseFloat(whiteBarrelProd.price || 0) : 12000;
+
       var swapChecked = document.querySelector('input[name="co_swapOption"]:checked');
       var isNoSwap = swapChecked ? (swapChecked.value === 'NO') : false;
       var barrelFee = 0;
 
-      if (isNoSwap && blueBarrelsQty > 0) {
-        var bTotal = blueBarrelsQty * blueBarrelPrice;
-        barrelFee += bTotal;
-        var bTotalThb = Math.round(bTotal / rateT).toLocaleString();
-        var bTotalUsd = (bTotal / rateU).toFixed(2);
-        html += '<div class="flex justify-between items-center py-1.5 border-t border-blue-200 text-blue-950 bg-blue-50 px-2 rounded-lg mt-1">' +
-          '<span><i class="fas fa-cart-shopping mr-1 text-blue-700"></i><b>សំបកធុងខៀវថ្មី (' + blueBarrelsQty + ' x ' + Number(blueBarrelPrice).toLocaleString() + '៛)</b></span>' +
-          '<div class="text-right space-y-0.5">' +
-            '<b class="text-blue-900 font-black text-xs block leading-tight">+៛ ' + bTotal.toLocaleString() + '</b>' +
-            '<div class="text-[9px] text-amber-800 font-mono font-bold leading-tight">+฿ ' + bTotalThb + '</div>' +
-            '<div class="text-[9px] text-blue-700 font-mono font-bold leading-tight">+$ ' + bTotalUsd + '</div>' +
-          '</div>' +
-        '</div>';
+      if (isNoSwap) {
+        if (blueBarrelsQty > 0 && blueBarrelPrice > 0) {
+          var bTotal = blueBarrelsQty * blueBarrelPrice;
+          barrelFee += bTotal;
+          var bTotalThb = Math.round(bTotal / rateT).toLocaleString();
+          var bTotalUsd = (bTotal / rateU).toFixed(2);
+          html += '<div class="flex justify-between items-center py-1.5 border-t border-blue-200 text-blue-950 bg-blue-50 px-2 rounded-lg mt-1">' +
+            '<span><i class="fas fa-cart-shopping mr-1 text-blue-700"></i><b>សំបកធុងខៀវថ្មី (' + blueBarrelsQty + ' x ' + Number(blueBarrelPrice).toLocaleString() + '៛)</b></span>' +
+            '<div class="text-right space-y-0.5">' +
+              '<b class="text-blue-900 font-black text-xs block leading-tight">+៛ ' + bTotal.toLocaleString() + '</b>' +
+              '<div class="text-[9px] text-amber-800 font-mono font-bold leading-tight">+฿ ' + bTotalThb + ' | +$' + bTotalUsd + '</div>' +
+            '</div>' +
+          '</div>';
+        }
+
+        if (whiteBarrelsQty > 0 && whiteBarrelPrice > 0) {
+          var wTotal = whiteBarrelsQty * whiteBarrelPrice;
+          barrelFee += wTotal;
+          var wTotalThb = Math.round(wTotal / rateT).toLocaleString();
+          var wTotalUsd = (wTotal / rateU).toFixed(2);
+          html += '<div class="flex justify-between items-center py-1.5 border-t border-amber-200 text-amber-950 bg-amber-50 px-2 rounded-lg mt-1">' +
+            '<span><i class="fas fa-cart-shopping mr-1 text-amber-800"></i><b>សំបកធុងសថ្មី (' + whiteBarrelsQty + ' x ' + Number(whiteBarrelPrice).toLocaleString() + '៛)</b></span>' +
+            '<div class="text-right space-y-0.5">' +
+              '<b class="text-amber-950 font-black text-xs block leading-tight">+៛ ' + wTotal.toLocaleString() + '</b>' +
+              '<div class="text-[9px] text-amber-800 font-mono font-bold leading-tight">+฿ ' + wTotalThb + ' | +$' + wTotalUsd + '</div>' +
+            '</div>' +
+          '</div>';
+        }
       }
 
       // 🛵 ៤. គណនាថ្លៃដឹកជញ្ជូន (ទាញយកតាម Settings ជាក់ស្តែង)
@@ -2565,188 +2595,198 @@ function filterCatalog(cat, btn) {
      }
    }
 
-   // 📡 តាមដានស្ថានភាពការកុម្ម៉ង់ផ្ទាល់ (Live Tracking)
-   async function checkActiveOrderLiveStatus() {
-     var orderId = currentTrackingOrderId || localStorage.getItem('kc_active_order_id');
-     var cardBox = document.getElementById('activeOrderCardBox');
-     if (!orderId || !cardBox) {
-       if (cardBox) cardBox.classList.add('hidden');
-       return;
-     }
+   // 📡 តាមដានស្ថានភាពការកុម្ម៉ង់ផ្ទាល់ (Realtime Sync ០.១ វិនាទីពេលអ្នកដឹកចុច "ដឹកដល់")
+    var liveOrderRealtimeChannel = null;
 
-     var refreshIcon = document.getElementById('trackingRefreshIcon');
-     if (refreshIcon) refreshIcon.classList.add('fa-spin');
-     var d = DICT[currentLang] || DICT.km;
+    function subscribeOrderRealtime(orderId) {
+      if (!orderId || !supabaseClient) return;
+      try {
+        if (liveOrderRealtimeChannel) {
+          supabaseClient.removeChannel(liveOrderRealtimeChannel);
+          liveOrderRealtimeChannel = null;
+        }
+        liveOrderRealtimeChannel = supabaseClient
+          .channel('order_live_' + orderId)
+          .on('postgres_changes', {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'orders',
+            filter: 'order_id=eq.' + orderId
+          }, function(payload) {
+            checkActiveOrderLiveStatus(); // ទទួលដំណឹងពីអ្នកដឹកភ្លាមៗ មិនបាច់រង់ចាំ 10s ឡើយ!
+          })
+          .subscribe();
+      } catch(e) {}
+    }
 
-     try {
-       const { data: info } = await supabaseClient
-         .from('orders')
-         .select('*')
-         .eq('order_id', orderId)
-         .maybeSingle();
+    async function checkActiveOrderLiveStatus() {
+      var orderId = currentTrackingOrderId || localStorage.getItem('kc_active_order_id');
+      var cardBox = document.getElementById('activeOrderCardBox');
+      if (!orderId || !cardBox) {
+        if (cardBox) cardBox.classList.add('hidden');
+        return;
+      }
 
-       if (refreshIcon) refreshIcon.classList.remove('fa-spin');
+      // ភ្ជាប់ Realtime Listener ជាមួយការកុម្ម៉ង់នេះ
+      subscribeOrderRealtime(orderId);
 
-       // បើការកុម្ម៉ង់ត្រូវបាន Cancel
-       if (!info || info.status === "Cancelled") {
-         cardBox.classList.add('hidden');
-         clearInterval(trackingPollTimer);
-         localStorage.removeItem('kc_active_order_id');
-         return;
-       }
+      var refreshIcon = document.getElementById('trackingRefreshIcon');
+      if (refreshIcon) refreshIcon.classList.add('fa-spin');
+      var d = DICT[currentLang] || DICT.km;
 
-       // 🎉 បើទឹកដឹកដល់ហើយ បង្ហាញផ្ទាំងអបអរសាទរ
-       if (info.status === "Delivered") {
-         clearInterval(trackingPollTimer);
-         try {
-           if (typeof confetti === 'function') confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
-         } catch(e) {}
+      try {
+        const { data: info } = await supabaseClient
+          .from('orders')
+          .select('*')
+          .eq('order_id', orderId)
+          .maybeSingle();
 
-         cardBox.innerHTML = '<div class="p-4 rounded-3xl bg-gradient-to-br from-emerald-600 to-green-700 text-white shadow-xl space-y-3 animate-in zoom-in-95 duration-300 border-2 border-emerald-300 text-center">' +
-           '<div class="w-14 h-14 mx-auto rounded-full bg-white text-emerald-600 flex items-center justify-center text-2xl shadow-md animate-bounce">' +
-             '<i class="fas fa-circle-check"></i>' +
-           '</div>' +
-           '<div>' +
-             '<h3 class="text-base font-black tracking-tight leading-snug">🎉 ដឹកជញ្ជូនដល់ផ្ទះរួចរាល់!</h3>' +
-             '<p class="text-xs text-emerald-100 mt-1 font-medium">ទឹកពិសាបរិសុទ្ធ ខេ ស៊ី ត្រូវបានប្រគល់ជូនរួចរាល់។ សូមអរគុណចំពោះការគាំទ្រ!</p>' +
-           '</div>' +
-           '<div class="p-2.5 bg-emerald-800/60 rounded-2xl border border-emerald-400/40 text-xs flex justify-between items-center text-emerald-50">' +
-             '<span>អ្នកដឹកជញ្ជូន៖ <b>' + (info.driver_name || 'KC WATER') + '</b></span>' +
-             '<span class="font-black text-amber-300 text-sm">៛ ' + Number(info.total || 0).toLocaleString() + '</span>' +
-           '</div>' +
-           '<div class="grid grid-cols-2 gap-2 pt-1">' +
-             '<button type="button" onclick="dismissDeliveredCard(false)" class="py-2.5 bg-white hover:bg-emerald-50 text-emerald-950 font-black text-xs rounded-xl shadow active:scale-95 transition">យល់ព្រម (បិទ)</button>' +
-             '<button type="button" onclick="dismissDeliveredCard(true)" class="py-2.5 bg-emerald-900/80 hover:bg-emerald-900 text-white font-black text-xs rounded-xl border border-emerald-300 shadow active:scale-95 transition flex items-center justify-center gap-1"><i class="fas fa-rotate-right text-[10px]"></i> កុម្ម៉ង់ម្តងទៀត</button>' +
-           '</div>' +
-         '</div>';
+        if (refreshIcon) refreshIcon.classList.remove('fa-spin');
 
-         cardBox.classList.remove('hidden');
-         return;
-       }
+        if (!info || info.status === "Cancelled") {
+          cardBox.classList.add('hidden');
+          clearInterval(trackingPollTimer);
+          localStorage.removeItem('kc_active_order_id');
+          return;
+        }
 
-       var isPending = (info.status === "Pending");
-       var isAssigned = (info.status === "Assigned");
+        // 🎉 បើអ្នកដឹកចុច "ដឹកដល់" ភ្លាម ផ្ទាំងអបអរសាទរលោតឡើងភ្លាមៗ!
+        if (info.status === "Delivered") {
+          clearInterval(trackingPollTimer);
+          try {
+            if (typeof confetti === 'function') confetti({ particleCount: 130, spread: 80, origin: { y: 0.6 } });
+          } catch(e) {}
 
-       var progressPercent = isPending ? 38 : 75;
-       var motoLeft = isPending ? "35%" : "72%";
+          cardBox.innerHTML = '<div class="p-4 rounded-3xl bg-gradient-to-br from-emerald-600 to-green-700 text-white shadow-xl space-y-3 animate-in zoom-in-95 duration-300 border-2 border-emerald-300 text-center">' +
+            '<div class="w-14 h-14 mx-auto rounded-full bg-white text-emerald-600 flex items-center justify-center text-2xl shadow-md animate-bounce">' +
+              '<i class="fas fa-circle-check"></i>' +
+            '</div>' +
+            '<div>' +
+              '<h3 class="text-base font-black tracking-tight leading-snug">🎉 ដឹកជញ្ជូនដល់ផ្ទះរួចរាល់!</h3>' +
+              '<p class="text-xs text-emerald-100 mt-1 font-medium">ទឹកពិសាបរិសុទ្ធ ខេ ស៊ី ត្រូវបានប្រគល់ជូនរួចរាល់។ សូមអរគុណចំពោះការគាំទ្រ!</p>' +
+            '</div>' +
+            '<div class="p-2.5 bg-emerald-800/60 rounded-2xl border border-emerald-400/40 text-xs flex justify-between items-center text-emerald-50">' +
+              '<span>អ្នកដឹកជញ្ជូន៖ <b>' + (info.driver_name || 'KC WATER') + '</b></span>' +
+              '<span class="font-black text-amber-300 text-sm">៛ ' + Number(info.total || 0).toLocaleString() + '</span>' +
+            '</div>' +
+            '<div class="grid grid-cols-2 gap-2 pt-1">' +
+              '<button type="button" onclick="dismissDeliveredCard(false)" class="py-2.5 bg-white hover:bg-emerald-50 text-emerald-950 font-black text-xs rounded-xl shadow active:scale-95 transition">យល់ព្រម (បិទ)</button>' +
+              '<button type="button" onclick="dismissDeliveredCard(true)" class="py-2.5 bg-emerald-900/80 hover:bg-emerald-900 text-white font-black text-xs rounded-xl border border-emerald-300 shadow active:scale-95 transition flex items-center justify-center gap-1"><i class="fas fa-rotate-right text-[10px]"></i> កុម្ម៉ង់ម្តងទៀត</button>' +
+            '</div>' +
+          '</div>';
 
-       var stepMap = {
-         km: { s1: "កុម្ម៉ង់", s2: "រៀបចំទឹក", s3: "ជិតដល់ហើយ", s4: "ដល់ផ្ទះ", badgePending: "⏳ រោងចក្រកំពុងរៀបចំទឹក", badgeAssigned: "🛵 អ្នកដឹកកំពុងធ្វើដំណើរ (ជិតដល់)" },
-         en: { s1: "Ordered", s2: "Preparing", s3: "On the way", s4: "Delivered", badgePending: "⏳ Preparing your water", badgeAssigned: "🛵 Courier is on the way" },
-         zh: { s1: "已下单", s2: "备水中", s3: "快到了", s4: "已送达", badgePending: "⏳ 水厂正在备水", badgeAssigned: "🛵 配送员正在赶往住处" }
-       };
-       var stepLabels = stepMap[currentLang] || stepMap.km;
+          cardBox.classList.remove('hidden');
+          return;
+        }
 
-       var statusBadge = isPending ? 
-         '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300 animate-pulse">' + stepLabels.badgePending + '</span>' : 
-         '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300 animate-pulse">' + stepLabels.badgeAssigned + '</span>';
+        var isPending = (info.status === "Pending");
+        var isAssigned = (info.status === "Assigned");
+        var progressPercent = isPending ? 38 : 75;
+        var motoLeft = isPending ? "35%" : "72%";
 
-       var deliveryTrackerHtml = '<div class="p-3 bg-gradient-to-b from-slate-50 to-emerald-50/40 rounded-2xl border border-emerald-200/80 space-y-3.5 my-2">' +
-         '<div class="flex justify-between items-center text-[11px] font-black text-slate-700">' +
-           '<span><i class="fas fa-stopwatch text-emerald-600 mr-1"></i> ' + (currentLang === 'km' ? 'រយៈពេលដឹកជញ្ជូនប៉ាន់ស្មាន' : (currentLang === 'zh' ? '预计送达时间' : 'Estimated Delivery')) + '</span>' +
-           '<span class="text-emerald-700 font-black bg-emerald-100 px-2 py-0.5 rounded-full">30 - 45 ' + (currentLang === 'km' ? 'នាទី' : (currentLang === 'zh' ? '分钟' : 'mins')) + '</span>' +
-         '</div>' +
+        var stepMap = {
+          km: { s1: "កុម្ម៉ង់", s2: "រៀបចំទឹក", s3: "ជិតដល់ហើយ", s4: "ដល់ផ្ទះ", badgePending: "⏳ រោងចក្រកំពុងរៀបចំទឹក", badgeAssigned: "🛵 អ្នកដឹកកំពុងធ្វើដំណើរ (ជិតដល់)" },
+          en: { s1: "Ordered", s2: "Preparing", s3: "On the way", s4: "Delivered", badgePending: "⏳ Preparing your water", badgeAssigned: "🛵 Courier is on the way" },
+          zh: { s1: "已下单", s2: "备水中", s3: "快到了", s4: "已送达", badgePending: "⏳ 水厂正在备水", badgeAssigned: "🛵 配送员正在赶往住处" }
+        };
+        var stepLabels = stepMap[currentLang] || stepMap.km;
 
-         '<div class="relative pt-6 pb-2 px-2">' +
-           '<div class="h-2 w-full bg-slate-200 rounded-full overflow-hidden relative">' +
-             '<div class="h-full bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 transition-all duration-1000 ease-out" style="width: ' + progressPercent + '%;"></div>' +
-           '</div>' +
+        var statusBadge = isPending ? 
+          '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300 animate-pulse">' + stepLabels.badgePending + '</span>' : 
+          '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300 animate-pulse">' + stepLabels.badgeAssigned + '</span>';
 
-           '<div class="absolute -top-1 transition-all duration-1000 ease-out transform -translate-x-1/2" style="left: ' + motoLeft + ';">' +
-             '<div class="relative flex items-center justify-center">' +
-               '<span class="absolute -top-4 text-[9px] font-black bg-slate-900 text-white px-1.5 py-0.2 rounded shadow whitespace-nowrap animate-bounce">' +
-                 (isPending ? '📦 Prep' : '🛵 ជិតដល់!') +
-               '</span>' +
-               '<div class="w-8 h-8 rounded-full bg-gradient-to-tr from-emerald-600 to-green-500 text-white shadow-lg flex items-center justify-center text-sm border-2 border-white">' +
-                 '<i class="fas fa-motorcycle animate-pulse"></i>' +
-               '</div>' +
-             '</div>' +
-           '</div>' +
+        var deliveryTrackerHtml = '<div class="p-3 bg-gradient-to-b from-slate-50 to-emerald-50/40 rounded-2xl border border-emerald-200/80 space-y-3.5 my-2">' +
+          '<div class="flex justify-between items-center text-[11px] font-black text-slate-700">' +
+            '<span><i class="fas fa-stopwatch text-emerald-600 mr-1"></i> ' + (currentLang === 'km' ? 'រយៈពេលដឹកជញ្ជូនប៉ាន់ស្មាន' : 'Estimated Delivery') + '</span>' +
+            '<span class="text-emerald-700 font-black bg-emerald-100 px-2 py-0.5 rounded-full">30 - 45 នាទី</span>' +
+          '</div>' +
+          '<div class="relative pt-6 pb-2 px-2">' +
+            '<div class="h-2 w-full bg-slate-200 rounded-full overflow-hidden relative">' +
+              '<div class="h-full bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 transition-all duration-1000 ease-out" style="width: ' + progressPercent + '%;"></div>' +
+            '</div>' +
+            '<div class="absolute -top-1 transition-all duration-1000 ease-out transform -translate-x-1/2" style="left: ' + motoLeft + ';">' +
+              '<div class="relative flex items-center justify-center">' +
+                '<span class="absolute -top-4 text-[9px] font-black bg-slate-900 text-white px-1.5 py-0.2 rounded shadow whitespace-nowrap animate-bounce">' +
+                  (isPending ? '📦 Prep' : '🛵 ជិតដល់!') +
+                '</span>' +
+                '<div class="w-8 h-8 rounded-full bg-gradient-to-tr from-emerald-600 to-green-500 text-white shadow-lg flex items-center justify-center text-sm border-2 border-white">' +
+                  '<i class="fas fa-motorcycle animate-pulse"></i>' +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+            '<div class="flex justify-between items-center mt-3 text-[10px] font-black">' +
+              '<div class="text-center text-emerald-700"><div class="w-4 h-4 mx-auto rounded-full bg-emerald-600 text-white flex items-center justify-center text-[8px] mb-1"><i class="fas fa-check"></i></div><span>' + stepLabels.s1 + '</span></div>' +
+              '<div class="text-center ' + (isPending || isAssigned ? 'text-emerald-700' : 'text-slate-400') + '"><div class="w-4 h-4 mx-auto rounded-full ' + (isPending ? 'bg-amber-500 text-white animate-ping' : 'bg-emerald-600 text-white') + ' flex items-center justify-center text-[8px] mb-1"><i class="fas fa-box"></i></div><span>' + stepLabels.s2 + '</span></div>' +
+              '<div class="text-center ' + (isAssigned ? 'text-emerald-800 font-black' : 'text-slate-400') + '"><div class="w-4 h-4 mx-auto rounded-full ' + (isAssigned ? 'bg-emerald-600 text-white animate-bounce' : 'bg-slate-300 text-slate-600') + ' flex items-center justify-center text-[8px] mb-1"><i class="fas fa-route"></i></div><span>' + stepLabels.s3 + '</span></div>' +
+              '<div class="text-center text-slate-400"><div class="w-4 h-4 mx-auto rounded-full bg-slate-200 text-slate-500 flex items-center justify-center text-[8px] mb-1"><i class="fas fa-home"></i></div><span>' + stepLabels.s4 + '</span></div>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
 
-           '<div class="flex justify-between items-center mt-3 text-[10px] font-black">' +
-             '<div class="text-center text-emerald-700">' +
-               '<div class="w-4 h-4 mx-auto rounded-full bg-emerald-600 text-white flex items-center justify-center text-[8px] mb-1"><i class="fas fa-check"></i></div>' +
-               '<span>' + stepLabels.s1 + '</span>' +
-             '</div>' +
-             '<div class="text-center ' + (isPending || isAssigned ? 'text-emerald-700' : 'text-slate-400') + '">' +
-               '<div class="w-4 h-4 mx-auto rounded-full ' + (isPending ? 'bg-amber-500 text-white animate-ping' : 'bg-emerald-600 text-white') + ' flex items-center justify-center text-[8px] mb-1">' +
-                 '<i class="fas fa-box"></i>' +
-               '</div>' +
-               '<span>' + stepLabels.s2 + '</span>' +
-             '</div>' +
-             '<div class="text-center ' + (isAssigned ? 'text-emerald-800 font-black' : 'text-slate-400') + '">' +
-               '<div class="w-4 h-4 mx-auto rounded-full ' + (isAssigned ? 'bg-emerald-600 text-white animate-bounce' : 'bg-slate-300 text-slate-600') + ' flex items-center justify-center text-[8px] mb-1">' +
-                 '<i class="fas fa-route"></i>' +
-               '</div>' +
-               '<span>' + stepLabels.s3 + '</span>' +
-             '</div>' +
-             '<div class="text-center text-slate-400">' +
-               '<div class="w-4 h-4 mx-auto rounded-full bg-slate-200 text-slate-500 flex items-center justify-center text-[8px] mb-1"><i class="fas fa-home"></i></div>' +
-               '<span>' + stepLabels.s4 + '</span>' +
-             '</div>' +
-           '</div>' +
-         '</div>' +
-       '</div>';
+        var driverInfoHtml = '';
+        if (info.driver_name && !isPending) {
+          var cleanPhone = String(info.driver_phone || '077934748').replace(/[^0-9]/g, '');
+          driverInfoHtml = '<div class="p-3 bg-white rounded-2xl border-2 border-emerald-300 space-y-2 shadow-2xs">' +
+            '<div class="flex justify-between items-center text-xs">' +
+              '<div>' +
+                '<span class="text-[10px] text-emerald-800 font-bold block">' + d.trackDriverLabel + '</span>' +
+                '<b class="text-slate-900 text-sm flex items-center gap-1.5"><i class="fas fa-helmet-safety text-emerald-600"></i>' + info.driver_name + '</b>' +
+                (info.driver_phone ? '<div class="text-[11px] text-emerald-900 font-black mt-0.5">📞 ' + info.driver_phone + '</div>' : '') +
+              '</div>' +
+              '<a href="tel:' + cleanPhone + '" class="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl font-black text-xs shadow-md flex items-center gap-1.5 active:scale-95 transition" style="text-decoration:none;">' +
+                '<i class="fas fa-phone text-xs"></i> ' + d.trackCallDriver +
+              '</a>' +
+            '</div>' +
+          '</div>';
+        }
 
-       var driverInfoHtml = '';
-       if (info.driver_name && !isPending) {
-         var cleanPhone = String(info.driver_phone || '077934748').replace(/[^0-9]/g, '');
+        var tgMsgText = encodeURIComponent("Hello KC WATER! I ordered code [" + orderId + "] Total: " + Number(info.total || 0).toLocaleString() + " KHR. Here is my payment slip:");
+        var tgSlipLink = "https://t.me/KcWater?text=" + tgMsgText;
 
-         driverInfoHtml = '<div class="p-3 bg-white rounded-2xl border-2 border-emerald-300 space-y-2 shadow-2xs">' +
-           '<div class="flex justify-between items-center text-xs">' +
-             '<div>' +
-               '<span class="text-[10px] text-emerald-800 font-bold block">' + d.trackDriverLabel + '</span>' +
-               '<b class="text-slate-900 text-sm flex items-center gap-1.5"><i class="fas fa-helmet-safety text-emerald-600"></i>' + info.driver_name + '</b>' +
-               (info.driver_phone ? '<div class="text-[11px] text-emerald-900 font-black mt-0.5">📞 ' + info.driver_phone + '</div>' : '') +
-             '</div>' +
-             '<a href="tel:' + cleanPhone + '" class="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl font-black text-xs shadow-md flex items-center gap-1.5 active:scale-95 transition" style="text-decoration:none;">' +
-               '<i class="fas fa-phone text-xs"></i> ' + d.trackCallDriver +
-             '</a>' +
-           '</div>' +
-         '</div>';
-       }
-
-       var tgMsgText = encodeURIComponent("Hello KC WATER! I ordered code [" + orderId + "] Total: " + Number(info.total || 0).toLocaleString() + " KHR. Here is my payment slip:");
-       var tgSlipLink = "https://t.me/KcWater?text=" + tgMsgText;
-
-       cardBox.innerHTML = '<div class="p-4 rounded-3xl bg-white border-2 border-emerald-400 shadow-lg space-y-2.5 animate-in zoom-in duration-200">' +
-         '<div class="flex justify-between items-center border-b border-slate-100 pb-2">' +
-           '<div>' +
-             '<div class="flex items-center gap-2">' +
-               '<b class="text-xs text-slate-900 font-black">' + d.trackTitle + '</b>' +
-               '<button type="button" onclick="checkActiveOrderLiveStatus()" class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-[10px] font-bold flex items-center gap-1 active:scale-90 transition">' +
-                 '<i id="trackingRefreshIcon" class="fas fa-rotate text-[10px]"></i> ' + d.trackRefresh +
-               '</button>' +
-             '</div>' +
-             '<div class="text-[10px] text-slate-400 font-mono mt-0.5">ID: ' + orderId + '</div>' +
-           '</div>' +
-           '<div>' + statusBadge + '</div>' +
-         '</div>' +
-         
-         deliveryTrackerHtml +
-         driverInfoHtml +
-
-         '<div class="pt-1">' +
+        cardBox.innerHTML = '<div class="p-4 rounded-3xl bg-white border-2 border-emerald-400 shadow-lg space-y-2.5 animate-in zoom-in duration-200">' +
+          '<div class="flex justify-between items-center border-b border-slate-100 pb-2">' +
+            '<div>' +
+              '<div class="flex items-center gap-2">' +
+                '<b class="text-xs text-slate-900 font-black">' + d.trackTitle + '</b>' +
+                '<button type="button" onclick="checkActiveOrderLiveStatus()" class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-[10px] font-bold flex items-center gap-1 active:scale-90 transition">' +
+                  '<i id="trackingRefreshIcon" class="fas fa-rotate text-[10px]"></i> ' + d.trackRefresh +
+                '</button>' +
+              '</div>' +
+              '<div class="text-[10px] text-slate-400 font-mono mt-0.5">ID: ' + orderId + '</div>' +
+            '</div>' +
+            '<div>' + statusBadge + '</div>' +
+          '</div>' +
+          deliveryTrackerHtml +
+          driverInfoHtml +
+          '<div class="pt-1">' +
             '<a href="' + tgSlipLink + '" target="_blank" class="w-full py-2.5 px-3 bg-gradient-to-r from-blue-600 to-sky-600 hover:from-blue-700 text-white rounded-xl text-xs font-black shadow-xs flex items-center justify-center gap-2 active:scale-95 transition" style="text-decoration:none;">' +
               '<i class="fab fa-telegram text-sm"></i> ' + d.trackSendSlip +
             '</a>' +
           '</div>' +
-
-          // ❌ ប៊ូតុងបោះបង់ការកុម្ម៉ង់ (ដាក់ត្រង់នេះ៖ ក្រោមប៊ូតុង Telegram ខាងលើ)
           (isPending ? 
           '<button type="button" onclick="cancelCustomerActiveOrder(\'' + orderId + '\')" class="w-full mt-2 py-2 bg-red-50 hover:bg-red-100 text-red-700 font-bold text-xs rounded-xl border border-red-200 transition active:scale-95 flex items-center justify-center gap-1.5">' +
             '<i class="fas fa-circle-xmark"></i> បោះបង់ការកុម្ម៉ង់នេះ' +
           '</button>' : '') +
-
           '<div class="flex justify-between items-center text-[11px] pt-1 text-slate-700 font-bold">' +
-           '<span>' + d.trackTotal + ' <b class="text-emerald-800 font-black text-xs">៛ ' + Number(info.total || 0).toLocaleString() + '</b></span>' +
-           '<span class="text-slate-400 text-[10px]">KC WATER Poipet</span>' +
-         '</div>' +
-       '</div>';
+            '<span>' + d.trackTotal + ' <b class="text-emerald-800 font-black text-xs">៛ ' + Number(info.total || 0).toLocaleString() + '</b></span>' +
+            '<span class="text-slate-400 text-[10px]">KC WATER Poipet</span>' +
+          '</div>' +
+        '</div>';
 
-       cardBox.classList.remove('hidden');
-     } catch(e) {}
-   }
+        cardBox.classList.remove('hidden');
+      } catch(e) {}
+    }
+
+    // 📥 មុខងារទាញយករូប QR ABA ទុកក្នុងទូរស័ព្ទ
+    function downloadAbaKhqrImage() {
+      var img = document.getElementById('abaKhqrImgPreview');
+      if (!img || !img.src) return;
+      var link = document.createElement('a');
+      link.href = img.src;
+      link.download = 'KC-ABA-KHQR.jpg';
+      link.target = '_blank';
+      link.click();
+    }
     
     // 📥 ទាញយកការកំណត់ & បញ្ចូល Promotion ទៅក្នុង Slide ទី ១ តែមួយគត់ (កុំឱ្យធ្លាក់ទំនិញ)
     async function loadStoreSettingsFromSupabase() {
