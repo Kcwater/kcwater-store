@@ -218,7 +218,7 @@ var cart = [];
 var selectedModalProduct = null;
 var currentPosCategoryFilter = 'ALL';
 var currentPosPayMethod = 'Cash';
-var telegramConfig = { token: "", chatId: "", status: "ON" };
+var telegramConfig = { token: "", chatId: "", driverChatId: "", status: "ON" };
 
 // អថេរសម្រាប់ទូទាត់លុយ (Settlement State)
 var currentSettlementCustomer = "";
@@ -286,6 +286,7 @@ async function loadSettingsAndTelegram() {
       data.forEach(function(r) {
         if (r.key === 'Telegram_Token') telegramConfig.token = r.value;
         if (r.key === 'Telegram_ChatID') telegramConfig.chatId = r.value;
+        if (r.key === 'Telegram_Driver_ChatID') telegramConfig.driverChatId = r.value;
         if (r.key === 'Telegram_Alert_Status') telegramConfig.status = r.value.toUpperCase();
         if (r.key === 'Exchange_Rate_USD') exchangeRateUSD = parseFloat(r.value) || 4100;
         if (r.key === 'Exchange_Rate_THB') exchangeRateTHB = parseFloat(r.value) || 115;
@@ -296,15 +297,17 @@ async function loadSettingsAndTelegram() {
   }
 }
 
-// 📲 ៦. មុខងារផ្ញើសារដំណឹងទៅកាន់ TELEGRAM BOT
-async function sendTelegramAlert(message) {
-  if (!telegramConfig.token || !telegramConfig.chatId || telegramConfig.status === 'OFF') return;
+// 📲 មុខងារផ្ញើសារដំណឹង Telegram (បាញ់ចូល Group ថៅកែ ឬ Group អ្នកដឹកតាមគោលដៅ)
+async function sendTelegramAlert(message, customChatId) {
+  if (!telegramConfig.token || telegramConfig.status === 'OFF') return;
+  var target = customChatId || telegramConfig.chatId;
+  if (!target) return;
   try {
     await fetch("https://api.telegram.org/bot" + telegramConfig.token + "/sendMessage", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ 
-        chat_id: telegramConfig.chatId, 
+        chat_id: target, 
         text: message, 
         parse_mode: "HTML" 
       })
@@ -312,7 +315,7 @@ async function sendTelegramAlert(message) {
   } catch(e) {
     console.error("Telegram alert error:", e);
   }
-}
+}  
 
 // 📦 ៧. មុខងារទាញយកទិន្នន័យដំបូង (ទំនិញ, អតិថិជន និងតម្លៃពិសេស) ពី SUPABASE
 async function fetchInitialPOSData() {
