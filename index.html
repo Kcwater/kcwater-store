@@ -122,7 +122,7 @@
         </button>
       </div>
     </div>
-  </header>
+  
 
   <!-- 🌙 ប្រអប់ជូនដំណឹងពេលផុតម៉ោងធ្វើការ (នៅក្រៅ Header ចំកណ្តាលពេញទទឹង ១០០% ទាំងលើទូរស័ព្ទ និងកុំព្យូទ័រ) -->
   <div id="storeClosedNoticeBanner" class="w-full max-w-md mx-auto px-4 pt-2.5 pb-1 hidden">
@@ -2461,7 +2461,7 @@ function filterCatalog(cat, btn) {
       }
     }
 
-    // 📍 មុខងារចាប់ GPS ផ្ទះ (គាំទ្រទាំងក្នុង Facebook, Messenger, LINE & Chrome/Safari)
+    // 📍 មុខងារចាប់ GPS ផ្ទះ (គាំទ្រទាំងក្នុង Facebook, Messenger, LINE & Chrome/Safari គ្មានកូដស្ទួន)
     function detectGPSLocation() {
       var hint = document.getElementById('gpsStatusHint');
       var inpUrl = document.getElementById('inp_custMapUrl');
@@ -2520,6 +2520,8 @@ function filterCatalog(cat, btn) {
           }
         } else if (err.code === 2) {
           errorMsg = "⚠️ មិនមានសញ្ញា GPS ទេ (សូមបើក Location លើទូរស័ព្ទដៃ ឬវាយទីតាំងដោយដៃ)!";
+        } else if (err.code === 3) {
+          errorMsg = "⚠️ ការចាប់ទីតាំងយឺតពេក (សូមចុចសាកល្បងម្តងទៀត ឬវាយទីតាំងដោយដៃ)!";
         }
 
         if (hint) {
@@ -2527,11 +2529,13 @@ function filterCatalog(cat, btn) {
         }
       }
 
+      // ចាប់ផ្កាយរណបម្តងគត់យ៉ាងច្បាស់លាស់
       navigator.geolocation.getCurrentPosition(onGpsSuccess, onGpsError, {
         enableHighAccuracy: true,
         timeout: 10000,
         maximumAge: 30000
       });
+    }
     
       function onGpsSuccess(pos) {
         var lat = pos.coords.latitude.toFixed(6);
