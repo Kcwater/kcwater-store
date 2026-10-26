@@ -2534,48 +2534,6 @@ function filterCatalog(cat, btn) {
         maximumAge: 30000
       });
     }
-    
-      function onGpsSuccess(pos) {
-        var lat = pos.coords.latitude.toFixed(6);
-        var lng = pos.coords.longitude.toFixed(6);
-        var googleMapUrl = "https://www.google.com/maps?q=" + lat + "," + lng;
-
-        if (inpUrl) inpUrl.value = googleMapUrl;
-        if (btn) {
-          btn.disabled = false;
-          btn.className = "w-full py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-xs flex items-center justify-center gap-2 active:scale-95 transition";
-        }
-        if (btnLabel) btnLabel.innerText = "✅ ចាប់បានទីតាំងផ្ទះជោគជ័យ!";
-        if (hint) {
-          hint.innerHTML = '<span class="text-emerald-700 font-bold">✅ ចាប់បានទីតាំងជោគជ័យ!</span> <a href="' + googleMapUrl + '" target="_blank" class="text-blue-600 underline font-bold ml-1">(មើលផែនទី)</a>';
-        }
-      }
-
-      function handleFinalGpsError(err) {
-        if (btn) btn.disabled = false;
-        if (btnLabel) btnLabel.innerText = "📍 ចុចចាប់ GPS ផ្ទះខ្ញុំ (*ចាំបាច់)";
-
-        var errorMsg = "⚠️ មិនអាចចាប់ GPS បានទេ (សូមវាយទីតាំងដោយដៃ)";
-        if (err.code === 1) { // PERMISSION_DENIED
-          errorMsg = "⚠️ អ្នកបានបដិសេធសិទ្ធិ (សូមចុច Allow Location លើ Browser របស់អ្នក)!";
-        } else if (err.code === 2) { // POSITION_UNAVAILABLE
-          errorMsg = "⚠️ មិនមានសញ្ញា GPS ទេ (សូមបើក Location លើទូរស័ព្ទដៃ)!";
-        } else if (err.code === 3) { // TIMEOUT
-          errorMsg = "⚠️ ការចាប់ទីតាំងយឺតពេក (សូមចុចសាកល្បងម្តងទៀត ឬវាយទីតាំងដោយដៃ)!";
-        }
-
-        if (hint) {
-          hint.innerHTML = '<span class="text-amber-700 font-bold">' + errorMsg + '</span>';
-        }
-      }
-
-      // សាកល្បងចាប់ផ្កាយរណប (High Accuracy)
-      navigator.geolocation.getCurrentPosition(onGpsSuccess, onGpsError, {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 30000
-      });
-       
   
    function showInAppError(msg) {
       var alertBox = document.getElementById('checkoutErrorAlert');
