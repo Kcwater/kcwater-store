@@ -1048,6 +1048,38 @@ function setModalCurrency(curr) {
   updateModalSubtotal();
 }
 
+// ==========================================
+// 🪙 មុខងារជំនួយតម្លៃលើផ្ទាំង MODAL (+00, +000, តម្លៃរហ័ស 500/1000/2000)
+// ==========================================
+
+// ១. មុខងារវាយតម្លៃផ្ទាល់ក្នុងប្រអប់
+function onModalPriceInput(val) {
+  updateModalSubtotal();
+}
+
+// ២. មុខងារថែមសូន្យរហ័ស (+00 ឬ +000) លើលុយខ្មែរ
+function appendModalZeros(zeros) {
+  var inp = document.getElementById('modalPriceInput');
+  if (!inp || inp.readOnly) return;
+  
+  var curVal = String(inp.value || '').trim();
+  // បើប្រអប់ទទេ ឬលេខ 0 ពេលចុច +00 ឱ្យចេញ 100 ភ្លាម
+  if (!curVal || curVal === '0') {
+    inp.value = (zeros === '00') ? '100' : '1000';
+  } else {
+    inp.value = curVal + zeros;
+  }
+  updateModalSubtotal();
+}
+
+// ៣. មុខងារកំណត់តម្លៃរហ័ស (500, 1000, 2000៛)
+function setModalExactPrice(price) {
+  var inp = document.getElementById('modalPriceInput');
+  if (!inp || inp.readOnly) return;
+  inp.value = price;
+  updateModalSubtotal();
+}
+
 // 🧮 ២. មុខងារបំប្លែង និងទាញយកតម្លៃលក់ (ស្គាល់តម្លៃកុងត្រាអតិថិជន Monthly ជានិច្ច)
 function getModalParsedPrice() {
   var inp = document.getElementById('modalPriceInput');
@@ -1428,6 +1460,11 @@ function closePOSKHQR() {
 var isSubmittingSaleLock = false;
 
 async function confirmSale() {
+  // 🛡️ រារាំងអ្នកដឹកជញ្ជូនរោងចក្រ (Company Driver) មិនឱ្យដកទំនិញ ឬលក់ POS ដាច់ខាត
+  if (currentUser && currentUser.type === 'CompanyDriver') {
+    showToast("អ្នកដឹកជញ្ជូនរោងចក្រ គ្មានសិទ្ធិដក ឬលក់ទំនិញក្នុង POS ឡើយ!", "error");
+    return;
+  }
   if (isSubmittingSaleLock) return;
   if (cart.length === 0) { showToast("កន្ត្រកទទេ! សូមរើសទំនិញជាមុនសិន", "error"); return; }
 
