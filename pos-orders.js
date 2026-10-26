@@ -466,7 +466,18 @@ async function assignDriverToOnlineOrder(orderId, custName) {
                   (orderInfo && orderInfo.address ? "📝 <b>ចំណាំ៖</b> " + orderInfo.address + "\n" : "") +
                   "🕒 <b>ម៉ោងចាត់ចែង៖</b> " + new Date().toLocaleTimeString('km-KH');
 
-      sendTelegramAlert(tgMsg);
+      // 🛵 បាញ់សារការងារដឹកទឹក ចូលទៅកាន់ Telegram ក្រុមអ្នកដឹកជញ្ជូន (បើគ្មាន ទើបបាញ់ចូល Chat ID ថៅកែ)
+      var tgCfg = (typeof telegramConfig !== 'undefined') ? telegramConfig : ((typeof telegramSettings !== 'undefined') ? telegramSettings : {});
+      var targetChatId = tgCfg.driverChatId || tgCfg.driver_chat_id || tgCfg.chatId || '';
+      var tgToken = tgCfg.token || '';
+
+      if (tgToken && targetChatId && tgCfg.status !== 'OFF') {
+        fetch("https://api.telegram.org/bot" + tgToken + "/sendMessage", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ chat_id: targetChatId, text: tgMsg, parse_mode: "HTML" })
+        }).catch(function(){});
+      }
     } catch(tgErr) {}
 
   } catch(err) {
