@@ -234,6 +234,7 @@ function initStockModuleDropdowns() {
   });
 }
 
+// 📦 មុខងារបង្ហាញថ្លៃដើមពេលរើសទំនិញបញ្ចូលស្តុក (គណនាបំប្លែងលុយថៃ ฿ និងដុល្លារ $ ចេញជាលុយខ្មែរ ៛ ភ្លាមៗ)
 function onStockInProductSelected() {
   var id = document.getElementById('si_prod') ? document.getElementById('si_prod').value : '';
   var costInp = document.getElementById('si_cost');
@@ -241,10 +242,46 @@ function onStockInProductSelected() {
   if (!id || !costInp) return;
 
   var prod = allProducts.find(p => p.id === id);
-  if (prod) {
-    costInp.value = prod.cost || '';
-    if (hint) hint.innerText = '*ថ្លៃដើមបច្ចុប្បន្ន៖ ' + Number(prod.cost || 0).toLocaleString() + ' ៛ (អាចកែប្រែបានបើតម្លៃឡើង/ចុះ)';
+  if (!prod) {
+    if (hint) hint.innerHTML = '';
+    return;
   }
+
+  var rawCost = parseFloat(prod.cost || 0);
+  costInp.value = rawCost > 0 ? rawCost : '';
+
+  var curr = (prod.currency || 'KHR').toUpperCase();
+  var rateUSD = (typeof exchangeRateUSD !== 'undefined') ? exchangeRateUSD : 4100;
+  var rateTHB = (typeof exchangeRateTHB !== 'undefined') ? exchangeRateTHB : 115;
+
+  // 🪙 មុខងារជំនួយបង្ហាញតម្លៃដើម និងលុយខ្មែរស្វ័យប្រវត្តិ
+  function formatCostWithKhr(costVal) {
+    if (costVal <= 0) return '-';
+    if (curr === 'USD') {
+      var khrUsd = Math.round(costVal * rateUSD);
+      return '$ ' + costVal.toFixed(2) + ' <b class="text-emerald-700">(≈ ៛ ' + khrUsd.toLocaleString() + ')</b>';
+    } else if (curr === 'THB') {
+      var khrThb = Math.round(costVal * rateTHB);
+      return '฿ ' + costVal.toLocaleString() + ' <b class="text-amber-800">(≈ ៛ ' + khrThb.toLocaleString() + ')</b>';
+    } else {
+      return '៛ ' + costVal.toLocaleString();
+    }
+  }
+
+  // បង្ហាញដំណឹងថ្លៃដើមបច្ចុប្បន្ន
+  if (hint) {
+    hint.innerHTML = '*ថ្លៃដើមបច្ចុប្បន្ន៖ ' + formatCostWithKhr(rawCost) + ' <span class="text-slate-400 font-normal">[' + curr + ']</span>';
+  }
+
+  // 🔄 ភ្ជាប់ Event ពេល Admin វាយកែប្រែថ្លៃដើមថ្មី ឱ្យគណនាបំប្លែងជាលុយខ្មែរលើអេក្រង់ភ្លាមៗ!
+  costInp.oninput = function() {
+    var inputVal = parseFloat(this.value || 0);
+    if (inputVal > 0) {
+      if (hint) hint.innerHTML = '<span class="text-blue-800 font-black">👉 ថ្លៃដើមថ្មីលើកនេះ៖ ' + formatCostWithKhr(inputVal) + '</span>';
+    } else {
+      if (hint) hint.innerHTML = '*ថ្លៃដើមបច្ចុប្បន្ន៖ ' + formatCostWithKhr(rawCost) + ' <span class="text-slate-400 font-normal">[' + curr + ']</span>';
+    }
+  };
 }
 
 function previewProductImageFile(input) {
@@ -298,13 +335,16 @@ function switchStockSortView(tab) {
   renderStockTableRows();
 }
 
-// 📋 មុខងារទាញទំនិញមកបង្ហាញក្នុងតារាងស្តុក (រៀបតាមលំដាប់ពិតប្រាកដ)
+// 📋 មុខងារទាញទំនិញមកបង្ហាញក្នុងតារាងស្តុក (គណនាបំប្លែងលុយថៃ ฿ និងដុល្លារ $ ចេញជាលុយខ្មែរ ៛ ស្វ័យប្រវត្តិ)
 function renderStockTableRows() {
   var tbody = document.getElementById('stockModuleTableBody');
   if (!tbody) return;
   var html = '';
 
-  // 🔢 តម្រៀបទំនិញក្នុងតារាងតាម Tab ដែលកំពុងមើល (POS ឬ Web)
+  var rateUSD = (typeof exchangeRateUSD !== 'undefined') ? exchangeRateUSD : 4100;
+  var rateTHB = (typeof exchangeRateTHB !== 'undefined') ? exchangeRateTHB : 115;
+
+  // 🔢 តម្រៀបទំនិញតាម Tab POS ឬ Web
   var sortedList = allProducts.slice().sort(function(a, b) {
     var chA = String(a.channel || 'ALL').toUpperCase();
     var chB = String(b.channel || 'ALL').toUpperCase();
@@ -330,8 +370,40 @@ function renderStockTableRows() {
 
   sortedList.forEach(function(p) {
     var imgUrl = p.img || "https://cdn-icons-png.flaticon.com/512/3100/3100566.png";
-    var prWholesale = Number(p.price || 0).toLocaleString() + ' ៛';
-    var prOnline = Number(p.online_price || p.price || 0).toLocaleString() + ' ៛';
+    var curr = (p.currency || 'KHR').toUpperCase();
+    var rawWholesale = parseFloat(p.price || 0);
+    var rawOnline = parseFloat(p.online_price || p.price || 0);
+    var rawCost = parseFloat(p.cost || 0);
+
+    // 🪙 គណនាបំប្លែងចេញជាលុយខ្មែរ (៛) ស្វ័យប្រវត្តិតាមរូបិយប័ណ្ណ
+    var wholesaleKhr = rawWholesale;
+    var onlineKhr = rawOnline;
+    var costKhr = rawCost;
+
+    var prWholesaleText = '';
+    var prOnlineText = '';
+    var costText = '';
+
+    if (curr === 'USD') {
+      wholesaleKhr = Math.round(rawWholesale * rateUSD);
+      onlineKhr = Math.round(rawOnline * rateUSD);
+      costKhr = Math.round(rawCost * rateUSD);
+      prWholesaleText = '$ ' + rawWholesale.toFixed(2) + ' <span class="text-emerald-700 font-bold">(≈ ៛ ' + wholesaleKhr.toLocaleString() + ')</span>';
+      prOnlineText = '$ ' + rawOnline.toFixed(2) + ' <span class="text-emerald-700 font-bold">(≈ ៛ ' + onlineKhr.toLocaleString() + ')</span>';
+      costText = rawCost > 0 ? ('$ ' + rawCost.toFixed(2) + ' <small class="text-slate-500 font-normal block">(≈ ៛ ' + costKhr.toLocaleString() + ')</small>') : '-';
+    } else if (curr === 'THB') {
+      wholesaleKhr = Math.round(rawWholesale * rateTHB);
+      onlineKhr = Math.round(rawOnline * rateTHB);
+      costKhr = Math.round(rawCost * rateTHB);
+      prWholesaleText = '฿ ' + rawWholesale.toLocaleString() + ' <span class="text-amber-800 font-bold">(≈ ៛ ' + wholesaleKhr.toLocaleString() + ')</span>';
+      prOnlineText = '฿ ' + rawOnline.toLocaleString() + ' <span class="text-amber-800 font-bold">(≈ ៛ ' + onlineKhr.toLocaleString() + ')</span>';
+      costText = rawCost > 0 ? ('฿ ' + rawCost.toLocaleString() + ' <small class="text-slate-500 font-normal block">(≈ ៛ ' + costKhr.toLocaleString() + ')</small>') : '-';
+    } else {
+      prWholesaleText = '៛ ' + wholesaleKhr.toLocaleString();
+      prOnlineText = '៛ ' + onlineKhr.toLocaleString();
+      costText = rawCost > 0 ? ('៛ ' + costKhr.toLocaleString()) : '-';
+    }
+
     var ch = String(p.channel || 'ALL').toUpperCase();
     var chBadge = (ch === 'ONLINE') ? '<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-sky-100 text-sky-800 border border-sky-300">🌐 Web</span>' :
                   (ch === 'POS') ? '<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-900 border border-amber-300">🚚 ដេប៉ូ</span>' :
@@ -346,7 +418,6 @@ function renderStockTableRows() {
     var sortPosNum = (p.sort_order !== null && p.sort_order !== undefined && p.sort_order !== '') ? parseInt(p.sort_order) : 99;
     var sortWebNum = (p.online_sort_order !== null && p.online_sort_order !== undefined && p.online_sort_order !== '') ? parseInt(p.online_sort_order) : sortPosNum;
 
-    // 🔢 ប្រអប់ POS
     var posBoxHtml = isForPos ?
       ('<div class="text-center">' +
         '<span class="text-[9px] text-blue-700 font-black block">POS</span>' +
@@ -357,7 +428,6 @@ function renderStockTableRows() {
         '<span class="w-11 text-center font-bold text-gray-400 py-1 text-xs block bg-gray-100 rounded-lg border border-gray-200">-</span>' +
       '</div>');
 
-    // 🌐 ប្រអប់ Web
     var webBoxHtml = isForWeb ?
       ('<div class="text-center">' +
         '<span class="text-[9px] text-emerald-700 font-black block">Web</span>' +
@@ -376,9 +446,15 @@ function renderStockTableRows() {
         '</div>' +
       '</td>' +
       '<td class="p-2.5"><img src="' + imgUrl + '" class="w-9 h-9 object-contain rounded border"></td>' +
-      '<td class="p-2.5 font-bold text-gray-800">' + p.name + '<br><span class="text-[9px] text-gray-400 font-normal">' + p.type + '</span></td>' +
+      '<td class="p-2.5 font-bold text-gray-800">' + 
+        p.name + 
+        '<br><span class="text-[9px] text-gray-400 font-normal">' + p.type + ' | ' + curr + '</span>' +
+      '</td>' +
       '<td class="p-2.5 text-center">' + chBadge + '</td>' +
-      '<td class="p-2.5 text-center text-[10px]">🚚 ' + prWholesale + '<br><span class="text-emerald-700 font-bold">🌐 ' + prOnline + '</span></td>' +
+      '<td class="p-2.5 text-center text-[10.5px] leading-tight">' + 
+        '<div>🚚 ' + prWholesaleText + '</div>' + 
+        '<div class="mt-0.5">🌐 ' + prOnlineText + '</div>' + 
+      '</td>' +
       '<td class="p-2.5 text-center">' + stockDisplay + '</td>' +
       '<td class="p-2.5 text-center"><div class="flex items-center justify-center gap-2">' +
         '<button onclick="prepareEditProduct(\'' + p.id + '\')" class="text-blue-600 hover:text-blue-800 p-1" title="កែប្រែ"><i class="fas fa-edit text-xs"></i></button>' +
@@ -686,16 +762,38 @@ async function saveProductToSupabase() {
     btn.disabled = false;
   }
 }
-async function saveStockInToSupabase() {
-  var id = document.getElementById('si_prod').value;
-  var qty = parseFloat(document.getElementById('si_qty').value || 0);
-  var cost = parseFloat(document.getElementById('si_cost').value || 0);
 
-  if (!id || qty <= 0) { showToast("សូមជ្រើសរើសទំនិញ និងបញ្ចូលចំនួនទិញចូល!", "error"); return; }
+// 💾 មុខងារបញ្ចូលស្តុកទំនិញថ្មី (គណនាបំប្លែងលុយថៃ ฿ និងដុល្លារ $ ចេញជាលុយខ្មែរ ៛ ក្នុងសារ Telegram)
+async function saveStockInToSupabase() {
+  var id = document.getElementById('si_prod') ? document.getElementById('si_prod').value : '';
+  var qtyInp = document.getElementById('si_qty');
+  var costInp = document.getElementById('si_cost');
+  var hint = document.getElementById('si_cost_hint');
+
+  var qty = parseFloat(qtyInp ? qtyInp.value || 0 : 0);
+  var cost = parseFloat(costInp ? costInp.value || 0 : 0);
+
+  if (!id || qty <= 0) { 
+    if (typeof kcAlert === 'function') {
+      await kcAlert({
+        title: "ខ្វះព័ត៌មាន",
+        message: "សូមជ្រើសរើសទំនិញ និងបញ្ចូលចំនួនទិញចូលធំជាង ០!",
+        type: "warning"
+      });
+    } else {
+      showToast("សូមជ្រើសរើសទំនិញ និងបញ្ចូលចំនួនទិញចូល!", "error"); 
+    }
+    return; 
+  }
+
   var prod = allProducts.find(p => p.id === id);
+  if (!prod) return;
 
   var btn = document.getElementById('btnSaveStockInAction');
-  btn.disabled = true;
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> កំពុងបញ្ចូលស្តុក...';
+  }
 
   try {
     var newStock = parseFloat(prod.stock || 0) + qty;
@@ -705,34 +803,62 @@ async function saveStockInToSupabase() {
     await supabaseClient.from('products').update(updateObj).eq('id', id);
     await supabaseClient.from('stock_in').insert([{
       product_id: id,
-      product_name: prod ? prod.name : "",
+      product_name: prod.name,
       qty: qty,
-      cost: cost > 0 ? cost : (prod ? prod.cost : 0),
+      cost: cost > 0 ? cost : (prod.cost || 0),
       admin_name: currentUser.fullName || "Admin"
     }]);
 
+    // អាប់ដេតទិន្នន័យក្នុង Memory ភ្លាមៗ
+    prod.stock = newStock;
+    if (cost > 0) prod.cost = cost;
+
+    // 🔔 រៀបចំសារ Telegram ដោយបំប្លែងលុយថៃ ฿ ឬដុល្លារ $ ចេញជាលុយខ្មែរ ៛ ស្វ័យប្រវត្តិ
     try {
+      var curr = (prod.currency || 'KHR').toUpperCase();
+      var rateUSD = (typeof exchangeRateUSD !== 'undefined') ? exchangeRateUSD : 4100;
+      var rateTHB = (typeof exchangeRateTHB !== 'undefined') ? exchangeRateTHB : 115;
+      
+      var actualCost = cost > 0 ? cost : (prod.cost || 0);
+      var costTgDisplay = '';
+
+      if (actualCost > 0) {
+        if (curr === 'USD') {
+          var khrUsd = Math.round(actualCost * rateUSD);
+          costTgDisplay = "$ " + actualCost.toFixed(2) + " (≈ ៛ " + khrUsd.toLocaleString() + ")";
+        } else if (curr === 'THB') {
+          var khrThb = Math.round(actualCost * rateTHB);
+          costTgDisplay = "฿ " + actualCost.toLocaleString() + " (≈ ៛ " + khrThb.toLocaleString() + ")";
+        } else {
+          costTgDisplay = "៛ " + actualCost.toLocaleString();
+        }
+      }
+
       var tgMsg = "📦 <b>[KC WATER - បញ្ចូលស្តុកថ្មី]</b>\n\n" +
-                  "• ទំនិញ៖ <b>" + (prod ? prod.name : '') + "</b>\n" +
+                  "• ទំនិញ៖ <b>" + prod.name + "</b>\n" +
                   "• ចំនួនទិញចូល៖ <b>+" + qty + "</b>\n" +
-                  (cost > 0 ? "• ថ្លៃដើមថ្មី៖ <b>៛ " + Number(cost).toLocaleString() + "</b>\n" : "") +
+                  (costTgDisplay ? ("• ថ្លៃដើមទិញចូល៖ <b>" + costTgDisplay + "</b>\n") : "") +
                   "• ស្តុកសរុបបច្ចុប្បន្ន៖ <b>" + newStock + "</b>\n" +
                   "• អ្នកកត់ត្រា៖ " + (currentUser.fullName || "Admin") + "\n" +
                   "🕒 ម៉ោង៖ " + new Date().toLocaleTimeString('km-KH');
       sendTelegramAlert(tgMsg);
     } catch(e) {}
 
-    showToast("បានបញ្ចូលស្តុកចំនួន +" + qty + " រួចរាល់!", "success");
-    document.getElementById('si_qty').value = '';
-    document.getElementById('si_cost').value = '';
-    document.getElementById('si_cost_hint').innerText = '';
+    showToast("បានបញ្ចូលស្តុក [" + prod.name + "] ចំនួន +" + qty + " ជោគជ័យ!", "success");
+    if (qtyInp) qtyInp.value = '';
+    if (costInp) costInp.value = '';
+    if (hint) hint.innerText = '';
 
     await fetchInitialPOSData();
     renderStockTableRows();
+
   } catch(err) {
     showToast("កំហុស៖ " + err.message, "error");
   } finally {
-    btn.disabled = false;
+    if (btn) {
+      btn.disabled = false;
+      btn.innerText = 'យល់ព្រមបញ្ចូលស្តុក';
+    }
   }
 }
 
