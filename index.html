@@ -1646,7 +1646,7 @@ function getLocalizedProductName(p, lang) {
       }
     }
     
-    // 🎨 បង្ហាញកាតទំនិញ (ចេញផ្លាក 🎁 ថែមទំនិញ នៅលើកាតផ្ទាល់)
+    // 🎨 បង្ហាញកាតទំនិញ (ចេញផ្លាក Promotion ច្បាស់ៗ ទិញ... ថែម... & ពហុរូបិយប័ណ្ណ)
     function renderCatalogGrid(filterCat) {
       filterCat = filterCat || activeCatalogCategoryFilter || 'ALL';
       var grid = document.getElementById('catalogGrid');
@@ -1684,9 +1684,10 @@ function getLocalizedProductName(p, lang) {
         if (isOutOfStock) {
           badgeLabel = '<span class="bg-red-100 text-red-700 text-[9px] font-black px-2 py-0.5 rounded-full border border-red-200">❌ អស់ស្តុក</span>';
         } else if (promoRule) {
-          // 🔥 បង្ហាញផ្លាក Promotion ពិសេសលើកាតទំនិញផ្ទាល់
-          badgeLabel = '<span class="bg-gradient-to-r from-red-600 to-amber-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-xs animate-pulse truncate max-w-[120px]">' +
-            '🎁 ថែម ' + promoRule.freeProduct + ' x ' + promoRule.freeQty +
+          // 🔥 បង្ហាញលក្ខខណ្ឌ Promotion ច្បាស់ៗ (ឧ៖ ទិញ ២ ថែម... ឬ ថែម...)
+          var buyPrefix = (promoRule.buyQty && promoRule.buyQty > 1) ? ('ទិញ ' + promoRule.buyQty + ' ថែម ') : 'ថែម ';
+          badgeLabel = '<span class="bg-gradient-to-r from-red-600 via-orange-600 to-amber-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-xs animate-pulse truncate max-w-[130px]" title="🎁 ' + buyPrefix + promoRule.freeProduct + ' x ' + promoRule.freeQty + '">' +
+            '🎁 ' + buyPrefix + promoRule.freeProduct + ' x ' + promoRule.freeQty +
           '</span>';
         } else {
           var rawBadge = item.badge || (item.cat === 'BARREL' ? 'ពេញនិយម' : 'គុណភាពខ្ពស់');
