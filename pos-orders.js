@@ -688,30 +688,38 @@ async function executeFinalCompleteDelivery() {
       if (pList) allProducts = pList;
     }
 
-    // ៣. បំបែកទំនិញបញ្ចូលក្នុង Transactions (មានប្រព័ន្ធការពារមិនឱ្យគាំង ១០០%)
+    // ៣. បំបែកទំនិញបញ្ចូលក្នុង Transactions (ស្គាល់ទំនិញ Promotion Free និងកាត់ស្តុកស្វ័យប្រវត្តិ)
     var tid = "TR-" + new Date().getTime();
     var rowsToInsert = [];
     var totalAllocated = 0;
 
     var itemParts = String(itemsText).split(',');
     itemParts.forEach(function(partStr) {
+      if (!partStr.trim()) return;
       var seg = partStr.split('x');
       var rawName = seg[0] ? seg[0].trim() : partStr.trim();
       var qty = (seg.length >= 2) ? parseFloat(seg[1].trim() || 1) : 1;
       if (isNaN(qty) || qty <= 0) qty = 1;
 
+      // 🎁 ឆែកមើលថាតើជាទំនិញថែម Promotion Free ដែរឬទេ
+      var isFreeGift = rawName.includes('[Free]') || rawName.includes('🎁') || rawName.includes('កាដូ');
+      // សម្អាតស្លាក [Free] ចេញ ដើម្បីយកឈ្មោះទំនិញសុទ្ធទៅកាត់ស្តុក
+      var cleanName = rawName.replace(/🎁\s*\[Free\]/gi, '').replace(/\[Free\]/gi, '').replace(/\[កាដូថែម Free\]/gi, '').trim();
+
       var matchedProd = allProducts.find(function(p) {
-        return p.name.trim().toLowerCase() === rawName.toLowerCase();
+        return p.name.trim().toLowerCase() === cleanName.toLowerCase();
       });
 
-      var unitPrice = matchedProd ? parseFloat(matchedProd.online_price || matchedProd.price || 0) : 0;
+      // បើជាទំនិញ Free គឺតម្លៃ = 0៛ បើជាទំនិញទិញធម្មតា គឺយកតម្លៃលក់
+      var unitPrice = isFreeGift ? 0 : (matchedProd ? parseFloat(matchedProd.online_price || matchedProd.price || 0) : 0);
       var lineTotal = unitPrice * qty;
       totalAllocated += lineTotal;
 
       rowsToInsert.push({
         transaction_id: tid,
         customer_name: custName,
-        product_name: matchedProd ? matchedProd.name : rawName,
+        product_name: isFreeGift ? ("🎁 [Free] " + (matchedProd ? matchedProd.name : cleanName)) : (matchedProd ? matchedProd.name : rawName),
+        clean_product_name: matchedProd ? matchedProd.name : cleanName, // សម្រាប់កាត់ស្តុក
         qty: qty,
         price: unitPrice,
         currency: "KHR",
@@ -730,6 +738,7 @@ async function executeFinalCompleteDelivery() {
         transaction_id: tid,
         customer_name: custName,
         product_name: "សេវាដឹកជញ្ជូន / សំបកធុង",
+        clean_product_name: "",
         qty: 1,
         price: diff,
         currency: "KHR",
@@ -743,14 +752,20 @@ async function executeFinalCompleteDelivery() {
 
     // កត់ត្រាចូល Transactions Table
     if (rowsToInsert.length > 0) {
-      await supabaseClient.from('transactions').insert(rowsToInsert);
+      var rowsForDb = rowsToInsert.map(function(r) {
+        var copy = Object.assign({}, r);
+        delete copy.clean_product_name; // ដក Field បណ្តោះអាសន្នចេញមុន Save
+        return copy;
+      });
+      await supabaseClient.from('transactions').insert(rowsForDb);
     }
 
-    // ៤. កាត់ស្តុកទំនិញទិញគេ
+    // ៤. កាត់ស្តុកទំនិញទិញគេ (កាត់ទាំងទំនិញលក់ធម្មតា និងទំនិញ Promotion Free ត្រឹមត្រូវ ១០០%)
     for (var i = 0; i < rowsToInsert.length; i++) {
       var row = rowsToInsert[i];
+      var targetSearchName = (row.clean_product_name || row.product_name).toLowerCase();
       var prodToDeduct = allProducts.find(function(p) {
-        return p.name.trim().toLowerCase() === row.product_name.trim().toLowerCase();
+        return p.name.trim().toLowerCase() === targetSearchName;
       });
 
       if (prodToDeduct && prodToDeduct.type === 'ទិញគេ' && row.qty > 0) {
@@ -759,7 +774,7 @@ async function executeFinalCompleteDelivery() {
         prodToDeduct.stock = newStock;
       }
     }
-
+    
     // ៥. បិទផ្ទាំងបញ្ជាក់ការដឹក
     closeCompleteDeliveryModal();
     showToast("បានកត់ត្រាការដឹកដល់ និងប្រមូលប្រាក់ជោគជ័យ!", "success");
