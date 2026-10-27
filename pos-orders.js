@@ -7,6 +7,16 @@ var lastKnownPendingOrderCount = 0;
 var ordersRealtimeChannel = null;
 var adminOnlineOrdersCache = [];
 var activeAdminOnlineTab = 'ACTIVE';
+// 🖼️ ឃ្លាំងផ្ទុករូបថតផ្ទះភ្ញៀវសុវត្ថិភាព (ការពារកុំឱ្យ Crash ពេលភ្ញៀវភ្ជាប់រូបមុខផ្ទះ)
+var safeOrderPhotoStore = {};
+
+function storeOrderPhoto(orderId, photoUrl, custName) {
+  if (!orderId || !photoUrl) return;
+  safeOrderPhotoStore[orderId] = {
+    url: photoUrl,
+    name: custName || 'អតិថិជន'
+  };
+}
 
 // ==========================================
 // 🔔 ១. សំឡេងរោទ៍ & ឆែកមើលការកុម្ម៉ង់ ONLINE ថ្មី
