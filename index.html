@@ -2059,206 +2059,249 @@ function filterCatalog(cat, btn) {
       document.getElementById('checkoutModal').classList.add('hidden');
     }
 
-   // 🛒 មុខងារគណនាកន្ត្រកទំនិញ (ដាក់រូបទំនិញជំនួសតម្លៃរាយ + ទឹកធុង ៥ ធុង ដឹក Free)
-    function updateCheckoutCalculation() {
-      var listCont = document.getElementById('checkoutCartItemsList');
-      var grandText = document.getElementById('coGrandTotalText');
-      var khqrDue = document.getElementById('khqrDueAmountText');
-      var barrelHint = document.getElementById('barrelCountSummaryBadge');
-      var d = DICT[currentLang] || DICT.km;
-      var rateU = (typeof exchangeRateUSD !== 'undefined') ? exchangeRateUSD : 4100;
-      var rateT = (typeof exchangeRateTHB !== 'undefined') ? exchangeRateTHB : 115;
+   // 🛒 មុខងារគណនាកន្ត្រក Checkout បកប្រែ ៣ ភាសាពេញលេញ ១០០% (ខ្មែរ / EN / 中文)
+function updateCheckoutCalculation() {
+  var listCont = document.getElementById('checkoutCartItemsList');
+  var grandText = document.getElementById('coGrandTotalText');
+  var khqrDue = document.getElementById('khqrDueAmountText');
+  var barrelHint = document.getElementById('barrelCountSummaryBadge');
+  var d = DICT[currentLang] || DICT.km;
+  var rateU = (typeof exchangeRateUSD !== 'undefined') ? exchangeRateUSD : 4100;
+  var rateT = (typeof exchangeRateTHB !== 'undefined') ? exchangeRateTHB : 115;
 
-      var html = '', waterTotal = 0, totalUnits = 0;
-      var blueBarrelsQty = 0;
-      var whiteBarrelsQty = 0;
-
-      // ១. រាប់ចំនួនទំនិញក្នុងកន្ត្រក & បង្ហាញរូបភាពទំនិញនៅខាងឆ្វេង
-      for (var k in cartItems) {
-        if (cartItems[k].qty > 0) {
-          var itemPriceKhr = cartItems[k].price;
-          var sub = cartItems[k].qty * itemPriceKhr;
-          waterTotal += sub;
-          totalUnits += cartItems[k].qty;
-
-          if (cartItems[k].isBarrel20L) {
-            var rawNameLower = (cartItems[k].raw_name || '').toLowerCase();
-            if (rawNameLower.indexOf('ខៀវ') !== -1 || rawNameLower.indexOf('blue') !== -1) {
-              blueBarrelsQty += cartItems[k].qty;
-            } else {
-              whiteBarrelsQty += cartItems[k].qty;
-            }
-          }
-
-          var displayName = getLocalizedProductName({ name: cartItems[k].raw_name }, currentLang);
-          var subThb = Math.round(sub / rateT).toLocaleString();
-          var subUsd = (sub / rateU).toFixed(2);
-
-          // 🖼️ ស្វែងរករូបភាពទំនិញ
-          var prodObj = STORE_CATALOG.find(function(p) { return p.id === k; });
-          var itemThumb = (prodObj && prodObj.svg) ? prodObj.svg : '<i class="fas fa-box text-slate-400"></i>';
-
-          html += '<div class="flex items-center justify-between py-2 border-b border-slate-200 last:border-none gap-2">' +
-            '<div class="flex items-center gap-2 flex-1 min-w-0 text-left">' +
-              // 🖼️ រូបភាពទំនិញតូចស្អាត (លុបតម្លៃរាយចេញ ព្រោះខាងស្តាំមានហើយ)
-              '<div class="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 p-0.5 flex items-center justify-center shrink-0 overflow-hidden">' +
-                itemThumb +
-              '</div>' +
-              '<div class="min-w-0 flex-1">' +
-                '<b data-trans-key="' + cartItems[k].raw_name + '" class="text-slate-800 block truncate text-xs">' + displayName + '</b>' +
-              '</div>' +
-            '</div>' +
-            '<div class="flex items-center gap-1.5 shrink-0">' +
-              '<button type="button" onclick="adjustCheckoutItemQty(\'' + k + '\', -1)" class="w-6 h-6 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 font-black flex items-center justify-center text-xs active:scale-90">-</button>' +
-              '<span class="font-black text-xs text-slate-900 w-5 text-center">' + cartItems[k].qty + '</span>' +
-              '<button type="button" onclick="adjustCheckoutItemQty(\'' + k + '\', 1)" class="w-6 h-6 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-black flex items-center justify-center text-xs active:scale-90">+</button>' +
-              '<button type="button" onclick="removeCheckoutItem(\'' + k + '\')" class="w-6 h-6 text-red-400 hover:text-red-600 ml-1 active:scale-90 flex items-center justify-center" title="លុប"><i class="fas fa-trash-can text-xs"></i></button>' +
-            '</div>' +
-            '<div class="text-right w-20 shrink-0 space-y-0.5">' +
-              '<div class="text-emerald-800 text-xs font-black whitespace-nowrap leading-tight">៛ ' + sub.toLocaleString() + '</div>' +
-              '<div class="text-amber-700 text-[10px] font-bold font-mono leading-tight">฿ ' + subThb + '</div>' +
-              '<div class="text-blue-700 text-[10px] font-bold font-mono leading-tight">$ ' + subUsd + '</div>' +
-            '</div>' +
-          '</div>';
-        }
-      }
-
-      // 🎁 ២. គណនាទំនិញថែម Free ស្វ័យប្រវត្តិ
-      var freeGiftItems = [];
-      if (activePromoConfig && activePromoConfig.rules && activePromoConfig.rules.length > 0) {
-        activePromoConfig.rules.forEach(function(rule) {
-          for (var id in cartItems) {
-            var cItem = cartItems[id];
-            if (cItem.qty > 0 && cItem.raw_name.trim().toLowerCase() === rule.buyProduct.trim().toLowerCase()) {
-              var freeMultiplier = Math.floor(cItem.qty / (rule.buyQty || 1));
-              if (freeMultiplier > 0) {
-                var totalGiftCount = freeMultiplier * (rule.freeQty || 1);
-                freeGiftItems.push({ name: rule.freeProduct, qty: totalGiftCount });
-
-                html += '<div class="flex justify-between items-center py-2 border-t-2 border-amber-300 text-amber-950 bg-amber-100/90 px-2.5 rounded-xl mt-1.5 animate-pulse">' +
-                  '<span class="flex items-center gap-1.5"><i class="fas fa-gift text-amber-700 text-sm"></i><b>[កាដូថែម Free] ' + rule.freeProduct + ' x ' + totalGiftCount + '</b></span>' +
-                  '<b class="text-emerald-800 font-black text-xs">៛ 0 (FREE 🎉)</b>' +
-                '</div>';
-              }
-            }
-          }
-        });
-      }
-
-      // 🛢️ ៣. គណនាសំបកធុង (ទាញយកតម្លៃពិតប្រាកដពីទំនិញក្នុងស្តុក STORE_CATALOG ស្វ័យប្រវត្តិ)
-      var blueBarrelProd = STORE_CATALOG.find(function(p) {
-        var n = (p.raw_name || '').toLowerCase();
-        return (n.indexOf('សំបក') !== -1 || n.indexOf('empty') !== -1) && (n.indexOf('ខៀវ') !== -1 || n.indexOf('blue') !== -1);
-      });
-      var whiteBarrelProd = STORE_CATALOG.find(function(p) {
-        var n = (p.raw_name || '').toLowerCase();
-        return (n.indexOf('សំបក') !== -1 || n.indexOf('empty') !== -1) && (n.indexOf('ស') !== -1 || n.indexOf('white') !== -1);
-      });
-
-      // 🪙 ទាញតម្លៃចេញពីស្តុកទំនិញជាក់ស្តែង (បើគ្មានក្នុងស្តុក ទើបយកតម្លៃស្តង់ដារ)
-      var blueBarrelPrice = blueBarrelProd ? parseFloat(blueBarrelProd.price || 0) : 10000;
-      var whiteBarrelPrice = whiteBarrelProd ? parseFloat(whiteBarrelProd.price || 0) : 12000;
-
-      var swapChecked = document.querySelector('input[name="co_swapOption"]:checked');
-      var isNoSwap = swapChecked ? (swapChecked.value === 'NO') : false;
-      var barrelFee = 0;
-
-      if (isNoSwap) {
-        if (blueBarrelsQty > 0 && blueBarrelPrice > 0) {
-          var bTotal = blueBarrelsQty * blueBarrelPrice;
-          barrelFee += bTotal;
-          var bTotalThb = Math.round(bTotal / rateT).toLocaleString();
-          var bTotalUsd = (bTotal / rateU).toFixed(2);
-          html += '<div class="flex justify-between items-center py-1.5 border-t border-blue-200 text-blue-950 bg-blue-50 px-2 rounded-lg mt-1">' +
-            '<span><i class="fas fa-cart-shopping mr-1 text-blue-700"></i><b>សំបកធុងខៀវថ្មី (' + blueBarrelsQty + ' x ' + Number(blueBarrelPrice).toLocaleString() + '៛)</b></span>' +
-            '<div class="text-right space-y-0.5">' +
-              '<b class="text-blue-900 font-black text-xs block leading-tight">+៛ ' + bTotal.toLocaleString() + '</b>' +
-              '<div class="text-[9px] text-amber-800 font-mono font-bold leading-tight">+฿ ' + bTotalThb + ' | +$' + bTotalUsd + '</div>' +
-            '</div>' +
-          '</div>';
-        }
-
-        if (whiteBarrelsQty > 0 && whiteBarrelPrice > 0) {
-          var wTotal = whiteBarrelsQty * whiteBarrelPrice;
-          barrelFee += wTotal;
-          var wTotalThb = Math.round(wTotal / rateT).toLocaleString();
-          var wTotalUsd = (wTotal / rateU).toFixed(2);
-          html += '<div class="flex justify-between items-center py-1.5 border-t border-amber-200 text-amber-950 bg-amber-50 px-2 rounded-lg mt-1">' +
-            '<span><i class="fas fa-cart-shopping mr-1 text-amber-800"></i><b>សំបកធុងសថ្មី (' + whiteBarrelsQty + ' x ' + Number(whiteBarrelPrice).toLocaleString() + '៛)</b></span>' +
-            '<div class="text-right space-y-0.5">' +
-              '<b class="text-amber-950 font-black text-xs block leading-tight">+៛ ' + wTotal.toLocaleString() + '</b>' +
-              '<div class="text-[9px] text-amber-800 font-mono font-bold leading-tight">+฿ ' + wTotalThb + ' | +$' + wTotalUsd + '</div>' +
-            '</div>' +
-          '</div>';
-        }
-      }
-
-      // 🛵 ៤. គណនាថ្លៃដឹកជញ្ជូន (ទាញយកតាម Settings ជាក់ស្តែង)
-      var deliveryFee = 0;
-      var stdFee = parseFloat((storeDeliveryConfig && storeDeliveryConfig.standardFee) || 0);
-      var minFreeBarrels = parseInt((storeDeliveryConfig && storeDeliveryConfig.freeMinQty) || 2);
-      var minFreeAmount = parseFloat((storeDeliveryConfig && storeDeliveryConfig.freeMinAmount) || 50000);
-      var total20LBarrels = blueBarrelsQty + whiteBarrelsQty;
-
-      if (totalUnits > 0) {
-        var isFreeByBarrels = (total20LBarrels >= minFreeBarrels);
-        var isFreeByAmount = (waterTotal >= minFreeAmount);
-
-        if (isFreeByBarrels || isFreeByAmount) {
-          var freeReason = isFreeByBarrels ? 
-            ('ទិញទឹកធុង ២០L ចំនួន ' + minFreeBarrels + ' ធុង ដឹក Free') : 
-            ('ទិញទំនិញគ្រប់ ៛ ' + minFreeAmount.toLocaleString());
-          html += '<div class="flex justify-between items-center py-1.5 border-t border-emerald-300 text-emerald-950 bg-emerald-100/80 px-2 rounded-lg mt-1">' +
-            '<span><i class="fas fa-truck-fast text-emerald-700 mr-1"></i><b>សេវាដឹកដល់ផ្ទះ (' + freeReason + ')</b></span>' +
-            '<b class="text-emerald-800 font-black">Free (ឥតគិតថ្លៃ) 🎉</b>' +
-          '</div>';
-        } else if (stdFee > 0) {
-          deliveryFee = stdFee;
-          var diffAmount = Math.max(0, minFreeAmount - waterTotal);
-          html += '<div class="flex justify-between items-center py-1.5 border-t border-blue-200 text-blue-950 bg-blue-50 px-2 rounded-lg mt-1">' +
-            '<div>' +
-              '<span><i class="fas fa-truck text-blue-600 mr-1"></i><b>សេវាដឹកជញ្ជូន</b></span>' +
-              '<span class="text-[9.5px] text-blue-700 block font-bold mt-0.5">💡 ទិញថែម ៛ ' + diffAmount.toLocaleString() + ' ទៀត ឬទិញទឹកធុង ២០L ចំនួន ' + minFreeBarrels + ' ធុង ដឹក Free!</span>' +
-            '</div>' +
-            '<b class="text-blue-900 font-black">+៛ ' + deliveryFee.toLocaleString() + '</b>' +
-          '</div>';
-        }
-      }
-
-      // 💵 ៥. បូកសរុបទឹកប្រាក់ចុងក្រោយ (៣ ជួរដាច់ពីគ្នា ៛, ฿, $ គ្មានវង់ក្រចក)
-      var grandTotalKhr = Math.max(0, waterTotal + barrelFee + deliveryFee);
-      var grandTotalThb = Math.round(grandTotalKhr / rateT).toLocaleString();
-      var grandTotalUsd = (grandTotalKhr / rateU).toFixed(2);
-
-      if (listCont) {
-        listCont.innerHTML = html || '<div class="text-center py-3 text-slate-400 italic text-xs">កន្ត្រកទទេ</div>';
-      }
-      
-      if (grandText) {
-        grandText.innerHTML = '<div class="space-y-0.5 text-right">' +
-          '<div class="text-base sm:text-lg font-black text-emerald-700 leading-tight">៛ ' + grandTotalKhr.toLocaleString() + '</div>' +
-          '<div class="text-xs sm:text-sm font-black text-amber-700 leading-tight">฿ ' + grandTotalThb + '</div>' +
-          '<div class="text-xs sm:text-sm font-black text-blue-700 leading-tight">$ ' + grandTotalUsd + '</div>' +
-        '</div>';
-      }
-
-      if (khqrDue) {
-        khqrDue.innerHTML = '<div class="space-y-0.5 text-center mt-1">' +
-          '<div class="text-emerald-700 text-sm sm:text-base font-black">៛ ' + grandTotalKhr.toLocaleString() + '</div>' +
-          '<div class="text-xs font-black text-amber-700">฿ ' + grandTotalThb + '</div>' +
-          '<div class="text-xs font-black text-blue-700">$ ' + grandTotalUsd + '</div>' +
-        '</div>';
-      }
-
-      return {
-        grandTotal: grandTotalKhr,
-        grandTotalThb: grandTotalThb,
-        grandTotalUsd: grandTotalUsd,
-        deliveryFee: deliveryFee,
-        barrelFee: barrelFee,
-        freeGifts: freeGiftItems
-      };
+  // 📚 វចនានុក្រមពាក្យ Checkout តាម ៣ ភាសា
+  var coDict = {
+    km: {
+      freeGiftTag: "🎁 [កាដូថែម Free]",
+      freeTag: "Free (ឥតគិតថ្លៃ) 🎉",
+      blueBarrelDeposit: "សំបកធុងខៀវថ្មី",
+      whiteBarrelDeposit: "សំបកធុងសថ្មី",
+      homeDelivery: "សេវាដឹកដល់ផ្ទះ",
+      deliveryFeeLabel: "សេវាដឹកជញ្ជូន",
+      freeByBarrel: "ទិញទឹកធុង ២០L ចំនួន {min} ធុង ដឹក Free",
+      freeByAmount: "ទិញទំនិញគ្រប់ ៛ {min}",
+      addMoreHint: "💡 ទិញថែម ៛ {diff} ទៀត ឬទិញទឹកធុង ២០L {min} ធុង ដឹក Free!",
+      emptyCart: "កន្ត្រកទទេ"
+    },
+    en: {
+      freeGiftTag: "🎁 [Free Gift]",
+      freeTag: "Free Delivery 🎉",
+      blueBarrelDeposit: "New Blue Barrel Deposit",
+      whiteBarrelDeposit: "New White Barrel Deposit",
+      homeDelivery: "Home Delivery",
+      deliveryFeeLabel: "Delivery Fee",
+      freeByBarrel: "Free delivery for {min}+ barrels",
+      freeByAmount: "Orders over ៛ {min}",
+      addMoreHint: "💡 Add ៛ {diff} more or buy {min}+ barrels for FREE delivery!",
+      emptyCart: "Your cart is empty"
+    },
+    zh: {
+      freeGiftTag: "🎁 [特惠赠品]",
+      freeTag: "免费配送 🎉",
+      blueBarrelDeposit: "全新蓝桶押金",
+      whiteBarrelDeposit: "全新白桶押金",
+      homeDelivery: "送货上门",
+      deliveryFeeLabel: "配送费",
+      freeByBarrel: "满 {min} 桶 20L 免配送费",
+      freeByAmount: "购物满 ៛ {min} 免配送费",
+      addMoreHint: "💡 再买 ៛ {diff} 或满 {min} 桶免配送费！",
+      emptyCart: "购物车为空"
     }
+  };
+  var cTrans = coDict[currentLang] || coDict.km;
+
+  var html = '', waterTotal = 0, totalUnits = 0;
+  var blueBarrelsQty = 0;
+  var whiteBarrelsQty = 0;
+
+  // ១. បង្ហាញទំនិញក្នុងកន្ត្រក (បកប្រែឈ្មោះទំនិញតាមភាសាដែលរើស)
+  for (var k in cartItems) {
+    if (cartItems[k].qty > 0) {
+      var itemPriceKhr = cartItems[k].price;
+      var sub = cartItems[k].qty * itemPriceKhr;
+      waterTotal += sub;
+      totalUnits += cartItems[k].qty;
+
+      if (cartItems[k].isBarrel20L) {
+        var rawNameLower = (cartItems[k].raw_name || '').toLowerCase();
+        if (rawNameLower.indexOf('ខៀវ') !== -1 || rawNameLower.indexOf('blue') !== -1) {
+          blueBarrelsQty += cartItems[k].qty;
+        } else {
+          whiteBarrelsQty += cartItems[k].qty;
+        }
+      }
+
+      var displayName = getLocalizedProductName({ name: cartItems[k].raw_name }, currentLang);
+      var subThb = Math.round(sub / rateT).toLocaleString();
+      var subUsd = (sub / rateU).toFixed(2);
+
+      var prodObj = STORE_CATALOG.find(function(p) { return p.id === k; });
+      var itemThumb = (prodObj && prodObj.svg) ? prodObj.svg : '<i class="fas fa-box text-slate-400"></i>';
+
+      html += '<div class="flex items-center justify-between py-2 border-b border-slate-200 last:border-none gap-2">' +
+        '<div class="flex items-center gap-2 flex-1 min-w-0 text-left">' +
+          '<div class="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 p-0.5 flex items-center justify-center shrink-0 overflow-hidden">' +
+            itemThumb +
+          '</div>' +
+          '<div class="min-w-0 flex-1">' +
+            '<b data-trans-key="' + cartItems[k].raw_name + '" class="text-slate-800 block truncate text-xs">' + displayName + '</b>' +
+          '</div>' +
+        '</div>' +
+        '<div class="flex items-center gap-1.5 shrink-0">' +
+          '<button type="button" onclick="adjustCheckoutItemQty(\'' + k + '\', -1)" class="w-6 h-6 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 font-black flex items-center justify-center text-xs active:scale-90">-</button>' +
+          '<span class="font-black text-xs text-slate-900 w-5 text-center">' + cartItems[k].qty + '</span>' +
+          '<button type="button" onclick="adjustCheckoutItemQty(\'' + k + '\', 1)" class="w-6 h-6 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-black flex items-center justify-center text-xs active:scale-90">+</button>' +
+          '<button type="button" onclick="removeCheckoutItem(\'' + k + '\')" class="w-6 h-6 text-red-400 hover:text-red-600 ml-1 active:scale-90 flex items-center justify-center" title="លុប"><i class="fas fa-trash-can text-xs"></i></button>' +
+        '</div>' +
+        '<div class="text-right w-20 shrink-0 space-y-0.5">' +
+          '<div class="text-emerald-800 text-xs font-black whitespace-nowrap leading-tight">៛ ' + sub.toLocaleString() + '</div>' +
+          '<div class="text-amber-700 text-[10px] font-bold font-mono leading-tight">฿ ' + subThb + '</div>' +
+          '<div class="text-blue-700 text-[10px] font-bold font-mono leading-tight">$ ' + subUsd + '</div>' +
+        '</div>' +
+      '</div>';
+    }
+  }
+
+  // 🎁 ២. គណនាទំនិញថែម Free (បកប្រែឈ្មោះកាដូថែមជាភាសាដែលភ្ញៀវរើស)
+  var freeGiftItems = [];
+  if (activePromoConfig && activePromoConfig.rules && activePromoConfig.rules.length > 0) {
+    activePromoConfig.rules.forEach(function(rule) {
+      for (var id in cartItems) {
+        var cItem = cartItems[id];
+        if (cItem.qty > 0 && cItem.raw_name.trim().toLowerCase() === rule.buyProduct.trim().toLowerCase()) {
+          var freeMultiplier = Math.floor(cItem.qty / (rule.buyQty || 1));
+          if (freeMultiplier > 0) {
+            var totalGiftCount = freeMultiplier * (rule.freeQty || 1);
+            freeGiftItems.push({ name: rule.freeProduct, qty: totalGiftCount });
+
+            var localizedGiftName = getLocalizedProductName({ name: rule.freeProduct }, currentLang);
+
+            html += '<div class="flex justify-between items-center py-2 border-t-2 border-amber-300 text-amber-950 bg-amber-100/90 px-2.5 rounded-xl mt-1.5 animate-pulse">' +
+              '<span class="flex items-center gap-1.5"><i class="fas fa-gift text-amber-700 text-sm"></i><b>' + cTrans.freeGiftTag + ' ' + localizedGiftName + ' x ' + totalGiftCount + '</b></span>' +
+              '<b class="text-emerald-800 font-black text-xs">៛ 0 (FREE 🎉)</b>' +
+            '</div>';
+          }
+        }
+      }
+    });
+  }
+
+  // 🛢️ ៣. គណនាសំបកធុង (បកប្រែឈ្មោះសំបកធុង)
+  var blueBarrelProd = STORE_CATALOG.find(function(p) {
+    var n = (p.raw_name || '').toLowerCase();
+    return (n.indexOf('សំបក') !== -1 || n.indexOf('empty') !== -1) && (n.indexOf('ខៀវ') !== -1 || n.indexOf('blue') !== -1);
+  });
+  var whiteBarrelProd = STORE_CATALOG.find(function(p) {
+    var n = (p.raw_name || '').toLowerCase();
+    return (n.indexOf('សំបក') !== -1 || n.indexOf('empty') !== -1) && (n.indexOf('ស') !== -1 || n.indexOf('white') !== -1);
+  });
+
+  var blueBarrelPrice = blueBarrelProd ? parseFloat(blueBarrelProd.price || 0) : 10000;
+  var whiteBarrelPrice = whiteBarrelProd ? parseFloat(whiteBarrelProd.price || 0) : 12000;
+
+  var swapChecked = document.querySelector('input[name="co_swapOption"]:checked');
+  var isNoSwap = swapChecked ? (swapChecked.value === 'NO') : false;
+  var barrelFee = 0;
+
+  if (isNoSwap) {
+    if (blueBarrelsQty > 0 && blueBarrelPrice > 0) {
+      var bTotal = blueBarrelsQty * blueBarrelPrice;
+      barrelFee += bTotal;
+      var bTotalThb = Math.round(bTotal / rateT).toLocaleString();
+      var bTotalUsd = (bTotal / rateU).toFixed(2);
+      html += '<div class="flex justify-between items-center py-1.5 border-t border-blue-200 text-blue-950 bg-blue-50 px-2 rounded-lg mt-1">' +
+        '<span><i class="fas fa-cart-shopping mr-1 text-blue-700"></i><b>' + cTrans.blueBarrelDeposit + ' (' + blueBarrelsQty + ' x ' + Number(blueBarrelPrice).toLocaleString() + '៛)</b></span>' +
+        '<div class="text-right space-y-0.5">' +
+          '<b class="text-blue-900 font-black text-xs block leading-tight">+៛ ' + bTotal.toLocaleString() + '</b>' +
+          '<div class="text-[9px] text-amber-800 font-mono font-bold leading-tight">+฿ ' + bTotalThb + ' | +$' + bTotalUsd + '</div>' +
+        '</div>' +
+      '</div>';
+    }
+
+    if (whiteBarrelsQty > 0 && whiteBarrelPrice > 0) {
+      var wTotal = whiteBarrelsQty * whiteBarrelPrice;
+      barrelFee += wTotal;
+      var wTotalThb = Math.round(wTotal / rateT).toLocaleString();
+      var wTotalUsd = (wTotal / rateU).toFixed(2);
+      html += '<div class="flex justify-between items-center py-1.5 border-t border-amber-200 text-amber-950 bg-amber-50 px-2 rounded-lg mt-1">' +
+        '<span><i class="fas fa-cart-shopping mr-1 text-amber-800"></i><b>' + cTrans.whiteBarrelDeposit + ' (' + whiteBarrelsQty + ' x ' + Number(whiteBarrelPrice).toLocaleString() + '៛)</b></span>' +
+        '<div class="text-right space-y-0.5">' +
+          '<b class="text-amber-950 font-black text-xs block leading-tight">+៛ ' + wTotal.toLocaleString() + '</b>' +
+          '<div class="text-[9px] text-amber-800 font-mono font-bold leading-tight">+฿ ' + wTotalThb + ' | +$' + wTotalUsd + '</div>' +
+        '</div>' +
+      '</div>';
+    }
+  }
+
+  // 🛵 ៤. គណនាថ្លៃដឹកជញ្ជូន (បកប្រែពាក្យដឹកជញ្ជូន & ដំណឹង Free ៣ ភាសា)
+  var deliveryFee = 0;
+  var stdFee = parseFloat((storeDeliveryConfig && storeDeliveryConfig.standardFee) || 0);
+  var minFreeBarrels = parseInt((storeDeliveryConfig && storeDeliveryConfig.freeMinQty) || 2);
+  var minFreeAmount = parseFloat((storeDeliveryConfig && storeDeliveryConfig.freeMinAmount) || 50000);
+  var total20LBarrels = blueBarrelsQty + whiteBarrelsQty;
+
+  if (totalUnits > 0) {
+    var isFreeByBarrels = (total20LBarrels >= minFreeBarrels);
+    var isFreeByAmount = (waterTotal >= minFreeAmount);
+
+    if (isFreeByBarrels || isFreeByAmount) {
+      var freeReason = isFreeByBarrels ? 
+        cTrans.freeByBarrel.replace('{min}', minFreeBarrels) : 
+        cTrans.freeByAmount.replace('{min}', minFreeAmount.toLocaleString());
+
+      html += '<div class="flex justify-between items-center py-1.5 border-t border-emerald-300 text-emerald-950 bg-emerald-100/80 px-2 rounded-lg mt-1">' +
+        '<span><i class="fas fa-truck-fast text-emerald-700 mr-1"></i><b>' + cTrans.homeDelivery + ' (' + freeReason + ')</b></span>' +
+        '<b class="text-emerald-800 font-black">' + cTrans.freeTag + '</b>' +
+      '</div>';
+    } else if (stdFee > 0) {
+      deliveryFee = stdFee;
+      var diffAmount = Math.max(0, minFreeAmount - waterTotal);
+      var addMoreText = cTrans.addMoreHint.replace('{diff}', diffAmount.toLocaleString()).replace('{min}', minFreeBarrels);
+
+      html += '<div class="flex justify-between items-center py-1.5 border-t border-blue-200 text-blue-950 bg-blue-50 px-2 rounded-lg mt-1">' +
+        '<div>' +
+          '<span><i class="fas fa-truck text-blue-600 mr-1"></i><b>' + cTrans.deliveryFeeLabel + '</b></span>' +
+          '<span class="text-[9.5px] text-blue-700 block font-bold mt-0.5">' + addMoreText + '</span>' +
+        '</div>' +
+        '<b class="text-blue-900 font-black">+៛ ' + deliveryFee.toLocaleString() + '</b>' +
+      '</div>';
+    }
+  }
+
+  // 💵 ៥. បូកសរុបប្រាក់ចុងក្រោយ (៛, ฿, $)
+  var grandTotalKhr = Math.max(0, waterTotal + barrelFee + deliveryFee);
+  var grandTotalThb = Math.round(grandTotalKhr / rateT).toLocaleString();
+  var grandTotalUsd = (grandTotalKhr / rateU).toFixed(2);
+
+  if (listCont) {
+    listCont.innerHTML = html || ('<div class="text-center py-3 text-slate-400 italic text-xs">' + cTrans.emptyCart + '</div>');
+  }
+  
+  if (grandText) {
+    grandText.innerHTML = '<div class="space-y-0.5 text-right">' +
+      '<div class="text-base sm:text-lg font-black text-emerald-700 leading-tight">៛ ' + grandTotalKhr.toLocaleString() + '</div>' +
+      '<div class="text-xs sm:text-sm font-black text-amber-700 leading-tight">฿ ' + grandTotalThb + '</div>' +
+      '<div class="text-xs sm:text-sm font-black text-blue-700 leading-tight">$ ' + grandTotalUsd + '</div>' +
+    '</div>';
+  }
+
+  if (khqrDue) {
+    khqrDue.innerHTML = '<div class="space-y-0.5 text-center mt-1">' +
+      '<div class="text-emerald-700 text-sm sm:text-base font-black">៛ ' + grandTotalKhr.toLocaleString() + '</div>' +
+      '<div class="text-xs font-black text-amber-700">฿ ' + grandTotalThb + '</div>' +
+      '<div class="text-xs font-black text-blue-700">$ ' + grandTotalUsd + '</div>' +
+    '</div>';
+  }
+
+  return {
+    grandTotal: grandTotalKhr,
+    grandTotalThb: grandTotalThb,
+    grandTotalUsd: grandTotalUsd,
+    deliveryFee: deliveryFee,
+    barrelFee: barrelFee,
+    freeGifts: freeGiftItems
+  };
+}
     
         // ➕➖ មុខងារបន្ថែម ឬបន្ថយចំនួនទំនិញផ្ទាល់ពីលើផ្ទាំង Checkout
     function adjustCheckoutItemQty(id, delta) {
