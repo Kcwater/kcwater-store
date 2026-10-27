@@ -721,11 +721,7 @@ function setSettlePayMode(mode) {
   calcSettleChange();
 }
 
-// ==========================================
-// 💾 ៧. បញ្ជាក់ការទូទាត់លុយ (SUBMIT SETTLEMENT ទៅ SUPABASE)
-// ==========================================
-var isSubmittingSettleLock = false;
-
+// 💾 មុខងារបញ្ជាក់ការទូទាត់លុយ & ចេញវិក្កយបត្រ (កែសម្រួលជួរទូទាត់បំណុលចាស់ច្បាស់លាស់)
 async function submitSettlementPayment() {
   if (isSubmittingSettleLock) return;
 
@@ -739,11 +735,28 @@ async function submitSettlementPayment() {
   var includeOldDebt = cbOldDebt ? cbOldDebt.checked : true;
 
   if (selectedIds.length === 0 && (!includeOldDebt || currentSettlementOldDebt === 0)) {
-    showToast("សូមធីកជ្រើសរើសយ៉ាងហោចណាស់ ១ ជួរដើម្បីទូទាត់!", "error"); 
+    if (typeof kcAlert === 'function') {
+      await kcAlert({
+        title: "មិនទាន់បានជ្រើសរើស",
+        message: "សូមធីកជ្រើសរើសយ៉ាងហោចណាស់ ១ ជើងទឹកដើម្បីទូទាត់ប្រាក់!",
+        type: "warning"
+      });
+    } else {
+      showToast("សូមធីកជ្រើសរើសយ៉ាងហោចណាស់ ១ ជួរដើម្បីទូទាត់!", "error");
+    }
     return;
   }
+
   if (paid === 0) {
-    showToast("សូមបញ្ចូលចំនួនប្រាក់ដែលបានបង់!", "error"); 
+    if (typeof kcAlert === 'function') {
+      await kcAlert({
+        title: "ខ្វះចំនួនប្រាក់",
+        message: "សូមបញ្ចូលចំនួនប្រាក់ដែលបានទទួលពីអតិថិជន!",
+        type: "warning"
+      });
+    } else {
+      showToast("សូមបញ្ចូលចំនួនប្រាក់ដែលបានបង់!", "error");
+    }
     return;
   }
 
@@ -772,7 +785,7 @@ async function submitSettlementPayment() {
   isSubmittingSettleLock = true;
 
   try {
-    // ១. ប្តូរ status ទៅ 'Paid' ក្នុង transactions table
+    // ១. ប្តូរស្ថានភាពជើងទឹកដែលបានធីកទៅជា 'Paid' ក្នុង Transactions
     if (selectedIds.length > 0) {
       const { error: updErr } = await supabaseClient
         .from('transactions')
@@ -781,7 +794,7 @@ async function submitSettlementPayment() {
       if (updErr) throw updErr;
     }
 
-    // ២. កត់ត្រាចូល settlements table ក្នុង Supabase
+    // ២. កត់ត្រាចូលតារាង Settlements ក្នុង Supabase
     const { error: setErr } = await supabaseClient.from('settlements').insert([{
       customer_name: currentSettlementCustomer,
       total_due_khr: totalDue,
@@ -795,13 +808,13 @@ async function submitSettlementPayment() {
     }]);
     if (setErr) throw setErr;
 
-    // ៣. បិទបញ្ចប់សំណើ Pending Payment បើមាន
+    // ៣. បិទបញ្ចប់សំណើ Pending Payment របស់ម៉ូយ (បើមាន)
     if (currentActivePendingPaymentId) {
       await supabaseClient.from('pending_payments').update({ status: 'Approved' }).eq('id', currentActivePendingPaymentId);
       currentActivePendingPaymentId = null;
     }
 
-    // ៤. បាញ់ Telegram Alert
+    // ៤. ផ្ញើ Telegram Alert
     try {
       var methodLabel = (currentSettlementPayMode === 'ABA') ? '📱 ស្កេន ABA' : 
                         (currentSettlementPayMode === 'Split' ? '🔀 ចម្រុះ (លុយសុទ្ធ: ៛ ' + cashKhrRecorded.toLocaleString() + ' + ABA: ៛ ' + scanKhrRecorded.toLocaleString() + ')' : '💵 លុយសុទ្ធ');
@@ -817,28 +830,27 @@ async function submitSettlementPayment() {
       sendTelegramAlert(tgMsg);
     } catch(e) {}
 
-    // ៥. 🔔 សំឡេងរោទ៍ Chime & បាញ់កាំជ្រួច
+    // ៥. សំឡេង Chime & បាញ់កាំជ្រួច
     playPaymentSuccessAudio();
     if (typeof confetti === 'function') confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
 
-    // ៦. 🧾 បង្កើតវិក្កយបត្ររូបភាព (Receipt PNG)
+    // ៦. 🧾 បង្កើតវិក្កយបត្ររូបភាព (បន្ថែមជួរបំណុលចាស់ឱ្យស៊ីគ្នានឹងសរុបប្រាក់ ១០០%)
     var receiptItems = currentSettlementItems.filter(i => selectedIds.indexOf(i.id) !== -1);
     
-    // ✅ បើបង់តែបំណុលចាស់ ឱ្យវិក្កយបត្របង្ហាញជួរ "ទូទាត់បំណុលចាស់" កុំឱ្យចេញតារាងទទេ
-    if (receiptItems.length === 0 && includeOldDebt && currentSettlementOldDebt > 0) {
-      receiptItems = [{
-        name: "ទូទាត់បំណុលចាស់ (Old Debt Settlement)",
+    if (includeOldDebt && currentSettlementOldDebt > 0) {
+      receiptItems.push({
+        name: "បំណុលចាស់ពីមុន (Old Debt Balance)",
         qty: 1,
-        price: actualSettledPaid,
+        price: currentSettlementOldDebt,
         currency: "KHR"
-      }];
+      });
     }
 
     generateReceiptImage("SET-" + new Date().getTime(), currentSettlementCustomer, totalDue, paid, receiptItems, "វិក្កយបត្រទូទាត់ប្រាក់ (SETTLEMENT)");
 
     showToast("បានទូទាត់ប្រាក់ និងជម្រះបញ្ជីជោគជ័យ!", "success");
 
-    // Refresh ឡើងវិញ
+    // ៧. Refresh ផ្ទាំង Settlement ឡើងវិញ
     document.getElementById('settlement_ui').classList.add('hidden');
     checkAdminPendingPayments();
     fetchSettlementOverviewData();
