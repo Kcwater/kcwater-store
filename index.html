@@ -1837,12 +1837,19 @@ function renderCategoryChips() {
     labels.ALL + 
   '</button>';
 
-  // ខ. ប៊ូតុង "❤️ ចូលចិត្ត" (បង្ហាញជានិច្ច ងាយស្រួលភ្ញៀវចុចទិញម្តងទៀត)
-  var isFavActive = (activeCatalogCategoryFilter === 'FAVORITES');
-  html += '<button type="button" onclick="filterCatalog(\'FAVORITES\', this)" id="catBtn_FAVORITES" class="cat-chip px-3.5 py-2 rounded-2xl whitespace-nowrap active:scale-95 transition flex items-center gap-1 ' + 
-    (isFavActive ? 'bg-rose-600 text-white shadow-xs font-black' : 'bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100') + '">' + 
-    labels.FAVORITES + 
-  '</button>';
+  // ខ. ប៊ូតុង "❤️ ចូលចិត្ត" (បង្ហាញតែពេលមានចុចបេះដូង favCount > 0 បើគ្មានទេគឺលាក់ចោល ១០០%)
+  if (favCount > 0) {
+    var isFavActive = (activeCatalogCategoryFilter === 'FAVORITES');
+    html += '<button type="button" onclick="filterCatalog(\'FAVORITES\', this)" id="catBtn_FAVORITES" class="cat-chip px-3.5 py-2 rounded-2xl whitespace-nowrap active:scale-95 transition flex items-center gap-1 ' + 
+      (isFavActive ? 'bg-rose-600 text-white shadow-xs font-black' : 'bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100') + '">' + 
+      labels.FAVORITES + 
+    '</button>';
+  } else {
+    // បើភ្ញៀវដកបេះដូងអស់ ឱ្យត្រឡប់ទៅមើលទំនិញទាំងអស់ (ALL) វិញស្វ័យប្រវត្តិ
+    if (activeCatalogCategoryFilter === 'FAVORITES') {
+      activeCatalogCategoryFilter = 'ALL';
+    }
+  }
 
   // គ. ត្រួតពិនិត្យ និងបង្ហាញតែប្រអប់ណាដែលមានចំនួនទំនិញ > 0 ប៉ុណ្ណោះ!
   var categoriesToCheck = [
