@@ -5,6 +5,13 @@
 
 var currentPosDiscount = { type: 'NONE', value: 0 };
 var activeQuickRestockData = null;
+// 🔗 Shortcut Aliases សម្រាប់ Render ទំនិញ POS & កន្ត្រក (ការពារកុំឱ្យ ReferenceError គាំង POS)
+var rPG = function() { 
+  if (typeof renderProductGrid === 'function') renderProductGrid(); 
+};
+var rC = function() { 
+  if (typeof renderCart === 'function') renderCart(); 
+};
 
 // 🔑 មុខងារចូលប្រើប្រាស់សុវត្ថិភាពខ្ពស់ (ផ្ទៀងផ្ទាត់តាម Secure RPC ដោយមិនបញ្ចេញ Password មកក្រៅ)
 async function login() {
