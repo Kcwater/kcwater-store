@@ -972,14 +972,7 @@ async function executeFinalCompleteDelivery() {
     }
   }
 }
-// 🖼️ ឃ្លាំងផ្ទុករូបថតសុវត្ថិភាព (ការពារកុំឱ្យបាក់ HTML ដោយសារ Base64 វែង)
-var safeOrderPhotoStore = {};
 
-function storeOrderPhoto(orderId, photoUrl, custName) {
-  if (orderId && photoUrl) {
-    safeOrderPhotoStore[orderId] = { url: photoUrl, name: custName || 'ភ្ញៀវ' };
-  }
-}
 
 // 🖼️ មុខងារបើកមើលរូបថតមុខផ្ទះភ្ញៀវប្រកបដោយសុវត្ថិភាព ១០០% (លែងបាត់ប៊ូតុងទៀតហើយ)
 function viewOrderHousePhotoById(orderId) {
