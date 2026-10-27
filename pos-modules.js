@@ -2064,6 +2064,69 @@ function renderSettingsModule() {
       '</div>' +
     '</div>' +
 
+    // 🖼️ ៥. កាតគ្រប់គ្រងផ្ទាំងស្លាយ Web (Banner & Slide Manager)
+    '<div class="card border-t-4 border-teal-600 shadow-xl p-5 mb-0 space-y-3.5 bg-white">' +
+      '<div class="flex justify-between items-center border-b pb-2">' +
+        '<div>' +
+          '<h3 class="font-extrabold text-teal-950 text-base flex items-center gap-2">' +
+            '<i class="fas fa-images text-teal-600"></i>គ្រប់គ្រងផ្ទាំងស្លាយលើ Web (Slides & Banners)' +
+          '</h3>' +
+          '<p class="text-[10px] text-gray-500 font-bold mt-0.5">ដាក់រូបភាពទំនិញពិត និងកែអក្សរលើស្លាយទាំង ៤</p>' +
+        '</div>' +
+        '<span class="text-[10px] font-black text-teal-800 bg-teal-100 px-2.5 py-0.5 rounded-full border border-teal-300">Web Slides</span>' +
+      '</div>' +
+
+      // ប៊ូតុងរើសស្លាយ ១ ដល់ ៤
+      '<div class="grid grid-cols-4 gap-1.5 p-1 bg-slate-100 rounded-2xl border text-xs font-bold">' +
+        '<button type="button" id="tabSlide_0" onclick="switchSlideEditTab(0)" class="py-2 rounded-xl bg-teal-700 text-white shadow-xs">ស្លាយ ១ (ទឹក)</button>' +
+        '<button type="button" id="tabSlide_1" onclick="switchSlideEditTab(1)" class="py-2 rounded-xl text-slate-600 hover:bg-white">ស្លាយ ២ (ស្បៀង)</button>' +
+        '<button type="button" id="tabSlide_2" onclick="switchSlideEditTab(2)" class="py-2 rounded-xl text-slate-600 hover:bg-white">ស្លាយ ៣ (ប្រើប្រាស់)</button>' +
+        '<button type="button" id="tabSlide_3" onclick="switchSlideEditTab(3)" class="py-2 rounded-xl text-slate-600 hover:bg-white">ស្លាយ ៤ (ដឹកជញ្ជូន)</button>' +
+      '</div>' +
+
+      // ប្រអប់បញ្ចូលរូបភាព
+      '<div class="p-3 bg-slate-50 border-2 border-dashed border-teal-300 rounded-2xl flex items-center justify-between gap-3">' +
+        '<div class="flex items-center gap-2.5">' +
+          '<div class="w-20 h-14 rounded-xl bg-white border flex items-center justify-center overflow-hidden shadow-xs shrink-0">' +
+            '<img id="slideImgPreview" src="https://cdn-icons-png.flaticon.com/512/3100/3100566.png" class="w-full h-full object-cover">' +
+          '</div>' +
+          '<div>' +
+            '<b class="text-xs text-slate-800 block" id="slideImgTitleHint">រូបភាពស្លាយ</b>' +
+            '<span class="text-[9.5px] text-slate-400 block" id="slideImgNote">អាច Upload រូបទំនិញជាក់ស្តែង</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="flex items-center gap-1.5">' +
+          '<label class="cursor-pointer px-3 py-2 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl text-xs shadow-xs active:scale-95 transition whitespace-nowrap">' +
+            '<i class="fas fa-camera mr-1"></i> រើសរូបភាព' +
+            '<input type="file" accept="image/*" onchange="previewSlideImageFile(this)" class="hidden">' +
+          '</label>' +
+          '<button type="button" onclick="removeSlideImage()" class="p-2 text-red-500 hover:bg-red-50 rounded-xl active:scale-90" title="លុបរូប">' +
+            '<i class="fas fa-trash-can text-xs"></i>' +
+          '</button>' +
+        '</div>' +
+      '</div>' +
+
+      // ប្រអប់កែប្រែអក្សរ
+      '<div class="space-y-2 text-xs text-left">' +
+        '<div>' +
+          '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">ផ្លាកសម្គាល់ខាងលើ (Tag)</label>' +
+          '<input type="text" id="inp_slide_tag" oninput="onSlideFieldChanged()" class="font-bold border p-2 rounded-xl w-full bg-white">' +
+        '</div>' +
+        '<div>' +
+          '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">ចំណងជើងធំ (Title) *</label>' +
+          '<input type="text" id="inp_slide_title" oninput="onSlideFieldChanged()" class="font-black border-2 border-teal-300 focus:border-teal-600 p-2 rounded-xl w-full text-slate-900 bg-white text-sm">' +
+        '</div>' +
+        '<div>' +
+          '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">ការពិពណ៌នាសង្ខេប (Description)</label>' +
+          '<textarea id="inp_slide_desc" oninput="onSlideFieldChanged()" rows="2" class="font-bold border p-2 rounded-xl w-full bg-white text-xs"></textarea>' +
+        '</div>' +
+      '</div>' +
+
+      '<button type="button" onclick="saveSlidesConfigToSupabase()" id="btnSaveSlidesAction" class="w-full py-3 bg-teal-700 hover:bg-teal-800 text-white rounded-2xl font-black text-xs sm:text-sm shadow-md active:scale-95 transition flex items-center justify-center gap-1.5">' +
+        '<i class="fas fa-floppy-disk"></i> រក្សាទុកផ្ទាំងស្លាយទាំងអស់ (Save Slides)' +
+      '</button>' +
+    '</div>' +
+
 // 🔔 ៤. Telegram Bot Alert (គាំទ្រទាំង Group ថៅកែ និង Group អ្នកដឹក)
     '<div class="card border-t-4 border-green-600 shadow-xl p-5 mb-0 space-y-3">' +
       '<div class="flex justify-between items-center">' +
@@ -2085,6 +2148,7 @@ function renderSettingsModule() {
   '</div>';
 
   loadSettingsForm();
+  switchSlideEditTab(0); // 👈 បង្ហាញស្លាយទី ១ ដំបូងគេ
   if (typeof updateRatePreviewLive === 'function') updateRatePreviewLive();
 }
 
@@ -2229,6 +2293,11 @@ async function loadSettingsForm() {
       if (r.key === 'Delivery_Fee_Standard') { var el = document.getElementById('set_del_fee'); if (el) el.value = r.value; }
       if (r.key === 'Delivery_Free_Min_Qty') { var el = document.getElementById('set_del_min'); if (el) el.value = r.value; }
       if (r.key === 'Delivery_Free_Min_Amount') { var el = document.getElementById('set_del_free_amount'); if (el) el.value = r.value; }
+      if (r.key === 'Store_Slides_Config' && r.value) {
+        try {
+          currentSlidesData = JSON.parse(r.value);
+        } catch(e) {}
+      }
       
       // Promo
       if (r.key === 'Promo_Status') { var el = document.getElementById('set_promo_status'); if (el) el.value = r.value; }
@@ -3154,6 +3223,122 @@ async function saveQuickExchangeRates() {
     if (btn) {
       btn.disabled = false;
       btn.innerHTML = '<i class="fas fa-floppy-disk mr-1"></i> រក្សាទុកអត្រាប្តូរប្រាក់';
+    }
+  }
+}
+
+// ==========================================
+// 🖼️ មុខងារគ្រប់គ្រង SLIDES & BANNERS លើ WEB
+// ==========================================
+var activeSlideIndex = 0;
+var defaultSlidesData = [
+  { id: 1, cat: 'BARREL', tag: '💧 ទឹកពិសាបរិសុទ្ធ ខេ ស៊ី (KC WATER)', title: 'ទឹកធុង ២០L & ទឹកយួរដបគ្រប់ចំណុះ', desc: 'ឆ្លងកាត់ការចម្រោះ ៧ ដំណាក់កាល UV និង Ozone ស្តង់ដារសុខភាព ១០០%', badge: '👉 ចុចមើលមុខទឹក', img: '' },
+  { id: 2, cat: 'GROCERY', tag: '🍚 ស្បៀងអាហារ & គ្រឿងទេសទូទៅ', title: 'អង្ករផ្កាម្លិះ មី ត្រីខ ប្រេងឆា ទឹកត្រី ទឹកស៊ីអ៊ីវ', desc: 'ស្បៀងអាហារថ្មីៗ គុណភាពខ្ពស់ សេវាដឹកជូនដល់មុខផ្ទះរហ័ស', badge: '👉 ចុចមើលគ្រឿងទេស', img: '' },
+  { id: 3, cat: 'HOUSEHOLD', tag: '🧻 របស់ប្រើប្រាស់ & អនាម័យ', title: 'ក្រដាសអនាម័យ សាប៊ូ & បរិក្ខារ', desc: 'សម្ភារប្រើប្រាស់ក្នុងផ្ទះប្រចាំថ្ងៃ ស្តង់ដារសុវត្ថិភាព និងអនាម័យ', badge: '👉 ចុចមើលរបស់ប្រើប្រាស់', img: '' },
+  { id: 4, cat: 'ALL', tag: '⚡ សេវាដឹកជញ្ជូន KC MART (ប៉ោយប៉ែត)', title: 'សេវាដឹកដល់មុខផ្ទះ ៣០ - ៤៥ នាទី', desc: 'ដឹកជូនដល់មុខផ្ទះផ្ទាល់ដី បន្ទប់ជួល ជាន់ខ្ពស់ និងអគារក្នុងក្រុងប៉ោយប៉ែត', badge: '🛵 អ្នកដឹកផ្លូវការ KC', img: '' }
+];
+var currentSlidesData = JSON.parse(JSON.stringify(defaultSlidesData));
+
+function switchSlideEditTab(idx) {
+  activeSlideIndex = idx;
+  for (var i = 0; i < 4; i++) {
+    var btn = document.getElementById('tabSlide_' + i);
+    if (btn) {
+      btn.className = (i === idx) ? 
+        "py-2 rounded-xl bg-teal-700 text-white shadow-xs" : 
+        "py-2 rounded-xl text-slate-600 hover:bg-white";
+    }
+  }
+
+  var s = currentSlidesData[idx] || defaultSlidesData[idx];
+  var tagInp = document.getElementById('inp_slide_tag');
+  var titleInp = document.getElementById('inp_slide_title');
+  var descInp = document.getElementById('inp_slide_desc');
+  var previewImg = document.getElementById('slideImgPreview');
+  var titleHint = document.getElementById('slideImgTitleHint');
+
+  if (tagInp) tagInp.value = s.tag || '';
+  if (titleInp) titleInp.value = s.title || '';
+  if (descInp) descInp.value = s.desc || '';
+  if (titleHint) titleHint.innerText = "រូបភាពស្លាយទី " + (idx + 1);
+
+  if (previewImg) {
+    previewImg.src = s.img || "https://cdn-icons-png.flaticon.com/512/3100/3100566.png";
+  }
+}
+
+function onSlideFieldChanged() {
+  var s = currentSlidesData[activeSlideIndex];
+  if (!s) return;
+  s.tag = document.getElementById('inp_slide_tag') ? document.getElementById('inp_slide_tag').value : '';
+  s.title = document.getElementById('inp_slide_title') ? document.getElementById('inp_slide_title').value : '';
+  s.desc = document.getElementById('inp_slide_desc') ? document.getElementById('inp_slide_desc').value : '';
+}
+
+function previewSlideImageFile(input) {
+  if (input.files && input.files[0]) {
+    var file = input.files[0];
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var img = new Image();
+      img.onload = function() {
+        var canvas = document.createElement('canvas');
+        var maxDim = 900;
+        var w = img.width, h = img.height;
+        if (w > h) { if (w > maxDim) { h = Math.round((h * maxDim) / w); w = maxDim; } }
+        else { if (h > maxDim) { w = Math.round((w * maxDim) / h); h = maxDim; } }
+        canvas.width = w; canvas.height = h;
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        var base64 = canvas.toDataURL('image/jpeg', 0.85);
+
+        currentSlidesData[activeSlideIndex].img = base64;
+        var preview = document.getElementById('slideImgPreview');
+        if (preview) preview.src = base64;
+        showToast("បានភ្ជាប់រូបភាពស្លាយទី " + (activeSlideIndex + 1) + " រួចរាល់!", "success");
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+function removeSlideImage() {
+  currentSlidesData[activeSlideIndex].img = '';
+  var preview = document.getElementById('slideImgPreview');
+  if (preview) preview.src = "https://cdn-icons-png.flaticon.com/512/3100/3100566.png";
+  showToast("បានដករូបភាពស្លាយទី " + (activeSlideIndex + 1) + " ចេញ!", "info");
+}
+
+async function saveSlidesConfigToSupabase() {
+  onSlideFieldChanged();
+  var btn = document.getElementById('btnSaveSlidesAction');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> កំពុងរក្សាទុកស្លាយ...';
+  }
+
+  try {
+    const { error } = await supabaseClient.from('settings').upsert([
+      { key: 'Store_Slides_Config', value: JSON.stringify(currentSlidesData) }
+    ]);
+    if (error) throw error;
+
+    if (typeof kcAlert === 'function') {
+      await kcAlert({
+        title: "ជោគជ័យ! 🎉",
+        message: "បានរក្សាទុកផ្ទាំងស្លាយ Web រួចរាល់! រូបភាព និងអក្សរនឹងបង្ហាញលើទូរស័ព្ទភ្ញៀវភ្លាមៗ។",
+        type: "success"
+      });
+    } else {
+      showToast("បានរក្សាទុកផ្ទាំងស្លាយ Web ជោគជ័យ!", "success");
+    }
+  } catch(err) {
+    showToast("កំហុសរក្សាទុកស្លាយ៖ " + err.message, "error");
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-floppy-disk mr-1"></i> រក្សាទុកផ្ទាំងស្លាយទាំងអស់ (Save Slides)';
     }
   }
 }
