@@ -2108,6 +2108,14 @@ function renderSettingsModule() {
 
       // ប្រអប់កែប្រែអក្សរ
       '<div class="space-y-2 text-xs text-left">' +
+        // 🔘 ប៊ូតុងបិទ/បើកស្លាយ (ON / OFF)
+        '<div>' +
+          '<label class="text-[10px] font-black text-slate-700 uppercase block mb-1">ស្ថានភាពស្លាយនេះ (Status) *</label>' +
+          '<select id="inp_slide_status" onchange="onSlideFieldChanged()" class="font-black border-2 border-teal-400 bg-teal-50 text-teal-950 p-2 rounded-xl w-full text-xs outline-none">' +
+            '<option value="ON">🔔 បើកបង្ហាញលើ Web (ON)</option>' +
+            '<option value="OFF">🔕 បិទមិនបង្ហាញ (OFF)</option>' +
+          '</select>' +
+        '</div>' +
         '<div>' +
           '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">ផ្លាកសម្គាល់ខាងលើ (Tag)</label>' +
           '<input type="text" id="inp_slide_tag" oninput="onSlideFieldChanged()" class="font-bold border p-2 rounded-xl w-full bg-white">' +
@@ -3239,6 +3247,7 @@ var defaultSlidesData = [
 ];
 var currentSlidesData = JSON.parse(JSON.stringify(defaultSlidesData));
 
+// 🖼️ ធ្វើបច្ចុប្បន្នភាព Functions ស្លាយឱ្យស្គាល់ប៊ូតុង ON / OFF
 function switchSlideEditTab(idx) {
   activeSlideIndex = idx;
   for (var i = 0; i < 4; i++) {
@@ -3251,12 +3260,15 @@ function switchSlideEditTab(idx) {
   }
 
   var s = currentSlidesData[idx] || defaultSlidesData[idx];
+  var statusInp = document.getElementById('inp_slide_status');
   var tagInp = document.getElementById('inp_slide_tag');
   var titleInp = document.getElementById('inp_slide_title');
   var descInp = document.getElementById('inp_slide_desc');
   var previewImg = document.getElementById('slideImgPreview');
   var titleHint = document.getElementById('slideImgTitleHint');
 
+  // កំណត់ស្ថានភាព ON ឬ OFF
+  if (statusInp) statusInp.value = s.status || (s.img ? 'ON' : 'OFF');
   if (tagInp) tagInp.value = s.tag || '';
   if (titleInp) titleInp.value = s.title || '';
   if (descInp) descInp.value = s.desc || '';
@@ -3270,11 +3282,11 @@ function switchSlideEditTab(idx) {
 function onSlideFieldChanged() {
   var s = currentSlidesData[activeSlideIndex];
   if (!s) return;
+  s.status = document.getElementById('inp_slide_status') ? document.getElementById('inp_slide_status').value : 'OFF';
   s.tag = document.getElementById('inp_slide_tag') ? document.getElementById('inp_slide_tag').value : '';
   s.title = document.getElementById('inp_slide_title') ? document.getElementById('inp_slide_title').value : '';
   s.desc = document.getElementById('inp_slide_desc') ? document.getElementById('inp_slide_desc').value : '';
 }
-
 function previewSlideImageFile(input) {
   if (input.files && input.files[0]) {
     var file = input.files[0];
