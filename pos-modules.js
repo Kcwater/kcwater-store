@@ -598,9 +598,25 @@ async function quickUpdateSortWeb(prodId, val) {
   }
 }
 
-// ⚡ ៣. ប៊ូតុងវេទមន្ត៖ ចុច ១ ឃ្លីក រៀបចំលេខរៀងឡើងវិញទាំងអស់ (1, 2, 3, 4, 5...) គ្មានលេខស្ទួនឡើយ!
+// ⚡ ៣. ប៊ូតុងវេទមន្ត៖ រៀបចំលេខរៀងឡើងវិញទាំងអស់ (1, 2, 3, 4, 5...) គ្មានលេខស្ទួន & លឿនដូចផ្លេកបន្ទោរ
 async function autoFixAllSortDuplicates() {
+  // 🛡️ សួរបញ្ជាក់ Admin តាមផ្ទាំង Pop-up KC POS
+  var ok = true;
+  if (typeof kcConfirm === 'function') {
+    ok = await kcConfirm({
+      title: "រៀបចំលេខរៀងស្វ័យប្រវត្តិ",
+      message: "តើអ្នកចង់ឱ្យប្រព័ន្ធរៀបចំលេខរៀងទំនិញទាំង POS និង Web ឡើងវិញពី 1, 2, 3... ដោយស្វ័យប្រវត្តិមែនទេ?",
+      type: "info",
+      confirmText: "យល់ព្រមរៀបចំ"
+    });
+  } else {
+    ok = confirm("តើអ្នកចង់ឱ្យប្រព័ន្ធរៀបចំលេខរៀងឡើងវិញដោយស្វ័យប្រវត្តិមែនទេ?");
+  }
+
+  if (!ok) return;
+
   showToast("កំពុងរៀបចំលេខរៀងកុំឱ្យស្ទួន...", "info");
+
   try {
     // ក. រៀបចំលេខ POS ឡើងវិញ (1, 2, 3...)
     var posItems = allProducts.filter(p => {
@@ -614,20 +630,36 @@ async function autoFixAllSortDuplicates() {
       await supabaseClient.from('products').update({ sort_order: nPos }).eq('id', posItems[i].id);
     }
 
-    // ខ. រៀបចំលេខ Web ឡើងវិញ (1, 2, 3...)
+    // ខ. រៀបចំលេខ Web ឡើងវិញ (1, 2, 3...) ដោយបាញ់ចូល Database តែម្តងគត់ (Batch Upsert 10x Faster)
     var webItems = allProducts.filter(p => {
       var ch = String(p.channel || 'ALL').toUpperCase();
       return ch === 'ALL' || ch === 'ONLINE';
     }).sort((a, b) => (parseInt(a.online_sort_order || a.sort_order) || 99) - (parseInt(b.online_sort_order || b.sort_order) || 99));
 
+    var webSettingBatch = [];
     for (var j = 0; j < webItems.length; j++) {
       var nWeb = j + 1;
       webItems[j].online_sort_order = nWeb;
-      await supabaseClient.from('settings').upsert([{ key: 'ONLINE_SORT_' + webItems[j].id, value: String(nWeb) }]);
+      webSettingBatch.push({ key: 'ONLINE_SORT_' + webItems[j].id, value: String(nWeb) });
     }
 
-    showToast("🎉 បានតម្រៀបលេខរៀងទាំង POS និង Web ឡើងវិញរលូន ១០០% គ្មានស្ទួនទៀតឡើយ!", "success");
+    if (webSettingBatch.length > 0) {
+      await supabaseClient.from('settings').upsert(webSettingBatch);
+    }
+
     renderStockTableRows();
+
+    if (typeof kcAlert === 'function') {
+      await kcAlert({
+        title: "រៀបចំលេខរៀងជោគជ័យ! 🎉",
+        message: "លេខរៀងទំនិញទាំង POS និង Web ត្រូវបានរៀបចំឡើងវិញតាមលំដាប់លំដោយ 1, 2, 3, 4... យ៉ាងស្អាត គ្មានលេខស្ទួនទៀតឡើយ!",
+        type: "success",
+        confirmText: "យល់ព្រម"
+      });
+    } else {
+      showToast("🎉 បានតម្រៀបលេខរៀងទាំង POS និង Web ឡើងវិញរលូន ១០០%!", "success");
+    }
+
   } catch(e) {
     showToast("កំហុស៖ " + e.message, "error");
   }
