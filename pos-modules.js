@@ -8,9 +8,7 @@ var editingProductId = null;
 var custPortalDataCache = null;
 var currentCustPayMode = "ABA";
 
-// ==========================================
-// 📦 ១. គ្រប់គ្រងស្តុក & បង្កើតទំនិញ (លុបប៊ូតុងស្ទួន & Sync លេខរៀងរួចរាល់)
-// ==========================================
+// 📦 ១. គ្រប់គ្រងស្តុក & បង្កើតទំនិញ (មានប្រព័ន្ធ Live KHR Converter បង្ហាញលុយខ្មែរអូតូពេលវាយ ฿ ឬ $)
 function renderStockModule() {
   var area = document.getElementById('contentArea');
   if (!area) return;
@@ -38,19 +36,22 @@ function renderStockModule() {
             '<option value="ផលិតឯង">ផលិតខ្លួនឯង (ទឹកធុង)</option>' +
             '<option value="ទិញគេ" selected>ទិញគេមកលក់បន្ត (គ្រឿងទេស/ក្រដាស/អង្ករ/បរិក្ខារ)</option>' +
           '</select>' +
-          '<select id="pCu" class="border p-2.5 rounded-xl font-bold text-xs bg-white">' +
-            '<option value="KHR">KHR (៛)</option>' +
-            '<option value="THB">THB (฿)</option>' +
-            '<option value="USD">USD ($)</option>' +
+          '<select id="pCu" onchange="updateProductCostPreviewLive()" class="border-2 border-blue-300 p-2.5 rounded-xl font-black text-xs bg-blue-50/50 text-blue-950">' +
+            '<option value="KHR">KHR (៛) - លុយខ្មែរ</option>' +
+            '<option value="THB">THB (฿) - លុយថៃ</option>' +
+            '<option value="USD">USD ($) - ដុល្លារ</option>' +
           '</select>' +
         '</div>' +
 
         '<div id="cSec" style="display:block">' +
-          '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">ថ្លៃដើមទិញចូល (Cost)</label>' +
-          '<input type="number" id="pCo" placeholder="ថ្លៃដើម (ឧ៖ ៤,០០០)" class="border p-2.5 rounded-xl font-bold w-full text-xs outline-none focus:border-green-600">' +
+          '<div class="flex justify-between items-center mb-1">' +
+            '<label class="text-[10px] font-bold text-gray-500 uppercase">ថ្លៃដើមទិញចូល (Cost)</label>' +
+            '<span id="pCoPreviewHint" class="text-[10px] font-black text-emerald-700"></span>' +
+          '</div>' +
+          '<input type="number" id="pCo" oninput="updateProductCostPreviewLive()" placeholder="ថ្លៃដើម (ឧ៖ ៤,០០០ ឬ 35฿ ឬ $1.5)" class="border p-2.5 rounded-xl font-bold w-full text-xs outline-none focus:border-green-600">' +
         '</div>' +
 
-        // 🏷️ ផ្នែកកំណត់៖ ប៉ុស្តិ៍លក់, ប្រភេទទំនិញ, និង ផ្លាកសម្គាល់
+        // 🏷️ ប៉ុស្តិ៍លក់, ប្រភេទទំនិញ, និង ផ្លាកសម្គាល់
         '<div class="grid grid-cols-1 sm:grid-cols-3 gap-2">' +
           '<div>' +
             '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">ប៉ុស្តិ៍លក់ (Channel) *</label>' +
@@ -84,19 +85,25 @@ function renderStockModule() {
           '</div>' +
         '</div>' +
 
-        // 💵 ប្រអប់តម្លៃ (POS vs Online)
+        // 💵 ប្រអប់តម្លៃ (POS vs Online) មានភ្ជាប់ Live KHR Hint
         '<div id="priceInputsContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 bg-emerald-50/60 p-3 rounded-2xl border border-emerald-200">' +
           '<div id="secPosPrice">' +
-            '<label class="text-[10px] font-extrabold text-amber-900 uppercase block mb-1">🚚 តម្លៃបោះដុំដេប៉ូ (POS) *</label>' +
-            '<input type="number" id="pPr" placeholder="ឧ៖ ៦០០" class="font-black text-amber-900 bg-white border border-amber-300 rounded-xl p-2.5 w-full outline-none text-sm">' +
+            '<div class="flex justify-between items-center mb-1">' +
+              '<label class="text-[10px] font-extrabold text-amber-900 uppercase">🚚 តម្លៃបោះដុំដេប៉ូ (POS) *</label>' +
+              '<span id="pPrPreviewHint" class="text-[10px] font-black text-amber-700"></span>' +
+            '</div>' +
+            '<input type="number" id="pPr" oninput="updateProductCostPreviewLive()" placeholder="ឧ៖ ៦០០" class="font-black text-amber-900 bg-white border border-amber-300 rounded-xl p-2.5 w-full outline-none text-sm">' +
           '</div>' +
           '<div id="secOnlinePrice">' +
-            '<label class="text-[10px] font-extrabold text-emerald-900 uppercase block mb-1">🌐 តម្លៃលក់លើ Web តាមផ្ទះ *</label>' +
-            '<input type="number" id="pOnlinePr" placeholder="ឧ៖ ១៥០០" class="font-black text-emerald-800 bg-white border border-emerald-300 rounded-xl p-2.5 w-full outline-none text-sm">' +
+            '<div class="flex justify-between items-center mb-1">' +
+              '<label class="text-[10px] font-extrabold text-emerald-900 uppercase">🌐 តម្លៃលក់លើ Web តាមផ្ទះ *</label>' +
+              '<span id="pOnlinePrPreviewHint" class="text-[10px] font-black text-emerald-700"></span>' +
+            '</div>' +
+            '<input type="number" id="pOnlinePr" oninput="updateProductCostPreviewLive()" placeholder="ឧ៖ ១៥០០" class="font-black text-emerald-800 bg-white border border-emerald-300 rounded-xl p-2.5 w-full outline-none text-sm">' +
           '</div>' +
         '</div>' +
 
-        // ✍️ ផ្នែកសរសេរការពិពណ៌នាទំនិញ
+        // ការពិពណ៌នា
         '<div>' +
           '<label class="text-[10px] font-bold text-emerald-900 uppercase block mb-1"><i class="fas fa-file-lines text-emerald-600 mr-1"></i> ការរៀបរាប់ពីមុខទំនិញ (Description បង្ហាញលើ Web)</label>' +
           '<textarea id="pDesc" rows="2" placeholder="ឧទាហរណ៍៖ អង្ករផ្កាម្លិះគុណភាពលេខ១ ក្រអូប ស្រទន់ ឆ្ងាញ់..." class="border-2 border-emerald-200 focus:border-emerald-600 p-2.5 rounded-xl font-bold w-full text-xs outline-none bg-white"></textarea>' +
@@ -157,7 +164,6 @@ function renderStockModule() {
       '<button onclick="saveStockInToSupabase()" id="btnSaveStockInAction" class="btn-green bg-blue-600 hover:bg-blue-700 mt-3 font-bold py-3 text-xs">យល់ព្រមបញ្ចូលស្តុក</button>' +
     '</div>' +
 
-    // ✅ កន្លែងតារាងទំនិញ៖ សម្អាតប៊ូតុងស្ទួនចេញ និងរៀបចំជួរ Tabs ឱ្យស្អាតទូលាយ
     '<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-2 px-1">' +
       '<div class="flex items-center gap-1 bg-gray-100 p-1 rounded-xl text-xs">' +
         '<button type="button" onclick="switchStockSortView(\'WEB\')" id="btnSortViewWEB" class="px-3 py-1.5 rounded-lg transition bg-white text-emerald-800 shadow-xs font-black">🌐 មើលតាមលំដាប់ Web</button>' +
@@ -174,12 +180,12 @@ function renderStockModule() {
         '<tbody id="stockModuleTableBody"></tbody>' +
       '</table>' +
     '</div>' +
+  '</div>';
 
   tCF();
   toggleChannelPrices();
   initStockModuleDropdowns();
 
-  // 🔄 ធានាថាទិន្នន័យលេខរៀង Web ត្រូវបានទាញមក sync មុនបង្ហាញតារាង
   if (!allProducts || allProducts.length === 0) {
     fetchInitialPOSData().then(function() {
       if (typeof syncOnlineSortsFromDatabase === 'function') {
@@ -196,6 +202,39 @@ function renderStockModule() {
       renderStockTableRows();
     }
   }
+}
+
+// 🪙 មុខងារជំនួយគណនាបំប្លែងលុយថៃ ฿ និងដុល្លារ $ ចេញជាលុយខ្មែរ ៛ ភ្លាមៗ (Live Preview)
+function updateProductCostPreviewLive() {
+  var cuEl = document.getElementById('pCu');
+  var coEl = document.getElementById('pCo');
+  var prEl = document.getElementById('pPr');
+  var opEl = document.getElementById('pOnlinePr');
+
+  var coHint = document.getElementById('pCoPreviewHint');
+  var prHint = document.getElementById('pPrPreviewHint');
+  var opHint = document.getElementById('pOnlinePrPreviewHint');
+
+  if (!cuEl) return;
+  var curr = cuEl.value.toUpperCase();
+  var rateUSD = (typeof exchangeRateUSD !== 'undefined') ? exchangeRateUSD : 4100;
+  var rateTHB = (typeof exchangeRateTHB !== 'undefined') ? exchangeRateTHB : 115;
+
+  function formatKhrHint(val) {
+    var num = parseFloat(val || 0);
+    if (num <= 0) return '';
+    if (curr === 'USD') {
+      return '≈ ៛ ' + Math.round(num * rateUSD).toLocaleString();
+    } else if (curr === 'THB') {
+      return '≈ ៛ ' + Math.round(num * rateTHB).toLocaleString();
+    } else {
+      return '';
+    }
+  }
+
+  if (coHint && coEl) coHint.innerText = formatKhrHint(coEl.value);
+  if (prHint && prEl) prHint.innerText = formatKhrHint(prEl.value);
+  if (opHint && opEl) opHint.innerText = formatKhrHint(opEl.value);
 }
 
 function tCF() {
@@ -620,18 +659,23 @@ function cancelEditProduct() {
   if (nameInp) setTimeout(function() { nameInp.focus(); }, 150);
 }
 
-// 📋 មុខងាររៀបចំកែប្រែទំនិញ (ទាញ Category, Description, Badge & លេខរៀង POS/Web មកបង្ហាញអូតូ)
+// 📋 មុខងាររៀបចំកែប្រែទំនិញ (ទាញ Category, Description & បង្ហាញការបំប្លែងលុយខ្មែរភ្លាមៗ)
 async function prepareEditProduct(id) {
   var p = allProducts.find(item => item.id === id);
   if (!p) return;
   editingProductId = p.id;
 
-  document.getElementById('prodFormTitle').innerHTML = '<i class="fas fa-edit text-blue-600"></i>កែសម្រួលទំនិញ៖ ' + p.name;
-  document.getElementById('btnCancelEditProd').classList.remove('hidden');
-
+  var titleEl = document.getElementById('prodFormTitle');
+  var cancelBtn = document.getElementById('btnCancelEditProd');
   var btn = document.getElementById('btnSaveProdAction');
-  btn.innerText = 'ធ្វើបច្ចុប្បន្នភាពទំនិញ (Update)';
-  btn.className = 'btn-green bg-blue-600 hover:bg-blue-700 py-3 text-sm font-bold shadow-md';
+
+  if (titleEl) titleEl.innerHTML = '<i class="fas fa-edit text-blue-600"></i>កែសម្រួលទំនិញ៖ ' + p.name;
+  if (cancelBtn) cancelBtn.classList.remove('hidden');
+
+  if (btn) {
+    btn.innerText = 'ធ្វើបច្ចុប្បន្នភាពទំនិញ (Update)';
+    btn.className = 'btn-green bg-blue-600 hover:bg-blue-700 py-3 text-sm font-bold shadow-md';
+  }
 
   document.getElementById('pI').value = p.id;
   document.getElementById('pN').value = p.name;
@@ -650,7 +694,7 @@ async function prepareEditProduct(id) {
   if (document.getElementById('pSortPos')) document.getElementById('pSortPos').value = sortPosVal;
   if (document.getElementById('pSortOnline')) document.getElementById('pSortOnline').value = sortOnlineVal;
 
-  // 📂 ទាញយក Category, Badge និង Description មកបង្ហាញលើប្រអប់
+  // 📂 ទាញយក Category, Badge និង Description
   var catInp = document.getElementById('pCategory');
   var badgeInp = document.getElementById('pBadge');
   var descInp = document.getElementById('pDesc');
@@ -668,7 +712,6 @@ async function prepareEditProduct(id) {
     const { data: setCat } = await supabaseClient.from('settings').select('value').eq('key', 'CAT_' + p.id).maybeSingle();
     if (setCat && setCat.value && catInp) catInp.value = setCat.value;
 
-    // 🌐 ទាញលេខរៀង Web ពិតប្រាកដពី Settings
     const { data: setWebSort } = await supabaseClient.from('settings').select('value').eq('key', 'ONLINE_SORT_' + p.id).maybeSingle();
     if (setWebSort && setWebSort.value && document.getElementById('pSortOnline')) {
       document.getElementById('pSortOnline').value = setWebSort.value;
@@ -682,6 +725,12 @@ async function prepareEditProduct(id) {
 
   tCF();
   toggleChannelPrices();
+
+  // 🪙 ដំណើរការគណនាបំប្លែងលុយខ្មែរភ្លាមៗលើអេក្រង់កែប្រែ
+  if (typeof updateProductCostPreviewLive === 'function') {
+    updateProductCostPreviewLive();
+  }
+
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
