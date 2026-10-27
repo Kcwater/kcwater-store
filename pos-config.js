@@ -261,7 +261,7 @@ async function loadSettingsAndTelegram() {
   }
 }
 
-// 📲 មុខងារផ្ញើសារដំណឹង Telegram (បង្ហាញមូលហេតុច្បាស់ៗលើអេក្រង់ពេល Error)
+// 📲 មុខងារផ្ញើសារដំណឹង Telegram (ប្រើផ្ទាំងជូនដំណឹងរបស់ POS kcAlert ពេលមានបញ្ហា)
 async function sendTelegramAlert(message, customChatId) {
   if (!telegramConfig.token || telegramConfig.status === 'OFF') return;
   var target = customChatId || telegramConfig.chatId;
@@ -280,8 +280,13 @@ async function sendTelegramAlert(message, customChatId) {
 
     var resData = await response.json();
     if (!resData.ok) {
-      // 🔔 លោត Pop-up ប្រាប់មូលហេតុពិតប្រាកដដែល Telegram មិនព្រមផ្ញើសារ
-      alert("⚠️ Telegram Error លើ Chat ID [" + target + "]:\n👉 " + resData.description);
+      if (typeof kcAlert === 'function') {
+        kcAlert({
+          title: "⚠️ Telegram Bot Error",
+          message: "មិនអាចផ្ញើសារទៅ Chat ID [" + target + "] បានទេ៖\n👉 " + resData.description,
+          type: "warning"
+        });
+      }
     }
   } catch(e) {
     console.error("Telegram alert error:", e);
