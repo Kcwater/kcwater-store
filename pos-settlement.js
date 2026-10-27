@@ -4,6 +4,7 @@
  *  ========================================================================== */
 
 var currentActivePendingPaymentId = null;
+var isSubmittingSettleLock = false;
 
 // 🔔 សំឡេងរោទ៍ដំណឹងពេលទូទាត់ជោគជ័យ (AUDIO SOUND FEEDBACK)
 function playPaymentSuccessAudio() {
