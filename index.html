@@ -2866,103 +2866,84 @@ function updateCheckoutCalculation() {
       }
     }
     
-    // 📥 ទាញយកការកំណត់ & បញ្ចូល Promotion ទៅក្នុង Slide ទី ១ តែមួយគត់ (កុំឱ្យធ្លាក់ទំនិញ)
-    async function loadStoreSettingsFromSupabase() {
-      try {
-        const { data: settings } = await supabaseClient.from('settings').select('*');
-        if (!settings) return;
+    // ⚡ មុខងារកំណត់ Settings ហាង (ទាញយកពី Cache ភ្លាមៗ 0ms មិនទាញ Database ជាន់គ្នាឡើយ)
+async function loadStoreSettingsFromSupabase() {
+  try {
+    var sMap = window.__kcCachedSettingsMap;
 
-        var sMap = {};
-        settings.forEach(r => { sMap[r.key] = r.value; });
-
-        if (sMap['Telegram_Token']) telegramSettings.token = sMap['Telegram_Token'];
-        if (sMap['Telegram_ChatID']) telegramSettings.chatId = sMap['Telegram_ChatID'];
-        if (sMap['Telegram_Alert_Status']) telegramSettings.status = sMap['Telegram_Alert_Status'];
-
-        if (sMap['Delivery_Fee_Standard']) storeDeliveryConfig.standardFee = parseFloat(sMap['Delivery_Fee_Standard']) || 0;
-        if (sMap['Delivery_Free_Min_Qty']) storeDeliveryConfig.freeMinQty = parseInt(sMap['Delivery_Free_Min_Qty']) || 2;
-        storeDeliveryConfig.freeMinAmount = parseFloat(sMap['Delivery_Free_Min_Amount'] || 50000);
-
-        var openTime = sMap['Store_Open_Time'] || "07:00";
-        var closeTime = sMap['Store_Close_Time'] || "18:00";
-        var storeStatus = (sMap['Store_Open_Status'] || "AUTO").toUpperCase();
-
-        var now = new Date();
-        var nowHHMM = String(now.getHours()).padStart(2, '0') + ":" + String(now.getMinutes()).padStart(2, '0');
-        var isOpen = (storeStatus === "OPEN") ? true : (storeStatus === "CLOSED" ? false : (nowHHMM >= openTime && nowHHMM <= closeTime));
-
-        storeOperatingConfig = { isOpen: isOpen, openTime: openTime, closeTime: closeTime };
-
-        var banner = document.getElementById('storeClosedNoticeBanner');
-        var hint = document.getElementById('storeClosedTimeHint');
-        var d = DICT[currentLang] || DICT.km;
-
-        if (!isOpen) {
-          if (banner) banner.classList.remove('hidden');
-          if (hint) hint.innerText = d.closedHint.replace('{open}', openTime).replace('{close}', closeTime);
-        } else {
-          if (banner) banner.classList.add('hidden');
-        }
-
-        // 🎁 ពិនិត្យ Promotion
-        var promoStatus = (sMap['Promo_Status'] || "OFF").toUpperCase();
-        var startTimeStr = sMap['Promo_Start_Time'] || '';
-        var endTimeStr = sMap['Promo_End_Time'] || '';
-        var isPromoTimeValid = true;
-
-        if (startTimeStr && new Date() < new Date(startTimeStr)) isPromoTimeValid = false;
-        if (endTimeStr && new Date() > new Date(endTimeStr)) isPromoTimeValid = false;
-
-        // លុបកាតចាស់ចោលជានិច្ច ដើម្បីកុំឱ្យជាន់ ២ ជាន់
-        var oldCard = document.getElementById('storeLivePromoCard');
-        if (oldCard) oldCard.remove();
-
-        var slideTrack = document.getElementById('promoBannerTrack');
-
-        if (promoStatus === 'ON' && isPromoTimeValid && slideTrack) {
-          var promoRulesArr = [];
-          try { promoRulesArr = JSON.parse(sMap['Promo_Rules'] || '[]'); } catch(e) { promoRulesArr = []; }
-
-          activePromoConfig = {
-            active: true,
-            bannerText: sMap['Promo_Banner_Text'] || '🎁 Special Promotion!',
-            bannerImg: sMap['Promo_Banner_Img'] || '',
-            rules: promoRulesArr
-          };
-
-          // 🌟 បញ្ចូល Promotion ទៅក្នុង Slide ទី ១ ផ្ទាល់តែម្តង (មានរូបភាពច្បាស់ស្អាត & មិនជាន់គ្នា)
-          if (slideTrack.children.length > 0) {
-            var promoSlideHtml = '';
-            if (activePromoConfig.bannerImg) {
-              promoSlideHtml = '<div onclick="document.getElementById(\'catalogSection\').scrollIntoView({behavior:\'smooth\'})" class="min-w-full h-44 sm:h-52 relative cursor-pointer select-none overflow-hidden bg-slate-900 rounded-3xl">' +
-                '<img src="' + activePromoConfig.bannerImg + '" class="w-full h-full object-cover" alt="Promo">' +
-                '<div class="absolute bottom-0 left-0 right-0 p-2.5 bg-gradient-to-t from-black/90 via-black/60 to-transparent text-white flex items-center justify-between gap-2">' +
-                  '<div class="min-w-0">' +
-                    '<span class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-red-600 text-white shadow-xs animate-pulse">🔥 PROMOTION</span>' +
-                    '<div class="text-xs font-black text-amber-200 mt-0.5 truncate">' + activePromoConfig.bannerText + '</div>' +
-                  '</div>' +
-                  '<span class="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-white font-black text-[10px] rounded-xl shadow-xs shrink-0">👉 កុម្ម៉ង់ឥឡូវ</span>' +
-                '</div>' +
-              '</div>';
-            } else {
-              promoSlideHtml = '<div onclick="document.getElementById(\'catalogSection\').scrollIntoView({behavior:\'smooth\'})" class="min-w-full p-4 bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 text-white relative cursor-pointer select-none rounded-3xl">' +
-                '<div class="space-y-1.5">' +
-                  '<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 text-[10px] font-black text-amber-200 animate-pulse">🎁 PROMOTION កំពុងដំណើរការ</span>' +
-                  '<h2 class="text-lg font-black tracking-tight">' + activePromoConfig.bannerText + '</h2>' +
-                  '<div class="pt-1"><span class="px-3 py-1 bg-white text-amber-950 font-black text-[10px] rounded-xl shadow-xs">👉 ចុចមើលទំនិញថែម</span></div>' +
-                '</div>' +
-              '</div>';
-            }
-  
-          }
-        } else {
-          activePromoConfig = null;
-        }
-
-        applyCustomSlidesFromSettings(sMap);
-        renderCatalogGrid();
-      } catch(e) {}
+    // បើគ្មានក្នុង Memory ស្រាប់ ទើបបាញ់ទៅទាញពី Supabase
+    if (!sMap || Object.keys(sMap).length === 0) {
+      const { data: settings } = await supabaseClient.from('settings').select('*');
+      if (!settings) return;
+      sMap = {};
+      settings.forEach(r => { sMap[r.key] = r.value; });
+      window.__kcCachedSettingsMap = sMap;
     }
+
+    // ១. កំណត់ Telegram Bot Settings
+    if (sMap['Telegram_Token']) telegramSettings.token = sMap['Telegram_Token'];
+    if (sMap['Telegram_ChatID']) telegramSettings.chatId = sMap['Telegram_ChatID'];
+    if (sMap['Telegram_Alert_Status']) telegramSettings.status = sMap['Telegram_Alert_Status'];
+
+    // ២. កំណត់ថ្លៃដឹកជញ្ជូន
+    if (sMap['Delivery_Fee_Standard']) storeDeliveryConfig.standardFee = parseFloat(sMap['Delivery_Fee_Standard']) || 0;
+    if (sMap['Delivery_Free_Min_Qty']) storeDeliveryConfig.freeMinQty = parseInt(sMap['Delivery_Free_Min_Qty']) || 2;
+    storeDeliveryConfig.freeMinAmount = parseFloat(sMap['Delivery_Free_Min_Amount'] || 50000);
+
+    // ៣. កំណត់ម៉ោងបើក និងបិទហាង (Store Hours)
+    var openTime = sMap['Store_Open_Time'] || "07:00";
+    var closeTime = sMap['Store_Close_Time'] || "18:00";
+    var storeStatus = (sMap['Store_Open_Status'] || "AUTO").toUpperCase();
+
+    var now = new Date();
+    var nowHHMM = String(now.getHours()).padStart(2, '0') + ":" + String(now.getMinutes()).padStart(2, '0');
+    var isOpen = (storeStatus === "OPEN") ? true : (storeStatus === "CLOSED" ? false : (nowHHMM >= openTime && nowHHMM <= closeTime));
+
+    storeOperatingConfig = { isOpen: isOpen, openTime: openTime, closeTime: closeTime };
+
+    var banner = document.getElementById('storeClosedNoticeBanner');
+    var hint = document.getElementById('storeClosedTimeHint');
+    var d = DICT[currentLang] || DICT.km;
+
+    if (!isOpen) {
+      if (banner) banner.classList.remove('hidden');
+      if (hint) hint.innerText = d.closedHint.replace('{open}', openTime).replace('{close}', closeTime);
+    } else {
+      if (banner) banner.classList.add('hidden');
+    }
+
+    // ៤. កំណត់ប្រព័ន្ធ Promotion
+    var promoStatus = (sMap['Promo_Status'] || "OFF").toUpperCase();
+    var startTimeStr = sMap['Promo_Start_Time'] || '';
+    var endTimeStr = sMap['Promo_End_Time'] || '';
+    var isPromoTimeValid = true;
+
+    if (startTimeStr && new Date() < new Date(startTimeStr)) isPromoTimeValid = false;
+    if (endTimeStr && new Date() > new Date(endTimeStr)) isPromoTimeValid = false;
+
+    if (promoStatus === 'ON' && isPromoTimeValid) {
+      var promoRulesArr = [];
+      try { promoRulesArr = JSON.parse(sMap['Promo_Rules'] || '[]'); } catch(e) { promoRulesArr = []; }
+
+      activePromoConfig = {
+        active: true,
+        bannerText: sMap['Promo_Banner_Text'] || '🎁 Special Promotion!',
+        bannerImg: sMap['Promo_Banner_Img'] || '',
+        rules: promoRulesArr
+      };
+    } else {
+      activePromoConfig = null;
+    }
+
+    // ៥. បង្ហាញស្លាយដែលបានកំណត់ (Slides & Banner)
+    if (typeof applyCustomSlidesFromSettings === 'function') {
+      applyCustomSlidesFromSettings(sMap);
+    }
+
+  } catch(e) {
+    console.warn("Store settings load error:", e);
+  }
+}
 
    // 🌟 មុខងារបង្ហាញស្លាយតាមប៊ូតុង ON/OFF (ស្លាយណា OFF គឺលាក់ចោលភ្លាម ១០០%)
 function applyCustomSlidesFromSettings(sMap) {
