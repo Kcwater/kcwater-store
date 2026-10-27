@@ -821,18 +821,6 @@ async function executeFinalCompleteDelivery() {
   }
 }
 
-  try {
-    // ១. ប្តូរ Status ក្នុងតារាង Orders ទៅ Delivered ជាបន្ទាន់
-    const { error: ordErr } = await supabaseClient
-      .from('orders')
-      .update({
-        status: 'Delivered',
-        payment_method: payTextLabel
-      })
-      .eq('order_id', orderId);
-
-    if (ordErr) throw ordErr;
-
     // ២. ធានាថាមានទិន្នន័យទំនិញក្នុងស្តុកដើម្បីផ្ទៀងផ្ទាត់
     if (!allProducts || allProducts.length === 0) {
       const { data: pList } = await supabaseClient.from('products').select('*');
