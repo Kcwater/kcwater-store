@@ -726,39 +726,75 @@ async function renderStockRepModule() {
   await loadStockRepDataFromSupabase();
 }
 
+// 📦 មុខងារគណនារបាយការណ៍ស្តុក & ដើមទុន (គណនាបំប្លែងថ្លៃដើមទិញចូល ฿ និង $ ចេញជាលុយខ្មែរ ៛ ត្រឹមត្រូវ ១០០%)
 async function loadStockRepDataFromSupabase() {
   try {
     const { data: prods } = await supabaseClient.from('products').select('*');
     if (!prods) return;
 
-    var totalValuation = 0, alertCount = 0;
+    var rateUSD = (typeof exchangeRateUSD !== 'undefined') ? exchangeRateUSD : 4100;
+    var rateTHB = (typeof exchangeRateTHB !== 'undefined') ? exchangeRateTHB : 115;
+
+    var totalValuationKhr = 0;
+    var alertCount = 0;
     var tbody = document.getElementById('stockRepTableBody');
     var html = '';
 
     prods.forEach(function(p) {
-      var cost = parseFloat(p.cost || 0);
+      var rawCost = parseFloat(p.cost || 0);
       var stock = parseFloat(p.stock || 0);
       var min = parseFloat(p.min_stock || 5);
-      var val = (p.type === 'ទិញគេ') ? (cost * stock) : 0;
-      totalValuation += val;
+      var curr = (p.currency || 'KHR').toUpperCase();
+
+      // 🪙 គណនាថ្លៃដើមទិញចូលចេញជាលុយខ្មែរ (៛) តាមអត្រាប្តូរប្រាក់ជាក់ស្តែង
+      var costKhr = rawCost;
+      var costDisplay = '-';
+
+      if (rawCost > 0) {
+        if (curr === 'USD') {
+          costKhr = Math.round(rawCost * rateUSD);
+          costDisplay = '$ ' + rawCost.toFixed(2) + ' <small class="text-emerald-700 font-bold block">(≈ ៛ ' + costKhr.toLocaleString() + ')</small>';
+        } else if (curr === 'THB') {
+          costKhr = Math.round(rawCost * rateTHB);
+          costDisplay = '฿ ' + rawCost.toLocaleString() + ' <small class="text-amber-800 font-bold block">(≈ ៛ ' + costKhr.toLocaleString() + ')</small>';
+        } else {
+          costKhr = Math.round(rawCost);
+          costDisplay = '៛ ' + costKhr.toLocaleString();
+        }
+      }
+
+      // គណនាដើមទុនស្តុកសរុបជាប្រាក់រៀល (៛)
+      var lineValuationKhr = (p.type === 'ទិញគេ') ? (costKhr * stock) : 0;
+      totalValuationKhr += lineValuationKhr;
 
       var isLow = (stock <= min);
       if (isLow && p.type === 'ទិញគេ') alertCount++;
 
-      var statusBadge = (p.type === 'ផលិតឯង') ? '<span class="px-2 py-0.5 rounded-full text-[10px] bg-blue-100 text-blue-800 font-bold">ផលិតឯង</span>' : (isLow ? '<span class="px-2 py-0.5 rounded-full text-[10px] bg-red-100 text-red-700 font-bold">ជិតអស់</span>' : '<span class="px-2 py-0.5 rounded-full text-[10px] bg-green-100 text-green-700 font-bold">គ្រប់គ្រាន់</span>');
+      var statusBadge = (p.type === 'ផលិតឯង') ? 
+        '<span class="px-2 py-0.5 rounded-full text-[10px] bg-blue-100 text-blue-800 font-bold">ផលិតឯង</span>' : 
+        (isLow ? 
+          '<span class="px-2 py-0.5 rounded-full text-[10px] bg-red-100 text-red-700 font-bold animate-pulse">ជិតអស់</span>' : 
+          '<span class="px-2 py-0.5 rounded-full text-[10px] bg-green-100 text-green-700 font-bold">គ្រប់គ្រាន់</span>');
 
       html += '<tr class="border-b hover:bg-gray-50">' +
         '<td class="p-2.5"><img src="' + (p.img || 'https://cdn-icons-png.flaticon.com/512/3100/3100566.png') + '" class="w-8 h-8 object-contain rounded border"></td>' +
-        '<td class="p-2.5 font-bold text-gray-800">' + p.name + '</td>' +
-        '<td class="p-2.5 text-right">' + (cost > 0 ? Number(cost).toLocaleString() + ' ៛' : '-') + '</td>' +
+        '<td class="p-2.5 font-bold text-gray-800">' + p.name + '<br><span class="text-[9px] text-gray-400 font-normal">' + p.type + ' | ' + curr + '</span></td>' +
+        '<td class="p-2.5 text-right text-xs leading-tight">' + costDisplay + '</td>' +
         '<td class="p-2.5 text-center font-black ' + (isLow ? 'text-red-600' : 'text-blue-800') + '">' + stock + '</td>' +
-        '<td class="p-2.5 text-right font-black text-green-700">' + (val > 0 ? Number(val).toLocaleString() + ' ៛' : '-') + '</td>' +
+        '<td class="p-2.5 text-right font-black text-green-700 text-xs">' + (lineValuationKhr > 0 ? ('៛ ' + lineValuationKhr.toLocaleString()) : '-') + '</td>' +
         '<td class="p-2.5 text-center">' + statusBadge + '</td>' +
       '</tr>';
     });
 
-    document.getElementById('repStockValuation').innerText = '៛ ' + totalValuation.toLocaleString();
-    document.getElementById('repStockAlertCount').innerText = alertCount + ' មុខទំនិញ';
-    tbody.innerHTML = html;
-  } catch(e) {}
+    // បង្ហាញដើមទុនសរុបជាប្រាក់រៀលខ្មែរ (៛) ត្រឹមត្រូវ ១០០%
+    var valEl = document.getElementById('repStockValuation');
+    var alertEl = document.getElementById('repStockAlertCount');
+
+    if (valEl) valEl.innerText = '៛ ' + Math.round(totalValuationKhr).toLocaleString();
+    if (alertEl) alertEl.innerText = alertCount + ' មុខទំនិញ';
+    if (tbody) tbody.innerHTML = html || '<tr><td colspan="6" class="p-4 text-center text-gray-400 italic">គ្មានទំនិញក្នុងស្តុកឡើយ</td></tr>';
+
+  } catch(e) {
+    console.error("Stock rep error:", e);
+  }
 }
