@@ -374,7 +374,7 @@ function switchStockSortView(tab) {
   renderStockTableRows();
 }
 
-// 📋 មុខងារទាញទំនិញមកបង្ហាញក្នុងតារាងស្តុក (គណនាបំប្លែងលុយថៃ ฿ និងដុល្លារ $ ចេញជាលុយខ្មែរ ៛ ស្វ័យប្រវត្តិ)
+// 📋 មុខងារបង្ហាញតារាងទំនិញ (មានប៊ូតុងព្រួញ ⬆️ ⬇️ រៀបលំដាប់ងាយស្រួលបំផុត ១ ឃ្លីក & ពហុរូបិយប័ណ្ណ)
 function renderStockTableRows() {
   var tbody = document.getElementById('stockModuleTableBody');
   if (!tbody) return;
@@ -382,13 +382,14 @@ function renderStockTableRows() {
 
   var rateUSD = (typeof exchangeRateUSD !== 'undefined') ? exchangeRateUSD : 4100;
   var rateTHB = (typeof exchangeRateTHB !== 'undefined') ? exchangeRateTHB : 115;
+  var isWebTab = (currentStockViewTab === 'WEB');
 
-  // 🔢 តម្រៀបទំនិញតាម Tab POS ឬ Web
+  // 🔢 តម្រៀបទំនិញតាម Tab Web ឬ POS
   var sortedList = allProducts.slice().sort(function(a, b) {
     var chA = String(a.channel || 'ALL').toUpperCase();
     var chB = String(b.channel || 'ALL').toUpperCase();
 
-    if (currentStockViewTab === 'WEB') {
+    if (isWebTab) {
       var isWebA = (chA === 'ALL' || chA === 'ONLINE');
       var isWebB = (chB === 'ALL' || chB === 'ONLINE');
       if (isWebA && !isWebB) return -1;
@@ -414,7 +415,7 @@ function renderStockTableRows() {
     var rawOnline = parseFloat(p.online_price || p.price || 0);
     var rawCost = parseFloat(p.cost || 0);
 
-    // 🪙 គណនាបំប្លែងចេញជាលុយខ្មែរ (៛) ស្វ័យប្រវត្តិតាមរូបិយប័ណ្ណ
+    // 🪙 គណនាបំប្លែងលុយខ្មែរ (៛) ស្វ័យប្រវត្តិតាមរូបិយប័ណ្ណ
     var wholesaleKhr = rawWholesale;
     var onlineKhr = rawOnline;
     var costKhr = rawCost;
@@ -457,32 +458,36 @@ function renderStockTableRows() {
     var sortPosNum = (p.sort_order !== null && p.sort_order !== undefined && p.sort_order !== '') ? parseInt(p.sort_order) : 99;
     var sortWebNum = (p.online_sort_order !== null && p.online_sort_order !== undefined && p.online_sort_order !== '') ? parseInt(p.online_sort_order) : sortPosNum;
 
-    var posBoxHtml = isForPos ?
-      ('<div class="text-center">' +
-        '<span class="text-[9px] text-blue-700 font-black block">POS</span>' +
-        '<input type="number" value="' + sortPosNum + '" onchange="quickUpdateSortPos(\'' + p.id + '\', this.value)" class="w-11 text-center font-black text-blue-900 border-2 border-blue-200 focus:border-blue-600 rounded-lg py-1 text-xs outline-none bg-white shadow-2xs" title="លេខរៀងក្នុង POS">' +
-      '</div>') :
-      ('<div class="text-center opacity-30 select-none">' +
-        '<span class="text-[9px] text-gray-400 font-bold block">POS</span>' +
-        '<span class="w-11 text-center font-bold text-gray-400 py-1 text-xs block bg-gray-100 rounded-lg border border-gray-200">-</span>' +
-      '</div>');
+    // ⚡ រចនាបថប៊ូតុង ⬆️ ⬇️ រៀបលំដាប់រហ័សតាម Tab ដែលកំពុងបើក
+    var sortControlHtml = '';
 
-    var webBoxHtml = isForWeb ?
-      ('<div class="text-center">' +
-        '<span class="text-[9px] text-emerald-700 font-black block">Web</span>' +
-        '<input type="number" value="' + sortWebNum + '" onchange="quickUpdateSortWeb(\'' + p.id + '\', this.value)" class="w-11 text-center font-black text-emerald-800 border-2 border-emerald-300 focus:border-emerald-600 rounded-lg py-1 text-xs outline-none bg-white shadow-2xs" title="លេខរៀងលើ Web ភ្ញៀវ">' +
-      '</div>') :
-      ('<div class="text-center opacity-30 select-none">' +
-        '<span class="text-[9px] text-gray-400 font-bold block">Web</span>' +
-        '<span class="w-11 text-center font-bold text-gray-400 py-1 text-xs block bg-gray-100 rounded-lg border border-gray-200">-</span>' +
-      '</div>');
+    if (isWebTab) {
+      if (isForWeb) {
+        sortControlHtml = '<div class="flex items-center justify-center gap-1">' +
+          '<button type="button" onclick="moveProductSort(\'' + p.id + '\', \'UP\')" class="w-6 h-6 rounded-md bg-emerald-50 hover:bg-emerald-200 text-emerald-800 border border-emerald-300 flex items-center justify-center text-[10px] active:scale-90 transition shadow-2xs font-bold" title="រុញឡើងលើ"><i class="fas fa-chevron-up"></i></button>' +
+          '<input type="number" value="' + sortWebNum + '" onchange="quickUpdateSortWeb(\'' + p.id + '\', this.value)" class="w-10 text-center font-black text-emerald-900 border-2 border-emerald-300 focus:border-emerald-600 rounded-lg py-0.5 text-xs outline-none bg-white shadow-2xs" title="វាយលេខរៀង Web ផ្ទាល់">' +
+          '<button type="button" onclick="moveProductSort(\'' + p.id + '\', \'DOWN\')" class="w-6 h-6 rounded-md bg-emerald-50 hover:bg-emerald-200 text-emerald-800 border border-emerald-300 flex items-center justify-center text-[10px] active:scale-90 transition shadow-2xs font-bold" title="រុញចុះក្រោម"><i class="fas fa-chevron-down"></i></button>' +
+        '</div>' +
+        '<span class="text-[9px] text-slate-400 block mt-0.5">POS: #' + sortPosNum + '</span>';
+      } else {
+        sortControlHtml = '<span class="text-[9.5px] text-slate-400 italic bg-slate-100 px-1.5 py-0.5 rounded">មិនដាក់លើ Web</span>';
+      }
+    } else {
+      if (isForPos) {
+        sortControlHtml = '<div class="flex items-center justify-center gap-1">' +
+          '<button type="button" onclick="moveProductSort(\'' + p.id + '\', \'UP\')" class="w-6 h-6 rounded-md bg-blue-50 hover:bg-blue-200 text-blue-800 border border-blue-300 flex items-center justify-center text-[10px] active:scale-90 transition shadow-2xs font-bold" title="រុញឡើងលើ"><i class="fas fa-chevron-up"></i></button>' +
+          '<input type="number" value="' + sortPosNum + '" onchange="quickUpdateSortPos(\'' + p.id + '\', this.value)" class="w-10 text-center font-black text-blue-900 border-2 border-blue-300 focus:border-blue-600 rounded-lg py-0.5 text-xs outline-none bg-white shadow-2xs" title="វាយលេខរៀង POS ផ្ទាល់">' +
+          '<button type="button" onclick="moveProductSort(\'' + p.id + '\', \'DOWN\')" class="w-6 h-6 rounded-md bg-blue-50 hover:bg-blue-200 text-blue-800 border border-blue-300 flex items-center justify-center text-[10px] active:scale-90 transition shadow-2xs font-bold" title="រុញចុះក្រោម"><i class="fas fa-chevron-down"></i></button>' +
+        '</div>' +
+        '<span class="text-[9px] text-slate-400 block mt-0.5">Web: #' + sortWebNum + '</span>';
+      } else {
+        sortControlHtml = '<span class="text-[9.5px] text-slate-400 italic bg-slate-100 px-1.5 py-0.5 rounded">មិនដាក់លើ POS</span>';
+      }
+    }
 
     html += '<tr class="border-b hover:bg-gray-50">' +
-      '<td class="p-2 text-center bg-blue-50/20 whitespace-nowrap">' +
-        '<div class="flex items-center justify-center gap-1.5">' +
-          posBoxHtml +
-          webBoxHtml +
-        '</div>' +
+      '<td class="p-2 text-center ' + (isWebTab ? 'bg-emerald-50/30' : 'bg-blue-50/30') + ' whitespace-nowrap">' +
+        sortControlHtml +
       '</td>' +
       '<td class="p-2.5"><img src="' + imgUrl + '" class="w-9 h-9 object-contain rounded border"></td>' +
       '<td class="p-2.5 font-bold text-gray-800">' + 
@@ -505,30 +510,64 @@ function renderStockTableRows() {
   tbody.innerHTML = html || '<tr><td colspan="7" class="p-4 text-center text-gray-400 italic">គ្មានទំនិញក្នុងស្តុកឡើយ</td></tr>';
 }
 
-// ⚡ ១. មុខងារ Update លេខ POS (រុញលេខស្ទួនអូតូ)
-async function quickUpdateSortPos(prodId, val) {
-  var s = parseInt(val) || 1;
+// ⚡ មុខងារចុចរុញទំនិញឡើងលើ ⬆️ ឬចុះក្រោម ⬇️ (ដោះដូរលេខរៀងអូតូ ១ ឃ្លីក គ្មានថ្ងៃស្ទួនលេខឡើយ)
+async function moveProductSort(prodId, direction) {
+  var isWeb = (currentStockViewTab === 'WEB');
+  
+  // ១. ស្រង់ទំនិញដែលត្រូវនឹងប៉ុស្តិ៍ (Web ឬ POS)
+  var list = allProducts.filter(function(p) {
+    var ch = String(p.channel || 'ALL').toUpperCase();
+    return isWeb ? (ch === 'ALL' || ch === 'ONLINE') : (ch === 'ALL' || ch === 'POS');
+  });
+
+  // ២. តម្រៀបតាមលេខរៀងបច្ចុប្បន្ន
+  list.sort(function(a, b) {
+    var numA = isWeb ? ((a.online_sort_order !== null && a.online_sort_order !== undefined) ? parseInt(a.online_sort_order) : parseInt(a.sort_order || 99)) : parseInt(a.sort_order || 99);
+    var numB = isWeb ? ((b.online_sort_order !== null && b.online_sort_order !== undefined) ? parseInt(b.online_sort_order) : parseInt(b.sort_order || 99)) : parseInt(b.sort_order || 99);
+    return numA - numB;
+  });
+
+  var curIndex = list.findIndex(p => p.id === prodId);
+  if (curIndex === -1) return;
+
+  var targetIndex = (direction === 'UP') ? curIndex - 1 : curIndex + 1;
+  if (targetIndex < 0 || targetIndex >= list.length) return; // ដល់កំពូល ឬដល់បាតហើយ
+
+  // ៣. ដោះដូរលេខរៀងរវាងទំនិញទាំងពីរ (Swap Sort Numbers)
+  var itemA = list[curIndex];
+  var itemB = list[targetIndex];
+
+  var sortA = isWeb ? parseInt(itemA.online_sort_order || itemA.sort_order || curIndex + 1) : parseInt(itemA.sort_order || curIndex + 1);
+  var sortB = isWeb ? parseInt(itemB.online_sort_order || itemB.sort_order || targetIndex + 1) : parseInt(itemB.sort_order || targetIndex + 1);
+
+  // បើលេខចាស់ស្មើគ្នា ឱ្យយកតាម Index + 1
+  if (sortA === sortB) {
+    sortA = curIndex + 1;
+    sortB = targetIndex + 1;
+  }
+
+  showToast((direction === 'UP' ? '⬆️ រុញឡើងលើ...' : '⬇️ រុញចុះក្រោម...'), 'info');
+
   try {
-    var cur = allProducts.find(i => i.id === prodId);
-    if (cur) cur.sort_order = s;
-    await supabaseClient.from('products').update({ sort_order: s }).eq('id', prodId);
-
-    var posItems = allProducts.filter(p => {
-      var ch = String(p.channel || 'ALL').toUpperCase();
-      return (ch === 'ALL' || ch === 'POS') && p.id !== prodId;
-    });
-
-    var conflicts = posItems.filter(p => parseInt(p.sort_order) === s);
-    for (var i = 0; i < conflicts.length; i++) {
-      var nextS = s + i + 1;
-      conflicts[i].sort_order = nextS;
-      await supabaseClient.from('products').update({ sort_order: nextS }).eq('id', conflicts[i].id);
+    if (isWeb) {
+      itemA.online_sort_order = sortB;
+      itemB.online_sort_order = sortA;
+      await supabaseClient.from('settings').upsert([
+        { key: 'ONLINE_SORT_' + itemA.id, value: String(sortB) },
+        { key: 'ONLINE_SORT_' + itemB.id, value: String(sortA) }
+      ]);
+    } else {
+      itemA.sort_order = sortB;
+      itemB.sort_order = sortA;
+      await supabaseClient.from('products').update({ sort_order: sortB }).eq('id', itemA.id);
+      await supabaseClient.from('products').update({ sort_order: sortA }).eq('id', itemB.id);
     }
 
-    showToast("បានប្តូរលេខ POS ទៅ #" + s + " ជោគជ័យ!", "success");
     renderStockTableRows();
+    showToast("បានប្តូរលំដាប់ជោគជ័យ!", "success");
+
   } catch(e) {
-    showToast("កំហុស៖ " + e.message, "error");
+    showToast("កំហុសប្តូរលេខរៀង៖ " + e.message, "error");
   }
 }
 
