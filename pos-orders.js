@@ -1205,7 +1205,7 @@ async function renderCompanyDeliveriesModule(isSilentRefresh) {
           (task.location_url ? 
           '<div class="flex items-start gap-1.5 pt-0.5">' +
             '<span class="text-slate-400 font-bold whitespace-nowrap">📍 ទីតាំង & ចំណាំ៖</span>' +
-            '<span class="text-slate-800 font-bold text-[11px] leading-snug">' + task.location_url + '</span>' +
+            '<span class="text-slate-800 font-bold text-[11px] leading-snug break-words">' + task.location_url + '</span>' +
           '</div>' : '') +
         '</div>' +
 
