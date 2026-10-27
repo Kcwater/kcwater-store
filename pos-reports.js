@@ -163,16 +163,27 @@ async function fetchCompanySummaryFromSupabase() {
     console.error("Company summary error:", e);
   }
 }
-// ==========================================
-// 👤 ទាញទិន្នន័យកាតគ្រីអតិថិជន (ប្រើម៉ោងកម្ពុជា UTC+7 ត្រឹមត្រូវ ១០០%)
-// ==========================================
+// 👤 មុខងារទាញកាតគ្រីអតិថិជន (គណនាស៊ីសង្វាក់គ្នា ១០០% មិនឱ្យលើសលុយជំពាក់ឡើយ)
 async function fetchFullStatementFromSupabase() {
-  var name = document.getElementById('custSearchInp').value.trim();
-  var sd = document.getElementById('custStartDate').value;
-  var ed = document.getElementById('custEndDate').value;
+  var nameInp = document.getElementById('custSearchInp');
+  var name = nameInp ? nameInp.value.trim() : '';
+  var sd = document.getElementById('custStartDate') ? document.getElementById('custStartDate').value : '';
+  var ed = document.getElementById('custEndDate') ? document.getElementById('custEndDate').value : '';
   var container = document.getElementById('statementReportContainer');
 
-  if (!name || !sd || !ed) { showToast("សូមរើសឈ្មោះ និងកាលបរិច្ឆេទ!", "error"); return; }
+  if (!name || !sd || !ed) { 
+    if (typeof kcAlert === 'function') {
+      await kcAlert({
+        title: "ខ្វះព័ត៌មាន",
+        message: "សូមជ្រើសរើសឈ្មោះអតិថិជន និងកំណត់ចន្លោះកាលបរិច្ឆេទឱ្យបានត្រឹមត្រូវ!",
+        type: "warning"
+      });
+    } else {
+      showToast("សូមរើសឈ្មោះ និងកាលបរិច្ឆេទ!", "error"); 
+    }
+    return; 
+  }
+
   container.innerHTML = '<div class="text-center py-8 text-gray-400 italic text-xs"><i class="fas fa-spinner fa-spin text-green-600 text-base"></i> កំពុងទាញទិន្នន័យកាតគ្រី...</div>';
 
   try {
@@ -181,7 +192,7 @@ async function fetchFullStatementFromSupabase() {
     var endIso = ed + 'T23:59:59.999+07:00';
 
     // ១. ស្វែងរកជើងទឹកដកក្នុងចន្លោះថ្ងៃតាមម៉ោងកម្ពុជា
-    const { data: items } = await supabaseClient
+    const { data: items, error: itemErr } = await supabaseClient
       .from('transactions')
       .select('*')
       .eq('customer_name', name)
@@ -189,8 +200,10 @@ async function fetchFullStatementFromSupabase() {
       .lte('created_at', endIso)
       .order('created_at', { ascending: true });
 
-    // ២. ស្វែងរកការទូទាត់សងក្នុងចន្លោះថ្ងៃតាមម៉ោងកម្ពុជា
-    const { data: payments } = await supabaseClient
+    if (itemErr) throw itemErr;
+
+    // ២. ស្វែងរកការទូទាត់សង (Settlements) ក្នុងចន្លោះថ្ងៃតាមម៉ោងកម្ពុជា
+    const { data: payments, error: payErr } = await supabaseClient
       .from('settlements')
       .select('*')
       .eq('customer_name', name)
@@ -198,7 +211,9 @@ async function fetchFullStatementFromSupabase() {
       .lte('settled_at', endIso)
       .order('settled_at', { ascending: true });
 
-    // ៣. ស្វែងរកបំណុលចាស់មុនថ្ងៃ Start Date តាមម៉ោងកម្ពុជា
+    if (payErr) throw payErr;
+
+    // ៣. ស្វែងរកបំណុលចាស់មុនថ្ងៃ Start Date
     const { data: oldSet } = await supabaseClient
       .from('settlements')
       .select('balance_khr, settled_at')
@@ -228,31 +243,43 @@ async function fetchFullStatementFromSupabase() {
       prevDebt += parseFloat(u.total || 0);
     });
 
-    var totalPurchased = 0, totalPaidInMonth = 0;
-    var unpaidCount = 0, unpaidTotal = 0;
+    var totalPurchased = 0;
+    var totalPaidInMonth = 0;
+    var unpaidCount = 0;
+    var unpaidTotal = 0;
     var productSummary = {};
 
+    // គណនាជើងទឹកដកក្នុងខែ និងបូកប្រាក់ដែលបានបង់ផ្ទាល់នៅ POS (បើមាន)
     (items || []).forEach(function(i) {
       var tot = parseFloat(i.total || 0);
       var q = parseFloat(i.qty || 0);
       totalPurchased += tot;
+
       if (i.status === 'Unpaid') {
         unpaidCount++;
         unpaidTotal += tot;
+      } else if (i.status === 'Paid') {
+        // បើបង់លុយនៅកន្លែង POS ភ្លាមៗ រាប់បញ្ចូលជាប្រាក់បានបង់កុំឱ្យច្រឡំជំពាក់
+        totalPaidInMonth += parseFloat(i.paid_khr || tot);
       }
+
       if (i.product_name) {
         productSummary[i.product_name] = (productSummary[i.product_name] || 0) + q;
       }
     });
 
+    // បូកបន្ថែមប្រាក់ដែលបានសងតាម Settlement
     (payments || []).forEach(function(p) {
       totalPaidInMonth += parseFloat(p.paid_khr || 0);
     });
 
+    // គណនាបំណុលសរុបជាក់ស្តែងចុងក្រោយ
     var finalBalance = Math.max(0, prevDebt + totalPurchased - totalPaidInMonth);
 
     stmtDataCache = {
-      custName: name, sd: sd, ed: ed,
+      custName: name, 
+      sd: sd, 
+      ed: ed,
       items: items || [],
       payments: payments || [],
       prevDebt: prevDebt,
@@ -266,6 +293,7 @@ async function fetchFullStatementFromSupabase() {
 
     stmtCurrentFilter = 'ALL';
     renderStatementReportUI();
+
   } catch(err) {
     container.innerHTML = '<div class="p-4 text-center text-red-500 font-bold">កំហុស៖ ' + err.message + '</div>';
   }
