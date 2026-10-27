@@ -2416,7 +2416,10 @@ function filterCatalog(cat, btn) {
             }).catch(function(){});
           }
         } catch(tgE) {}
-
+        
+        // 💾 ចងចាំទំនិញដែលបានទិញ ដើម្បីឱ្យមុខងារ 1-Click Reorder ដំណើរការ
+        localStorage.setItem('kc_last_order_items', JSON.stringify(cartItems));
+        localStorage.setItem('kc_order_phone', phone);
         cartItems = {};
         localStorage.removeItem('kc_auto_cart_backup');
         localStorage.setItem('kc_active_order_id', orderId);
