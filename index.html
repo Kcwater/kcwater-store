@@ -2944,7 +2944,7 @@ function updateCheckoutCalculation() {
       } catch(e) {}
     }
 
-    // 🌟 មុខងារបង្ហាញស្លាយ & Promo ថ្មី៖ រូបធំច្បាស់ស្អាត & អក្សរនៅឆ្វេងដាច់ដោយឡែកមិនបាំងរូប ១០០%
+    // 🌟 មុខងារបង្ហាញស្លាយពេញកាត ១០០% (Full Card Banner) & អក្សររៀបចំនៅបាតក្រោមមិនបាំងរូបឡើយ
 function applyCustomSlidesFromSettings(sMap) {
   var track = document.getElementById('promoBannerTrack');
   if (!track) return;
@@ -2972,70 +2972,70 @@ function applyCustomSlidesFromSettings(sMap) {
 
   var html = '';
 
-  // 🎁 ២. ផ្ទាំង PROMOTION (បើរូប Banner ធំពេញលេញ គឺបង្ហាញរូបធំច្បាស់ស្អាត មិនឱ្យអក្សរបាំងឡើយ)
+  // 🎁 ២. ផ្ទាំង PROMOTION (បើរូបពេញកាត ១០០% & របារអក្សរនៅបាតក្រោមមិនបាំងរូប)
   var promoStatus = (sMap['Promo_Status'] || "OFF").toUpperCase();
   if (promoStatus === 'ON') {
     var promoText = sMap['Promo_Banner_Text'] || '🎁 កំពុងមានកម្មវិធី Promotion ពិសេស!';
     var promoImg = sMap['Promo_Banner_Img'] || '';
 
-    html += '<div onclick="clickSlidePromo(\'ALL\', \'catBtn_ALL\')" class="min-w-full h-48 sm:h-56 p-4 sm:p-5 bg-gradient-to-r from-red-950 via-rose-900 to-amber-950 text-white rounded-3xl relative cursor-pointer select-none flex items-center justify-between gap-3 overflow-hidden shadow-xl border border-red-500/30">' +
-      // ផ្នែកអក្សរខាងឆ្វេង (៦០%)
-      '<div class="flex-1 max-w-[62%] sm:max-w-[65%] space-y-2 text-left z-10 flex flex-col justify-between h-full py-1">' +
-        '<div class="space-y-1">' +
-          '<div class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-red-500 text-white text-[9px] font-black uppercase shadow-xs animate-pulse w-fit">' +
+    html += '<div onclick="clickSlidePromo(\'ALL\', \'catBtn_ALL\')" class="min-w-full h-48 sm:h-56 relative cursor-pointer select-none overflow-hidden rounded-3xl shadow-xl border border-red-500/30 bg-slate-950">' +
+      // 🖼️ រូបភាពរត់ពេញផ្ទៃកាតស្លាយ ១០០% ទាំងស្រុង
+      (promoImg ? '<img src="' + promoImg + '" class="w-full h-full object-cover absolute inset-0 transition-transform duration-500 hover:scale-105" alt="Promotion">' : '<div class="w-full h-full bg-gradient-to-r from-red-950 via-rose-900 to-amber-950 flex items-center justify-center"><i class="fas fa-gift text-6xl text-amber-300 animate-bounce"></i></div>') +
+      // 📝 របារកញ្ចក់ថ្លាព័ត៌មាននៅបាតក្រោម (មិនបាំងរូបភាពខាងលើ ៧៥% ឡើយ)
+      '<div class="absolute inset-0 flex flex-col justify-between p-3 sm:p-4 bg-gradient-to-t from-black/85 via-black/25 to-transparent pointer-events-none">' +
+        '<div class="flex justify-between items-start pointer-events-auto">' +
+          '<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-red-600/90 text-white text-[9px] font-black uppercase shadow-xs animate-pulse border border-red-400/40">' +
             '🔥 PROMOTION ពិសេស' +
+          '</span>' +
+        '</div>' +
+        '<div class="p-2 sm:p-2.5 rounded-2xl bg-black/55 backdrop-blur-md border border-white/15 flex items-center justify-between gap-2 text-white pointer-events-auto shadow-lg">' +
+          '<div class="min-w-0 flex-1 text-left">' +
+            '<h2 class="text-xs sm:text-sm font-black tracking-tight text-amber-200 truncate">' + promoText + '</h2>' +
+            '<p class="text-[9.5px] text-slate-200 truncate mt-0.5">កុម្ម៉ង់ឥឡូវនេះដើម្បីទទួលបានកាដូថែម Free ដល់មុខផ្ទះ!</p>' +
           '</div>' +
-          '<h2 class="text-base sm:text-xl font-black tracking-tight leading-snug text-amber-200 line-clamp-2">' + promoText + '</h2>' +
-          '<p class="text-[10px] sm:text-xs text-red-100/80 leading-relaxed line-clamp-2">កុម្ម៉ង់ទិញឥឡូវនេះដើម្បីទទួលបានកាដូថែម Free ដល់មុខផ្ទះ!</p>' +
+          '<span class="px-3 py-1.5 bg-white hover:bg-slate-100 text-red-950 font-black text-[9px] sm:text-[10px] rounded-xl shadow shrink-0 active:scale-95 transition whitespace-nowrap">' +
+            '👉 កុម្ម៉ង់ឥឡូវ' +
+          '</span>' +
         '</div>' +
-        '<div>' +
-          '<span class="px-3.5 py-1.5 bg-white hover:bg-slate-100 text-red-950 font-black text-[10px] sm:text-xs rounded-xl shadow-md inline-block active:scale-95 transition">👉 កុម្ម៉ង់ប្រូម៉ូសិនឥឡូវ</span>' +
-        '</div>' +
-      '</div>' +
-      // ផ្នែករូបភាពខាងស្តាំ (ធំច្បាស់ មិនបាំងអក្សរ)
-      '<div class="w-[36%] sm:w-[33%] h-full shrink-0 flex items-center justify-center z-10 p-1">' +
-        (promoImg ? '<img src="' + promoImg + '" class="max-w-full max-h-full object-contain drop-shadow-2xl hover:scale-105 transition-transform duration-300 rounded-2xl">' : '<i class="fas fa-gift text-6xl sm:text-7xl text-amber-300 drop-shadow animate-bounce"></i>') +
       '</div>' +
     '</div>';
   }
 
-  // 🖼️ ៣. ផ្ទាំងស្លាយទំនិញទាំង ៤ (អក្សរនៅឆ្វេង រូបទំនិញធំច្បាស់នៅស្តាំដៃ ដាច់ដោយឡែកពីគ្នា)
+  // 🖼️ ៣. ផ្ទាំងស្លាយទំនិញ (រូបភាពរត់ពេញកាត ១០០% & របារអក្សរថ្លានៅបាតក្រោមមិនបាំងរូប)
   activeSlides.forEach(function(s, idx) {
     var cat = s.cat || 'ALL';
     var bgGrad = bgGradients[idx % bgGradients.length];
     var imgSrc = s.img && s.img.trim() ? s.img : '';
 
-    html += '<div onclick="clickSlidePromo(\'' + cat + '\', \'catBtn_' + cat + '\')" class="min-w-full h-48 sm:h-56 p-4 sm:p-5 bg-gradient-to-r ' + bgGrad + ' text-white rounded-3xl relative cursor-pointer select-none flex items-center justify-between gap-3 overflow-hidden shadow-xl border border-white/10">' +
-      // ផ្នែកអក្សរខាងឆ្វេង (៦០%)
-      '<div class="flex-1 max-w-[62%] sm:max-w-[65%] space-y-2 text-left z-10 flex flex-col justify-between h-full py-1">' +
-        '<div class="space-y-1">' +
-          '<div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/15 border border-white/20 text-[9px] sm:text-[10px] font-black text-emerald-200 w-fit truncate max-w-full">' +
-            '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>' +
+    html += '<div onclick="clickSlidePromo(\'' + cat + '\', \'catBtn_' + cat + '\')" class="min-w-full h-48 sm:h-56 relative cursor-pointer select-none overflow-hidden rounded-3xl shadow-xl border border-white/10 bg-slate-950">' +
+      // 🖼️ រូបភាពរត់ពេញផ្ទៃកាតស្លាយ ១០០% (Full Card Cover)
+      (imgSrc ? '<img src="' + imgSrc + '" class="w-full h-full object-cover absolute inset-0 transition-transform duration-500 hover:scale-105" alt="' + (s.title || '') + '">' : '<div class="w-full h-full bg-gradient-to-r ' + bgGrad + ' flex items-center justify-center"><i class="fas fa-boxes-stacked text-6xl text-white/20"></i></div>') +
+      // 📝 របារកញ្ចក់ថ្លាព័ត៌មាននៅបាតក្រោម (មិនបាំងរូបភាពខាងលើ ៧៥% ឡើយ)
+      '<div class="absolute inset-0 flex flex-col justify-between p-3 sm:p-4 bg-gradient-to-t from-black/85 via-black/25 to-transparent pointer-events-none">' +
+        '<div class="flex justify-between items-start pointer-events-auto">' +
+          '<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-black/50 backdrop-blur-md border border-white/20 text-[9px] sm:text-[10px] font-black text-amber-200 shadow-xs">' +
+            '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>' +
             '<span class="truncate">' + (s.tag || 'KC MART') + '</span>' +
+          '</span>' +
+        '</div>' +
+        '<div class="p-2 sm:p-2.5 rounded-2xl bg-black/55 backdrop-blur-md border border-white/15 flex items-center justify-between gap-2 text-white pointer-events-auto shadow-lg">' +
+          '<div class="min-w-0 flex-1 text-left">' +
+            '<h2 class="text-xs sm:text-sm font-black tracking-tight text-white truncate drop-shadow">' + (s.title || '') + '</h2>' +
+            '<p class="text-[9.5px] text-slate-200 truncate mt-0.5">' + (s.desc || '') + '</p>' +
           '</div>' +
-          '<h2 class="text-base sm:text-xl font-black tracking-tight leading-snug line-clamp-2 drop-shadow-sm">' + (s.title || '') + '</h2>' +
-          '<p class="text-[10px] sm:text-xs text-white/80 line-clamp-2 leading-relaxed">' + (s.desc || '') + '</p>' +
+          '<span class="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-950 font-black text-[9px] sm:text-[10px] rounded-xl shadow shrink-0 active:scale-95 transition whitespace-nowrap">' +
+            (s.badge || '👉 ចុចមើល') +
+          '</span>' +
         '</div>' +
-        '<div>' +
-          '<span class="px-3.5 py-1.5 bg-white hover:bg-slate-100 text-slate-950 font-black text-[10px] sm:text-xs rounded-xl shadow-md inline-block active:scale-95 transition">' + (s.badge || '👉 ចុចមើលមុខទំនិញ') + '</span>' +
-        '</div>' +
-      '</div>' +
-      // ផ្នែករូបភាពខាងស្តាំ (ធំច្បាស់ មិនបាំងអក្សរ ៤០%)
-      '<div class="w-[36%] sm:w-[33%] h-full shrink-0 flex items-center justify-center z-10 p-1 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-xs">' +
-        (imgSrc ? '<img src="' + imgSrc + '" class="max-w-full max-h-full object-contain drop-shadow-2xl hover:scale-105 transition-transform duration-300 rounded-xl">' : '<i class="fas fa-boxes-stacked text-5xl text-white/30"></i>') +
       '</div>' +
     '</div>';
   });
 
-  // បើគ្មានស្លាយណាកំណត់ ដាក់ស្លាយលំនាំដើមស្អាតមួយ
+  // បើគ្មានស្លាយណាកំណត់ទាល់តែសោះ
   if (!html) {
-    html = '<div onclick="clickSlidePromo(\'ALL\', \'catBtn_ALL\')" class="min-w-full h-48 sm:h-56 p-4 sm:p-5 bg-gradient-to-r from-emerald-950 to-teal-950 text-white rounded-3xl relative flex items-center justify-between gap-3 overflow-hidden shadow-xl">' +
-      '<div class="flex-1 max-w-[62%] space-y-2 text-left z-10">' +
-        '<span class="px-2.5 py-0.5 rounded-full bg-white/20 text-[10px] font-black">💧 KC MART (ប៉ោយប៉ែត)</span>' +
-        '<h2 class="text-lg sm:text-xl font-black leading-snug">ទឹកពិសាបរិសុទ្ធ & ទំនិញទូទៅ</h2>' +
-        '<p class="text-xs text-white/80">សេវាដឹកជញ្ជូនរហ័សដល់មុខផ្ទះ ៣០-៤៥ នាទី</p>' +
-      '</div>' +
-      '<div class="w-[36%] h-full shrink-0 flex items-center justify-center"><img src="https://i.postimg.cc/zX8k8Xqj/kc-logo.png" class="max-h-36 object-contain drop-shadow-2xl"></div>' +
+    html = '<div onclick="clickSlidePromo(\'ALL\', \'catBtn_ALL\')" class="min-w-full h-48 sm:h-56 relative cursor-pointer select-none overflow-hidden rounded-3xl shadow-xl bg-gradient-to-r from-emerald-950 to-teal-950 text-white flex items-center justify-between p-5">' +
+      '<div class="space-y-1.5 text-left"><span class="px-2.5 py-0.5 rounded-full bg-white/20 text-[10px] font-black">💧 KC MART (ប៉ោយប៉ែត)</span><h2 class="text-lg font-black">ទឹកពិសាបរិសុទ្ធ & ទំនិញទូទៅ</h2><p class="text-xs text-white/80">ដឹកជញ្ជូនរហ័សដល់មុខផ្ទះ ៣០-៤៥ នាទី</p></div>' +
+      '<img src="https://i.postimg.cc/zX8k8Xqj/kc-logo.png" class="max-h-36 object-contain drop-shadow-2xl">' +
     '</div>';
   }
 
