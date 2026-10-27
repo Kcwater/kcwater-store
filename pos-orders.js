@@ -210,6 +210,7 @@ function switchAdminOnlineTab(tab) {
   renderAdminOnlineOrdersUI();
 }
 
+// 📋 មុខងារបង្ហាញបញ្ជីកុម្ម៉ង់ Online លើផ្ទាំង Admin (បង្ហាញទីតាំង និងចំណាំពេញលេញ)
 function renderAdminOnlineOrdersUI() {
   var container = document.getElementById('onlineOrdersAdminListContainer');
   if (!container) return;
@@ -253,14 +254,9 @@ function renderAdminOnlineOrdersUI() {
     return;
   }
 
-  // ៤. ស្រង់តែឈ្មោះអ្នកដឹកជញ្ជូនផ្លូវការរបស់រោងចក្រ KC WATER ប៉ុណ្ណោះ (មិនយកកូនចៅម៉ូយឡើយ)
-  var driverOptions = '<option value="">-- រើសអ្នកដឹករបស់រោងចក្រ --</option>';
-  allCustomers.forEach(function(c) {
-    var isCompanyDriver = (c.type === 'CompanyDriver' || c.linked_boss === 'KC WATER');
-    if (isCompanyDriver) {
-      var dPhone = c.phone ? (' (' + c.phone + ')') : '';
-      driverOptions += '<option value="' + c.full_name + '" data-phone="' + (c.phone || '') + '">' + c.full_name + dPhone + '</option>';
-    }
+  // ៤. ស្រង់តែអ្នកដឹកជញ្ជូនរោងចក្រ KC WATER ប៉ុណ្ណោះ
+  var companyDrivers = allCustomers.filter(function(c) {
+    return (c.type === 'CompanyDriver' || c.linked_boss === 'KC WATER');
   });
 
   var html = tabsHtml;
@@ -277,12 +273,21 @@ function renderAdminOnlineOrdersUI() {
     var cleanPhone = String(o.phone || '').replace(/[^0-9]/g, '');
     var safeName = String(o.customer_name || '').replace(/'/g, "\\'");
     var dateStr = new Date(o.created_at).toLocaleString('km-KH', { dateStyle: 'short', timeStyle: 'short' });
+    var locationDisplay = (o.location_url || o.address || '').trim();
 
     var intlPhone = cleanPhone.startsWith('0') ? ('855' + cleanPhone.substring(1)) : ('855' + cleanPhone);
     var tgChatLink = "https://t.me/+" + intlPhone;
     var waChatLink = "https://wa.me/" + intlPhone;
 
-    // ប៊ូតុងចាត់ចែងអ្នកដឹក (បង្ហាញតែពេលមិនទាន់ Delivered)
+    // បង្កើតបញ្ជីអ្នកដឹកសម្រាប់ Order នេះ (ជ្រើសរើសឈ្មោះដែលបានចាត់ចែងស្រាប់)
+    var driverOptions = '<option value="">-- រើសអ្នកដឹករបស់រោងចក្រ --</option>';
+    companyDrivers.forEach(function(c) {
+      var dPhone = c.phone ? (' (' + c.phone + ')') : '';
+      var isSelected = (o.driver_name && o.driver_name.trim() === c.full_name.trim()) ? 'selected' : '';
+      driverOptions += '<option value="' + c.full_name + '" data-phone="' + (c.phone || '') + '" ' + isSelected + '>' + c.full_name + dPhone + '</option>';
+    });
+
+    // ប៊ូតុងចាត់ចែងអ្នកដឹក
     var assignDriverHtml = isDelivered ? 
       ('<div class="p-2 bg-emerald-50 rounded-xl border border-emerald-200 text-xs flex justify-between items-center text-emerald-950 font-bold">' +
         '<span>🛵 អ្នកដឹកជញ្ជូន៖ <b>' + (o.driver_name || 'KC WATER') + '</b></span>' +
@@ -295,12 +300,12 @@ function renderAdminOnlineOrdersUI() {
             driverOptions +
           '</select>' +
           '<button type="button" onclick="assignDriverToOnlineOrder(\'' + o.order_id + '\', \'' + safeName + '\')" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black shadow-xs active:scale-95 transition flex items-center gap-1 whitespace-nowrap">' +
-            '<i class="fas fa-paper-plane text-[10px]"></i> ចាត់ចែង' +
+            '<i class="fas fa-paper-plane text-[10px]"></i> ' + (o.driver_name ? 'ប្តូរអ្នកដឹក' : 'ចាត់ចែង') +
           '</button>' +
         '</div>' +
       '</div>');
 
-    // ជួរប៊ូតុងសកម្មភាព
+    // ជួរប៊ូតុងសកម្មភាព (ខល, Telegram, WhatsApp, ផែនទី, រូបផ្ទះ, ដឹកដល់)
     var actionButtonsHtml = '<div class="flex flex-wrap items-center justify-end gap-1.5 pt-0.5 text-xs">' +
       (cleanPhone ? 
       '<a href="tel:' + cleanPhone + '" class="px-2.5 py-1.5 bg-green-50 hover:bg-green-100 text-green-800 rounded-xl font-bold border border-green-200 shadow-2xs flex items-center gap-1 active:scale-95 transition" style="text-decoration:none;">' +
@@ -317,12 +322,11 @@ function renderAdminOnlineOrdersUI() {
         '<i class="fab fa-whatsapp text-xs text-emerald-600"></i> WhatsApp' +
       '</a>' : '') +
 
-      (o.location_url || o.address ? 
-      '<button type="button" onclick="openOrderMap(\'' + (o.location_url || o.address).replace(/'/g, "\\'") + '\')" class="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-xl font-bold border border-blue-200 shadow-2xs flex items-center gap-1 active:scale-95 transition">' +
+      (locationDisplay ? 
+      '<button type="button" onclick="openOrderMap(\'' + locationDisplay.replace(/'/g, "\\'") + '\')" class="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-xl font-bold border border-blue-200 shadow-2xs flex items-center gap-1 active:scale-95 transition">' +
         '<i class="fas fa-map-location-dot text-xs text-blue-600"></i> ផែនទី' +
       '</button>' : '');
 
-    // 📷 ភ្ជាប់ប៊ូតុងមើលរូបផ្ទះបើមានរូប
     if (o.photo_url) {
       storeOrderPhoto(o.order_id, o.photo_url, o.customer_name);
       actionButtonsHtml += '<button type="button" onclick="viewOrderHousePhotoById(\'' + o.order_id + '\')" class="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-xl font-bold border border-amber-300 shadow-2xs flex items-center gap-1 active:scale-95 transition">' +
@@ -330,7 +334,6 @@ function renderAdminOnlineOrdersUI() {
       '</button>';
     }
 
-    // បន្ថែមប៊ូតុង "បោះបង់" និង "ដឹកដល់" តែលើ Order ដែលមិនទាន់ដឹកដល់ប៉ុណ្ណោះ
     if (!isDelivered) {
       actionButtonsHtml += '<button type="button" onclick="cancelOnlineOrder(\'' + o.order_id + '\', \'' + safeName + '\')" class="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 rounded-xl font-bold border border-red-200 shadow-2xs flex items-center gap-1 active:scale-95 transition">' +
         '<i class="fas fa-trash-can text-xs text-red-500"></i> បោះបង់' +
@@ -341,6 +344,7 @@ function renderAdminOnlineOrdersUI() {
     }
 
     actionButtonsHtml += '</div>';
+
     html += '<div class="bg-white p-3.5 rounded-2xl border ' + (isDelivered ? 'border-emerald-200 bg-emerald-50/20' : 'border-amber-200') + ' shadow-sm space-y-2.5 hover:shadow-md transition">' +
       '<div class="flex justify-between items-start border-b border-gray-100 pb-2">' +
         '<div>' +
@@ -365,10 +369,10 @@ function renderAdminOnlineOrdersUI() {
           '<span class="text-gray-400 font-bold whitespace-nowrap">🛢️ សំបកធុង៖</span>' +
           '<span class="font-bold text-emerald-700">' + (o.barrel_swap || 'មានសំបកដូរ') + '</span>' +
         '</div>' +
-        (o.address ? 
+        (locationDisplay ? 
         '<div class="flex items-start gap-1.5 pt-0.5">' +
           '<span class="text-gray-400 font-bold whitespace-nowrap">📍 ទីតាំង & ចំណាំ៖</span>' +
-          '<span class="text-slate-800 font-bold text-[11px] leading-snug">' + o.address + '</span>' +
+          '<span class="text-slate-800 font-bold text-[11px] leading-snug break-words">' + locationDisplay + '</span>' +
         '</div>' : '') +
       '</div>' +
 
@@ -635,7 +639,7 @@ async function completeOnlineOrder(orderId, custName, total, itemsText, driverNa
   document.getElementById('completeDeliveryModal').classList.remove('hidden');
 }
 
-// 💾 មុខងារកត់ត្រាការដឹកដល់ បំបែកទំនិញ ចេញវិក្កយបត្រឌីជីថល & Realtime Sync ភ្លាមៗ
+// 💾 មុខងារកត់ត្រាការដឹកដល់ បំបែកទំនិញ ចេញវិក្កយបត្រ & កាត់ស្តុក (កែសម្រួលរួចរាល់)
 async function executeFinalCompleteDelivery() {
   if (!activeDeliveryTaskData) return;
 
@@ -655,6 +659,167 @@ async function executeFinalCompleteDelivery() {
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> កំពុងកត់ត្រា...';
   }
+
+  try {
+    // ១. Update ស្ថានភាពទៅ Delivered ក្នុងតារាង Orders
+    const { error: ordErr } = await supabaseClient
+      .from('orders')
+      .update({
+        status: 'Delivered',
+        payment_method: payTextLabel
+      })
+      .eq('order_id', orderId);
+
+    if (ordErr) throw ordErr;
+
+    // ២. ធានាថាមានទិន្នន័យទំនិញទាំងអស់ក្នុងស្តុក
+    if (!allProducts || allProducts.length === 0) {
+      const { data: pList } = await supabaseClient.from('products').select('*');
+      if (pList) allProducts = pList;
+    }
+
+    // ៣. បំបែកទំនិញបញ្ចូលក្នុង Transactions (សម្អាតស្លាក Free កុំឱ្យបាត់ឈ្មោះទំនិញ)
+    var tid = "TR-" + new Date().getTime();
+    var rowsToInsert = [];
+    var totalAllocated = 0;
+
+    var itemParts = String(itemsText).split(',');
+    itemParts.forEach(function(partStr) {
+      if (!partStr || !partStr.trim()) return;
+      var isGift = (partStr.indexOf('🎁') !== -1 || partStr.indexOf('Free') !== -1);
+      
+      var seg = partStr.split('x');
+      var rawName = seg[0] ? seg[0].trim() : partStr.trim();
+      // សម្អាតពាក្យ 🎁 [Free] ចេញ ដើម្បី match ជាមួយឈ្មោះទំនិញក្នុងស្តុកឱ្យចំ
+      var cleanName = rawName.replace(/🎁\s*\[Free\]\s*/gi, '').replace(/🎁\s*/g, '').trim();
+      
+      var qty = (seg.length >= 2) ? parseFloat(seg[1].trim() || 1) : 1;
+      if (isNaN(qty) || qty <= 0) qty = 1;
+
+      var matchedProd = allProducts.find(function(p) {
+        return p.name.trim().toLowerCase() === cleanName.toLowerCase();
+      });
+
+      var unitPrice = 0;
+      if (!isGift && matchedProd) {
+        unitPrice = parseFloat(matchedProd.online_price || matchedProd.price || 0);
+      }
+      
+      var lineTotal = isGift ? 0 : (unitPrice * qty);
+      totalAllocated += lineTotal;
+
+      rowsToInsert.push({
+        transaction_id: tid,
+        customer_name: custName,
+        product_name: (isGift ? '[ថែម Free] ' : '') + (matchedProd ? matchedProd.name : cleanName),
+        qty: qty,
+        price: unitPrice,
+        currency: "KHR",
+        total: lineTotal,
+        paid_khr: lineTotal,
+        recorded_by: driverName ? (driverName + " (អ្នកដឹក)") : "Admin",
+        status: "Paid",
+        payment_method: actualPayMethod
+      });
+    });
+
+    // ៤. គណនាថ្លៃដឹក ឬសំបកធុងដែលនៅសល់ (បើមាន)
+    var diff = total - totalAllocated;
+    if (diff > 0) {
+      rowsToInsert.push({
+        transaction_id: tid,
+        customer_name: custName,
+        product_name: "សេវាដឹកជញ្ជូន / សំបកធុង",
+        qty: 1,
+        price: diff,
+        currency: "KHR",
+        total: diff,
+        paid_khr: diff,
+        recorded_by: driverName ? (driverName + " (អ្នកដឹក)") : "Admin",
+        status: "Paid",
+        payment_method: actualPayMethod
+      });
+    }
+
+    if (rowsToInsert.length > 0) {
+      await supabaseClient.from('transactions').insert(rowsToInsert);
+    }
+
+    // ៥. កាត់ស្តុកទំនិញជាក់ស្តែង (ទំនិញទិញគេ)
+    for (var i = 0; i < rowsToInsert.length; i++) {
+      var row = rowsToInsert[i];
+      var checkName = row.product_name.replace('[ថែម Free] ', '').trim();
+      var prodToDeduct = allProducts.find(function(p) {
+        return p.name.trim().toLowerCase() === checkName.toLowerCase();
+      });
+
+      if (prodToDeduct && prodToDeduct.type === 'ទិញគេ' && row.qty > 0) {
+        var newStock = Math.max(0, parseFloat(prodToDeduct.stock || 0) - row.qty);
+        await supabaseClient.from('products').update({ stock: newStock }).eq('id', prodToDeduct.id);
+        prodToDeduct.stock = newStock;
+      }
+    }
+
+    // ៦. បិទផ្ទាំងបញ្ជាក់ការដឹក
+    closeCompleteDeliveryModal();
+    showToast("បានកត់ត្រាការដឹកដល់ និងប្រមូលប្រាក់ជោគជ័យ!", "success");
+
+    // ៧. 🧾 បង្កើតវិក្កយបត្ររូបភាព Pop-up
+    if (typeof generateReceiptImage === 'function') {
+      try {
+        generateReceiptImage(tid, custName, total, total, rowsToInsert, "វិក្កយបត្រដឹកជញ្ជូន (DELIVERY RECEIPT)");
+      } catch(rcpErr) {
+        console.warn("Receipt canvas warning:", rcpErr);
+      }
+    }
+
+    if (typeof playOrderChime === 'function') playOrderChime();
+    if (typeof confetti === 'function') confetti({ particleCount: 120, spread: 80 });
+
+    // ៨. Refresh ផ្ទាំងអ្នកដឹក និង Admin ស្វ័យប្រវត្តិ
+    if (currentUser && currentUser.type === 'CompanyDriver') {
+      if (typeof renderCompanyDeliveriesModule === 'function') renderCompanyDeliveriesModule();
+    }
+    var adminModal = document.getElementById('onlineOrdersAdminModal');
+    if (adminModal && !adminModal.classList.contains('hidden')) {
+      openOnlineOrdersModal();
+    }
+    if (typeof checkPendingOnlineOrdersBadge === 'function') checkPendingOnlineOrdersBadge();
+    if (typeof loadOnlineHubOrdersTab === 'function') loadOnlineHubOrdersTab();
+    if (typeof fetchOnlineAuditOrders === 'function') fetchOnlineAuditOrders();
+
+    // ៩. ផ្ញើ Telegram Alert ទៅថៅកែ
+    try {
+      var tgMsg = "✅ <b>[KC WATER - ដឹកជញ្ជូនដល់ & ប្រមូលប្រាក់ជោគជ័យ!]</b>\n\n" +
+                  "🆔 <b>កូដកុម្ម៉ង់៖</b> <code>" + orderId + "</code>\n" +
+                  "👤 <b>អតិថិជន៖</b> " + custName + "\n" +
+                  "🛵 <b>អ្នកដឹក៖</b> " + driverName + "\n" +
+                  "📦 <b>ទំនិញ៖</b> " + itemsText + "\n" +
+                  "💵 <b>វិធីទូទាត់ជាក់ស្តែង៖</b> <b>" + payTextLabel + "</b>\n" +
+                  "💰 <b>ប្រាក់ទទួលបាន៖</b> <b>៛ " + Number(total).toLocaleString() + "</b>\n" +
+                  "🕒 <b>ម៉ោង៖</b> " + new Date().toLocaleTimeString('km-KH');
+      sendTelegramAlert(tgMsg);
+    } catch(tgE) {}
+
+    // ១០. ផ្ទាំងជូនដំណឹងបែប KC POS
+    if (typeof kcAlert === 'function') {
+      await kcAlert({
+        title: "ដឹកជញ្ជូនជោគជ័យ! 🎉",
+        message: "ការកុម្ម៉ង់ [" + orderId + "] របស់ " + custName + " ទឹកប្រាក់ ៛ " + Number(total).toLocaleString() + " ត្រូវបានកត់ត្រាចូលបញ្ជីលក់រួចរាល់!",
+        type: "success",
+        confirmText: "យល់ព្រម"
+      });
+    }
+
+  } catch(err) {
+    showToast("កំហុស៖ " + err.message, "error");
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-check-circle"></i> ដឹកដល់រួចរាល់';
+    }
+  }
+}
 
   try {
     // ១. ប្តូរ Status ក្នុងតារាង Orders ទៅ Delivered ជាបន្ទាន់
@@ -844,21 +1009,38 @@ function viewOrderHousePhotoById(orderId) {
   '</div>';
   document.body.insertAdjacentHTML('beforeend', html);
 }
-// 🗺️ មុខងារបើកផែនទី Google Maps
+// 🗺️ មុខងារបើកផែនទី Google Maps (ឆ្លាតវៃ ចាប់យក Link ឬឈ្មោះទីតាំងសុទ្ធ)
 function openOrderMap(mapUrl) {
   if (!mapUrl || String(mapUrl).trim() === "") {
-    showToast("មិនមានទីតាំង ឬអាសយដ្ឋានឡើយ!", "warning");
+    if (typeof kcAlert === 'function') {
+      kcAlert({
+        title: "មិនមានទីតាំង!",
+        message: "ការកុម្ម៉ង់នេះមិនមានភ្ជាប់ GPS ឬអាសយដ្ឋានឡើយ!",
+        type: "warning"
+      });
+    } else {
+      showToast("មិនមានទីតាំង ឬអាសយដ្ឋានឡើយ!", "warning");
+    }
     return;
   }
+
   var raw = String(mapUrl).trim();
+
+  // ១. បើមាន Link ផែនទី Google Maps ស្រាប់ (បើក Link នោះនាំផ្លូវភ្លាម)
   var match = raw.match(/https?:\/\/[^\s]+/);
   if (match) {
     window.open(match[0], '_blank');
-  } else {
-    var searchAddress = encodeURIComponent(raw + " ប៉ោយប៉ែត");
-    window.open("https://www.google.com/maps/search/?api=1&query=" + searchAddress, '_blank');
+    return;
   }
+
+  // ២. បើជាអក្សរចំណាំ (ជម្រះអក្សរជាន់ផ្ទះ និងម៉ោងក្នុងវង់ក្រចក [...] ចេញសិន ដើម្បីកុំឱ្យវង្វេងលើ Google Maps)
+  var cleanAddress = raw.replace(/\[.*?\]/g, '').replace(/\|\s*ចំណាំ:?/g, '').trim();
+  if (!cleanAddress) cleanAddress = "ក្រុងប៉ោយប៉ែត";
+
+  var searchUrl = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(cleanAddress + " ប៉ោយប៉ែត");
+  window.open(searchUrl, '_blank');
 }
+
 // 🔄 ចាប់ផ្តើមដំណើរការស្កេន Realtime ពេលបើកទំព័រ (កូដស្តង់ដារ គ្មានស្ទួន)
 window.addEventListener('load', function() {
   var navBtn = document.getElementById('navOnlineOrdersBtn');
