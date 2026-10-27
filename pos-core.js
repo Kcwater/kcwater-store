@@ -895,7 +895,7 @@ function setPosCategoryFilter(cat) {
 }
 
 // 📦 មុខងារទាញទំនិញមកបង្ហាញក្នុងក្រឡាចត្រង្គ POS (តម្លៃ ៣ ជាន់៖ ៛ លើ, ฿ កណ្តាល, $ ក្រោម គ្មានវង់ក្រចក ())
-function rPG() {
+function renderProductGrid() {
   var grid = document.getElementById('pGrid');
   if (!grid) return;
 
@@ -1108,43 +1108,65 @@ function getModalParsedPrice() {
   }
 }
 
-// 🛍️ ៤. បើកផ្ទាំង Modal រើសទំនិញ (ប្រអប់ ៣ រូបិយប័ណ្ណ មានតែលើ Admin និង Seller ប៉ុណ្ណោះ)
+// 🛍️ មុខងារបើកផ្ទាំង Modal រើសទំនិញ (ចាក់សោរម៉ូយ Monthly & រារាំង CompanyDriver)
 function openProductModal(id) {
+  // 🛡️ ១. រារាំងអ្នកដឹកជញ្ជូនរោងចក្រ (Company Driver) ដាច់ខាត
+  if (currentUser && currentUser.type === 'CompanyDriver') {
+    if (typeof kcAlert === 'function') {
+      kcAlert({
+        title: "គ្មានសិទ្ធិដកទំនិញ!",
+        message: "អ្នកដឹកជញ្ជូនរោងចក្រ គ្មានសិទ្ធិដកទំនិញ ឬលក់ក្នុង POS ឡើយ!",
+        type: "danger"
+      });
+    } else {
+      showToast("អ្នកដឹកជញ្ជូនរោងចក្រ គ្មានសិទ្ធិដកទំនិញឡើយ!", "error");
+    }
+    return;
+  }
+
   var p = allProducts.find(item => item.id === id);
   if (!p) return;
   selectedModalProduct = p;
 
   var custNameEl = document.getElementById('posCustSelect');
   var custName = custNameEl ? custNameEl.value.trim() : (currentUser.fullName || '');
-  var sp = specialPrices.find(s => s.customer_name === custName && s.product_name === p.name);
-  var unitPrice = sp ? parseFloat(sp.price) : parseFloat(p.price || 0);
-
   var custObj = allCustomers.find(c => c.full_name === custName);
   var isMonthly = (custObj && custObj.type === 'Monthly');
+
+  // 🏢 ២. ឆែកតម្លៃពិសេសសម្រាប់ម៉ូយប្រចាំខែ (Monthly)
+  var sp = specialPrices.find(s => s.customer_name === custName && s.product_name === p.name);
+  if (isMonthly && !sp) {
+    if (typeof kcAlert === 'function') {
+      kcAlert({
+        title: "គ្មានក្នុងកុងត្រា!",
+        message: "ទំនិញ [" + p.name + "] នេះ មិនមានក្នុងកុងត្រាតម្លៃពិសេសរបស់ម៉ូយប្រចាំខែ [" + custName + "] ឡើយ! សូម Admin កំណត់តម្លៃក្នុង «គ្រប់គ្រងអតិថិជន» ជាមុនសិន។",
+        type: "warning"
+      });
+    } else {
+      showToast("ទំនិញនេះគ្មានក្នុងកុងត្រាតម្លៃរបស់ម៉ូយប្រចាំខែនេះទេ!", "error");
+    }
+    return;
+  }
+
+  var unitPrice = sp ? parseFloat(sp.price) : parseFloat(p.price || 0);
 
   document.getElementById('modalProdImg').src = p.img || "https://cdn-icons-png.flaticon.com/512/3100/3100566.png";
   document.getElementById('modalProdTitle').innerText = p.name;
   document.getElementById('modalStockStatusBadge').innerText = p.type || "ទំនិញ";
   
   var costHint = document.getElementById('modalOriginalCostHint');
-  if (costHint) costHint.innerText = "(តម្លៃដើម: " + Number(unitPrice).toLocaleString() + " " + (p.currency || 'KHR') + ")";
-
-  // កំណត់រូបិយប័ណ្ណតាមទំនិញ (លំនាំដើម KHR)
-  setModalCurrency(p.currency || 'KHR');
+  setModalCurrency(isMonthly ? 'KHR' : (p.currency || 'KHR'));
 
   var priceInp = document.getElementById('modalPriceInput');
   var quickPayBtn = document.getElementById('btnModalQuickPay');
   var addToCartBtn = document.getElementById('btnModalAddToCart');
   var khrQuickRow = document.getElementById('modalKhrQuickButtonsRow');
   var khrHintText = document.getElementById('modalKhrHintText');
-
-  // 🪙 ប្រអប់រើស ៣ រូបិយប័ណ្ណ (៛ រៀល / ฿ បាត / $ ដុល្លារ)
   var currTabsRow = document.getElementById('btnModalCurr_KHR') ? document.getElementById('btnModalCurr_KHR').parentElement : null;
 
-  // 👑 ឆែកសិទ្ធិ៖ មានតែ Admin និង Seller ប៉ុណ្ណោះទើបជាអ្នកលក់
   var canEditPriceAndQuickPay = (currentUser && (currentUser.role === 'Admin' || currentUser.role === 'Seller' || currentUser.role === 'Cashier'));
 
-  // 🔒 លក្ខខណ្ឌច្បាស់លាស់៖ ប្រអប់ ៣ រូបិយប័ណ្ណ បង្ហាញតែលើ Admin និង Seller ប៉ុណ្ណោះ (បើជាម៉ូយ Reseller, Driver ឬភ្ញៀវ Monthly គឺលាក់ចោលស្វ័យប្រវត្តិ!)
+  // 🔒 សម្រាប់ម៉ូយប្រចាំខែ Monthly៖ លាក់ប្រអប់ប្តូរលុយ ($/฿)
   if (currTabsRow) {
     if (canEditPriceAndQuickPay && !isMonthly) {
       currTabsRow.classList.remove('hidden');
@@ -1153,35 +1175,37 @@ function openProductModal(id) {
     }
   }
 
-  // 🏢 ១. បើជាអតិថិជនប្រចាំខែ (Monthly)៖ ចាក់សោរតម្លៃកុងត្រា មិនឱ្យកែតម្លៃ មិនឱ្យ Quick Pay និងមិនឱ្យប្តូរលុយឡើយ!
+  // 🏢 ករណីទី ១៖ អតិថិជនប្រចាំខែ (Monthly) -> ចាក់សោរតម្លៃកុងត្រា មិនឱ្យកែតម្លៃ មិនឱ្យ Quick Pay
   if (isMonthly) {
     priceInp.readOnly = true;
     priceInp.value = unitPrice;
     priceInp.className = "w-full text-center text-xl font-black bg-amber-50 py-2.5 rounded-xl border-2 border-amber-300 text-amber-950 outline-none select-none pr-8";
 
-    if (costHint) costHint.innerHTML = '<span class="text-amber-800 font-bold bg-amber-100 px-2 py-0.5 rounded-full text-[10px]">🔒 តម្លៃកុងត្រាប្រចាំខែ (ចាក់សោរ)</span>';
+    if (costHint) costHint.innerHTML = '<span class="text-amber-800 font-bold bg-amber-100 px-2 py-0.5 rounded-full text-[10px]">🔒 តម្លៃកុងត្រា: ៛ ' + Number(unitPrice).toLocaleString() + '</span>';
     if (khrQuickRow) khrQuickRow.classList.add('hidden');
     if (khrHintText) khrHintText.classList.add('hidden');
     if (quickPayBtn) quickPayBtn.classList.add('hidden');
     if (addToCartBtn) addToCartBtn.className = "col-span-2 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-2xl text-xs shadow-md flex items-center justify-center gap-1.5 active:scale-95 transition";
 
-  // 👑 ២. បើជា Admin ឬ Seller (លក់នៅកន្លែង Walk-in)៖ អាចកែតម្លៃ អាច Quick Pay និងអាចប្តូរ ៣ រូបិយប័ណ្ណបាន
+  // 👑 ករណីទី ២៖ Admin ឬ Seller លក់ Walk-in -> អាចកែតម្លៃ អាច Quick Pay
   } else if (canEditPriceAndQuickPay) {
     priceInp.readOnly = false;
     priceInp.value = unitPrice > 0 ? unitPrice : "";
     priceInp.placeholder = unitPrice > 0 ? unitPrice : "0";
     priceInp.className = "w-full text-center text-xl font-black bg-white py-2.5 rounded-xl border-2 border-blue-300 focus:border-blue-600 text-blue-950 outline-none pr-8";
 
+    if (costHint) costHint.innerText = "(តម្លៃដើម: " + Number(unitPrice).toLocaleString() + " " + (p.currency || 'KHR') + ")";
     if (quickPayBtn) quickPayBtn.classList.remove('hidden');
     if (addToCartBtn) addToCartBtn.className = "py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-2xl text-xs shadow-md flex items-center justify-center gap-1.5 active:scale-95 transition";
 
-  // 🚚 ៣. បើជាម៉ូយដកទឹក (Reseller) ឬកូនចៅមេ (Driver)៖ ចាក់សោរតម្លៃបោះដុំ មិនឱ្យកែតម្លៃ មិនឱ្យ Quick Pay និងលាក់ប្រអប់ប្តូរលុយចោល!
+  // 🚚 ករណីទី ៣៖ ម៉ូយបោះដុំ (Reseller) ឬកូនចៅមេ (Driver) -> ចាក់សោរតម្លៃបោះដុំ
   } else {
     priceInp.readOnly = true;
     priceInp.value = unitPrice;
     priceInp.placeholder = unitPrice;
     priceInp.className = "w-full text-center text-xl font-black bg-slate-100 py-2.5 rounded-xl border border-slate-300 text-slate-700 outline-none select-none pointer-events-none pr-8";
 
+    if (costHint) costHint.innerText = "(តម្លៃដើម: " + Number(unitPrice).toLocaleString() + " " + (p.currency || 'KHR') + ")";
     if (quickPayBtn) quickPayBtn.classList.add('hidden');
     if (khrQuickRow) khrQuickRow.classList.add('hidden');
     if (khrHintText) khrHintText.classList.add('hidden');
@@ -1282,13 +1306,43 @@ function confirmAddToCart() {
   showToast("បានបញ្ចូល [" + prodName + "] x " + q + " ក្នុងកន្ត្រក!", "success");
 }
 
-// ==========================================
-// ⚡ ៦. មុខងារទូទាត់រហ័ស (QUICK CHECKOUT)
-// ==========================================
+// ⚡ មុខងារទូទាត់រហ័ស (QUICK CHECKOUT) - កែសម្រួលរួចរាល់
 async function quickCheckoutSingleItem() {
+  // 🛡️ ១. រារាំងអ្នកដឹកជញ្ជូនរោងចក្រ (Company Driver) ដាច់ខាត
+  if (currentUser && currentUser.type === 'CompanyDriver') {
+    if (typeof kcAlert === 'function') {
+      await kcAlert({
+        title: "គ្មានសិទ្ធិលក់!",
+        message: "អ្នកដឹកជញ្ជូនរោងចក្រ គ្មានសិទ្ធិដក ឬលក់ទំនិញក្នុង POS ឡើយ!",
+        type: "danger"
+      });
+    } else {
+      showToast("អ្នកដឹកជញ្ជូនរោងចក្រ គ្មានសិទ្ធិដក ឬលក់ទំនិញក្នុង POS ឡើយ!", "error");
+    }
+    return;
+  }
+
+  // 🛡️ ២. ឆែកសិទ្ធិអ្នកលក់ (Admin / Seller)
   var canQuickPay = (currentUser && (currentUser.role === 'Admin' || currentUser.role === 'Seller' || currentUser.role === 'Cashier'));
   if (!canQuickPay) {
     showToast("អ្នកមិនមានសិទ្ធិប្រើប្រាស់មុខងារទូទាត់រហ័សនេះឡើយ!", "error");
+    return;
+  }
+
+  // 🏢 ៣. រារាំងម៉ូយប្រចាំខែ (Monthly) មិនឱ្យប្រើ Quick Pay (ត្រូវកត់ចូលកុងត្រាជំពាក់)
+  var custNameEl = document.getElementById('posCustSelect');
+  var custName = custNameEl ? custNameEl.value.trim() : '';
+  var custObj = allCustomers.find(c => c.full_name === custName);
+  if (custObj && custObj.type === 'Monthly') {
+    if (typeof kcAlert === 'function') {
+      await kcAlert({
+        title: "អតិថិជនប្រចាំខែ (Monthly)",
+        message: "ម៉ូយប្រចាំខែមិនអាចគិតលុយរហ័សបានទេ! សូមចុច «បញ្ចូលកន្ត្រក» រួចចុច «កត់ត្រាការដកទំនិញជំនួស» ដើម្បីកត់ចូលបញ្ជីកុងត្រា។",
+        type: "warning"
+      });
+    } else {
+      showToast("ម៉ូយប្រចាំខែ ត្រូវកត់ចូលបញ្ជីកុងត្រាជំពាក់ មិនអាចគិតលុយភ្លាមៗទេ!", "error");
+    }
     return;
   }
 
@@ -1340,7 +1394,6 @@ async function quickCheckoutSingleItem() {
 
   await confirmSale();
 }
-
 function getCartCalculations() {
   var rawTotal = cart.reduce((sum, i) => sum + (i.qty * i.price), 0);
   var discountK = 0;
@@ -1354,7 +1407,7 @@ function getCartCalculations() {
   var finalTotal = Math.max(0, rawTotal - discountK);
   return { rawTotal: rawTotal, discountK: discountK, finalTotal: finalTotal };
 }
-function rC() {
+function renderCart() {
   var tbody = document.getElementById('cItemsTableBody');
   var totalValEl = document.getElementById('cTotalVal');
   var badge = document.getElementById('cartCountBadge');
@@ -1741,9 +1794,6 @@ window.addEventListener('load', function() {
     login();
   }
 });
-// 🔄 បង្កើតឈ្មោះស្តង់ដារពេញលេញ
-var renderProductGrid = rPG;
-var renderCart = rC;
 
 // 📱 បិទ Sidebar ស្វ័យប្រវត្តិពេលចុចលើផ្ទៃខាងក្រៅ (ទាំងលើកុំព្យូទ័រ និងទូរស័ព្ទ)
 document.addEventListener('click', function(e) {
