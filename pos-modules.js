@@ -1233,14 +1233,19 @@ function toggleCustTypeFields() {
     else loginBox.classList.remove('hidden');
   }
 }
-// 💾 មុខងាររក្សាទុក ឬ Update គណនី
+
+// 💾 មុខងាររក្សាទុក ឬកែប្រែគណនី (ចាក់សោរម៉ូយ Monthly គ្មាន Login ដាច់ខាត)
 async function saveUserToSupabase() {
   var name = getElVal('mem_name');
   var roleType = getElVal('mem_role_type') || 'MONTHLY';
   var phone = getElVal('mem_phone');
   
   if (!name) { 
-    showToast("សូមបញ្ចូលឈ្មោះពេញ!", "error"); 
+    if (typeof kcAlert === 'function') {
+      await kcAlert({ title: "ខ្វះទិន្នន័យ", message: "សូមបញ្ចូលឈ្មោះពេញរបស់គណនី!", type: "warning" });
+    } else {
+      showToast("សូមបញ្ចូលឈ្មោះពេញ!", "error");
+    }
     var nameInp = document.getElementById('mem_name');
     if (nameInp) nameInp.focus();
     return; 
@@ -1252,41 +1257,60 @@ async function saveUserToSupabase() {
   var user = null;
   var pass = null;
 
+  // 🏢 ១. អតិថិជនប្រចាំខែ (Monthly)៖ គ្មាន Username និង Password ដាច់ខាត!
   if (roleType === 'MONTHLY') {
     role = 'Customer';
     type = 'Monthly';
+    user = null;
+    pass = null;
   } else if (roleType === 'RESELLER') {
     role = 'Customer';
     type = 'Regular';
     user = getElVal('mem_user');
     pass = getElVal('mem_pass');
-    if (!user || !pass) { showToast("សូមវាយ Username និង Password សម្រាប់ម៉ូយ Login!", "error"); return; }
+    if (!user || !pass) { 
+      showToast("សូមវាយ Username និង Password សម្រាប់ម៉ូយ Login!", "error"); 
+      return; 
+    }
   } else if (roleType === 'DRIVER') {
     role = 'Driver';
     type = 'Driver';
     linkedBoss = getElVal('mem_boss_custom') || getElVal('mem_boss_select');
     user = getElVal('mem_user');
     pass = getElVal('mem_pass');
-    if (!user || !pass) { showToast("សូមវាយ Username និង Password សម្រាប់អ្នកដឹក Login!", "error"); return; }
+    if (!user || !pass) { 
+      showToast("សូមវាយ Username និង Password សម្រាប់អ្នកដឹក Login!", "error"); 
+      return; 
+    }
   } else if (roleType === 'COMPANY_DRIVER') {
+    // 🛵 ២. អ្នកដឹកជញ្ជូនរោងចក្រ៖ ភ្ជាប់ជាមួយ KC WATER
     role = 'Driver';
     type = 'CompanyDriver';
     linkedBoss = 'KC WATER';
     user = getElVal('mem_user');
     pass = getElVal('mem_pass');
-    if (!user || !pass) { showToast("សូមវាយ Username និង Password សម្រាប់អ្នកដឹក!", "error"); return; }
+    if (!user || !pass) { 
+      showToast("សូមវាយ Username និង Password សម្រាប់អ្នកដឹកជញ្ជូនរោងចក្រ!", "error"); 
+      return; 
+    }
   } else if (roleType === 'SELLER') {
     role = 'Seller';
     type = 'Retail';
     user = getElVal('mem_user');
     pass = getElVal('mem_pass');
-    if (!user || !pass) { showToast("សូមវាយ Username និង Password សម្រាប់បុគ្គលិកលក់!", "error"); return; }
+    if (!user || !pass) { 
+      showToast("សូមវាយ Username និង Password សម្រាប់បុគ្គលិកលក់!", "error"); 
+      return; 
+    }
   } else if (roleType === 'ADMIN') {
     role = 'Admin';
     type = 'Admin';
     user = getElVal('mem_user');
     pass = getElVal('mem_pass');
-    if (!user || !pass) { showToast("សូមវាយ Username និង Password សម្រាប់ Admin!", "error"); return; }
+    if (!user || !pass) { 
+      showToast("សូមវាយ Username និង Password សម្រាប់ Admin!", "error"); 
+      return; 
+    }
   }
 
   var btn = document.getElementById('btnSaveUserAction');
@@ -1298,13 +1322,11 @@ async function saveUserToSupabase() {
       role: role,
       type: type,
       phone: phone,
-      linked_boss: linkedBoss
+      linked_boss: linkedBoss,
+      username: user,
+      password: pass
     };
 
-    if (user !== null && user !== '') payload.username = user;
-    if (pass !== null && pass !== '') payload.password = pass;
-
-    // ✅ បើជាការកែប្រែ ប្រើ Update, បើបង្កើតថ្មី ប្រើ Insert
     if (editingCustomerId) {
       const { error } = await supabaseClient
         .from('users')
@@ -1329,6 +1351,7 @@ async function saveUserToSupabase() {
     if (btn) { btn.disabled = false; }
   }
 }
+
 // 🔍 មុខងារទាញយក និងចម្រាញ់តារាងគណនី (Search តាមឈ្មោះ/លេខ & Tabs បែងចែកដាច់ពីគ្នា)
 var cachedUsersModuleList = [];
 var activeUserModuleTab = 'ALL';
@@ -1489,39 +1512,93 @@ async function fetchSpecialPricesTable() {
   } catch(e) {}
 }
 
+// 🏷️ មុខងាររក្សាទុក ឬកែប្រែតម្លៃកុងត្រាពិសេស (ការពារមិនឱ្យស្ទួនជួរទំនិញដាច់ខាត)
 async function saveSpecialPriceToSupabase() {
-  var cust = document.getElementById('spCustSelect').value;
-  var prod = document.getElementById('spProdSelect').value;
-  var price = parseFloat(document.getElementById('spPriceInput').value || 0);
+  var cust = document.getElementById('spCustSelect') ? document.getElementById('spCustSelect').value : '';
+  var prod = document.getElementById('spProdSelect') ? document.getElementById('spProdSelect').value : '';
+  var priceInp = document.getElementById('spPriceInput');
+  var price = parseFloat(priceInp ? priceInp.value || 0 : 0);
 
   if (!cust || !prod || price <= 0) { 
-    showToast("សូមជ្រើសរើសអតិថិជនប្រចាំខែ ទំនិញ និងតម្លៃពិសេស!", "error"); 
+    if (typeof kcAlert === 'function') {
+      await kcAlert({
+        title: "ខ្វះទិន្នន័យ",
+        message: "សូមជ្រើសរើសអតិថិជនប្រចាំខែ មុខទំនិញ និងបញ្ចូលតម្លៃពិសេសធំជាង ០!",
+        type: "warning"
+      });
+    } else {
+      showToast("សូមជ្រើសរើសអតិថិជនប្រចាំខែ ទំនិញ និងតម្លៃពិសេស!", "error");
+    }
     return; 
   }
 
   // 🔒 ធានាថាតម្លៃពិសេសត្រូវបានកំណត់តែចំពោះអតិថិជនប្រចាំខែ (Monthly) ប៉ុណ្ណោះ
   var custObj = (allCustomers || []).find(c => c.full_name === cust);
   if (!custObj || custObj.type !== 'Monthly') {
-    showToast("តម្លៃពិសេសអាចកំណត់បានតែចំពោះអតិថិជនប្រចាំខែ (Monthly) ប៉ុណ្ណោះ!", "error");
+    if (typeof kcAlert === 'function') {
+      await kcAlert({
+        title: "មិនមែនម៉ូយប្រចាំខែ",
+        message: "តម្លៃពិសេសអាចកំណត់បានតែចំពោះអតិថិជនប្រភេទ «ប្រចាំខែ (Monthly)» ប៉ុណ្ណោះ!",
+        type: "warning"
+      });
+    } else {
+      showToast("តម្លៃពិសេសអាចកំណត់បានតែចំពោះអតិថិជនប្រចាំខែ (Monthly) ប៉ុណ្ណោះ!", "error");
+    }
     return;
   }
 
-  try {
-    await supabaseClient.from('customer_prices').upsert([{
-      customer_name: cust,
-      product_name: prod,
-      price: price,
-      currency: "KHR"
-    }]);
+  var btn = event ? event.target : null;
+  if (btn && btn.tagName === 'BUTTON') {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> កំពុងរក្សាទុក...';
+  }
 
-    showToast("បានរក្សាទុកតម្លៃកុងត្រាពិសេសសម្រាប់ [" + cust + "] ជោគជ័យ!", "success");
-    document.getElementById('spPriceInput').value = "";
+  try {
+    // 🔍 ឆែកមើលថាតើធ្លាប់មានតម្លៃចាស់សម្រាប់មុខទំនិញនេះហើយឬនៅ (ការពារកុំឱ្យស្ទួន)
+    var existing = (specialPrices || []).find(s => s.customer_name === cust && s.product_name === prod);
+
+    if (existing && existing.id) {
+      // ក. បើមានស្រាប់ ធ្វើបច្ចុប្បន្នភាព (Update) តម្លៃថ្មី
+      const { error: updErr } = await supabaseClient
+        .from('customer_prices')
+        .update({
+          price: price,
+          currency: "KHR"
+        })
+        .eq('id', existing.id);
+
+      if (updErr) throw updErr;
+      showToast("បានកែប្រែតម្លៃកុងត្រា [" + prod + "] មកត្រឹម ៛ " + Number(price).toLocaleString() + " ជោគជ័យ!", "success");
+
+    } else {
+      // ខ. បើមិនទាន់មាន បញ្ចូលថ្មី (Insert)
+      const { error: insErr } = await supabaseClient
+        .from('customer_prices')
+        .insert([{
+          customer_name: cust,
+          product_name: prod,
+          price: price,
+          currency: "KHR"
+        }]);
+
+      if (insErr) throw insErr;
+      showToast("បានកំណត់តម្លៃកុងត្រាថ្មី [" + prod + "] ៛ " + Number(price).toLocaleString() + " ជោគជ័យ!", "success");
+    }
+
+    if (priceInp) priceInp.value = "";
     await fetchInitialPOSData();
     fetchSpecialPricesTable();
+
   } catch(err) {
     showToast("កំហុស៖ " + err.message, "error");
+  } finally {
+    if (btn && btn.tagName === 'BUTTON') {
+      btn.disabled = false;
+      btn.innerHTML = 'រក្សាទុកតម្លៃពិសេស (Save Price)';
+    }
   }
 }
+
 async function delSpecialPriceFromSupabase(id) {
   // 🌟 ប្រើ Pop-up បញ្ជាក់ការលុបបែប Danger ពណ៌ក្រហមរបស់ KC POS
   var ok = await kcConfirm({
