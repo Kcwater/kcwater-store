@@ -3073,3 +3073,87 @@ function downloadMyStatementPNG() {
     showToast("បានទាញយកកាតគ្រីជោគជ័យ!", "success");
   });
 }
+
+// ==========================================
+// 🔢 ១. មុខងារ Update លេខរៀង POS ដោយដៃ (រុញលេខស្ទួនអូតូ)
+// ==========================================
+async function quickUpdateSortPos(prodId, val) {
+  var s = parseInt(val) || 1;
+  try {
+    var cur = allProducts.find(i => i.id === prodId);
+    if (cur) cur.sort_order = s;
+    await supabaseClient.from('products').update({ sort_order: s }).eq('id', prodId);
+
+    var posItems = allProducts.filter(p => {
+      var ch = String(p.channel || 'ALL').toUpperCase();
+      return (ch === 'ALL' || ch === 'POS') && p.id !== prodId;
+    });
+
+    var conflicts = posItems.filter(p => parseInt(p.sort_order) === s);
+    for (var j = 0; j < conflicts.length; j++) {
+      var nextPosS = s + j + 1;
+      conflicts[j].sort_order = nextPosS;
+      await supabaseClient.from('products').update({ sort_order: nextPosS }).eq('id', conflicts[j].id);
+    }
+
+    showToast("បានប្តូរលេខ POS ទៅ #" + s + " ជោគជ័យ!", "success");
+    renderStockTableRows();
+  } catch(e) {
+    showToast("កំហុស៖ " + e.message, "error");
+  }
+}
+
+// ==========================================
+// 💵 ២. មុខងារ Preview និង រក្សាទុកអត្រាប្តូរប្រាក់រហ័ស (Exchange Rates)
+// ==========================================
+function updateRatePreviewLive() {
+  var usdInp = document.getElementById('set_rate_usd');
+  var thbInp = document.getElementById('set_rate_thb');
+  if (usdInp && usdInp.value) exchangeRateUSD = parseFloat(usdInp.value) || 4100;
+  if (thbInp && thbInp.value) exchangeRateTHB = parseFloat(thbInp.value) || 115;
+}
+
+async function saveQuickExchangeRates() {
+  var usdInp = document.getElementById('set_rate_usd');
+  var thbInp = document.getElementById('set_rate_thb');
+  var btn = document.getElementById('btnSaveQuickRates');
+
+  var rUSD = parseFloat(usdInp ? usdInp.value : 4100) || 4100;
+  var rTHB = parseFloat(thbInp ? thbInp.value : 115) || 115;
+
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> កំពុងរក្សាទុក...';
+  }
+
+  try {
+    const { error } = await supabaseClient.from('settings').upsert([
+      { key: 'Exchange_Rate_USD', value: String(rUSD) },
+      { key: 'Exchange_Rate_THB', value: String(rTHB) }
+    ]);
+
+    if (error) throw error;
+
+    exchangeRateUSD = rUSD;
+    exchangeRateTHB = rTHB;
+
+    if (typeof kcAlert === 'function') {
+      await kcAlert({
+        title: "ជោគជ័យ! 🎉",
+        message: "បានធ្វើបច្ចុប្បន្នភាពអត្រាប្តូរប្រាក់ $1 = " + rUSD.toLocaleString() + "៛ និង 1฿ = " + rTHB.toLocaleString() + "៛ រួចរាល់!",
+        type: "success"
+      });
+    } else {
+      showToast("បានរក្សាទុកអត្រាប្តូរប្រាក់ជោគជ័យ!", "success");
+    }
+
+    if (typeof fetchInitialPOSData === 'function') await fetchInitialPOSData();
+  } catch(err) {
+    showToast("កំហុសរក្សាទុកអត្រាប្តូរប្រាក់៖ " + err.message, "error");
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-floppy-disk mr-1"></i> រក្សាទុកអត្រាប្តូរប្រាក់';
+    }
+  }
+}
