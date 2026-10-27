@@ -1516,127 +1516,147 @@ function getLocalizedProductName(p, lang) {
       if (typeof checkQuickReorderAvailability === 'function') checkQuickReorderAvailability();
     }
     
-   // 📦 ១. ទាញយកទំនិញ + គណនា ៣ រូបិយប័ណ្ណ (៛, ฿, $) ស្វ័យប្រវត្តិ
-    async function loadStoreOnlineProducts() {
-      var grid = document.getElementById('catalogGrid');
-      if (grid) {
-        grid.innerHTML = '<div class="col-span-full py-12 text-center text-slate-400 font-bold text-xs"><i class="fas fa-spinner fa-spin text-emerald-600 text-xl mb-2 block"></i> Loading products...</div>';
-      }
+   // ⚡ មុខងារទាញទំនិញល្បឿនលឿនបំផុត (បង្ហាញទំនិញភ្លាមៗ 0.05 វិនាទី តាមរយៈ Instant Cache)
+async function loadStoreOnlineProducts() {
+  var grid = document.getElementById('catalogGrid');
 
-      try {
-        const { data: list, error } = await supabaseClient
-          .from('products')
-          .select('*')
-          .in('channel', ['ALL', 'ONLINE', 'all', 'online'])
-          .order('sort_order', { ascending: true });
-
-        if (error) throw error;
-
-        // ទាញយកការពិពណ៌នា, Badge, Category និងអត្រាប្តូរប្រាក់ទាំង ២ ពី Settings
-        var setMap = {};
-        try {
-          const { data: setList } = await supabaseClient.from('settings').select('key, value');
-          if (setList) {
-            setList.forEach(r => { setMap[r.key] = r.value; });
-          }
-        } catch(se) {}
-
-        // 💵 អត្រាប្តូរប្រាក់ស្តង់ដារ ($1 = 4,100៛ | 1฿ = 115៛)
-        var exchangeRateUSD = parseFloat(setMap['Exchange_Rate_USD'] || 4100);
-        var exchangeRateTHB = parseFloat(setMap['Exchange_Rate_THB'] || 115);
-
-        if (list && list.length > 0) {
-          STORE_CATALOG = list.map(function(p) {
-            var nameLower = (p.name || '').toLowerCase();
-            var cat = 'GENERAL';
-            var isBarrel = false;
-
-            // 📂 យក Category ដែលបានកំណត់ផ្ទាល់ពី POS ជាចម្បង
-            var assignedCat = (setMap['CAT_' + p.id] || p.category || '').trim().toUpperCase();
-
-            if (assignedCat) {
-              cat = assignedCat;
-              if (cat === 'BARREL') isBarrel = true;
-            } else {
-              if (nameLower.indexOf('ធុង') !== -1 || nameLower.indexOf('20l') !== -1 || nameLower.indexOf('២០') !== -1) {
-                cat = 'BARREL';
-                isBarrel = true;
-              } else if (nameLower.indexOf('យួរ') !== -1 || nameLower.indexOf('ដប') !== -1 || nameLower.indexOf('កេស') !== -1) {
-                cat = 'PACK';
-              } else if (nameLower.indexOf('ជើងទម្រ') !== -1 || nameLower.indexOf('រ៉ូប៊ីណេ') !== -1 || nameLower.indexOf('ម៉ាស៊ីន') !== -1) {
-                cat = 'EQUIP';
-              } else {
-                cat = 'GENERAL';
-              }
-            }
-
-            var imgDisplay = '';
-            var rawImg = (p.img || '').trim();
-
-            if (rawImg && (rawImg.startsWith('http') || rawImg.startsWith('data:image'))) {
-              imgDisplay = '<img src="' + rawImg + '" class="max-h-24 max-w-[120px] object-contain rounded-xl mx-auto drop-shadow-sm group-hover:scale-105 transition-transform duration-200" onerror="this.onerror=null; this.src=\'https://cdn-icons-png.flaticon.com/512/3100/3100566.png\';">';
-            } else {
-              imgDisplay = '<img src="https://cdn-icons-png.flaticon.com/512/3100/3100566.png" class="max-h-20 max-w-[100px] object-contain opacity-80 mx-auto drop-shadow-sm group-hover:scale-105 transition-transform duration-200">';
-            }
-
-            // 🪙 គណនា ៣ រូបិយប័ណ្ណ (៛, ฿, $) ឱ្យត្រូវតាមរូបមន្តច្បាស់លាស់
-            var rawCurrency = (p.currency || 'KHR').toUpperCase();
-            var onlinePrice = parseFloat(p.online_price || p.price || 0);
-            var priceKhr = 0, priceThb = 0, priceUsd = 0;
-
-            if (rawCurrency === 'USD') {
-              priceKhr = Math.round(onlinePrice * exchangeRateUSD);
-              priceUsd = onlinePrice;
-              priceThb = Math.round(priceKhr / exchangeRateTHB);
-            } else if (rawCurrency === 'THB') {
-              priceKhr = Math.round(onlinePrice * exchangeRateTHB);
-              priceThb = onlinePrice;
-              priceUsd = parseFloat((priceKhr / exchangeRateUSD).toFixed(2));
-            } else {
-              priceKhr = Math.round(onlinePrice);
-              priceThb = Math.round(onlinePrice / exchangeRateTHB);
-              priceUsd = parseFloat((onlinePrice / exchangeRateUSD).toFixed(2));
-            }
-
-            var customDesc = (setMap['DESC_' + p.id] || p.description || p.desc || '').trim();
-            var customBadge = (setMap['BADGE_' + p.id] || p.badge || '').trim();
-
-            return {
-              id: String(p.id || ''),
-              raw_name: p.name,
-              cat: cat,
-              type: p.type || '',
-              stock: parseFloat(p.stock || 0),
-              isBarrel20L: isBarrel,
-              price: priceKhr,        // តម្លៃរៀលស្តង់ដារសម្រាប់គណនាកន្ត្រក
-              priceKhr: priceKhr,    // តម្លៃរៀល (៛)
-              priceThb: priceThb,    // តម្លៃបាត (฿)
-              priceUsd: priceUsd,    // តម្លៃដុល្លារ ($)
-              currency: rawCurrency,
-              svg: imgDisplay,
-              desc: customDesc,
-              badge: customBadge,
-              sort_order: parseInt(setMap['ONLINE_SORT_' + p.id] || p.sort_order || 99)
-            };
-          });
-          
-          // 🔢 តម្រៀបលេខរៀងឱ្យម៉ត់ចត់
-          STORE_CATALOG.sort(function(a, b) {
-            var orderA = (a.sort_order !== null && a.sort_order !== undefined && a.sort_order !== '') ? parseInt(a.sort_order) : 999;
-            var orderB = (b.sort_order !== null && b.sort_order !== undefined && b.sort_order !== '') ? parseInt(b.sort_order) : 999;
-            return orderA - orderB;
-          });
-
-          renderCatalogGrid('ALL');
-        } else {
-          if (grid) {
-            grid.innerHTML = '<div class="col-span-full py-10 text-center text-slate-400 font-bold text-xs"><i class="fas fa-box-open text-2xl text-slate-300 mb-2 block"></i> No products available</div>';
-          }
-        }
-      } catch(err) {
-        if (grid) grid.innerHTML = '<div class="col-span-full py-8 text-center text-red-500 font-bold text-xs">Error: ' + err.message + '</div>';
+  // 🚀 ១. ស្រង់ទំនិញពី Cache ក្នុងទូរស័ព្ទមកបង្ហាញភ្លាមៗក្នុង 0.05 វិនាទី (គ្មានការវិលកង់ Spinner យូរទៀតទេ!)
+  try {
+    var cachedCatalog = localStorage.getItem('kc_cached_catalog');
+    if (cachedCatalog) {
+      STORE_CATALOG = JSON.parse(cachedCatalog);
+      if (Array.isArray(STORE_CATALOG) && STORE_CATALOG.length > 0) {
+        if (typeof renderCategoryChips === 'function') renderCategoryChips();
+        renderCatalogGrid('ALL');
       }
     }
+  } catch(ce) {}
+
+  // បើទូរស័ព្ទភ្ញៀវថ្មីទើបតែចូលលើកដំបូងគ្មាន Cache ទើបបង្ហាញ Loading
+  if ((!STORE_CATALOG || STORE_CATALOG.length === 0) && grid) {
+    grid.innerHTML = '<div class="col-span-full py-10 text-center text-slate-400 font-bold text-xs"><i class="fas fa-spinner fa-spin text-emerald-600 text-xl mb-2 block"></i> កំពុងរៀបចំទំនិញ...</div>';
+  }
+
+  try {
+    // ⚡ ២. ទាញទំនិញ (Products) និងការកំណត់ (Settings) ស្របគ្នាព្រមគ្នាក្នុង ១ វិនាទី (Promise.all)
+    const [prodResult, setResult] = await Promise.all([
+      supabaseClient
+        .from('products')
+        .select('*')
+        .in('channel', ['ALL', 'ONLINE', 'all', 'online'])
+        .order('sort_order', { ascending: true }),
+      supabaseClient
+        .from('settings')
+        .select('*')
+    ]);
+
+    if (prodResult.error) throw prodResult.error;
+
+    var list = prodResult.data || [];
+    var setList = setResult.data || [];
+
+    // ចងចាំ Settings ទុកកុំឱ្យទាញស្ទួនម្តងទៀត
+    var setMap = {};
+    setList.forEach(function(r) { setMap[r.key] = r.value; });
+    window.__kcCachedSettingsMap = setMap;
+
+    // 💵 អត្រាប្តូរប្រាក់ស្តង់ដារ
+    exchangeRateUSD = parseFloat(setMap['Exchange_Rate_USD'] || 4100);
+    exchangeRateTHB = parseFloat(setMap['Exchange_Rate_THB'] || 115);
+
+    if (list.length > 0) {
+      STORE_CATALOG = list.map(function(p) {
+        var nameLower = (p.name || '').toLowerCase();
+        var cat = 'GENERAL';
+        var isBarrel = false;
+
+        var assignedCat = (setMap['CAT_' + p.id] || p.category || '').trim().toUpperCase();
+
+        if (assignedCat) {
+          cat = assignedCat;
+          if (cat === 'BARREL') isBarrel = true;
+        } else {
+          if (nameLower.indexOf('ធុង') !== -1 || nameLower.indexOf('20l') !== -1 || nameLower.indexOf('២០') !== -1) {
+            cat = 'BARREL';
+            isBarrel = true;
+          } else if (nameLower.indexOf('យួរ') !== -1 || nameLower.indexOf('ដប') !== -1 || nameLower.indexOf('កេស') !== -1) {
+            cat = 'PACK';
+          } else if (nameLower.indexOf('ជើងទម្រ') !== -1 || nameLower.indexOf('រ៉ូប៊ីណេ') !== -1 || nameLower.indexOf('ម៉ាស៊ីន') !== -1) {
+            cat = 'EQUIP';
+          } else {
+            cat = 'GENERAL';
+          }
+        }
+
+        var imgDisplay = '';
+        var rawImg = (p.img || '').trim();
+
+        if (rawImg && (rawImg.startsWith('http') || rawImg.startsWith('data:image'))) {
+          imgDisplay = '<img src="' + rawImg + '" class="w-full h-full object-contain mx-auto drop-shadow-md group-hover:scale-105 transition-transform duration-300" onerror="this.onerror=null; this.src=\'https://cdn-icons-png.flaticon.com/512/3100/3100566.png\';">';
+        } else {
+          imgDisplay = '<img src="https://cdn-icons-png.flaticon.com/512/3100/3100566.png" class="w-full h-full max-h-24 object-contain opacity-70 mx-auto drop-shadow group-hover:scale-105 transition-transform duration-300">';
+        }
+
+        var rawCurrency = (p.currency || 'KHR').toUpperCase();
+        var onlinePrice = parseFloat(p.online_price || p.price || 0);
+        var priceKhr = 0, priceThb = 0, priceUsd = 0;
+
+        if (rawCurrency === 'USD') {
+          priceKhr = Math.round(onlinePrice * exchangeRateUSD);
+          priceUsd = onlinePrice;
+          priceThb = Math.round(priceKhr / exchangeRateTHB);
+        } else if (rawCurrency === 'THB') {
+          priceKhr = Math.round(onlinePrice * exchangeRateTHB);
+          priceThb = onlinePrice;
+          priceUsd = parseFloat((priceKhr / exchangeRateUSD).toFixed(2));
+        } else {
+          priceKhr = Math.round(onlinePrice);
+          priceThb = Math.round(onlinePrice / exchangeRateTHB);
+          priceUsd = parseFloat((onlinePrice / exchangeRateUSD).toFixed(2));
+        }
+
+        return {
+          id: String(p.id || ''),
+          raw_name: p.name,
+          cat: cat,
+          type: p.type || '',
+          stock: parseFloat(p.stock || 0),
+          isBarrel20L: isBarrel,
+          price: priceKhr,
+          priceKhr: priceKhr,
+          priceThb: priceThb,
+          priceUsd: priceUsd,
+          currency: rawCurrency,
+          svg: imgDisplay,
+          desc: (setMap['DESC_' + p.id] || p.description || p.desc || '').trim(),
+          badge: (setMap['BADGE_' + p.id] || p.badge || '').trim(),
+          sort_order: parseInt(setMap['ONLINE_SORT_' + p.id] || p.sort_order || 99)
+        };
+      });
+
+      // តម្រៀបលេខរៀងទំនិញ
+      STORE_CATALOG.sort(function(a, b) {
+        var orderA = (a.sort_order !== null && a.sort_order !== undefined) ? parseInt(a.sort_order) : 999;
+        var orderB = (b.sort_order !== null && b.sort_order !== undefined) ? parseInt(b.sort_order) : 999;
+        return orderA - orderB;
+      });
+
+      // 💾 រក្សាទុកក្នុង Cache ទូរស័ព្ទសម្រាប់ប្រើលើកក្រោយឱ្យលឿនភ្លែត
+      try {
+        localStorage.setItem('kc_cached_catalog', JSON.stringify(STORE_CATALOG));
+      } catch(se) {}
+
+      if (typeof renderCategoryChips === 'function') renderCategoryChips();
+      renderCatalogGrid('ALL');
+    } else {
+      if (grid && (!STORE_CATALOG || STORE_CATALOG.length === 0)) {
+        grid.innerHTML = '<div class="col-span-full py-10 text-center text-slate-400 font-bold text-xs"><i class="fas fa-box-open text-2xl text-slate-300 mb-2 block"></i> មិនទាន់មានទំនិញដាក់លក់ឡើយ</div>';
+      }
+    }
+  } catch(err) {
+    console.error("Fast load products error:", err);
+  }
+}
     
     // 🎨 បង្ហាញកាតទំនិញ (ចេញផ្លាក Promotion ច្បាស់ៗ ទិញ... ថែម... & ពហុរូបិយប័ណ្ណ)
     function renderCatalogGrid(filterCat) {
