@@ -133,6 +133,8 @@ async function renderSettlementModule() {
           '<span id="settleSelectedCountBadge" class="bg-blue-100 text-blue-800 text-xs px-2.5 py-0.5 rounded-full font-bold">0 ជើងទឹក</span>' +
         '</div>' +
 
+        <div id="settleProductSummaryArea" class="hidden p-2.5 bg-blue-50/80 rounded-2xl border border-blue-200 text-xs space-y-1 my-2"></div>
+
         // តារាងជើងទឹកជំពាក់
         '<div class="overflow-x-auto max-h-60 overflow-y-auto rounded-xl border mb-3">' +
           '<table class="w-full text-left text-xs border-collapse">' +
