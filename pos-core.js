@@ -5,15 +5,12 @@
 
 var currentPosDiscount = { type: 'NONE', value: 0 };
 var activeQuickRestockData = null;
-// 🔗 Shortcut Aliases សម្រាប់ Render ទំនិញ POS & កន្ត្រក (ការពារកុំឱ្យ ReferenceError គាំង POS)
-var rPG = function() { 
-  if (typeof renderProductGrid === 'function') renderProductGrid(); 
-};
-var rC = function() { 
-  if (typeof renderCart === 'function') renderCart(); 
-};
 
-// 🔑 មុខងារចូលប្រើប្រាស់ (ធានាស្គាល់ឈ្មោះមេរបស់កូនចៅ ១០០% មិនឱ្យបាត់ឈ្មោះមេឡើយ)
+// 🔗 Shortcut Aliases សម្រាប់ Render POS Grid & Cart (ការពារកុំឱ្យ ReferenceError)
+var rPG = function() { if (typeof renderProductGrid === 'function') renderProductGrid(); };
+var rC = function() { if (typeof renderCart === 'function') renderCart(); };
+
+// 🔑 មុខងារចូលប្រើប្រាស់សុវត្ថិភាពខ្ពស់ (ផ្ទៀងផ្ទាត់ និងចងចាំឈ្មោះមេ ១០០%)
 async function login() {
   var userEl = document.getElementById('user');
   var passEl = document.getElementById('pass');
@@ -40,7 +37,7 @@ async function login() {
     if (data) {
       var bossName = (data.linked_boss || "").trim();
 
-      // 🔍 ប្រសិនបើជាអ្នកដឹក/កូនចៅ ហើយ RPC មិនបានផ្ញើ linked_boss មក ➔ ទាញយកពីតារាង users ផ្ទាល់ភ្លាម
+      // 🔍 ប្រសិនបើជាកូនចៅ ហើយ RPC មិនបានផ្ញើ linked_boss មក ➔ ទាញយកពីតារាង users ផ្ទាល់
       if ((data.role === 'Driver' || data.type === 'Driver') && !bossName) {
         try {
           const { data: uRow } = await supabaseClient
@@ -61,7 +58,7 @@ async function login() {
         role: data.role,
         type: data.type,
         phone: data.phone,
-        linkedBoss: bossName // 👈 ធានាថាឈ្មោះមេត្រូវបានចងចាំជាប់ ១០០%
+        linkedBoss: bossName
       };
 
       if (remEl && remEl.checked) {
@@ -82,74 +79,6 @@ async function login() {
 
       renderSidebarMenu();
 
-      if (typeof checkPendingOnlineOrdersBadge === 'function') {
-        checkPendingOnlineOrdersBadge();
-      }
-
-      await loadSettingsAndTelegram();
-      await fetchInitialPOSData();
-
-      // បែងចែកទំព័រដើមតាមតួនាទី
-      if (currentUser.role === 'Admin') {
-        loadModule('Dashboard');
-      } else if (currentUser.type === 'CompanyDriver') {
-        loadModule('CompanyDeliveries');
-      } else if (currentUser.role === 'Seller' || currentUser.role === 'Driver') {
-        loadModule('POS');
-      } else {
-        loadModule('CustPortal');
-      }
-
-      showToast("ចូលប្រើប្រាស់ជោគជ័យ! សួស្តី " + currentUser.fullName, "success");
-    } else {
-      showToast("ឈ្មោះ ឬលេខសម្ងាត់មិនត្រឹមត្រូវឡើយ!", "error");
-    }
-  } catch (err) {
-    showToast("កំហុសតភ្ជាប់៖ " + err.message, "error");
-  } finally {
-    btnEl.innerHTML = '<span>ចូលប្រើប្រាស់</span>';
-    btnEl.disabled = false;
-  }
-}
-
-  try {
-    // 🛡️ ផ្ទៀងផ្ទាត់តាមរយៈ Secure RPC Function ក្នុង Database ផ្ទាល់
-    const { data, error } = await supabaseClient
-      .rpc('verify_user_login', { p_username: u, p_password: p });
-
-    if (error) throw error;
-
-    // បើឈ្មោះ និងលេខកូដត្រឹមត្រូវ (data មិន null)
-    if (data) {
-      currentUser = {
-        id: data.id,
-        username: data.username,
-        fullName: data.full_name,
-        role: data.role,
-        type: data.type,
-        phone: data.phone,
-        linkedBoss: data.linked_boss || ""
-      };
-
-      if (remEl && remEl.checked) {
-        localStorage.setItem('kc_pos_user', u);
-        localStorage.setItem('kc_pos_pass', p);
-      } else {
-        localStorage.removeItem('kc_pos_user');
-        localStorage.removeItem('kc_pos_pass');
-      }
-
-      document.getElementById('loginPage').style.display = 'none';
-      document.getElementById('mainApp').classList.remove('hidden');
-
-      var roleLabel = (currentUser.role === 'Admin') ? 'Admin៖ ' : 
-                      (currentUser.type === 'CompanyDriver' ? 'អ្នកដឹកជញ្ជូនរោងចក្រ៖ ' :
-                      (currentUser.role === 'Driver' ? 'អ្នកដឹក (កូនចៅ ' + currentUser.linkedBoss + ')៖ ' : 'ម៉ូយ៖ '));
-      document.getElementById('userInfo').innerText = roleLabel + currentUser.fullName;
-
-      renderSidebarMenu();
-
-      // 🔔 ទាញយកចំនួនការកុម្ម៉ង់ Online មកបង្ហាញលើផ្លាកក្រហមភ្លាមៗ
       if (typeof checkPendingOnlineOrdersBadge === 'function') {
         checkPendingOnlineOrdersBadge();
       }
@@ -179,6 +108,7 @@ async function login() {
     btnEl.disabled = false;
   }
 }
+
 function logout() {
   localStorage.removeItem('kc_pos_user');
   localStorage.removeItem('kc_pos_pass');
@@ -188,7 +118,6 @@ function logout() {
   closeSidebar();
   showToast("បានចាកចេញពីប្រព័ន្ធ!", "info");
 }
-
 // 📱 បែងចែកម៉ឺនុយ SIDEBAR (កំណត់សិទ្ធិដាច់ដោយឡែក ១០០%)
 function renderSidebarMenu() {
   var sNav = document.getElementById('sidebarMenuContainer');
