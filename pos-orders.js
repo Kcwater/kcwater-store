@@ -658,12 +658,17 @@ function onCdmPayMethodChange(mode) {
   }
 }
 
+// 📱 មុខងារបើក ABA QR សម្រាប់អ្នកដឹក (កំណត់ z-index ឱ្យលោតមកលើបង្អស់ ១០០%)
 function openDriverAbaQrModal() {
   if (!activeDeliveryTaskData) return;
   var total = activeDeliveryTaskData.total || 0;
-  if (typeof openPOSKHQR === 'function') {
-    document.getElementById('posKhqrAmountText').innerText = "៛ " + Number(total).toLocaleString();
-    document.getElementById('posKhqrModal').classList.remove('hidden');
+  var qrModal = document.getElementById('posKhqrModal');
+  var amtText = document.getElementById('posKhqrAmountText');
+  
+  if (qrModal && amtText) {
+    amtText.innerText = "៛ " + Number(total).toLocaleString();
+    qrModal.style.zIndex = '9000'; // 👈 រុញឱ្យខ្ពស់ជាងផ្ទាំងបញ្ជាក់ការដឹកដល់ (z-[7500]) ដាច់ខាត
+    qrModal.classList.remove('hidden');
   }
 }
 
