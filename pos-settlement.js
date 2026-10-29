@@ -627,9 +627,11 @@ function getSelectedSettlementTotal() {
   return sum;
 }
 
+// 🧮 មុខងារគណនាប្រាក់ និងសរុបបរិមាណតាមមុខទំនិញដែលបានធីក (Realtime)
 function recalcSettlementCalculation() {
   var sub = getSelectedSettlementTotal();
-  var count = document.querySelectorAll('.settle-item-cb:checked').length;
+  var checkedBoxes = document.querySelectorAll('.settle-item-cb:checked');
+  var count = checkedBoxes.length;
   
   var cbOldDebt = document.getElementById('cbIncludeOldDebt');
   var includeOldDebt = cbOldDebt ? cbOldDebt.checked : true;
@@ -639,6 +641,52 @@ function recalcSettlementCalculation() {
   document.getElementById('settleSelectedCountBadge').innerText = count + ' ជើងទឹក';
   document.getElementById('settleSelectedSubtotal').innerText = '៛ ' + sub.toLocaleString();
   document.getElementById('settleTotalDueText').innerText = '៛ ' + totalDue.toLocaleString();
+
+  // 📦 គណនាសរុបបរិមាណតាមមុខទំនិញដែលបានធីក
+  var summaryArea = document.getElementById('settleProductSummaryArea');
+  if (summaryArea) {
+    if (count === 0) {
+      summaryArea.classList.add('hidden');
+    } else {
+      var prodQtyMap = {};
+      checkedBoxes.forEach(function(cb) {
+        var tr = cb.closest('tr');
+        if (tr) {
+          var tds = tr.querySelectorAll('td');
+          // ជួរទី ៣ ជាឈ្មោះទំនិញ និងជួរទី ៤ ជាចំនួន
+          if (tds.length >= 4) {
+            var pName = tds[2].innerText.split('\n')[0].trim();
+            var pQty = parseFloat(tds[3].innerText.trim() || 0);
+            if (pName) {
+              prodQtyMap[pName] = (prodQtyMap[pName] || 0) + pQty;
+            }
+          }
+        }
+      });
+
+      var keys = Object.keys(prodQtyMap);
+      if (keys.length > 0) {
+        var html = '<div class="text-[11px] font-black text-blue-950 flex items-center gap-1 mb-1">' +
+          '<i class="fas fa-cubes-stacked text-blue-600"></i> សរុបបរិមាណទំនិញដែលបានធីកគិតលុយ៖' +
+        '</div>' +
+        '<div class="flex flex-wrap gap-1.5">';
+
+        keys.forEach(function(pKey) {
+          var unit = (pKey.indexOf("ធុង") !== -1) ? "ធុង" : ((pKey.indexOf("យួរ") !== -1) ? "យួរ" : ((pKey.indexOf("កេស") !== -1) ? "កេស" : ((pKey.indexOf("បាវ") !== -1) ? "បាវ" : ((pKey.indexOf("កំប៉ុង") !== -1) ? "កំប៉ុង" : ((pKey.indexOf("ដប") !== -1) ? "ដប" : "ឯកតា")))));
+          html += '<div class="bg-white px-2.5 py-1 rounded-xl border border-blue-200 shadow-2xs text-[11px] font-bold text-slate-800">' +
+            '<span>' + pKey + '៖ </span>' +
+            '<b class="text-blue-700">' + Number(prodQtyMap[pKey]).toLocaleString() + ' ' + unit + '</b>' +
+          '</div>';
+        });
+
+        html += '</div>';
+        summaryArea.innerHTML = html;
+        summaryArea.classList.remove('hidden');
+      } else {
+        summaryArea.classList.add('hidden');
+      }
+    }
+  }
 
   calcSettleChange();
 }
