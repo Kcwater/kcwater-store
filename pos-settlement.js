@@ -126,7 +126,8 @@ async function renderSettlementModule() {
           custOptions +
         '</select>' +
       '</div>' +
-
+    
+    '<div id="settlement_ui" class="hidden space-y-4">' +
      '<div class="flex justify-between items-center border-b pb-2">' +
           '<b class="text-xs sm:text-sm text-blue-950 flex items-center gap-1.5"><i class="fas fa-boxes text-blue-600"></i>បញ្ជីជើងទឹកដកជំពាក់ជាក់ស្តែង</b>' +
           '<span id="settleSelectedCountBadge" class="bg-blue-100 text-blue-800 text-xs px-2.5 py-0.5 rounded-full font-bold">0 ជើងទឹក</span>' +
@@ -543,8 +544,9 @@ async function loadSettlementDebtorsList() {
 // 🔍 ៦. ជ្រើសរើសម៉ូយ & ទាញជើងទឹកជំពាក់ជាក់ស្តែង
 // ==========================================
 async function selectCustomerForSettlement(custName) {
+  var ui = document.getElementById('settlement_ui');
   if (!custName) {
-    document.getElementById('settlement_ui').classList.add('hidden');
+    if (ui) ui.classList.add('hidden');
     currentSettlementOldDebt = 0;
     return;
   }
@@ -554,11 +556,15 @@ async function selectCustomerForSettlement(custName) {
   var sel = document.getElementById('set_c');
   if (sel) sel.value = custName;
 
-  document.getElementById('settlement_ui').classList.remove('hidden');
+  // 🛡️ បើកផ្ទាំងដោយមានការការពារ Null មិនឱ្យ Error ឡើយ
+  if (ui) {
+    ui.classList.remove('hidden');
+  }
 
   var tbody = document.getElementById('settleItemsTableBody');
-  tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-gray-400 italic"><i class="fas fa-spinner fa-spin mr-1"></i> កំពុងទាញជើងទឹក...</td></tr>';
-
+  if (tbody) {
+    tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-gray-400 italic"><i class="fas fa-spinner fa-spin mr-1"></i> កំពុងទាញជើងទឹក...</td></tr>';
+  }
   try {
     const { data: items } = await supabaseClient
       .from('transactions')
