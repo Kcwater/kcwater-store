@@ -127,16 +127,16 @@ async function renderSettlementModule() {
         '</select>' +
       '</div>' +
 
-      <div class="flex justify-between items-center border-b pb-2">
-          <b class="text-xs sm:text-sm text-blue-950 flex items-center gap-1.5"><i class="fas fa-boxes text-blue-600"></i>បញ្ជីជើងទឹកដកជំពាក់ជាក់ស្តែង</b>
-          <span id="settleSelectedCountBadge" class="bg-blue-100 text-blue-800 text-xs px-2.5 py-0.5 rounded-full font-bold">0 ជើងទឹក</span>
-        </div>
+     '<div class="flex justify-between items-center border-b pb-2">' +
+          '<b class="text-xs sm:text-sm text-blue-950 flex items-center gap-1.5"><i class="fas fa-boxes text-blue-600"></i>បញ្ជីជើងទឹកដកជំពាក់ជាក់ស្តែង</b>' +
+          '<span id="settleSelectedCountBadge" class="bg-blue-100 text-blue-800 text-xs px-2.5 py-0.5 rounded-full font-bold">0 ជើងទឹក</span>' +
+        '</div>' +
 
-        <!-- 📦 ប្រអប់សរុបបរិមាណតាមមុខទំនិញដែលបានធីក (ទើបបន្ថែមថ្មី) -->
-        <div id="settleProductSummaryArea" class="hidden p-2.5 bg-blue-50/80 rounded-2xl border border-blue-200 text-xs space-y-1 my-2"></div>
+        // 📦 ប្រអប់សរុបបរិមាណតាមមុខទំនិញ (មានសញ្ញាសម្រង់ '...' + ត្រឹមត្រូវ)
+        '<div id="settleProductSummaryArea" class="hidden p-2.5 bg-blue-50/80 rounded-2xl border border-blue-200 text-xs space-y-1 my-2"></div>' +
 
-        <!-- តារាងជើងទឹកជំពាក់ -->
-        <div class="overflow-x-auto max-h-60 overflow-y-auto rounded-xl border mb-3">' +
+        // តារាងជើងទឹកជំពាក់
+        '<div class="overflow-x-auto max-h-60 overflow-y-auto rounded-xl border mb-3">' +
           '<table class="w-full text-left text-xs border-collapse">' +
             '<thead class="sticky top-0 bg-gray-100 text-gray-700 font-bold border-b z-10">' +
               '<tr>' +
