@@ -1728,22 +1728,32 @@ async function confirmSale() {
   
 // ==========================================
 // 🧾 បង្កើតរូបវិក្កយបត្រ (RECEIPT GENERATOR)
+// មានសរុបបរិមាណតាមមុខទំនិញ, អក្ខរាវិរុទ្ធត្រឹមត្រូវ & មិនបាក់ជើងអក្សរខ្មែរ
 // ==========================================
 function generateReceiptImage(tid, cust, total, paid, items, titleText, discountAmount) {
-  var dateStr = new Date().toLocaleString('km-KH');
+  // 🇰🇭 ម៉ោងកម្ពុជាត្រឹមត្រូវច្បាស់លាស់
+  var dateStr = new Date().toLocaleString('km-KH', {
+    timeZone: 'Asia/Phnom_Penh',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+
   var change = Math.max(0, paid - total);
   discountAmount = parseFloat(discountAmount || 0);
 
-  var isAdmin = (currentUser && currentUser.role === 'Admin');
-  var isSeller = (currentUser && (currentUser.role === 'Seller' || currentUser.role === 'Cashier'));
-
-  // កំណត់ស្ថានភាពលើវិក្កយបត្រឱ្យច្បាស់
-  var isPaidComplete = (isAdmin && paid >= total && total > 0);
+  // 🛡️ ជួសជុលកំហុសអ្នកដឹក៖ បើបង់លុយគ្រប់ចំនួន គឺចេញ «ទូទាត់រួចរាល់» ជានិច្ច (មិនថា Admin ឬអ្នកដឹកឡើយ)
+  var isPaidComplete = (paid >= total && total > 0);
   var statusBadgeText = isPaidComplete ? 
-    '<span style="color:#15803d; font-weight:bold;">ទូទាត់រួចរាល់ (បង់ប្រាក់គ្រប់)</span>' : 
-    (isSeller ? '<span style="color:#d97706; font-weight:bold;">កត់ត្រាទុក (រង់ចាំ Admin ពិនិត្យ)</span>' : '<span style="color:#c2410c; font-weight:bold;">កត់ត្រាជំពាក់</span>');
+    '<span style="color:#15803d; font-weight:bold;">ទូទាត់រួចរាល់ (បង់ប្រាក់គ្រប់ចំនួន)</span>' : 
+    (total === 0 ? '<span style="color:#15803d; font-weight:bold;">ឥតគិតថ្លៃ (Free)</span>' : '<span style="color:#c2410c; font-weight:bold;">កត់ត្រាជំពាក់ (Unpaid)</span>');
 
+  // 📦 ១. គណនាសរុបបរិមាណតាមមុខទំនិញនីមួយៗ (Product Quantity Summary)
+  var prodQtyMap = {};
   var itemsHtml = '';
+
   (items || []).forEach(function(i, idx) {
     var pName = i.name || i.product_name || "ទំនិញ";
     var pPrice = parseFloat(i.price || 0);
@@ -1751,59 +1761,83 @@ function generateReceiptImage(tid, cust, total, paid, items, titleText, discount
     var tot = (pQty * pPrice);
     var currSymbol = (i.currency === 'USD') ? '$ ' : ((i.currency === 'THB') ? '฿ ' : '៛ ');
 
-    itemsHtml += '<tr style="border-bottom:1px dashed #cbd5e1; font-size:10.5px;">' +
-      '<td align="center" style="padding:6px 2px; color:#64748b;">' + (idx + 1) + '</td>' +
-      '<td style="padding:6px 4px; font-weight:bold; color:#0f172a;">' + pName + '</td>' +
-      '<td align="center" style="padding:6px 4px; font-weight:bold; color:#1d4ed8;">' + pQty + '</td>' +
-      '<td align="right" style="padding:6px 4px; color:#475569;">' + Number(pPrice).toLocaleString() + '</td>' +
-      '<td align="right" style="padding:6px 4px; font-weight:bold; color:#15803d;">' + currSymbol + Number(tot).toLocaleString() + '</td>' +
+    // បូកសរុបបរិមាណតាមមុខទំនិញ (មិនរាប់ជួរបញ្ចុះតម្លៃ ឬថ្លៃដឹកជញ្ជូនចូលក្នុងចំនួនទំនិញឡើយ)
+    if (pName.indexOf("Discount") === -1 && pName.indexOf("បញ្ចុះតម្លៃ") === -1 && pName.indexOf("សេវាដឹក") === -1 && pPrice >= 0) {
+      // សម្អាតស្លាក [Free] ចេញ ដើម្បីបូកសរុបឱ្យត្រូវមុខទំនិញ
+      var cleanSummaryName = pName.replace(/🎁\s*\[Free\]/gi, '').replace(/\[Free\]/gi, '').trim();
+      prodQtyMap[cleanSummaryName] = (prodQtyMap[cleanSummaryName] || 0) + pQty;
+    }
+
+    itemsHtml += '<tr style="border-bottom:1px dashed #cbd5e1; font-size:11px; line-height:1.7;">' +
+      '<td align="center" style="padding:7px 2px; color:#64748b;">' + (idx + 1) + '</td>' +
+      '<td style="padding:7px 4px; font-weight:bold; color:#0f172a;">' + pName + '</td>' +
+      '<td align="center" style="padding:7px 4px; font-weight:bold; color:#1d4ed8;">' + pQty + '</td>' +
+      '<td align="right" style="padding:7px 4px; color:#475569;">' + Number(pPrice).toLocaleString() + '</td>' +
+      '<td align="right" style="padding:7px 4px; font-weight:bold; color:#15803d;">' + currSymbol + Number(tot).toLocaleString() + '</td>' +
     '</tr>';
   });
 
-  // 🚚 ១. ឆែកមើលថាតើជាកូនចៅដកទឹកជំនួសមេដែរឬទេ
-  var isDriverWithdraw = (currentUser && currentUser.role === 'Driver' && currentUser.linkedBoss);
+  // 📊 ២. បង្កើតប្រអប់បង្ហាញ «សរុបបរិមាណតាមមុខទំនិញ»
+  var prodSummaryBoxHtml = '';
+  var summaryKeys = Object.keys(prodQtyMap);
+  if (summaryKeys.length > 0) {
+    prodSummaryBoxHtml = '<div style="margin-top:6px; margin-bottom:10px; padding:7px 10px; background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; font-size:10.5px; line-height:1.7;">' +
+      '<b style="color:#0f172a; display:block; margin-bottom:2px;">📦 សរុបបរិមាណតាមមុខទំនិញ៖</b>';
+    summaryKeys.forEach(function(k) {
+      var unitLabel = (k.indexOf("ធុង") !== -1) ? "ធុង" : ((k.indexOf("យួរ") !== -1) ? "យួរ" : ((k.indexOf("កេស") !== -1) ? "កេស" : ((k.indexOf("បាវ") !== -1) ? "បាវ" : ((k.indexOf("កំប៉ុង") !== -1) ? "កំប៉ុង" : ((k.indexOf("ដប") !== -1) ? "ដប" : "ឯកតា")))));
+      prodSummaryBoxHtml += '<span style="display:inline-block; margin-right:12px; color:#334155;">• ' + k + '៖ <b style="color:#1d4ed8;">' + Number(prodQtyMap[k]).toLocaleString() + ' ' + unitLabel + '</b></span>';
+    });
+    prodSummaryBoxHtml += '</div>';
+  }
+
+  // 🚚 ៣. បង្ហាញព័ត៌មានអ្នកមកដកផ្ទាល់ (ករណីកូនចៅដកជំនួសមេ)
+  var isDriverWithdraw = (currentUser && (currentUser.role === 'Driver' || (currentUser.linkedBoss && currentUser.linkedBoss.trim() !== '')) && currentUser.type !== 'CompanyDriver');
   var driverWithdrawLine = isDriverWithdraw ? 
     ('អ្នកមកដកផ្ទាល់៖ <b style="color:#b45309;">' + currentUser.fullName + ' (កូនចៅ/អ្នកដឹក)</b><br>') : '';
 
-  // 📋 ២. ព័ត៌មានអតិថិជន & កាលបរិច្ឆេទ
-  var custInfoHtml = '<div style="font-size:10.5px; line-height:1.7; margin-bottom:10px; color:#334155; background:#f8fafc; padding:8px 10px; border-radius:8px;">' +
-    'លេខកូដវិក្កយបត្រ៖ <b style="color:#0f172a;">' + tid + '</b><br>' +
-    'អតិថិជន / ម៉ូយ៖ <b style="color:#0f172a;">' + cust + '</b><br>' +
+  // 📋 ៤. ព័ត៌មានអតិថិជន (ប្រើពាក្យ «អតិថិជន៖» ផ្លូវការថ្លៃថ្នូរ)
+  var custInfoHtml = '<div style="font-size:11px; line-height:1.7; margin-bottom:10px; color:#334155; background:#f8fafc; padding:8px 10px; border-radius:8px; border:1px solid #e2e8f0;">' +
+    'លេខកូដវិក្កយបត្រ៖ <b style="color:#0f172a; font-family:monospace;">' + tid + '</b><br>' +
+    'អតិថិជន៖ <b style="color:#0f172a;">' + cust + '</b><br>' +
     driverWithdrawLine +
     'កាលបរិច្ឆេទ៖ ' + dateStr + '<br>' +
     'អ្នកកត់ត្រា៖ <b style="color:#0f172a;">' + (currentUser.fullName || "Admin") + '</b>' +
   '</div>';
 
-  // 🧾 ៣. តួខ្លួនវិក្កយបត្រ (បានសម្អាតស្លាក table ស្ទួនរួចរាល់)
-  var h = '<div id="pos-canvas-box" style="width:360px; padding:22px 18px; background:#ffffff; color:#0f172a; font-family:\'Battambang\', sans-serif; border-radius:16px;">' +
+  // 🧾 ៥. តួខ្លួនវិក្កយបត្រ (line-height:1.7 ការពារដាច់ខាតមិនឱ្យបាក់ជើងអក្សរខ្មែរ)
+  var h = '<div id="pos-canvas-box" style="width:360px; padding:22px 18px; background:#ffffff; color:#0f172a; font-family:\'Battambang\', sans-serif; border-radius:16px; line-height:1.7;">' +
     // ក្បាលវិក្កយបត្រ
     '<div style="text-align:center; border-bottom:2px dashed #16a34a; padding-bottom:10px; margin-bottom:10px;">' +
       '<b style="font-size:17px; color:#15803d; letter-spacing:0.5px;">រោងចក្រទឹកបរិសុទ្ធ ខេ ស៊ី (KC WATER)</b><br>' +
-      '<span style="font-size:10px; color:#64748b; font-weight:bold;">ទីតាំង៖ ក្រុងប៉ោយប៉ែត | ទូរស័ព្ទ៖ 077 934 748</span><br>' +
-      '<div style="display:inline-block; margin-top:6px; padding:3px 12px; background:#f0fdf4; border:1px solid #86efac; border-radius:20px; font-size:11px; font-weight:bold; color:#166534;">' + 
+      '<span style="font-size:10.5px; color:#64748b; font-weight:bold;">ទីតាំង៖ ក្រុងប៉ោយប៉ែត | ទូរស័ព្ទ៖ 077 934 748, 066 934 748</span><br>' +
+      '<div style="display:inline-block; margin-top:6px; padding:3px 14px; background:#f0fdf4; border:1px solid #86efac; border-radius:20px; font-size:11px; font-weight:bold; color:#166534;">' + 
         (titleText || 'វិក្កយបត្រលក់ទំនិញ (RECEIPT)') + 
       '</div>' +
     '</div>' +
-    // ភ្ជាប់ព័ត៌មានអតិថិជនចូល
+
     custInfoHtml +
-    // តារាងមុខទំនិញ (មានតែ <table> មួយត្រឹមត្រូវ)
-    '<table style="width:100%; border-collapse:collapse; margin-bottom:10px;">' +
+
+    // តារាងមុខទំនិញលម្អិត
+    '<table style="width:100%; border-collapse:collapse; margin-bottom:8px;">' +
       '<thead>' +
-        '<tr style="background:#f1f5f9; color:#475569; font-size:10px; border-bottom:1px solid #cbd5e1;">' +
-          '<th align="center" style="padding:5px 2px; width:22px;">ល.រ</th>' +
-          '<th align="left" style="padding:5px 4px;">មុខទំនិញ</th>' +
-          '<th align="center" style="padding:5px 4px; width:35px;">ចំនួន</th>' +
-          '<th align="right" style="padding:5px 4px; width:55px;">តម្លៃរាយ</th>' +
-          '<th align="right" style="padding:5px 4px; width:65px;">តម្លៃសរុប</th>' +
+        '<tr style="background:#f1f5f9; color:#475569; font-size:10.5px; border-bottom:1px solid #cbd5e1; line-height:1.6;">' +
+          '<th align="center" style="padding:6px 2px; width:22px;">ល.រ</th>' +
+          '<th align="left" style="padding:6px 4px;">មុខទំនិញ</th>' +
+          '<th align="center" style="padding:6px 4px; width:35px;">ចំនួន</th>' +
+          '<th align="right" style="padding:6px 4px; width:55px;">តម្លៃរាយ</th>' +
+          '<th align="right" style="padding:6px 4px; width:65px;">តម្លៃសរុប</th>' +
         '</tr>' +
       '</thead>' +
       '<tbody>' + itemsHtml + '</tbody>' +
     '</table>' +
 
-    // ប្រអប់សរុបប្រាក់ & ស្ថានភាព
+    // 📦 ប្រអប់សរុបបរិមាណតាមមុខទំនិញ (នៅពីក្រោមតារាងទំនិញ)
+    prodSummaryBoxHtml +
+
+    // ប្រអប់សរុបទឹកប្រាក់ & ស្ថានភាពទូទាត់
     '<div style="background:#f0fdf4; padding:10px 12px; border-radius:10px; font-size:11px; line-height:1.8; border:1px solid #bbf7d0;">' +
       (discountAmount > 0 ? '<div style="display:flex; justify-content:space-between; color:#c2410c;"><span>បញ្ចុះតម្លៃ (Discount)៖</span><b>-៛ ' + discountAmount.toLocaleString() + '</b></div>' : '') +
-      '<div style="display:flex; justify-content:space-between; font-weight:bold; font-size:12px; color:#0f172a; border-bottom:1px solid #bbf7d0; padding-bottom:4px; margin-bottom:4px;">' +
+      '<div style="display:flex; justify-content:space-between; font-weight:bold; font-size:12.5px; color:#0f172a; border-bottom:1px solid #bbf7d0; padding-bottom:4px; margin-bottom:4px;">' +
         '<span>សរុបទឹកប្រាក់ត្រូវបង់៖</span><b>៛ ' + total.toLocaleString() + '</b>' +
       '</div>' +
       '<div style="display:flex; justify-content:space-between; color:#334155;"><span>ស្ថានភាពទូទាត់៖</span>' + statusBadgeText + '</div>' +
@@ -1815,8 +1849,8 @@ function generateReceiptImage(tid, cust, total, paid, items, titleText, discount
 
     // ពាក្យជូនពរខាងក្រោម
     '<div style="text-align:center; margin-top:12px; border-top:1px dashed #cbd5e1; padding-top:8px;">' +
-      '<b style="font-size:10px; color:#166534;">សូមអរគុណចំពោះការជាវទឹកបរិសុទ្ធ ខេ ស៊ី!</b><br>' +
-      '<span style="font-size:9px; color:#64748b;">សូមអញ្ជើញមកម្តងទៀត 🙏</span>' +
+      '<b style="font-size:10.5px; color:#166534;">សូមអរគុណចំពោះការគាំទ្រទឹកបរិសុទ្ធ ខេ ស៊ី!</b><br>' +
+      '<span style="font-size:9.5px; color:#64748b;">សូមអញ្ជើញមកម្តងទៀត 🙏</span>' +
     '</div>' +
   '</div>';
 
@@ -1831,6 +1865,8 @@ function generateReceiptImage(tid, cust, total, paid, items, titleText, discount
     document.getElementById('posSaleReceiptModal').classList.remove('hidden');
   });
 }
+
+
 function closePOSReceiptModal() { 
   document.getElementById('posSaleReceiptModal').classList.add('hidden'); 
 }
