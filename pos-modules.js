@@ -2842,17 +2842,34 @@ async function loadAllUnpaidHistory() {
       .eq('status', 'Unpaid')
       .order('created_at', { ascending: false });
 
+    // លុបប្រអប់សង្ខេបចាស់ចេញសិនបើមាន
+    var oldSumBox = document.getElementById('custUnpaidSummaryBox');
+    if (oldSumBox) oldSumBox.remove();
+
     if (!unpaids || unpaids.length === 0) {
       tbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-green-600 font-bold"><i class="fas fa-check-circle mr-1"></i> អបអរសាទរ! អ្នកមិនមានទឹកជំពាក់ឡើយ</td></tr>';
       return;
     }
 
     var html = '';
+    var prodQtyMap = {};
+
     unpaids.forEach(function(i) {
-      var dateStr = new Date(i.created_at).toLocaleString('km-KH', { dateStyle: 'short', timeStyle: 'short' });
+      var dateStr = new Date(i.created_at).toLocaleString('km-KH', { 
+        timeZone: 'Asia/Phnom_Penh', 
+        dateStyle: 'short', 
+        timeStyle: 'short' 
+      });
+
       var isWithdrawnByOther = (i.recorded_by && i.recorded_by !== currentUser.fullName);
-var recTag = isWithdrawnByOther ? 
-  ('<br><span class="text-[9.5px] text-blue-950 font-black bg-blue-100 border border-blue-300 px-1.5 py-0.5 rounded-md inline-flex items-center gap-1 mt-0.5"><i class="fas fa-truck text-[9px] text-blue-600"></i>ដកដោយ៖ ' + i.recorded_by + '</span>') : '';
+      var recTag = isWithdrawnByOther ? 
+        ('<br><span class="text-[9.5px] text-blue-950 font-black bg-blue-100 border border-blue-300 px-1.5 py-0.5 rounded-md inline-flex items-center gap-1 mt-0.5"><i class="fas fa-truck text-[9px] text-blue-600"></i>ដកដោយ៖ ' + i.recorded_by + '</span>') : '';
+
+      // 📦 បូកសរុបបរិមាណតាមមុខទំនិញ
+      var pName = (i.product_name || "ទំនិញ").replace(/🎁\s*\[Free\]/gi, '').replace(/\[Free\]/gi, '').trim();
+      if (pName.indexOf("Discount") === -1 && pName.indexOf("បញ្ចុះតម្លៃ") === -1 && pName.indexOf("សេវាដឹក") === -1 && parseFloat(i.total || 0) >= 0) {
+        prodQtyMap[pName] = (prodQtyMap[pName] || 0) + parseFloat(i.qty || 0);
+      }
 
       html += '<tr class="border-b hover:bg-orange-50/40">' +
         '<td class="p-2.5 text-gray-500 text-[10px] whitespace-nowrap">' + dateStr + '</td>' +
@@ -2863,24 +2880,53 @@ var recTag = isWithdrawnByOther ?
         '<td class="p-2.5 text-center"><span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-orange-100 text-orange-800 border border-orange-200">⚠️ ជំពាក់</span></td>' +
       '</tr>';
     });
+
     tbody.innerHTML = html;
-  } catch(e) {}
+
+    // 📦 បង្ហាញប្រអប់សរុបបរិមាណតាមមុខទំនិញនៅពីលើតារាង
+    var summaryKeys = Object.keys(prodQtyMap);
+    if (summaryKeys.length > 0) {
+      var sumHtml = '<div id="custUnpaidSummaryBox" class="p-3 bg-orange-50/90 rounded-2xl border-2 border-orange-200 text-xs space-y-1.5 mb-3">' +
+        '<b class="text-orange-950 flex items-center gap-1.5 text-[11px]"><i class="fas fa-boxes-stacked text-orange-600"></i> សរុបបរិមាណទឹកដែលកំពុងជំពាក់៖</b>' +
+        '<div class="flex flex-wrap gap-1.5">';
+      
+      summaryKeys.forEach(function(k) {
+        var unit = (k.indexOf("ធុង") !== -1) ? "ធុង" : ((k.indexOf("យួរ") !== -1) ? "យួរ" : ((k.indexOf("កេស") !== -1) ? "កេស" : ((k.indexOf("បាវ") !== -1) ? "បាវ" : ((k.indexOf("កំប៉ុង") !== -1) ? "កំប៉ុង" : ((k.indexOf("ដប") !== -1) ? "ដប" : "ឯកតា")))));
+        sumHtml += '<div class="bg-white px-2.5 py-1 rounded-xl border border-orange-200 shadow-2xs font-bold text-[11px] text-slate-800">' +
+          '<span>' + k + '៖ </span><b class="text-orange-700">' + Number(prodQtyMap[k]).toLocaleString() + ' ' + unit + '</b>' +
+        '</div>';
+      });
+
+      sumHtml += '</div></div>';
+      var tableContainer = tbody.closest('.card');
+      if (tableContainer) {
+        tableContainer.insertAdjacentHTML('afterbegin', sumHtml);
+      }
+    }
+
+  } catch(e) {
+    console.error("Unpaid history error:", e);
+  }
 }
 
 async function fetchCustomHistoryByDate() {
   var sd = document.getElementById('ch_sd').value;
   var ed = document.getElementById('ch_ed').value;
   var tbody = document.getElementById('chItemsByDateTbody');
-  if (!tbody) return;
+  if (!tbody || !sd || !ed) return;
 
   try {
     const { data: list } = await supabaseClient
       .from('transactions')
       .select('*')
       .eq('customer_name', currentUser.fullName)
-      .gte('created_at', sd + 'T00:00:00Z')
-      .lte('created_at', ed + 'T23:59:59Z')
+      .gte('created_at', sd + 'T00:00:00+07:00')
+      .lte('created_at', ed + 'T23:59:59+07:00')
       .order('created_at', { ascending: false });
+
+    // លុបប្រអប់សង្ខេបចាស់ចេញសិនបើមាន
+    var oldSumBox = document.getElementById('custByDateSummaryBox');
+    if (oldSumBox) oldSumBox.remove();
 
     if (!list || list.length === 0) {
       tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-400 italic">គ្មានទិន្នន័យដកក្នុងចន្លោះថ្ងៃនេះ</td></tr>';
@@ -2888,10 +2934,23 @@ async function fetchCustomHistoryByDate() {
     }
 
     var html = '';
+    var prodQtyMap = {};
+
     list.forEach(function(i) {
-      var dateStr = new Date(i.created_at).toLocaleString('km-KH', { dateStyle: 'short', timeStyle: 'short' });
+      var dateStr = new Date(i.created_at).toLocaleString('km-KH', { 
+        timeZone: 'Asia/Phnom_Penh', 
+        dateStyle: 'short', 
+        timeStyle: 'short' 
+      });
+
       var recTag = (i.recorded_by && i.recorded_by !== currentUser.fullName && i.recorded_by !== 'Admin') ? 
         ('<br><span class="text-[9.5px] text-amber-950 font-black bg-amber-100 border border-amber-300 px-1.5 py-0.5 rounded-md inline-flex items-center gap-1 mt-0.5"><i class="fas fa-truck text-[9px] text-amber-600"></i>ដកដោយ៖ ' + i.recorded_by + '</span>') : '';
+
+      // 📦 បូកសរុបបរិមាណតាមមុខទំនិញ
+      var pName = (i.product_name || "ទំនិញ").replace(/🎁\s*\[Free\]/gi, '').replace(/\[Free\]/gi, '').trim();
+      if (pName.indexOf("Discount") === -1 && pName.indexOf("បញ្ចុះតម្លៃ") === -1 && pName.indexOf("សេវាដឹក") === -1 && parseFloat(i.total || 0) >= 0) {
+        prodQtyMap[pName] = (prodQtyMap[pName] || 0) + parseFloat(i.qty || 0);
+      }
 
       html += '<tr class="border-b hover:bg-gray-50">' +
         '<td class="p-2.5 text-gray-500 text-[10px]">' + dateStr + '</td>' +
@@ -2901,8 +2960,33 @@ async function fetchCustomHistoryByDate() {
         '<td class="p-2.5 text-center"><span class="px-2 py-0.5 rounded-full text-[9px] font-bold ' + (i.status === 'Paid' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800') + '">' + (i.status === 'Paid' ? 'បង់រួច' : 'ជំពាក់') + '</span></td>' +
       '</tr>';
     });
+
     tbody.innerHTML = html;
-  } catch(e) {}
+
+    // 📦 បង្ហាញប្រអប់សរុបបរិមាណតាមមុខទំនិញនៅពីលើតារាង
+    var summaryKeys = Object.keys(prodQtyMap);
+    if (summaryKeys.length > 0) {
+      var sumHtml = '<div id="custByDateSummaryBox" class="p-3 bg-blue-50/90 rounded-2xl border-2 border-blue-200 text-xs space-y-1.5 mb-3">' +
+        '<b class="text-blue-950 flex items-center gap-1.5 text-[11px]"><i class="fas fa-boxes-stacked text-blue-600"></i> សរុបបរិមាណទឹកដែលបានដកក្នុងចន្លោះថ្ងៃនេះ៖</b>' +
+        '<div class="flex flex-wrap gap-1.5">';
+      
+      summaryKeys.forEach(function(k) {
+        var unit = (k.indexOf("ធុង") !== -1) ? "ធុង" : ((k.indexOf("យួរ") !== -1) ? "យួរ" : ((k.indexOf("កេស") !== -1) ? "កេស" : ((k.indexOf("បាវ") !== -1) ? "បាវ" : ((k.indexOf("កំប៉ុង") !== -1) ? "កំប៉ុង" : ((k.indexOf("ដប") !== -1) ? "ដប" : "ឯកតា")))));
+        sumHtml += '<div class="bg-white px-2.5 py-1 rounded-xl border border-blue-200 shadow-2xs font-bold text-[11px] text-slate-800">' +
+          '<span>' + k + '៖ </span><b class="text-blue-700">' + Number(prodQtyMap[k]).toLocaleString() + ' ' + unit + '</b>' +
+        '</div>';
+      });
+
+      sumHtml += '</div></div>';
+      var tableContainer = tbody.closest('.card');
+      if (tableContainer) {
+        tableContainer.insertAdjacentHTML('afterbegin', sumHtml);
+      }
+    }
+
+  } catch(e) {
+    console.error("Custom history by date error:", e);
+  }
 }
 
 async function loadPaymentsHistory() {
