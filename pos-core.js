@@ -674,7 +674,11 @@ function renderPOSModule() {
   if (isAdmin) {
     var custOptions = '<option value="Walk-in">🛒 -- លក់នៅកន្លែង (Walk-in) --</option>';
     allCustomers.forEach(function(c) {
-      if (c.role !== 'Admin' && c.full_name !== 'Walk-in') {
+      // 🚫 ដកអ្នកដឹកជញ្ជូនរោងចក្រ (CompanyDriver) និងកូនចៅដកជំនួសមេ (Driver) ចេញពី Dropdown មិនឱ្យបង្ហាញឡើយ
+      var isDriver = (c.role === 'Driver' || c.type === 'Driver' || c.type === 'CompanyDriver');
+      
+      // ✅ បង្ហាញតែអតិថិជនពិតប្រាកដ (ម៉ូយប្រចាំខែ Monthly និងអ្នកលក់បន្ត Reseller)
+      if (c.role !== 'Admin' && c.full_name !== 'Walk-in' && !isDriver) {
         custOptions += '<option value="' + c.full_name + '">' + c.full_name + ' (' + (c.type === 'Monthly' ? 'ប្រចាំខែ' : 'អ្នកលក់បន្ត') + ')</option>';
       }
     });
