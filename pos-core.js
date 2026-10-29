@@ -125,12 +125,9 @@ function renderSidebarMenu() {
   var html = '';
 
   var isAdmin = (currentUser && currentUser.role === 'Admin');
-  vvar isCompanyDriver = (currentUser && currentUser.type === 'CompanyDriver');
-  // 🛵 កូនចៅដកជំនួសមេ៖ ស្គាល់ភ្លាមៗដរាបណាមានឈ្មោះមេ (linkedBoss)
-  var isDriver = (currentUser && !isCompanyDriver && (currentUser.role === 'Driver' || (currentUser.linkedBoss && currentUser.linkedBoss.trim() !== '')));
-  var isAdmin = (currentUser && currentUser.role === 'Admin');
-  var isSeller = (currentUser && (currentUser.role === 'Seller' || currentUser.role === 'Cashier'));
-  var isReseller = (!isAdmin && !isSeller && !isDriver && !isCompanyDriver);
+  var isCompanyDriver = (currentUser && currentUser.type === 'CompanyDriver');
+  var isDriver = (currentUser && currentUser.role === 'Driver' && currentUser.type !== 'CompanyDriver');
+  var isReseller = (currentUser && (currentUser.role === 'Customer' || currentUser.type === 'Regular' || currentUser.type === 'Monthly'));
 
   var customerHeaderHTML = '';
 
