@@ -1903,3 +1903,79 @@ document.addEventListener('click', function(e) {
     closeSidebar();
   }
 });
+
+// ==========================================
+// 🔄 មុខងារ SMART IN-APP REFRESH (ជំនួស BROWSER RELOAD)
+// ទាញយកទិន្នន័យថ្មីភ្លាមៗ 0.2s ដោយមិនបាច់ Reload ទំព័រ Browser ឡើយ
+// ==========================================
+var isAppRefreshingLock = false;
+
+async function triggerAppSmartRefresh() {
+  if (isAppRefreshingLock) return;
+  isAppRefreshingLock = true;
+
+  var icon = document.getElementById('navRefreshSpinIcon');
+  var btn = document.getElementById('navQuickRefreshBtn');
+  if (icon) icon.classList.add('fa-spin');
+  if (btn) btn.classList.add('opacity-60');
+
+  showToast("កំពុងទាញយកទិន្នន័យថ្មី...", "info");
+
+  try {
+    // ១. បោសសម្អាត Cache ចាស់ៗក្នុង Memory
+    if (typeof specialPrices !== 'undefined') specialPrices = [];
+    
+    // ២. ទាញយកទិន្នន័យទំនិញ អតិថិជន និងតម្លៃកុងត្រាថ្មីពី Supabase
+    if (typeof fetchInitialPOSData === 'function') {
+      await fetchInitialPOSData();
+    }
+
+    // ៣. ទាញយក Settings អត្រាប្តូរប្រាក់ និង Telegram ថ្មី
+    if (typeof loadSettingsAndTelegram === 'function') {
+      await loadSettingsAndTelegram();
+    }
+
+    // ៤. ឆែកមើលការកុម្ម៉ង់ Online ថ្មីៗ
+    if (typeof checkPendingOnlineOrdersBadge === 'function') {
+      await checkPendingOnlineOrdersBadge();
+    }
+
+    // ៥. ធ្វើបច្ចុប្បន្នភាពផ្ទាំងដែលកំពុងបើកស្រាប់ស្វ័យប្រវត្តិ
+    var contentArea = document.getElementById('contentArea');
+    if (contentArea) {
+      // បើកំពុងនៅ POS ➔ Render ទំនិញឡើងវិញ
+      if (document.getElementById('pGrid') && typeof rPG === 'function') {
+        rPG();
+        if (typeof rC === 'function') rC();
+      }
+      // បើកំពុងនៅ Dashboard ➔ គណនាលេខឡើងវិញ
+      else if (document.getElementById('dashTodaySales') && typeof loadDashboardData === 'function') {
+        await loadDashboardData();
+      }
+      // បើកំពុងនៅ Stock ➔ អាប់ដេតតារាងទំនិញ
+      else if (document.getElementById('stockModuleTableBody') && typeof renderStockTableRows === 'function') {
+        renderStockTableRows();
+      }
+      // បើកំពុងនៅ Settlement ➔ អាប់ដេតបញ្ជីជំពាក់
+      else if (document.getElementById('todayUnpaidTbody') && typeof fetchSettlementOverviewData === 'function') {
+        await fetchSettlementOverviewData();
+        if (typeof loadSettlementDebtorsList === 'function') await loadSettlementDebtorsList();
+      }
+      // បើកំពុងនៅគណនីម៉ូយ (CustPortal) ➔ អាប់ដេតទឹកជំពាក់
+      else if (document.getElementById('cpGrandTotalDue') && typeof fetchCustomerPortalData === 'function') {
+        await fetchCustomerPortalData();
+      }
+    }
+
+    // ៦. បន្លឺសំឡេង និងបង្ហាញដំណឹងជោគជ័យ
+    if (typeof playOrderChime === 'function') playOrderChime();
+    showToast("✅ បានទាញយកទិន្នន័យថ្មីចុងក្រោយជោគជ័យ!", "success");
+
+  } catch(err) {
+    showToast("កំហុស Refresh៖ " + err.message, "error");
+  } finally {
+    isAppRefreshingLock = false;
+    if (icon) icon.classList.remove('fa-spin');
+    if (btn) btn.classList.remove('opacity-60');
+  }
+}
