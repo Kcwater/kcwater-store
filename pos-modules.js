@@ -1464,23 +1464,40 @@ function getElVal(id) {
   return el ? (el.value || '').trim() : '';
 }
 
+// ==========================================================================
+// 👥 មុខងារគ្រប់គ្រងសិទ្ធិ & រក្សាទុកគណនី (ចាក់សោរ MONTHLY & COMPANY DRIVER ច្បាស់លាស់ ១០០%)
+// ==========================================================================
+
 function toggleCustTypeFields() {
   var roleType = getElVal('mem_role_type') || 'MONTHLY';
   var bossBox = document.getElementById('driverBossContainer');
   var loginBox = document.getElementById('loginCredsContainer');
+  var userInp = document.getElementById('mem_user');
+  var passInp = document.getElementById('mem_pass');
 
+  // ១. បង្ហាញប្រអប់រើសឈ្មោះមេ តែចំពោះកូនចៅដកជំនួសមេ (DRIVER) ប៉ុណ្ណោះ
   if (bossBox) {
-    if (roleType === 'DRIVER') bossBox.classList.remove('hidden');
-    else bossBox.classList.add('hidden');
+    if (roleType === 'DRIVER') {
+      bossBox.classList.remove('hidden');
+    } else {
+      bossBox.classList.add('hidden');
+      if (document.getElementById('mem_boss_custom')) document.getElementById('mem_boss_custom').value = '';
+    }
   }
 
+  // ២. អតិថិជនប្រចាំខែ (MONTHLY) គ្មានសិទ្ធិ Login ឡើយ -> លាក់ប្រអប់ និងសម្អាត Username/Password ចោល
   if (loginBox) {
-    if (roleType === 'MONTHLY') loginBox.classList.add('hidden');
-    else loginBox.classList.remove('hidden');
+    if (roleType === 'MONTHLY') {
+      loginBox.classList.add('hidden');
+      if (userInp) userInp.value = '';
+      if (passInp) passInp.value = '';
+    } else {
+      loginBox.classList.remove('hidden');
+    }
   }
 }
 
-// 💾 មុខងាររក្សាទុក ឬកែប្រែគណនី (ចាក់សោរម៉ូយ Monthly គ្មាន Login ដាច់ខាត)
+// 💾 មុខងាររក្សាទុក ឬកែប្រែគណនី (ការពារកុំឱ្យច្រឡំ Role និងប្រើ kcAlert ស្តង់ដារ)
 async function saveUserToSupabase() {
   var name = getElVal('mem_name');
   var roleType = getElVal('mem_role_type') || 'MONTHLY';
@@ -1488,7 +1505,11 @@ async function saveUserToSupabase() {
   
   if (!name) { 
     if (typeof kcAlert === 'function') {
-      await kcAlert({ title: "ខ្វះទិន្នន័យ", message: "សូមបញ្ចូលឈ្មោះពេញរបស់គណនី!", type: "warning" });
+      await kcAlert({ 
+        title: "ខ្វះទិន្នន័យ", 
+        message: "សូមបញ្ចូលឈ្មោះពេញរបស់គណនី!", 
+        type: "warning" 
+      });
     } else {
       showToast("សូមបញ្ចូលឈ្មោះពេញ!", "error");
     }
@@ -1503,64 +1524,102 @@ async function saveUserToSupabase() {
   var user = null;
   var pass = null;
 
-  // 🏢 ១. អតិថិជនប្រចាំខែ (Monthly)៖ គ្មាន Username និង Password ដាច់ខាត!
+  // 🏢 ១. អតិថិជនប្រចាំខែ (Monthly)៖ គ្មាន Username និង Password ដាច់ខាត (Admin ជាអ្នកដកជំនួស)
   if (roleType === 'MONTHLY') {
     role = 'Customer';
     type = 'Monthly';
     user = null;
     pass = null;
+    linkedBoss = '';
+
+  // 🚚 ២. អតិថិជនប្រចាំ - អ្នកលក់បន្ត (Reseller)៖ មាន Login ចូលមើលប្រវត្តិ និងដកទឹកខ្លួនឯង
   } else if (roleType === 'RESELLER') {
     role = 'Customer';
     type = 'Regular';
     user = getElVal('mem_user');
     pass = getElVal('mem_pass');
     if (!user || !pass) { 
-      showToast("សូមវាយ Username និង Password សម្រាប់ម៉ូយ Login!", "error"); 
+      if (typeof kcAlert === 'function') {
+        await kcAlert({ title: "ខ្វះគណនី Login", message: "សូមវាយ Username និង Password សម្រាប់ម៉ូយ Login!", type: "warning" });
+      } else {
+        showToast("សូមវាយ Username និង Password!", "error");
+      }
       return; 
     }
+
+  // 🛵 ៣. កូនចៅ/អ្នកដឹក (Driver ធម្មតា)៖ ដកទឹកជំនួសមេ
   } else if (roleType === 'DRIVER') {
     role = 'Driver';
     type = 'Driver';
     linkedBoss = getElVal('mem_boss_custom') || getElVal('mem_boss_select');
+    if (!linkedBoss) {
+      if (typeof kcAlert === 'function') {
+        await kcAlert({ title: "ខ្វះឈ្មោះមេ", message: "សូមជ្រើសរើស ឬវាយឈ្មោះមេដែលកូនចៅនេះត្រូវមកដកទឹកជំនួស!", type: "warning" });
+      } else {
+        showToast("សូមជ្រើសរើសឈ្មោះមេ!", "error");
+      }
+      return;
+    }
     user = getElVal('mem_user');
     pass = getElVal('mem_pass');
     if (!user || !pass) { 
-      showToast("សូមវាយ Username និង Password សម្រាប់អ្នកដឹក Login!", "error"); 
+      if (typeof kcAlert === 'function') {
+        await kcAlert({ title: "ខ្វះគណនី Login", message: "សូមវាយ Username និង Password សម្រាប់អ្នកដឹក Login!", type: "warning" });
+      } else {
+        showToast("សូមវាយ Username និង Password!", "error");
+      }
       return; 
     }
+
+  // 🚚 ៤. អ្នកដឹកជញ្ជូនរោងចក្រ (Company Driver)៖ មានតែដឹកទំនិញដែល Admin ផ្តល់ឱ្យ គ្មានសិទ្ធិដក POS
   } else if (roleType === 'COMPANY_DRIVER') {
-    // 🛵 ២. អ្នកដឹកជញ្ជូនរោងចក្រ៖ ភ្ជាប់ជាមួយ KC WATER
     role = 'Driver';
     type = 'CompanyDriver';
     linkedBoss = 'KC WATER';
     user = getElVal('mem_user');
     pass = getElVal('mem_pass');
     if (!user || !pass) { 
-      showToast("សូមវាយ Username និង Password សម្រាប់អ្នកដឹកជញ្ជូនរោងចក្រ!", "error"); 
+      if (typeof kcAlert === 'function') {
+        await kcAlert({ title: "ខ្វះគណនី Login", message: "សូមវាយ Username និង Password សម្រាប់អ្នកដឹកជញ្ជូនរោងចក្រ!", type: "warning" });
+      } else {
+        showToast("សូមវាយ Username និង Password!", "error");
+      }
       return; 
     }
+
+  // 🛒 ៥. បុគ្គលិកលក់នៅកន្លែង (Seller)
   } else if (roleType === 'SELLER') {
     role = 'Seller';
     type = 'Retail';
     user = getElVal('mem_user');
     pass = getElVal('mem_pass');
     if (!user || !pass) { 
-      showToast("សូមវាយ Username និង Password សម្រាប់បុគ្គលិកលក់!", "error"); 
+      if (typeof kcAlert === 'function') {
+        await kcAlert({ title: "ខ្វះគណនី Login", message: "សូមវាយ Username និង Password សម្រាប់បុគ្គលិកលក់!", type: "warning" });
+      } else {
+        showToast("សូមវាយ Username និង Password!", "error");
+      }
       return; 
     }
+
+  // 👑 ៦. Admin អ្នកគ្រប់គ្រង
   } else if (roleType === 'ADMIN') {
     role = 'Admin';
     type = 'Admin';
     user = getElVal('mem_user');
     pass = getElVal('mem_pass');
     if (!user || !pass) { 
-      showToast("សូមវាយ Username និង Password សម្រាប់ Admin!", "error"); 
+      if (typeof kcAlert === 'function') {
+        await kcAlert({ title: "ខ្វះគណនី Login", message: "សូមវាយ Username និង Password សម្រាប់ Admin!", type: "warning" });
+      } else {
+        showToast("សូមវាយ Username និង Password!", "error");
+      }
       return; 
     }
   }
 
   var btn = document.getElementById('btnSaveUserAction');
-  if (btn) { btn.disabled = true; btn.innerText = "កំពុងរក្សាទុក..."; }
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> កំពុងរក្សាទុក...'; }
 
   try {
     var payload = {
@@ -1579,22 +1638,47 @@ async function saveUserToSupabase() {
         .update(payload)
         .eq('id', editingCustomerId);
       if (error) throw error;
-      showToast("បានកែប្រែគណនី [" + name + "] ជោគជ័យ!", "success");
+      
+      if (typeof kcAlert === 'function') {
+        await kcAlert({
+          title: "ជោគជ័យ! 🎉",
+          message: "បានធ្វើបច្ចុប្បន្នភាពគណនី [" + name + "] រួចរាល់!",
+          type: "success"
+        });
+      } else {
+        showToast("បានកែប្រែគណនី [" + name + "] ជោគជ័យ!", "success");
+      }
     } else {
       const { error } = await supabaseClient
         .from('users')
         .insert([payload]);
       if (error) throw error;
-      showToast("បានបង្កើតគណនី [" + name + "] ជោគជ័យ!", "success");
+
+      if (typeof kcAlert === 'function') {
+        await kcAlert({
+          title: "បង្កើតជោគជ័យ! 🎉",
+          message: "បានបង្កើតគណនីថ្មី [" + name + "] ដោយជោគជ័យ!",
+          type: "success"
+        });
+      } else {
+        showToast("បានបង្កើតគណនី [" + name + "] ជោគជ័យ!", "success");
+      }
     }
 
     cancelEditCustomer();
     await fetchInitialPOSData();
     fetchUsersModuleTable();
   } catch(err) {
-    showToast("កំហុស៖ " + (err.message || err), "error");
+    if (typeof kcAlert === 'function') {
+      await kcAlert({ title: "កំហុសរក្សាទុក", message: err.message || String(err), type: "danger" });
+    } else {
+      showToast("កំហុស៖ " + (err.message || err), "error");
+    }
   } finally {
-    if (btn) { btn.disabled = false; }
+    if (btn) { 
+      btn.disabled = false; 
+      btn.innerText = editingCustomerId ? "ធ្វើបច្ចុប្បន្នភាពគណនី (Update Account)" : "រក្សាទុកគណនី (Save Account)";
+    }
   }
 }
 
