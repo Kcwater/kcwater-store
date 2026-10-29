@@ -27,9 +27,9 @@ function playPaymentSuccessAudio() {
   } catch(e) {}
 }
 
-// ==========================================
-// 💳 ១. ផ្ទាំងទូទាត់លុយ SETTLEMENT UI (SMART POS)
-// ==========================================
+// ==========================================================================
+// 💳 ១. ផ្ទាំងទូទាត់លុយ SETTLEMENT UI (SMART POS - រចនាសម្ព័ន្ធត្រឹមត្រូវ ១០០%)
+// ==========================================================================
 async function renderSettlementModule() {
   var area = document.getElementById('contentArea');
   if (!area) return;
@@ -43,7 +43,8 @@ async function renderSettlementModule() {
   var custOptions = '<option value="">-- សូមជ្រើសរើសឈ្មោះម៉ូយ --</option><option value="Walk-in">🛒 -- លក់នៅកន្លែង (Walk-in) --</option>';
   allCustomers.forEach(function(c) {
     if (c.role !== 'Admin' && c.full_name !== 'Walk-in') {
-      custOptions += '<option value="' + c.full_name + '">' + c.full_name + '</option>';
+      var tag = (c.type === 'Monthly') ? ' [ប្រចាំខែ]' : ' [អ្នកលក់បន្ត]';
+      custOptions += '<option value="' + c.full_name + '">' + c.full_name + tag + '</option>';
     }
   });
 
@@ -114,7 +115,7 @@ async function renderSettlementModule() {
       '</div>' +
     '</div>' +
 
-    // 📝 ទម្រង់គិតលុយ និងចេញវិក្កយបត្រ
+    // 📝 ទម្រង់គិតលុយ និងចេញវិក្កយបត្រ (Card Container ធំ)
     '<div id="settlement_card" class="card border-t-4 border-blue-600 shadow-2xl p-5 sm:p-6 mb-0">' +
       '<h3 class="font-bold text-center mb-4 text-blue-900 text-base sm:text-lg flex items-center justify-center gap-2">' +
         '<i class="fas fa-file-invoice-dollar text-blue-600"></i>ទម្រង់គិតលុយ និងចេញវិក្កយបត្រ' +
@@ -126,14 +127,15 @@ async function renderSettlementModule() {
           custOptions +
         '</select>' +
       '</div>' +
-    
-    '<div id="settlement_ui" class="hidden space-y-4">' +
-     '<div class="flex justify-between items-center border-b pb-2">' +
+
+      // 📦 តំបន់ UI ទូទាត់លម្អិត (បង្ហាញពេលរើសឈ្មោះម៉ូយ)
+      '<div id="settlement_ui" class="hidden space-y-4">' +
+        '<div class="flex justify-between items-center border-b pb-2">' +
           '<b class="text-xs sm:text-sm text-blue-950 flex items-center gap-1.5"><i class="fas fa-boxes text-blue-600"></i>បញ្ជីជើងទឹកដកជំពាក់ជាក់ស្តែង</b>' +
           '<span id="settleSelectedCountBadge" class="bg-blue-100 text-blue-800 text-xs px-2.5 py-0.5 rounded-full font-bold">0 ជើងទឹក</span>' +
         '</div>' +
 
-        // 📦 ប្រអប់សរុបបរិមាណតាមមុខទំនិញ (មានសញ្ញាសម្រង់ '...' + ត្រឹមត្រូវ)
+        // ប្រអប់សរុបបរិមាណតាមមុខទំនិញ
         '<div id="settleProductSummaryArea" class="hidden p-2.5 bg-blue-50/80 rounded-2xl border border-blue-200 text-xs space-y-1 my-2"></div>' +
 
         // តារាងជើងទឹកជំពាក់
@@ -230,8 +232,8 @@ async function renderSettlementModule() {
         '<button onclick="submitSettlementPayment()" id="btnSubmitSettlement" class="btn-green shadow-xl py-4 text-base font-black flex items-center justify-center gap-2 active:scale-95 transition mt-3">' +
           '<i class="fas fa-file-invoice-dollar text-xl"></i> ទូទាត់ & ចេញវិក្កយបត្រ (Save Settlement)' +
         '</button>' +
-      '</div>' +
-    '</div>' +
+      '</div>' + // បិទ #settlement_ui
+    '</div>' +   // បិទ #settlement_card
   '</div>';
 
   checkAdminPendingPayments();
