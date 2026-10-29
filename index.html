@@ -2769,29 +2769,32 @@ function updateCheckoutCalculation() {
           '</div>';
         }
 
-        var tgMsgText = encodeURIComponent("Hello KC WATER! I ordered code [" + orderId + "] Total: " + Number(info.total || 0).toLocaleString() + " KHR. Here is my payment slip:");
+        // ✅ កូដថ្មី៖ បែងចែករវាងភ្ញៀវស្កេន ABA និងភ្ញៀវបង់លុយសុទ្ធ (COD)
+        var isAbaOrder = (info.payment_method && String(info.payment_method).toUpperCase().indexOf('ABA') !== -1);
+
+        // កំណត់អក្សរលើប៊ូតុងតាមវិធីបង់ប្រាក់
+        var tgBtnLabel = isAbaOrder ? 
+          (d.trackSendSlip || '📲 ផ្ញើបង្កាន់ដៃ (Slip ABA) ទៅ Telegram') : 
+          (currentLang === 'en' ? '💬 Chat with Factory on Telegram' : (currentLang === 'zh' ? '💬 在 Telegram 联系水厂' : '💬 ឆាតសាកសួរ Telegram រោងចក្រ'));
+
+        // កំណត់សារដែលត្រូវផ្ញើចូល Telegram ស្វ័យប្រវត្តិ
+        var tgMsgText = isAbaOrder ? 
+          encodeURIComponent("Hello KC WATER! I ordered code [" + orderId + "] Total: " + Number(info.total || 0).toLocaleString() + " KHR via ABA KHQR. Here is my payment slip:") :
+          encodeURIComponent("Hello KC WATER! I ordered code [" + orderId + "] (Cash on delivery). I would like to inquire about my delivery:");
+
         var tgSlipLink = "https://t.me/KcWater?text=" + tgMsgText;
 
-        cardBox.innerHTML = '<div class="p-4 rounded-3xl bg-white border-2 border-emerald-400 shadow-lg space-y-2.5 animate-in zoom-in duration-200">' +
-          '<div class="flex justify-between items-center border-b border-slate-100 pb-2">' +
-            '<div>' +
-              '<div class="flex items-center gap-2">' +
-                '<b class="text-xs text-slate-900 font-black">' + d.trackTitle + '</b>' +
-                '<button type="button" onclick="checkActiveOrderLiveStatus()" class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-[10px] font-bold flex items-center gap-1 active:scale-90 transition">' +
-                  '<i id="trackingRefreshIcon" class="fas fa-rotate text-[10px]"></i> ' + d.trackRefresh +
-                '</button>' +
-              '</div>' +
-              '<div class="text-[10px] text-slate-400 font-mono mt-0.5">ID: ' + orderId + '</div>' +
-            '</div>' +
-            '<div>' + statusBadge + '</div>' +
-          '</div>' +
-          deliveryTrackerHtml +
-          driverInfoHtml +
-          '<div class="pt-1">' +
-            '<a href="' + tgSlipLink + '" target="_blank" class="w-full py-2.5 px-3 bg-gradient-to-r from-blue-600 to-sky-600 hover:from-blue-700 text-white rounded-xl text-xs font-black shadow-xs flex items-center justify-center gap-2 active:scale-95 transition" style="text-decoration:none;">' +
-              '<i class="fab fa-telegram text-sm"></i> ' + d.trackSendSlip +
+        // 🎨 ពណ៌ប៊ូតុង៖ ABA ចេញពណ៌ខៀវ (Sky), លុយសុទ្ធចេញពណ៌បៃតង (Emerald)
+        var tgBtnBg = isAbaOrder ? 
+          "bg-gradient-to-r from-blue-600 to-sky-600 hover:from-blue-700" : 
+          "bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700";
+        '<div class="pt-1">' +
+            '<a href="' + tgSlipLink + '" target="_blank" class="w-full py-2.5 px-3 ' + tgBtnBg + ' text-white rounded-xl text-xs font-black shadow-xs flex items-center justify-center gap-2 active:scale-95 transition" style="text-decoration:none;">' +
+              '<i class="fab fa-telegram text-sm"></i> ' + tgBtnLabel +
             '</a>' +
           '</div>' +
+
+          
           (isPending ? 
           '<button type="button" onclick="cancelCustomerActiveOrder(\'' + orderId + '\')" class="w-full mt-2 py-2 bg-red-50 hover:bg-red-100 text-red-700 font-bold text-xs rounded-xl border border-red-200 transition active:scale-95 flex items-center justify-center gap-1.5">' +
             '<i class="fas fa-circle-xmark"></i> បោះបង់ការកុម្ម៉ង់នេះ' +
