@@ -967,27 +967,33 @@ async function renderCompanyDeliveriesModule(isSilentRefresh) {
     if (error) throw error;
 
     // ២. ទាញការងារដែលបានដឹកជោគជ័យថ្ងៃនេះ
-    const { data: deliveredToday } = await supabaseClient
-      .from('orders')
-      .select('*')
-      .eq('status', 'Delivered')
-      .ilike('driver_name', driverName.trim())
-      .gte('created_at', todayQueryStart);
-
     var deliveredCount = 0;
     var cashToHandover = 0;
     var abaCollected = 0;
 
-    (deliveredToday || []).forEach(function(o) {
-      if (isTodayInCambodia(o.created_at)) {
-        deliveredCount++;
-        var amt = parseFloat(o.total || 0);
-        var isABA = String(o.payment_method || '').indexOf('ABA') !== -1;
-        if (isABA) abaCollected += amt;
-        else cashToHandover += amt;
+    // ទាញយកប្រតិបត្តិការលក់ដែលអ្នកដឹកបានប្រគល់ទឹកថ្ងៃនេះពីតារាង transactions
+    const { data: driverTransToday } = await supabaseClient
+      .from('transactions')
+      .select('*')
+      .ilike('recorded_by', driverName.trim() + '%')
+      .gte('created_at', todayQueryStart);
+
+    var countedTransIds = new Set();
+    (driverTransToday || []).forEach(function(t) {
+      if (isTodayInCambodia(t.created_at)) {
+        var tid = t.transaction_id || t.id;
+        if (!countedTransIds.has(tid)) {
+          countedTransIds.add(tid);
+          deliveredCount++; // រាប់ចំនួនជើងដែលបានដឹកជោគជ័យថ្ងៃនេះ
+        }
+        var amt = parseFloat(t.paid_khr || t.total || 0);
+        if (t.payment_method === 'ABA') {
+          abaCollected += amt;
+        } else {
+          cashToHandover += amt;
+        }
       }
     });
-
     if (summaryBox) {
       summaryBox.innerHTML = '<div class="p-2.5 bg-emerald-50 border border-emerald-200 rounded-2xl shadow-2xs">' +
         '<span class="text-[10px] text-emerald-700 font-bold block">💵 លុយសុទ្ធក្នុងដៃ</span>' +
