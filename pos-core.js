@@ -1905,12 +1905,25 @@ document.addEventListener('click', function(e) {
 });
 
 // ==========================================
-// 🔄 មុខងារ SMART REFRESH គ្រប់គណនីទាំងអស់ (ALL ROLES & MODULES)
-// ស្គាល់ទាំង Admin, អ្នកដឹកជញ្ជូនរោងចក្រ, កូនចៅដកជំនួសមេ, ម៉ូយប្រចាំ និងអ្នកលក់
+// 🔄 មុខងារ SMART REFRESH ១០០% (ទាញទាំងទិន្នន័យ & ទាញទាំងកូដថ្មី)
+// - ចុច ១ ដង (Click)៖ ទាញទិន្នន័យថ្មីពី Database ភ្លាមៗ (០.២ វិនាទី)
+// - ចុច ២ ដងញាប់ (Double-Click)៖ ទាញកូដថ្មីដែលទើបកែក្នុង VS Code មកដំណើរការ ១០០%
 // ==========================================
 var isAppRefreshingLock = false;
 
-async function triggerAppSmartRefresh() {
+async function triggerAppSmartRefresh(forceHardReload) {
+  // ⚡ ករណីទី ១៖ ចុច ២ ដងញាប់ (Double-Click) ➔ បង្ខំ Browser ទម្លាក់កូដចាស់ចោល ហើយទាញកូដថ្មីពី VS Code ភ្លាមៗ
+  if (forceHardReload === true) {
+    showToast("កំពុងទាញយកកូដមុខងារថ្មីពីឯកសារ...", "info");
+    setTimeout(function() {
+      // ប្រើ ?v=timestamp ដើម្បីកម្ទេច Cache ចាស់ក្នុង Browser មិនឱ្យសល់
+      var cleanUrl = window.location.origin + window.location.pathname + '?v=' + Date.now();
+      window.location.href = cleanUrl;
+    }, 300);
+    return;
+  }
+
+  // ⚡ ករណីទី ២៖ ចុច ១ ដង (Single Click) ➔ ទាញទិន្នន័យពី Database Supabase (0.2s មិនបាច់ Reload ទំព័រ)
   if (isAppRefreshingLock) return;
   isAppRefreshingLock = true;
 
@@ -1919,12 +1932,15 @@ async function triggerAppSmartRefresh() {
   if (icon) icon.classList.add('fa-spin');
   if (btn) btn.classList.add('opacity-60');
 
-  showToast("កំពុងធ្វើបច្ចុប្បន្នភាពទិន្នន័យ...", "info");
+  showToast("កំពុងទាញយកទិន្នន័យថ្មី...", "info");
 
   try {
-    // ១. បោសសម្អាត និងទាញយកទិន្នន័យរួមពី Supabase
+    // ១. បោសសម្អាត Cache ចាស់ៗក្នុង Memory
     if (typeof specialPrices !== 'undefined') specialPrices = [];
+    allProducts = [];
+    allCustomers = [];
 
+    // ២. ទាញទិន្នន័យស្រស់ៗពី Supabase
     if (typeof fetchInitialPOSData === 'function') {
       await fetchInitialPOSData();
     }
@@ -1935,24 +1951,18 @@ async function triggerAppSmartRefresh() {
     var role = (currentUser && currentUser.role) ? currentUser.role : '';
     var type = (currentUser && currentUser.type) ? currentUser.type : '';
 
-    // ========================================================
-    // 🛵 ក. សម្រាប់គណនីអ្នកដឹកជញ្ជូនរោងចក្រ (Company Driver)
-    // ========================================================
+    // ៣. ធ្វើបច្ចុប្បន្នភាពទិន្នន័យតាមតួនាទីគណនីនីមួយៗ
+    // 🛵 ក. អ្នកដឹកជញ្ជូនរោងចក្រ (Company Driver)
     if (type === 'CompanyDriver') {
       if (typeof renderCompanyDeliveriesModule === 'function') {
-        await renderCompanyDeliveriesModule(true); // អាប់ដេតបេសកកម្មដឹកទឹកភ្លាមៗ
+        await renderCompanyDeliveriesModule(true);
       }
     }
-
-    // ========================================================
-    // 🏢 ខ. សម្រាប់គណនីម៉ូយប្រចាំ (Reseller / Customer)
-    // ========================================================
+    // 🏢 ខ. ម៉ូយប្រចាំ (Customer / Reseller)
     else if (role === 'Customer' || type === 'Regular' || type === 'Monthly') {
-      // បើកំពុងនៅទំព័រដើមម៉ូយ (CustPortal)
       if (document.getElementById('cpGrandTotalDue') && typeof fetchCustomerPortalData === 'function') {
         await fetchCustomerPortalData();
       }
-      // បើកំពុងនៅផ្ទាំងប្រវត្តិដកទំនិញ (CustHistory)
       if (document.getElementById('chAllUnpaidTbody') && typeof loadAllUnpaidHistory === 'function') {
         var secUnpaid = document.getElementById('chSecUnpaid');
         var secItems = document.getElementById('chSecItems');
@@ -1962,71 +1972,47 @@ async function triggerAppSmartRefresh() {
           await fetchCustomHistoryByDate();
         }
       }
-      // បើកំពុងនៅផ្ទាំងសំបកធុងខ្ចី (CustBottles)
       if (document.getElementById('cbBottlesTbody') && typeof renderCustomerBottlesModule === 'function') {
         await renderCustomerBottlesModule();
       }
-      // បើកំពុងនៅផ្ទាំងដកទំនិញ (POS)
       if (document.getElementById('pGrid') && typeof rPG === 'function') {
         rPG();
         if (typeof rC === 'function') rC();
       }
     }
-
-    // ========================================================
-    // 🚚 គ. សម្រាប់កូនចៅដកជំនួសមេ (Driver) & បុគ្គលិកលក់ (Seller)
-    // ========================================================
+    // 🚚 គ. កូនចៅដកជំនួសមេ & អ្នកលក់
     else if (role === 'Driver' || role === 'Seller' || role === 'Cashier') {
       if (document.getElementById('pGrid') && typeof rPG === 'function') {
         rPG();
         if (typeof rC === 'function') rC();
       }
     }
-
-    // ========================================================
-    // 👑 ឃ. សម្រាប់ ADMIN (គ្រប់គ្រងគ្រប់ផ្ទាំង)
-    // ========================================================
+    // 👑 ឃ. Admin (គ្រប់គ្រងគ្រប់ផ្ទាំង)
     else if (role === 'Admin') {
       if (typeof checkPendingOnlineOrdersBadge === 'function') {
         await checkPendingOnlineOrdersBadge();
       }
-      // បើកំពុងនៅ Dashboard
       if (document.getElementById('dashTodaySales') && typeof loadDashboardData === 'function') {
         await loadDashboardData();
-      }
-      // បើកំពុងនៅ POS
-      else if (document.getElementById('pGrid') && typeof rPG === 'function') {
+      } else if (document.getElementById('pGrid') && typeof rPG === 'function') {
         rPG();
         if (typeof rC === 'function') rC();
-      }
-      // បើកំពុងនៅ Stock
-      else if (document.getElementById('stockModuleTableBody') && typeof renderStockTableRows === 'function') {
+      } else if (document.getElementById('stockModuleTableBody') && typeof renderStockTableRows === 'function') {
         renderStockTableRows();
-      }
-      // បើកំពុងនៅ Settlement
-      else if (document.getElementById('todayUnpaidTbody') && typeof fetchSettlementOverviewData === 'function') {
+      } else if (document.getElementById('todayUnpaidTbody') && typeof fetchSettlementOverviewData === 'function') {
         await fetchSettlementOverviewData();
         if (typeof loadSettlementDebtorsList === 'function') await loadSettlementDebtorsList();
-      }
-      // បើកំពុងនៅ Expenses
-      else if (document.getElementById('expTableBody') && typeof fetchExpensesHistory === 'function') {
+      } else if (document.getElementById('expTableBody') && typeof fetchExpensesHistory === 'function') {
         await fetchExpensesHistory();
-      }
-      // បើកំពុងនៅ Bottle Loans
-      else if (document.getElementById('blTableBody') && typeof fetchBottleLoansData === 'function') {
+      } else if (document.getElementById('blTableBody') && typeof fetchBottleLoansData === 'function') {
         await fetchBottleLoansData();
-      }
-      // បើកំពុងនៅ Customers
-      else if (document.getElementById('usersModuleTableBody') && typeof fetchUsersModuleTable === 'function') {
+      } else if (document.getElementById('usersModuleTableBody') && typeof fetchUsersModuleTable === 'function') {
         await fetchUsersModuleTable();
-      }
-      // បើកំពុងនៅ Online Hub
-      else if (document.getElementById('hubTabContent_ORDERS') && typeof loadOnlineHubOrdersTab === 'function') {
+      } else if (document.getElementById('hubTabContent_ORDERS') && typeof loadOnlineHubOrdersTab === 'function') {
         loadOnlineHubOrdersTab();
       }
     }
 
-    // ៥. បន្លឺសំឡេង និងបង្ហាញដំណឹងជោគជ័យ
     if (typeof playOrderChime === 'function') playOrderChime();
     showToast("✅ បានធ្វើបច្ចុប្បន្នភាពទិន្នន័យចុងក្រោយជោគជ័យ!", "success");
 
