@@ -73,9 +73,9 @@
         </button>
 
         <!-- 🔄 ប៊ូតុង Refresh Web ភ្ញៀវ (ដំណើរការ ១០០% លុប Cache ចាស់ និងទាញទំនិញថ្មីភ្លាមៗ) -->
-        <button type="button" onclick="localStorage.removeItem('kc_cached_catalog'); window.__kcCachedSettingsMap = null; loadStoreOnlineProducts(); loadStoreSettingsFromSupabase();" class="w-8 h-8 rounded-full bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border border-emerald-300 flex items-center justify-center text-xs shadow-2xs active:scale-90 transition shrink-0" title="Refresh ទាញទិន្នន័យថ្មី">
-          <i class="fas fa-rotate"></i>
-        </button>
+        <button type="button" onclick="triggerAppSmartRefresh()" ondblclick="triggerAppSmartRefresh(true)" id="navQuickRefreshBtn" title="ចុច ១ដង=ទាញទិន្នន័យថ្មី | ចុច ២ដង=ទាញកូដថ្មី" class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-green-800 hover:bg-green-900 text-green-200 hover:text-white flex items-center justify-center text-xs sm:text-sm shadow-inner active:scale-90 transition border border-green-600">
+  <i id="navRefreshSpinIcon" class="fas fa-rotate"></i>
+</button>
 
         <div id="userInfo" class="text-[10px] bg-green-800 px-3 py-1.5 rounded-full border border-green-600 font-bold uppercase shadow-inner">Admin KC WATER</div>
       </div>
