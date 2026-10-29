@@ -1723,6 +1723,7 @@ async function confirmSale() {
       btn.innerHTML = 'រក្សាទុកការលក់ (Save Sale)';
     }
   }
+}
 
   
 // ==========================================
