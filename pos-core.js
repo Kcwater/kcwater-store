@@ -118,7 +118,8 @@ function logout() {
   closeSidebar();
   showToast("បានចាកចេញពីប្រព័ន្ធ!", "info");
 }
-// 📱 បែងចែកម៉ឺនុយ SIDEBAR (កំណត់សិទ្ធិដាច់ដោយឡែក ១០០%)
+
+// 📱 បែងចែកម៉ឺនុយ SIDEBAR (កំណត់សិទ្ធិដាច់ដោយឡែក ១០០% - សម្អាតកូដស្ទួនរួចរាល់)
 function renderSidebarMenu() {
   var sNav = document.getElementById('sidebarMenuContainer');
   if (!sNav) return;
@@ -127,59 +128,7 @@ function renderSidebarMenu() {
   var isAdmin = (currentUser && currentUser.role === 'Admin');
   var isCompanyDriver = (currentUser && currentUser.type === 'CompanyDriver');
   var isDriver = (currentUser && currentUser.role === 'Driver' && currentUser.type !== 'CompanyDriver');
-  var isReseller = (currentUser && (currentUser.role === 'Customer' || currentUser.type === 'Regular' || currentUser.type === 'Monthly'));
-
-  var customerHeaderHTML = '';
-
-  if (isAdmin) {
-    var custOptions = '<option value="Walk-in">🛒 -- លក់នៅកន្លែង (Walk-in) --</option>';
-    allCustomers.forEach(function(c) {
-      var isDrv = (c.role === 'Driver' || c.type === 'Driver' || c.type === 'CompanyDriver');
-      if (c.role !== 'Admin' && c.full_name !== 'Walk-in' && !isDrv) {
-        custOptions += '<option value="' + c.full_name + '">' + c.full_name + ' (' + (c.type === 'Monthly' ? 'ប្រចាំខែ' : 'អ្នកលក់បន្ត') + ')</option>';
-      }
-    });
-
-    customerHeaderHTML = '<div class="card border-l-4 border-blue-500 py-3 shadow-sm mb-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">' +
-      '<div class="flex-1 w-full sm:w-auto">' +
-        '<label class="text-xs font-bold text-gray-500 block mb-1"><i class="fas fa-user-tag text-blue-600 mr-1.5"></i>ជ្រើសរើសអតិថិជន / ម៉ូយ (ឬលក់នៅកន្លែង Walk-in)</label>' +
-        '<select id="posCustSelect" onchange="onAdminPosCustomerChange(this.value)" class="w-full font-bold text-gray-800 border-2 border-blue-200 focus:border-blue-600 rounded-xl p-2.5 bg-white outline-none">' + custOptions + '</select>' +
-      '</div>' +
-      '<button onclick="fetchInitialPOSData().then(rPG)" class="px-3 py-2 bg-green-50 text-green-700 rounded-xl text-xs font-bold border border-green-200 active:scale-95 transition flex items-center gap-1 shadow-2xs self-end sm:self-auto"><i class="fas fa-sync-alt"></i> Refresh ស្តុក</button>' +
-    '</div>' +
-    '<div id="adminProxyModeNotice" class="hidden p-3 bg-blue-50 border-2 border-blue-400 rounded-2xl mb-3 text-xs font-bold text-blue-950 flex items-center justify-between shadow-2xs animate-in zoom-in duration-200">' +
-      '<span class="flex items-center gap-2"><i class="fas fa-truck-ramp-box text-blue-600 text-base"></i> របៀបដកទំនិញជំនួស៖ <b id="adminProxyCustName" class="text-blue-900 text-sm"></b> (កត់ត្រាចូលបញ្ជីជំពាក់អូតូ)</span>' +
-      '<span class="px-2.5 py-0.5 rounded-full bg-blue-200 text-blue-900 text-[10px] font-black">ជំពាក់ (Unpaid)</span>' +
-    '</div>';
-
-  // 🛵 បង្ហាញកាតដកទឹកជំនួសមេ និងបង្ខំយកឈ្មោះមេទៅប្រើប្រាស់
-  } else if (isDriver) {
-    var bossName = (currentUser.linkedBoss || '').trim();
-    customerHeaderHTML = '<div class="card border-l-4 border-amber-500 bg-amber-50 p-3.5 mb-4 flex justify-between items-center">' +
-      '<div>' +
-        '<span class="text-[10px] text-amber-700 font-bold uppercase tracking-wider block">កូនចៅដកទឹកជំនួសមេ៖ ' + (bossName || 'មិនទាន់កំណត់ឈ្មោះមេ') + '</span>' +
-        '<b class="text-amber-950 text-sm sm:text-base"><i class="fas fa-truck mr-2"></i>អ្នកមកដកផ្ទាល់៖ ' + currentUser.fullName + '</b>' +
-        '<input type="hidden" id="posCustSelect" value="' + bossName + '">' +
-      '</div>' +
-      '<button onclick="fetchInitialPOSData().then(rPG)" class="px-2.5 py-1.5 bg-white hover:bg-amber-100 text-amber-800 rounded-xl text-xs font-bold border border-amber-200 active:scale-95 transition flex items-center gap-1 shadow-2xs"><i class="fas fa-sync-alt"></i> Refresh</button>' +
-    '</div>';
-
-  } else if (isReseller) {
-    customerHeaderHTML = '<div class="card border-l-4 border-green-600 bg-green-50 p-3.5 mb-4 flex justify-between items-center">' +
-      '<div>' +
-        '<span class="text-[10px] text-green-700 font-bold uppercase tracking-wider block">គណនីអ្នកដកទំនិញ (Reseller)</span>' +
-        '<b class="text-green-900 text-sm sm:text-base"><i class="fas fa-user mr-2"></i>អ្នកដកទំនិញ៖ ' + currentUser.fullName + '</b>' +
-        '<input type="hidden" id="posCustSelect" value="' + currentUser.fullName + '">' +
-      '</div>' +
-      '<button onclick="fetchInitialPOSData().then(rPG)" class="px-2.5 py-1.5 bg-white hover:bg-green-100 text-green-700 rounded-xl text-xs font-bold border border-green-200 active:scale-95 transition flex items-center gap-1 shadow-2xs"><i class="fas fa-sync-alt"></i> Refresh ស្តុក</button>' +
-    '</div>';
-  } else {
-    customerHeaderHTML = '<div class="card border-l-4 border-blue-600 bg-blue-50 p-3 mb-4 flex justify-between items-center">' +
-      '<b class="text-blue-900 text-sm"><i class="fas fa-store mr-2"></i>លក់នៅកន្លែង (Walk-in)</b>' +
-      '<input type="hidden" id="posCustSelect" value="Walk-in">' +
-      '<button onclick="fetchInitialPOSData().then(rPG)" class="px-2.5 py-1 bg-white text-blue-700 rounded-lg text-xs font-bold border"><i class="fas fa-sync-alt"></i> Refresh</button>' +
-    '</div>';
-  }
+  var isReseller = (currentUser && (currentUser.role === 'Customer' || currentUser.type === 'Regular'));
 
   // ១. សម្រាប់ ADMIN (មានសិទ្ធិពេញលេញ & មានប៊ូតុងប្តូរ TEST vs PROD តែម្នាក់គត់)
   if (isAdmin) {
@@ -200,13 +149,13 @@ function renderSidebarMenu() {
     html += '<div class="text-[10px] font-bold text-green-300 uppercase px-3 pt-3 pb-1 opacity-80 tracking-wider">ការកំណត់ប្រព័ន្ធ</div>';
     html += '<button onclick="loadModule(\'Settings\')" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold text-yellow-300"><i class="fas fa-cog mr-3 w-5 text-center"></i>ការកំណត់ (Settings)</button>';
 
-    // 🔄 ប៊ូតុងប្តូរប្រព័ន្ធ TEST vs PROD (បង្ហាញតែចំពោះ ADMIN ម្នាក់គត់!)
+    // 🔄 ប៊ូតុងប្តូរ TEST vs PROD
     var nextEnv = (typeof CURRENT_ENV !== 'undefined' && CURRENT_ENV === 'TEST') ? 'PROD' : 'TEST';
     var envBtnClass = (typeof CURRENT_ENV !== 'undefined' && CURRENT_ENV === 'TEST') ? 'bg-amber-500 text-amber-950 font-black' : 'bg-emerald-800 text-green-200 font-bold';
     var envBtnText = (typeof CURRENT_ENV !== 'undefined' && CURRENT_ENV === 'TEST') ? '🧪 កំពុងនៅ៖ សាកល្បង (ចុចប្តូរ 🔄)' : '🏢 កំពុងនៅ៖ ប្រព័ន្ធពិត (ចុចប្តូរ 🔄)';
     html += '<div class="pt-2"><button type="button" onclick="switchAppEnvironment(\'' + nextEnv + '\')" class="w-full text-left p-3 rounded-xl transition flex items-center shadow-xs text-xs ' + envBtnClass + '"><i class="fas fa-database mr-3 w-5 text-center text-base"></i>' + envBtnText + '</button></div>';
 
-  // 🛵 ២. សម្រាប់អ្នកដឹកជញ្ជូនរោងចក្រ (Company Driver) -> មានតែបេសកកម្មដឹកទឹក គ្មានសិទ្ធិដកទំនិញ POS ឡើយ!
+  // 🛵 ២. សម្រាប់អ្នកដឹកជញ្ជូនរោងចក្រ (Company Driver) -> មានតែបេសកកម្មដឹកទឹកប៉ុណ្ណោះ!
   } else if (isCompanyDriver) {
     html += '<div class="text-[10px] font-black text-emerald-300 uppercase px-3 pt-2 pb-1 opacity-90 tracking-wider">🛵 ការដឹកជញ្ជូន KC WATER</div>';
     html += '<button onclick="loadModule(\'CompanyDeliveries\')" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold text-white bg-green-800/80 shadow-xs"><i class="fas fa-motorcycle mr-3 w-5 text-center text-emerald-300"></i>បេសកកម្មដឹកទឹកថ្ងៃនេះ</button>';
@@ -216,9 +165,9 @@ function renderSidebarMenu() {
     html += '<div class="text-[10px] font-bold text-amber-300 uppercase px-3 pt-2 pb-1 opacity-90 tracking-wider">ដកទឹកជំនួសមេ៖ ' + (currentUser.linkedBoss || '') + '</div>';
     html += '<button onclick="loadModule(\'POS\')" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold"><i class="fas fa-truck mr-3 w-5 text-center text-amber-300"></i>ផ្ទាំងដកទំនិញ</button>';
 
-  // 🏢 ៤. សម្រាប់ RESELLER / CUSTOMER
+  // 🏢 ៤. សម្រាប់ម៉ូយបោះដុំ (Reseller)
   } else if (isReseller) {
-    html += '<div class="text-[10px] font-bold text-green-300 uppercase px-3 pt-2 pb-1 opacity-80 tracking-wider">គណនីម៉ូយប្រចាំ</div>';
+    html += '<div class="text-[10px] font-bold text-green-300 uppercase px-3 pt-2 pb-1 opacity-80 tracking-wider">គណនីម៉ូយប្រចាំ (អ្នកលក់បន្ត)</div>';
     html += '<button onclick="loadModule(\'CustPortal\')" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold text-white"><i class="fas fa-house mr-3 w-5 text-center text-emerald-300"></i>ទំព័រដើមរបស់ខ្ញុំ</button>';
     html += '<button onclick="loadModule(\'POS\')" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold text-white"><i class="fas fa-shopping-cart mr-3 w-5 text-center text-emerald-300"></i>ផ្ទាំងដកទំនិញ</button>';
     html += '<button onclick="loadModule(\'CustHistory\')" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold text-white"><i class="fas fa-history mr-3 w-5 text-center text-emerald-300"></i>ប្រវត្តិដកទំនិញ</button>';
@@ -956,7 +905,7 @@ function setPosCategoryFilter(cat) {
   rPG();
 }
 
-// 📦 មុខងារទាញទំនិញមកបង្ហាញក្នុងក្រឡាចត្រង្គ POS (តម្លៃ ៣ ជាន់៖ ៛ លើ, ฿ កណ្តាល, $ ក្រោម គ្មានវង់ក្រចក ())
+// 📦 មុខងារទាញទំនិញមកបង្ហាញក្នុងក្រឡាចត្រង្គ POS
 function renderProductGrid() {
   var grid = document.getElementById('pGrid');
   if (!grid) return;
@@ -970,8 +919,10 @@ function renderProductGrid() {
   var filtered = allProducts.filter(function(p) {
     if (p.channel === 'ONLINE') return false;
 
+    // 🔒 លក្ខខណ្ឌចាក់សោរម៉ូយប្រចាំខែ (Monthly): បង្ហាញតែមុខទំនិញណាដែលមានក្នុង Contract កុងត្រាប៉ុណ្ណោះ!
     if (isMonthly) {
-      return specialPrices.some(sp => sp.customer_name === custName && sp.product_name === p.name);
+      var hasContractPrice = specialPrices.some(sp => sp.customer_name === custName && sp.product_name === p.name);
+      if (!hasContractPrice) return false; // បើគ្មានក្នុងកុងត្រា មិនបង្ហាញឡើយ!
     }
 
     var nameLower = (p.name || '').toLowerCase();
@@ -997,8 +948,12 @@ function renderProductGrid() {
     return true;
   });
 
+  // បើម៉ូយប្រចាំខែ មិនទាន់មានទំនិញកុងត្រាណាមួយសោះ
   if (isMonthly && filtered.length === 0) {
-    grid.innerHTML = '<div class="col-span-full py-10 text-center space-y-1"><p class="text-orange-600 font-bold text-xs"><i class="fas fa-exclamation-triangle mr-1"></i> មិនទាន់មានទំនិញកំណត់តម្លៃពិសេសសម្រាប់អតិថិជននេះនៅឡើយទេ!</p><span class="text-gray-400 text-[11px] block">សូម Admin ចូលទៅម៉ឺនុយ «គ្រប់គ្រងអតិថិជន» ដើម្បីកំណត់មុខទំនិញ និងតម្លៃពិសេសសម្រាប់គាត់</span></div>';
+    grid.innerHTML = '<div class="col-span-full py-10 text-center space-y-2 bg-amber-50 rounded-2xl border-2 border-amber-200 p-4">' +
+      '<p class="text-amber-900 font-black text-sm"><i class="fas fa-triangle-exclamation text-amber-600 mr-1.5"></i> ម៉ូយប្រចាំខែ [' + custName + '] មិនទាន់មានទំនិញកុងត្រានៅឡើយទេ!</p>' +
+      '<span class="text-slate-500 text-xs block">សូម Admin ចូលទៅកាន់ម៉ឺនុយ <b>«គ្រប់គ្រងអតិថិជន»</b> ដើម្បីកំណត់មុខទំនិញ និងតម្លៃកុងត្រាសម្រាប់គាត់ជាមុនសិន។</span>' +
+    '</div>';
     return;
   }
 
@@ -1011,9 +966,7 @@ function renderProductGrid() {
     var unitPrice = sp ? parseFloat(sp.price) : parseFloat(p.price || 0);
     var rawCurr = (p.currency || 'KHR').toUpperCase();
 
-    // 🪙 គណនា ៣ រូបិយប័ណ្ណស្មើៗគ្នា (៛, ฿, $) តាមអត្រាប្តូរប្រាក់ជាក់ស្តែង
     var khrVal = 0, thbVal = 0, usdVal = 0;
-
     if (rawCurr === 'USD') {
       khrVal = Math.round(unitPrice * rateUSD);
       usdVal = unitPrice;
@@ -1028,7 +981,6 @@ function renderProductGrid() {
       usdVal = parseFloat((unitPrice / rateUSD).toFixed(2));
     }
 
-    // 💵 ទម្រង់តម្លៃ ៣ ជាន់ (៛ លើ, ฿ កណ្តាល, $ ក្រោម ដោយគ្មានសញ្ញាវង់ក្រចក () ឡើយ)
     var khrText = '៛ ' + Number(khrVal).toLocaleString();
     var thbText = '฿ ' + Number(thbVal).toLocaleString();
     var usdText = '$ ' + Number(usdVal).toFixed(2);
@@ -1040,7 +992,9 @@ function renderProductGrid() {
     '</div>';
 
     var imgUrl = p.img || "https://cdn-icons-png.flaticon.com/512/3100/3100566.png";
-    var spBadge = sp ? '<span class="absolute top-2 left-2 bg-yellow-100 text-yellow-800 text-[9px] font-black px-1.5 py-0.2 rounded-full border border-yellow-300">តម្លៃពិសេស</span>' : '';
+    var spBadge = isMonthly ? 
+      '<span class="absolute top-2 left-2 bg-amber-100 text-amber-900 text-[9px] font-black px-1.5 py-0.2 rounded-full border border-amber-300">🔒 តម្លៃកុងត្រា</span>' : 
+      (sp ? '<span class="absolute top-2 left-2 bg-yellow-100 text-yellow-800 text-[9px] font-black px-1.5 py-0.2 rounded-full border border-yellow-300">តម្លៃពិសេស</span>' : '');
 
     html += '<div onclick="openProductModal(\'' + p.id + '\')" class="bg-white p-3 rounded-2xl shadow-sm hover:shadow-xl border border-gray-100 hover:border-green-400 transition-all cursor-pointer active:scale-95 flex flex-col items-center justify-between text-center relative group">' +
       spBadge +
@@ -1054,7 +1008,6 @@ function renderProductGrid() {
 
   grid.innerHTML = html || '<p class="col-span-full py-8 text-center text-gray-400 text-xs italic">រកមិនឃើញទំនិញត្រូវនឹងការស្វែងរកឡើយ</p>';
 }
-
 // ==========================================
 // 💵 ប្រព័ន្ធគ្រប់គ្រង ៣ រូបិយប័ណ្ណ, ប្តូរពណ៌ & ថែម 00 (MODAL LOGIC)
 // ==========================================
