@@ -400,12 +400,23 @@ function closeOnlineOrdersModal() {
   checkPendingOnlineOrdersBadge();
 }
 
-// 🚚 មុខងារចាត់ចែងអ្នកដឹក (មានប្រព័ន្ធព្រមានការពារ Admin កុំឱ្យច្រឡំដៃដូរអ្នកដឹក)
+// ==========================================================================
+// 🛵 ១. មុខងារចាត់ចែងអ្នកដឹកជញ្ជូនរោងចក្រ (បង្ហាញតែអ្នកដឹកពិតប្រាកដ & មាន kcAlert ព្រមាន)
+// ==========================================================================
 async function assignDriverToOnlineOrder(orderId, custName) {
   var sel = document.getElementById('driver_sel_' + orderId);
   var driverName = sel ? sel.value.trim() : "";
+  
   if (!driverName) {
-    showToast("សូមជ្រើសរើសឈ្មោះអ្នកដឹកជញ្ជូន!", "error");
+    if (typeof kcAlert === 'function') {
+      await kcAlert({
+        title: "មិនទាន់រើសអ្នកដឹក",
+        message: "សូមជ្រើសរើសឈ្មោះអ្នកដឹកជញ្ជូនរោងចក្រជាមុនសិន!",
+        type: "warning"
+      });
+    } else {
+      showToast("សូមជ្រើសរើសឈ្មោះអ្នកដឹកជញ្ជូន!", "error");
+    }
     if (sel) sel.focus();
     return;
   }
@@ -421,7 +432,7 @@ async function assignDriverToOnlineOrder(orderId, custName) {
       .eq('order_id', orderId)
       .maybeSingle();
 
-    // ⚠️ បើការកុម្ម៉ង់នេះបានចាត់ចែងឱ្យអ្នកដឹកផ្សេងរួចហើយ ចេញផ្ទាំងព្រមានសួរ Admin សិន!
+    // ⚠️ បើការកុម្ម៉ង់នេះបានចាត់ចែងឱ្យអ្នកដឹកផ្សេងរួចហើយ ចេញផ្ទាំង kcConfirm សួរ Admin សិន!
     if (orderInfo && orderInfo.driver_name && orderInfo.driver_name.trim() !== "" && orderInfo.driver_name.trim() !== driverName) {
       var okChange = await kcConfirm({
         title: "ប្តូរអ្នកដឹកជញ្ជូន",
@@ -444,10 +455,19 @@ async function assignDriverToOnlineOrder(orderId, custName) {
 
     if (error) throw error;
 
-    showToast("បានចាត់ចែងទៅឱ្យ " + driverName + " ជោគជ័យ!", "success");
+    if (typeof kcAlert === 'function') {
+      await kcAlert({
+        title: "ចាត់ចែងជោគជ័យ! 🎉",
+        message: "ការកុម្ម៉ង់លេខកូដ [" + orderId + "] ត្រូវបានចាត់ចែងទៅឱ្យអ្នកដឹក [" + driverName + "] រួចរាល់!",
+        type: "success"
+      });
+    } else {
+      showToast("បានចាត់ចែងទៅឱ្យ " + driverName + " ជោគជ័យ!", "success");
+    }
+
     openOnlineOrdersModal();
 
-    // 🔔 ដំណឹងទី ២៖ ផ្ញើទៅ Group អ្នកដឹកជញ្ជូន (បេសកកម្មដឹកទឹកថ្មី + Link ផែនទីនាំផ្លូវ)
+    // 🔔 ដំណឹង Telegram ផ្ញើទៅកាន់ Group អ្នកដឹកជញ្ជូន (Kc បេសកកម្មរបស់ខ្ញុំ)
     try {
       var phoneText = orderInfo && orderInfo.phone ? orderInfo.phone : '-';
       var itemsText = orderInfo && orderInfo.items ? orderInfo.items : '-';
@@ -456,14 +476,14 @@ async function assignDriverToOnlineOrder(orderId, custName) {
       var barrelText = orderInfo && orderInfo.barrel_swap ? orderInfo.barrel_swap : 'មានសំបកដូរ';
       var rawLocation = orderInfo ? (orderInfo.location_url || orderInfo.address || '') : '';
 
-      // រៀបចំ Link ផែនទី Google Maps ឱ្យអ្នកដឹកចុចបើកនាំផ្លូវភ្លាមៗ
       var mapLine = '';
       if (rawLocation) {
         var matchLink = rawLocation.match(/https?:\/\/[^\s]+/);
         if (matchLink) {
           mapLine = "📍 <b>ផែនទីផ្ទះភ្ញៀវ៖</b> <a href='" + matchLink[0] + "'>👉 ចុចបើក Google Maps នាំផ្លូវ 🧭</a>\n";
         } else {
-          var searchMap = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(rawLocation + " ប៉ោយប៉ែត");
+          var cleanAddr = rawLocation.replace(/\[.*?\]/g, '').replace(/\|\s*ចំណាំ:?/g, '').trim();
+          var searchMap = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(cleanAddr + " ប៉ោយប៉ែត");
           mapLine = "📍 <b>ផែនទីផ្ទះភ្ញៀវ៖</b> <a href='" + searchMap + "'>👉 ចុចបើក Google Maps នាំផ្លូវ 🧭</a>\n";
         }
       }
@@ -472,7 +492,6 @@ async function assignDriverToOnlineOrder(orderId, custName) {
         "⚠️ <b>[KC WATER - Admin បានប្តូរអ្នកដឹកជញ្ជូនថ្មី]</b>" : 
         "🛵 <b>[KC WATER - បេសកកម្មដឹកទឹកថ្មី]</b>";
 
-      // ម៉ោងចាត់ចែងកម្ពុជាច្បាស់លាស់
       var timeKhNow = new Date().toLocaleString('km-KH', { 
         timeZone: 'Asia/Phnom_Penh', 
         dateStyle: 'short', 
@@ -492,19 +511,54 @@ async function assignDriverToOnlineOrder(orderId, custName) {
                   (orderInfo && orderInfo.address ? ("📝 <b>ចំណាំទីតាំង៖</b> " + orderInfo.address + "\n") : "") +
                   "🕒 <b>ម៉ោងចាត់ចែង៖</b> " + timeKhNow;
 
-      // 🎯 ផ្ញើត្រង់ទៅ Group អ្នកដឹកជញ្ជូន (បើគ្មាន driverChatId ទេ ទើបផ្ញើទៅ Group ថៅកែ)
       var targetChatId = (telegramConfig && telegramConfig.driverChatId) ? telegramConfig.driverChatId : ((telegramConfig && telegramConfig.chatId) ? telegramConfig.chatId : '');
-      
       if (typeof sendTelegramAlert === 'function') {
         sendTelegramAlert(tgMsg, targetChatId);
       }
     } catch(tgErr) {}
     
   } catch(err) {
-    showToast("កំហុសចាត់ចែង៖ " + err.message, "error");
+    if (typeof kcAlert === 'function') {
+      await kcAlert({ title: "កំហុសចាត់ចែង", message: err.message, type: "danger" });
+    } else {
+      showToast("កំហុសចាត់ចែង៖ " + err.message, "error");
+    }
   }
 }
 
+// ==========================================================================
+// 🗺️ ២. មុខងារបើកផែនទី GOOGLE MAPS នាំផ្លូវ (មាន kcAlert ត្រឹមត្រូវ ១០០%)
+// ==========================================================================
+function openOrderMap(mapUrl) {
+  if (!mapUrl || String(mapUrl).trim() === "") {
+    if (typeof kcAlert === 'function') {
+      kcAlert({
+        title: "មិនមានទីតាំង!",
+        message: "ការកុម្ម៉ង់នេះមិនមានភ្ជាប់ GPS ឬអាសយដ្ឋានឡើយ!",
+        type: "warning"
+      });
+    } else {
+      showToast("មិនមានទីតាំង ឬអាសយដ្ឋានឡើយ!", "warning");
+    }
+    return;
+  }
+
+  var raw = String(mapUrl).trim();
+
+  // ១. បើមាន Link ផែនទី Google Maps ស្រាប់ (បើក Link នោះនាំផ្លូវភ្លាម)
+  var match = raw.match(/https?:\/\/[^\s]+/);
+  if (match) {
+    window.open(match[0], '_blank');
+    return;
+  }
+
+  // ២. បើជាអក្សរចំណាំ (ជម្រះអក្សរជាន់ផ្ទះ និងម៉ោងក្នុងវង់ក្រចក [...] ចេញសិន ដើម្បីកុំឱ្យវង្វេងលើ Google Maps)
+  var cleanAddress = raw.replace(/\[.*?\]/g, '').replace(/\|\s*ចំណាំ:?/g, '').trim();
+  if (!cleanAddress) cleanAddress = "ក្រុងប៉ោយប៉ែត";
+
+  var searchUrl = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(cleanAddress + " ប៉ោយប៉ែត");
+  window.open(searchUrl, '_blank');
+}
 async function cancelOnlineOrder(orderId, custName) {
   // 🌟 ប្រើ Pop-up ថ្មីរបស់ KC POS ពណ៌ក្រហមច្បាស់ៗ
   var ok = await kcConfirm({
@@ -865,37 +919,6 @@ function viewOrderHousePhotoById(orderId) {
     '</div>' +
   '</div>';
   document.body.insertAdjacentHTML('beforeend', html);
-}
-// 🗺️ មុខងារបើកផែនទី Google Maps (ឆ្លាតវៃ ចាប់យក Link ឬឈ្មោះទីតាំងសុទ្ធ)
-function openOrderMap(mapUrl) {
-  if (!mapUrl || String(mapUrl).trim() === "") {
-    if (typeof kcAlert === 'function') {
-      kcAlert({
-        title: "មិនមានទីតាំង!",
-        message: "ការកុម្ម៉ង់នេះមិនមានភ្ជាប់ GPS ឬអាសយដ្ឋានឡើយ!",
-        type: "warning"
-      });
-    } else {
-      showToast("មិនមានទីតាំង ឬអាសយដ្ឋានឡើយ!", "warning");
-    }
-    return;
-  }
-
-  var raw = String(mapUrl).trim();
-
-  // ១. បើមាន Link ផែនទី Google Maps ស្រាប់ (បើក Link នោះនាំផ្លូវភ្លាម)
-  var match = raw.match(/https?:\/\/[^\s]+/);
-  if (match) {
-    window.open(match[0], '_blank');
-    return;
-  }
-
-  // ២. បើជាអក្សរចំណាំ (ជម្រះអក្សរជាន់ផ្ទះ និងម៉ោងក្នុងវង់ក្រចក [...] ចេញសិន ដើម្បីកុំឱ្យវង្វេងលើ Google Maps)
-  var cleanAddress = raw.replace(/\[.*?\]/g, '').replace(/\|\s*ចំណាំ:?/g, '').trim();
-  if (!cleanAddress) cleanAddress = "ក្រុងប៉ោយប៉ែត";
-
-  var searchUrl = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(cleanAddress + " ប៉ោយប៉ែត");
-  window.open(searchUrl, '_blank');
 }
 
 // 🔄 ចាប់ផ្តើមដំណើរការស្កេន Realtime ពេលបើកទំព័រ (កូដស្តង់ដារ គ្មានស្ទួន)
