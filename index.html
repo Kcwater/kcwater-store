@@ -2648,167 +2648,180 @@ function updateCheckoutCalculation() {
       } catch(e) {}
     }
 
-    async function checkActiveOrderLiveStatus() {
-      var orderId = currentTrackingOrderId || localStorage.getItem('kc_active_order_id');
-      var cardBox = document.getElementById('activeOrderCardBox');
-      if (!orderId || !cardBox) {
-        if (cardBox) cardBox.classList.add('hidden');
-        return;
-      }
+    // ==========================================================================
+// 📡 មុខងារតាមដានស្ថានភាពការកុម្ម៉ង់ផ្ទាល់របស់ភ្ញៀវ (Live Order Tracking - គ្មាន Error Syntax)
+// ==========================================================================
+async function checkActiveOrderLiveStatus() {
+  var orderId = currentTrackingOrderId || localStorage.getItem('kc_active_order_id');
+  var cardBox = document.getElementById('activeOrderCardBox');
+  if (!orderId || !cardBox) {
+    if (cardBox) cardBox.classList.add('hidden');
+    return;
+  }
 
-      // ភ្ជាប់ Realtime Listener ជាមួយការកុម្ម៉ង់នេះ
-      subscribeOrderRealtime(orderId);
+  // ភ្ជាប់ Realtime Listener ជាមួយការកុម្ម៉ង់នេះ
+  subscribeOrderRealtime(orderId);
 
-      var refreshIcon = document.getElementById('trackingRefreshIcon');
-      if (refreshIcon) refreshIcon.classList.add('fa-spin');
-      var d = DICT[currentLang] || DICT.km;
+  var refreshIcon = document.getElementById('trackingRefreshIcon');
+  if (refreshIcon) refreshIcon.classList.add('fa-spin');
+  var d = DICT[currentLang] || DICT.km;
 
-      try {
-        const { data: info } = await supabaseClient
-          .from('orders')
-          .select('*')
-          .eq('order_id', orderId)
-          .maybeSingle();
+  try {
+    const { data: info } = await supabaseClient
+      .from('orders')
+      .select('*')
+      .eq('order_id', orderId)
+      .maybeSingle();
 
-        if (refreshIcon) refreshIcon.classList.remove('fa-spin');
+    if (refreshIcon) refreshIcon.classList.remove('fa-spin');
 
-        if (!info || info.status === "Cancelled") {
-          cardBox.classList.add('hidden');
-          clearInterval(trackingPollTimer);
-          localStorage.removeItem('kc_active_order_id');
-          return;
-        }
-
-        // 🎉 បើអ្នកដឹកចុច "ដឹកដល់" ភ្លាម ផ្ទាំងអបអរសាទរលោតឡើងភ្លាមៗ!
-        if (info.status === "Delivered") {
-          clearInterval(trackingPollTimer);
-          try {
-            if (typeof confetti === 'function') confetti({ particleCount: 130, spread: 80, origin: { y: 0.6 } });
-          } catch(e) {}
-
-          cardBox.innerHTML = '<div class="p-4 rounded-3xl bg-gradient-to-br from-emerald-600 to-green-700 text-white shadow-xl space-y-3 animate-in zoom-in-95 duration-300 border-2 border-emerald-300 text-center">' +
-            '<div class="w-14 h-14 mx-auto rounded-full bg-white text-emerald-600 flex items-center justify-center text-2xl shadow-md animate-bounce">' +
-              '<i class="fas fa-circle-check"></i>' +
-            '</div>' +
-            '<div>' +
-              '<h3 class="text-base font-black tracking-tight leading-snug">🎉 ដឹកជញ្ជូនដល់ផ្ទះរួចរាល់!</h3>' +
-              '<p class="text-xs text-emerald-100 mt-1 font-medium">ទឹកពិសាបរិសុទ្ធ ខេ ស៊ី ត្រូវបានប្រគល់ជូនរួចរាល់។ សូមអរគុណចំពោះការគាំទ្រ!</p>' +
-            '</div>' +
-            '<div class="p-2.5 bg-emerald-800/60 rounded-2xl border border-emerald-400/40 text-xs flex justify-between items-center text-emerald-50">' +
-              '<span>អ្នកដឹកជញ្ជូន៖ <b>' + (info.driver_name || 'KC WATER') + '</b></span>' +
-              '<span class="font-black text-amber-300 text-sm">៛ ' + Number(info.total || 0).toLocaleString() + '</span>' +
-            '</div>' +
-            '<div class="grid grid-cols-2 gap-2 pt-1">' +
-              '<button type="button" onclick="dismissDeliveredCard(false)" class="py-2.5 bg-white hover:bg-emerald-50 text-emerald-950 font-black text-xs rounded-xl shadow active:scale-95 transition">យល់ព្រម (បិទ)</button>' +
-              '<button type="button" onclick="dismissDeliveredCard(true)" class="py-2.5 bg-emerald-900/80 hover:bg-emerald-900 text-white font-black text-xs rounded-xl border border-emerald-300 shadow active:scale-95 transition flex items-center justify-center gap-1"><i class="fas fa-rotate-right text-[10px]"></i> កុម្ម៉ង់ម្តងទៀត</button>' +
-            '</div>' +
-          '</div>';
-
-          cardBox.classList.remove('hidden');
-          return;
-        }
-
-        var isPending = (info.status === "Pending");
-        var isAssigned = (info.status === "Assigned");
-        var progressPercent = isPending ? 38 : 75;
-        var motoLeft = isPending ? "35%" : "72%";
-
-        var stepMap = {
-          km: { s1: "កុម្ម៉ង់", s2: "រៀបចំទឹក", s3: "ជិតដល់ហើយ", s4: "ដល់ផ្ទះ", badgePending: "⏳ រោងចក្រកំពុងរៀបចំទឹក", badgeAssigned: "🛵 អ្នកដឹកកំពុងធ្វើដំណើរ (ជិតដល់)" },
-          en: { s1: "Ordered", s2: "Preparing", s3: "On the way", s4: "Delivered", badgePending: "⏳ Preparing your water", badgeAssigned: "🛵 Courier is on the way" },
-          zh: { s1: "已下单", s2: "备水中", s3: "快到了", s4: "已送达", badgePending: "⏳ 水厂正在备水", badgeAssigned: "🛵 配送员正在赶往住处" }
-        };
-        var stepLabels = stepMap[currentLang] || stepMap.km;
-
-        var statusBadge = isPending ? 
-          '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300 animate-pulse">' + stepLabels.badgePending + '</span>' : 
-          '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300 animate-pulse">' + stepLabels.badgeAssigned + '</span>';
-
-        var deliveryTrackerHtml = '<div class="p-3 bg-gradient-to-b from-slate-50 to-emerald-50/40 rounded-2xl border border-emerald-200/80 space-y-3.5 my-2">' +
-          '<div class="flex justify-between items-center text-[11px] font-black text-slate-700">' +
-            '<span><i class="fas fa-stopwatch text-emerald-600 mr-1"></i> ' + (currentLang === 'km' ? 'រយៈពេលដឹកជញ្ជូនប៉ាន់ស្មាន' : 'Estimated Delivery') + '</span>' +
-            '<span class="text-emerald-700 font-black bg-emerald-100 px-2 py-0.5 rounded-full">30 - 45 នាទី</span>' +
-          '</div>' +
-          '<div class="relative pt-6 pb-2 px-2">' +
-            '<div class="h-2 w-full bg-slate-200 rounded-full overflow-hidden relative">' +
-              '<div class="h-full bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 transition-all duration-1000 ease-out" style="width: ' + progressPercent + '%;"></div>' +
-            '</div>' +
-            '<div class="absolute -top-1 transition-all duration-1000 ease-out transform -translate-x-1/2" style="left: ' + motoLeft + ';">' +
-              '<div class="relative flex items-center justify-center">' +
-                '<span class="absolute -top-4 text-[9px] font-black bg-slate-900 text-white px-1.5 py-0.2 rounded shadow whitespace-nowrap animate-bounce">' +
-                  (isPending ? '📦 Prep' : '🛵 ជិតដល់!') +
-                '</span>' +
-                '<div class="w-8 h-8 rounded-full bg-gradient-to-tr from-emerald-600 to-green-500 text-white shadow-lg flex items-center justify-center text-sm border-2 border-white">' +
-                  '<i class="fas fa-motorcycle animate-pulse"></i>' +
-                '</div>' +
-              '</div>' +
-            '</div>' +
-            '<div class="flex justify-between items-center mt-3 text-[10px] font-black">' +
-              '<div class="text-center text-emerald-700"><div class="w-4 h-4 mx-auto rounded-full bg-emerald-600 text-white flex items-center justify-center text-[8px] mb-1"><i class="fas fa-check"></i></div><span>' + stepLabels.s1 + '</span></div>' +
-              '<div class="text-center ' + (isPending || isAssigned ? 'text-emerald-700' : 'text-slate-400') + '"><div class="w-4 h-4 mx-auto rounded-full ' + (isPending ? 'bg-amber-500 text-white animate-ping' : 'bg-emerald-600 text-white') + ' flex items-center justify-center text-[8px] mb-1"><i class="fas fa-box"></i></div><span>' + stepLabels.s2 + '</span></div>' +
-              '<div class="text-center ' + (isAssigned ? 'text-emerald-800 font-black' : 'text-slate-400') + '"><div class="w-4 h-4 mx-auto rounded-full ' + (isAssigned ? 'bg-emerald-600 text-white animate-bounce' : 'bg-slate-300 text-slate-600') + ' flex items-center justify-center text-[8px] mb-1"><i class="fas fa-route"></i></div><span>' + stepLabels.s3 + '</span></div>' +
-              '<div class="text-center text-slate-400"><div class="w-4 h-4 mx-auto rounded-full bg-slate-200 text-slate-500 flex items-center justify-center text-[8px] mb-1"><i class="fas fa-home"></i></div><span>' + stepLabels.s4 + '</span></div>' +
-            '</div>' +
-          '</div>' +
-        '</div>';
-
-        var driverInfoHtml = '';
-        if (info.driver_name && !isPending) {
-          var cleanPhone = String(info.driver_phone || '077934748').replace(/[^0-9]/g, '');
-          driverInfoHtml = '<div class="p-3 bg-white rounded-2xl border-2 border-emerald-300 space-y-2 shadow-2xs">' +
-            '<div class="flex justify-between items-center text-xs">' +
-              '<div>' +
-                '<span class="text-[10px] text-emerald-800 font-bold block">' + d.trackDriverLabel + '</span>' +
-                '<b class="text-slate-900 text-sm flex items-center gap-1.5"><i class="fas fa-helmet-safety text-emerald-600"></i>' + info.driver_name + '</b>' +
-                (info.driver_phone ? '<div class="text-[11px] text-emerald-900 font-black mt-0.5">📞 ' + info.driver_phone + '</div>' : '') +
-              '</div>' +
-              '<a href="tel:' + cleanPhone + '" class="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl font-black text-xs shadow-md flex items-center gap-1.5 active:scale-95 transition" style="text-decoration:none;">' +
-                '<i class="fas fa-phone text-xs"></i> ' + d.trackCallDriver +
-              '</a>' +
-            '</div>' +
-          '</div>';
-        }
-
-        // ✅ កូដថ្មី៖ បែងចែករវាងភ្ញៀវស្កេន ABA និងភ្ញៀវបង់លុយសុទ្ធ (COD)
-        var isAbaOrder = (info.payment_method && String(info.payment_method).toUpperCase().indexOf('ABA') !== -1);
-
-        // កំណត់អក្សរលើប៊ូតុងតាមវិធីបង់ប្រាក់
-        var tgBtnLabel = isAbaOrder ? 
-          (d.trackSendSlip || '📲 ផ្ញើបង្កាន់ដៃ (Slip ABA) ទៅ Telegram') : 
-          (currentLang === 'en' ? '💬 Chat with Factory on Telegram' : (currentLang === 'zh' ? '💬 在 Telegram 联系水厂' : '💬 ឆាតសាកសួរ Telegram រោងចក្រ'));
-
-        // កំណត់សារដែលត្រូវផ្ញើចូល Telegram ស្វ័យប្រវត្តិ
-        var tgMsgText = isAbaOrder ? 
-          encodeURIComponent("Hello KC WATER! I ordered code [" + orderId + "] Total: " + Number(info.total || 0).toLocaleString() + " KHR via ABA KHQR. Here is my payment slip:") :
-          encodeURIComponent("Hello KC WATER! I ordered code [" + orderId + "] (Cash on delivery). I would like to inquire about my delivery:");
-
-        var tgSlipLink = "https://t.me/KcWater?text=" + tgMsgText;
-
-        // 🎨 ពណ៌ប៊ូតុង៖ ABA ចេញពណ៌ខៀវ (Sky), លុយសុទ្ធចេញពណ៌បៃតង (Emerald)
-        var tgBtnBg = isAbaOrder ? 
-          "bg-gradient-to-r from-blue-600 to-sky-600 hover:from-blue-700" : 
-          "bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700";
-        '<div class="pt-1">' +
-            '<a href="' + tgSlipLink + '" target="_blank" class="w-full py-2.5 px-3 ' + tgBtnBg + ' text-white rounded-xl text-xs font-black shadow-xs flex items-center justify-center gap-2 active:scale-95 transition" style="text-decoration:none;">' +
-              '<i class="fab fa-telegram text-sm"></i> ' + tgBtnLabel +
-            '</a>' +
-          '</div>' +
-
-          
-          (isPending ? 
-          '<button type="button" onclick="cancelCustomerActiveOrder(\'' + orderId + '\')" class="w-full mt-2 py-2 bg-red-50 hover:bg-red-100 text-red-700 font-bold text-xs rounded-xl border border-red-200 transition active:scale-95 flex items-center justify-center gap-1.5">' +
-            '<i class="fas fa-circle-xmark"></i> បោះបង់ការកុម្ម៉ង់នេះ' +
-          '</button>' : '') +
-          '<div class="flex justify-between items-center text-[11px] pt-1 text-slate-700 font-bold">' +
-            '<span>' + d.trackTotal + ' <b class="text-emerald-800 font-black text-xs">៛ ' + Number(info.total || 0).toLocaleString() + '</b></span>' +
-            '<span class="text-slate-400 text-[10px]">KC WATER Poipet</span>' +
-          '</div>' +
-        '</div>';
-
-        cardBox.classList.remove('hidden');
-      } catch(e) {}
+    if (!info || info.status === "Cancelled") {
+      cardBox.classList.add('hidden');
+      clearInterval(trackingPollTimer);
+      localStorage.removeItem('kc_active_order_id');
+      return;
     }
 
+    // 🎉 បើអ្នកដឹកចុច "ដឹកដល់" ភ្លាម ផ្ទាំងអបអរសាទរលោតឡើងភ្លាមៗ!
+    if (info.status === "Delivered") {
+      clearInterval(trackingPollTimer);
+      try {
+        if (typeof confetti === 'function') confetti({ particleCount: 130, spread: 80, origin: { y: 0.6 } });
+      } catch(e) {}
+
+      cardBox.innerHTML = '<div class="p-4 rounded-3xl bg-gradient-to-br from-emerald-600 to-green-700 text-white shadow-xl space-y-3 animate-in zoom-in-95 duration-300 border-2 border-emerald-300 text-center">' +
+        '<div class="w-14 h-14 mx-auto rounded-full bg-white text-emerald-600 flex items-center justify-center text-2xl shadow-md animate-bounce">' +
+          '<i class="fas fa-circle-check"></i>' +
+        '</div>' +
+        '<div>' +
+          '<h3 class="text-base font-black tracking-tight leading-snug">🎉 ដឹកជញ្ជូនដល់ផ្ទះរួចរាល់!</h3>' +
+          '<p class="text-xs text-emerald-100 mt-1 font-medium">ទឹកពិសាបរិសុទ្ធ ខេ ស៊ី ត្រូវបានប្រគល់ជូនរួចរាល់។ សូមអរគុណចំពោះការគាំទ្រ!</p>' +
+        '</div>' +
+        '<div class="p-2.5 bg-emerald-800/60 rounded-2xl border border-emerald-400/40 text-xs flex justify-between items-center text-emerald-50">' +
+          '<span>អ្នកដឹកជញ្ជូន៖ <b>' + (info.driver_name || 'KC WATER') + '</b></span>' +
+          '<span class="font-black text-amber-300 text-sm">៛ ' + Number(info.total || 0).toLocaleString() + '</span>' +
+        '</div>' +
+        '<div class="grid grid-cols-2 gap-2 pt-1">' +
+          '<button type="button" onclick="dismissDeliveredCard(false)" class="py-2.5 bg-white hover:bg-emerald-50 text-emerald-950 font-black text-xs rounded-xl shadow active:scale-95 transition">យល់ព្រម (បិទ)</button>' +
+          '<button type="button" onclick="dismissDeliveredCard(true)" class="py-2.5 bg-emerald-900/80 hover:bg-emerald-900 text-white font-black text-xs rounded-xl border border-emerald-300 shadow active:scale-95 transition flex items-center justify-center gap-1"><i class="fas fa-rotate-right text-[10px]"></i> កុម្ម៉ង់ម្តងទៀត</button>' +
+        '</div>' +
+      '</div>';
+
+      cardBox.classList.remove('hidden');
+      return;
+    }
+
+    var isPending = (info.status === "Pending");
+    var isAssigned = (info.status === "Assigned");
+    var progressPercent = isPending ? 38 : 75;
+    var motoLeft = isPending ? "35%" : "72%";
+
+    var stepMap = {
+      km: { s1: "កុម្ម៉ង់", s2: "រៀបចំទឹក", s3: "ជិតដល់ហើយ", s4: "ដល់ផ្ទះ", badgePending: "⏳ រោងចក្រកំពុងរៀបចំទឹក", badgeAssigned: "🛵 អ្នកដឹកកំពុងធ្វើដំណើរ (ជិតដល់)" },
+      en: { s1: "Ordered", s2: "Preparing", s3: "On the way", s4: "Delivered", badgePending: "⏳ Preparing your water", badgeAssigned: "🛵 Courier is on the way" },
+      zh: { s1: "已下单", s2: "备水中", s3: "快到了", s4: "已送达", badgePending: "⏳ 水厂正在备水", badgeAssigned: "🛵 配送员正在赶往住处" }
+    };
+    var stepLabels = stepMap[currentLang] || stepMap.km;
+
+    var statusBadge = isPending ? 
+      '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300 animate-pulse">' + stepLabels.badgePending + '</span>' : 
+      '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300 animate-pulse">' + stepLabels.badgeAssigned + '</span>';
+
+    var deliveryTrackerHtml = '<div class="p-3 bg-gradient-to-b from-slate-50 to-emerald-50/40 rounded-2xl border border-emerald-200/80 space-y-3.5 my-2">' +
+      '<div class="flex justify-between items-center text-[11px] font-black text-slate-700">' +
+        '<span><i class="fas fa-stopwatch text-emerald-600 mr-1"></i> ' + (currentLang === 'km' ? 'រយៈពេលដឹកជញ្ជូនប៉ាន់ស្មាន' : 'Estimated Delivery') + '</span>' +
+        '<span class="text-emerald-700 font-black bg-emerald-100 px-2 py-0.5 rounded-full">30 - 45 នាទី</span>' +
+      '</div>' +
+      '<div class="relative pt-6 pb-2 px-2">' +
+        '<div class="h-2 w-full bg-slate-200 rounded-full overflow-hidden relative">' +
+          '<div class="h-full bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 transition-all duration-1000 ease-out" style="width: ' + progressPercent + '%;"></div>' +
+        '</div>' +
+        '<div class="absolute -top-1 transition-all duration-1000 ease-out transform -translate-x-1/2" style="left: ' + motoLeft + ';">' +
+          '<div class="relative flex items-center justify-center">' +
+            '<span class="absolute -top-4 text-[9px] font-black bg-slate-900 text-white px-1.5 py-0.2 rounded shadow whitespace-nowrap animate-bounce">' +
+              (isPending ? '📦 Prep' : '🛵 ជិតដល់!') +
+            '</span>' +
+            '<div class="w-8 h-8 rounded-full bg-gradient-to-tr from-emerald-600 to-green-500 text-white shadow-lg flex items-center justify-center text-sm border-2 border-white">' +
+              '<i class="fas fa-motorcycle animate-pulse"></i>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="flex justify-between items-center mt-3 text-[10px] font-black">' +
+          '<div class="text-center text-emerald-700"><div class="w-4 h-4 mx-auto rounded-full bg-emerald-600 text-white flex items-center justify-center text-[8px] mb-1"><i class="fas fa-check"></i></div><span>' + stepLabels.s1 + '</span></div>' +
+          '<div class="text-center ' + (isPending || isAssigned ? 'text-emerald-700' : 'text-slate-400') + '"><div class="w-4 h-4 mx-auto rounded-full ' + (isPending ? 'bg-amber-500 text-white animate-ping' : 'bg-emerald-600 text-white') + ' flex items-center justify-center text-[8px] mb-1"><i class="fas fa-box"></i></div><span>' + stepLabels.s2 + '</span></div>' +
+          '<div class="text-center ' + (isAssigned ? 'text-emerald-800 font-black' : 'text-slate-400') + '"><div class="w-4 h-4 mx-auto rounded-full ' + (isAssigned ? 'bg-emerald-600 text-white animate-bounce' : 'bg-slate-300 text-slate-600') + ' flex items-center justify-center text-[8px] mb-1"><i class="fas fa-route"></i></div><span>' + stepLabels.s3 + '</span></div>' +
+          '<div class="text-center text-slate-400"><div class="w-4 h-4 mx-auto rounded-full bg-slate-200 text-slate-500 flex items-center justify-center text-[8px] mb-1"><i class="fas fa-home"></i></div><span>' + stepLabels.s4 + '</span></div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+
+    var driverInfoHtml = '';
+    if (info.driver_name && !isPending) {
+      var cleanPhone = String(info.driver_phone || '077934748').replace(/[^0-9]/g, '');
+      driverInfoHtml = '<div class="p-3 bg-white rounded-2xl border-2 border-emerald-300 space-y-2 shadow-2xs">' +
+        '<div class="flex justify-between items-center text-xs">' +
+          '<div>' +
+            '<span class="text-[10px] text-emerald-800 font-bold block">' + d.trackDriverLabel + '</span>' +
+            '<b class="text-slate-900 text-sm flex items-center gap-1.5"><i class="fas fa-helmet-safety text-emerald-600"></i>' + info.driver_name + '</b>' +
+            (info.driver_phone ? '<div class="text-[11px] text-emerald-900 font-black mt-0.5">📞 ' + info.driver_phone + '</div>' : '') +
+          '</div>' +
+          '<a href="tel:' + cleanPhone + '" class="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl font-black text-xs shadow-md flex items-center gap-1.5 active:scale-95 transition" style="text-decoration:none;">' +
+            '<i class="fas fa-phone text-xs"></i> ' + d.trackCallDriver +
+          '</a>' +
+        '</div>' +
+      '</div>';
+    }
+
+    var isAbaOrder = (info.payment_method && String(info.payment_method).toUpperCase().indexOf('ABA') !== -1);
+    var tgBtnLabel = isAbaOrder ? 
+      (d.trackSendSlip || '📲 ផ្ញើបង្កាន់ដៃ (Slip ABA) ទៅ Telegram') : 
+      (currentLang === 'en' ? '💬 Chat with Factory on Telegram' : (currentLang === 'zh' ? '💬 在 Telegram 联系水厂' : '💬 ឆាតសាកសួរ Telegram រោងចក្រ'));
+
+    var tgMsgText = isAbaOrder ? 
+      encodeURIComponent("Hello KC WATER! I ordered code [" + orderId + "] Total: " + Number(info.total || 0).toLocaleString() + " KHR via ABA KHQR. Here is my payment slip:") :
+      encodeURIComponent("Hello KC WATER! I ordered code [" + orderId + "] (Cash on delivery). I would like to inquire about my delivery:");
+
+    var tgSlipLink = "https://t.me/KcWater?text=" + tgMsgText;
+    var tgBtnBg = isAbaOrder ? 
+      "bg-gradient-to-r from-blue-600 to-sky-600 hover:from-blue-700" : 
+      "bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700";
+
+    // ជួសជុលផ្គុំកូដ HTML ត្រឹមត្រូវ គ្មានកាត់ផ្តាច់ String
+    cardBox.innerHTML = '<div class="p-4 bg-white rounded-3xl border-2 border-emerald-400 shadow-lg space-y-3 text-left">' +
+      '<div class="flex justify-between items-start border-b pb-2">' +
+        '<div>' +
+          '<b class="text-xs sm:text-sm font-black text-slate-900 block">' + d.trackTitle + '</b>' +
+          '<span class="text-[10px] text-slate-400 font-mono">កូដ៖ ' + orderId + '</span>' +
+        '</div>' +
+        statusBadge +
+      '</div>' +
+
+      deliveryTrackerHtml +
+      driverInfoHtml +
+
+      '<div class="pt-1">' +
+        '<a href="' + tgSlipLink + '" target="_blank" class="w-full py-2.5 px-3 ' + tgBtnBg + ' text-white rounded-xl text-xs font-black shadow-xs flex items-center justify-center gap-2 active:scale-95 transition" style="text-decoration:none;">' +
+          '<i class="fab fa-telegram text-sm"></i> ' + tgBtnLabel +
+        '</a>' +
+      '</div>' +
+
+      (isPending ? 
+      '<button type="button" onclick="cancelCustomerActiveOrder(\'' + orderId + '\')" class="w-full mt-2 py-2 bg-red-50 hover:bg-red-100 text-red-700 font-bold text-xs rounded-xl border border-red-200 transition active:scale-95 flex items-center justify-center gap-1.5">' +
+        '<i class="fas fa-circle-xmark"></i> បោះបង់ការកុម្ម៉ង់នេះ' +
+      '</button>' : '') +
+
+      '<div class="flex justify-between items-center text-[11px] pt-1 text-slate-700 font-bold border-t">' +
+        '<span>' + d.trackTotal + ' <b class="text-emerald-800 font-black text-xs">៛ ' + Number(info.total || 0).toLocaleString() + '</b></span>' +
+        '<span class="text-slate-400 text-[10px]">KC WATER Poipet</span>' +
+      '</div>' +
+    '</div>';
+
+    cardBox.classList.remove('hidden');
+  } catch(e) {
+    console.warn("Tracking load error:", e);
+  }
+}
+    
     // 📥 មុខងារទាញយករូប QR ABA ទុកក្នុងទូរស័ព្ទ (ទាញចេញជារូបភាពផ្ទាល់ ១០០% ដូចវិក្កយបត្រ)
     async function downloadAbaKhqrImage() {
       var img = document.getElementById('abaKhqrImgPreview');
