@@ -2624,33 +2624,40 @@ function updateCheckoutCalculation() {
      }
    }
 
-   // 📡 តាមដានស្ថានភាពការកុម្ម៉ង់ផ្ទាល់ (Realtime Sync ០.១ វិនាទីពេលអ្នកដឹកចុច "ដឹកដល់")
-    var liveOrderRealtimeChannel = null;
+   // ==========================================================================
+// 📡 ប្រព័ន្ធ REALTIME TRACKING ទំនើប (ភ្ជាប់តែម្តង មិនផ្តាច់ Socket & ស្គាល់ Departed)
+// ==========================================================================
+var liveOrderRealtimeChannel = null;
+var subscribedOrderId = null;
+var lastSeenOrderStatus = null;
 
-    function subscribeOrderRealtime(orderId) {
-      if (!orderId || !supabaseClient) return;
-      try {
-        if (liveOrderRealtimeChannel) {
-          supabaseClient.removeChannel(liveOrderRealtimeChannel);
-          liveOrderRealtimeChannel = null;
-        }
-        liveOrderRealtimeChannel = supabaseClient
-          .channel('order_live_' + orderId)
-          .on('postgres_changes', {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'orders',
-            filter: 'order_id=eq.' + orderId
-          }, function(payload) {
-            checkActiveOrderLiveStatus(); // ទទួលដំណឹងពីអ្នកដឹកភ្លាមៗ មិនបាច់រង់ចាំ 10s ឡើយ!
-          })
-          .subscribe();
-      } catch(e) {}
+function subscribeOrderRealtime(orderId) {
+  if (!orderId || !supabaseClient) return;
+  // 🛡️ បើបានភ្ជាប់ជាមួយការកុម្ម៉ង់នេះរួចហើយ មិនបាច់ផ្តាច់ភ្ជាប់ឡើងវិញរាល់ ១០ វិនាទីឡើយ
+  if (subscribedOrderId === orderId && liveOrderRealtimeChannel) return;
+
+  try {
+    if (liveOrderRealtimeChannel) {
+      supabaseClient.removeChannel(liveOrderRealtimeChannel);
+      liveOrderRealtimeChannel = null;
     }
 
-    // ==========================================================================
-// 📡 មុខងារតាមដានស្ថានភាពការកុម្ម៉ង់ផ្ទាល់របស់ភ្ញៀវ (Live Order Tracking - គ្មាន Error Syntax)
-// ==========================================================================
+    subscribedOrderId = orderId;
+    liveOrderRealtimeChannel = supabaseClient
+      .channel('order_live_' + orderId)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'orders',
+        filter: 'order_id=eq.' + orderId
+      }, function(payload) {
+        // ⚡ ទទួលដំណឹង Realtime ភ្លាមៗក្នុង 0.1 វិនាទី
+        checkActiveOrderLiveStatus();
+      })
+      .subscribe();
+  } catch(e) {}
+}
+
 async function checkActiveOrderLiveStatus() {
   var orderId = currentTrackingOrderId || localStorage.getItem('kc_active_order_id');
   var cardBox = document.getElementById('activeOrderCardBox');
@@ -2659,7 +2666,7 @@ async function checkActiveOrderLiveStatus() {
     return;
   }
 
-  // ភ្ជាប់ Realtime Listener ជាមួយការកុម្ម៉ង់នេះ
+  // ភ្ជាប់ Realtime Listener (ភ្ជាប់តែម្តងគត់)
   subscribeOrderRealtime(orderId);
 
   var refreshIcon = document.getElementById('trackingRefreshIcon');
@@ -2679,12 +2686,28 @@ async function checkActiveOrderLiveStatus() {
       cardBox.classList.add('hidden');
       clearInterval(trackingPollTimer);
       localStorage.removeItem('kc_active_order_id');
+      if (liveOrderRealtimeChannel) {
+        supabaseClient.removeChannel(liveOrderRealtimeChannel);
+        liveOrderRealtimeChannel = null;
+        subscribedOrderId = null;
+      }
       return;
     }
 
-    // 🎉 បើអ្នកដឹកចុច "ដឹកដល់" ភ្លាម ផ្ទាំងអបអរសាទរលោតឡើងភ្លាមៗ!
+    // 📳 បើស្ថានភាពប្រែប្រួល (ឧ. ពី Assigned ទៅ Departed ឬ Delivered) ញ័រទូរស័ព្ទដាស់តឿនភ្ញៀវ
+    if (lastSeenOrderStatus && lastSeenOrderStatus !== info.status) {
+      if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+    }
+    lastSeenOrderStatus = info.status;
+
+    // 🎉 ១. បើអ្នកដឹកចុច "ដឹកដល់" ភ្លាម ផ្ទាំងអបអរសាទរលោតឡើងភ្លាមៗ!
     if (info.status === "Delivered") {
       clearInterval(trackingPollTimer);
+      if (liveOrderRealtimeChannel) {
+        supabaseClient.removeChannel(liveOrderRealtimeChannel);
+        liveOrderRealtimeChannel = null;
+        subscribedOrderId = null;
+      }
       try {
         if (typeof confetti === 'function') confetti({ particleCount: 130, spread: 80, origin: { y: 0.6 } });
       } catch(e) {}
@@ -2711,35 +2734,58 @@ async function checkActiveOrderLiveStatus() {
       return;
     }
 
+    // ២. គណនាដំណាក់កាលទាំង ៤ (Pending ➔ Assigned ➔ Departed ➔ Delivered)
     var isPending = (info.status === "Pending");
     var isAssigned = (info.status === "Assigned");
-    var progressPercent = isPending ? 38 : 75;
-    var motoLeft = isPending ? "35%" : "72%";
+    var isDeparted = (info.status === "Departed" || info.status === "EnRoute");
+
+    var progressPercent = isPending ? 25 : (isAssigned ? 50 : 78);
+    var motoLeft = isPending ? "25%" : (isAssigned ? "50%" : "75%");
 
     var stepMap = {
-      km: { s1: "កុម្ម៉ង់", s2: "រៀបចំទឹក", s3: "ជិតដល់ហើយ", s4: "ដល់ផ្ទះ", badgePending: "⏳ រោងចក្រកំពុងរៀបចំទឹក", badgeAssigned: "🛵 អ្នកដឹកកំពុងធ្វើដំណើរ (ជិតដល់)" },
-      en: { s1: "Ordered", s2: "Preparing", s3: "On the way", s4: "Delivered", badgePending: "⏳ Preparing your water", badgeAssigned: "🛵 Courier is on the way" },
-      zh: { s1: "已下单", s2: "备水中", s3: "快到了", s4: "已送达", badgePending: "⏳ 水厂正在备水", badgeAssigned: "🛵 配送员正在赶往住处" }
+      km: { 
+        s1: "កុម្ម៉ង់", s2: "រៀបចំទឹក", s3: "លើផ្លូវ", s4: "ដល់ផ្ទះ", 
+        badgePending: "⏳ រោងចក្រកំពុងរៀបចំទឹក", 
+        badgeAssigned: "📦 លើកទឹកដាក់ម៉ូតូរួចរាល់",
+        badgeDeparted: "🛵💨 អ្នកដឹកកំពុងធ្វើដំណើរទៅផ្ទះអ្នក"
+      },
+      en: { 
+        s1: "Ordered", s2: "Preparing", s3: "On the way", s4: "Delivered", 
+        badgePending: "⏳ Preparing your water", 
+        badgeAssigned: "📦 Loaded onto delivery bike",
+        badgeDeparted: "🛵💨 Courier is on the way to you"
+      },
+      zh: { 
+        s1: "已下单", s2: "备水中", s3: "配送中", s4: "已送达", 
+        badgePending: "⏳ 水厂正在备水", 
+        badgeAssigned: "📦 已装车准备出发",
+        badgeDeparted: "🛵💨 配送员正在赶往您的住处"
+      }
     };
     var stepLabels = stepMap[currentLang] || stepMap.km;
 
     var statusBadge = isPending ? 
       '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300 animate-pulse">' + stepLabels.badgePending + '</span>' : 
-      '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300 animate-pulse">' + stepLabels.badgeAssigned + '</span>';
+      (isAssigned ? 
+        '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300">' + stepLabels.badgeAssigned + '</span>' :
+        '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-blue-100 text-blue-900 border border-blue-300 animate-pulse">' + stepLabels.badgeDeparted + '</span>');
+
+    // 🎨 រូបម៉ូតូរត់តាមដំណាក់កាល
+    var motoTagText = isPending ? '📦 Prep' : (isAssigned ? '🛵 Ready' : '🛵 ជិតដល់!');
 
     var deliveryTrackerHtml = '<div class="p-3 bg-gradient-to-b from-slate-50 to-emerald-50/40 rounded-2xl border border-emerald-200/80 space-y-3.5 my-2">' +
       '<div class="flex justify-between items-center text-[11px] font-black text-slate-700">' +
-        '<span><i class="fas fa-stopwatch text-emerald-600 mr-1"></i> ' + (currentLang === 'km' ? 'រយៈពេលដឹកជញ្ជូនប៉ាន់ស្មាន' : 'Estimated Delivery') + '</span>' +
+        '<span><i class="fas fa-stopwatch text-emerald-600 mr-1"></i> ' + (currentLang === 'km' ? 'ស្ថានភាពដឹកជញ្ជូន' : 'Delivery Status') + '</span>' +
         '<span class="text-emerald-700 font-black bg-emerald-100 px-2 py-0.5 rounded-full">30 - 45 នាទី</span>' +
       '</div>' +
       '<div class="relative pt-6 pb-2 px-2">' +
         '<div class="h-2 w-full bg-slate-200 rounded-full overflow-hidden relative">' +
-          '<div class="h-full bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 transition-all duration-1000 ease-out" style="width: ' + progressPercent + '%;"></div>' +
+          '<div class="h-full bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 transition-all duration-700 ease-out" style="width: ' + progressPercent + '%;"></div>' +
         '</div>' +
-        '<div class="absolute -top-1 transition-all duration-1000 ease-out transform -translate-x-1/2" style="left: ' + motoLeft + ';">' +
+        '<div class="absolute -top-1 transition-all duration-700 ease-out transform -translate-x-1/2" style="left: ' + motoLeft + ';">' +
           '<div class="relative flex items-center justify-center">' +
             '<span class="absolute -top-4 text-[9px] font-black bg-slate-900 text-white px-1.5 py-0.2 rounded shadow whitespace-nowrap animate-bounce">' +
-              (isPending ? '📦 Prep' : '🛵 ជិតដល់!') +
+              motoTagText +
             '</span>' +
             '<div class="w-8 h-8 rounded-full bg-gradient-to-tr from-emerald-600 to-green-500 text-white shadow-lg flex items-center justify-center text-sm border-2 border-white">' +
               '<i class="fas fa-motorcycle animate-pulse"></i>' +
@@ -2748,8 +2794,8 @@ async function checkActiveOrderLiveStatus() {
         '</div>' +
         '<div class="flex justify-between items-center mt-3 text-[10px] font-black">' +
           '<div class="text-center text-emerald-700"><div class="w-4 h-4 mx-auto rounded-full bg-emerald-600 text-white flex items-center justify-center text-[8px] mb-1"><i class="fas fa-check"></i></div><span>' + stepLabels.s1 + '</span></div>' +
-          '<div class="text-center ' + (isPending || isAssigned ? 'text-emerald-700' : 'text-slate-400') + '"><div class="w-4 h-4 mx-auto rounded-full ' + (isPending ? 'bg-amber-500 text-white animate-ping' : 'bg-emerald-600 text-white') + ' flex items-center justify-center text-[8px] mb-1"><i class="fas fa-box"></i></div><span>' + stepLabels.s2 + '</span></div>' +
-          '<div class="text-center ' + (isAssigned ? 'text-emerald-800 font-black' : 'text-slate-400') + '"><div class="w-4 h-4 mx-auto rounded-full ' + (isAssigned ? 'bg-emerald-600 text-white animate-bounce' : 'bg-slate-300 text-slate-600') + ' flex items-center justify-center text-[8px] mb-1"><i class="fas fa-route"></i></div><span>' + stepLabels.s3 + '</span></div>' +
+          '<div class="text-center ' + (isAssigned || isDeparted ? 'text-emerald-700' : (isPending ? 'text-amber-600 font-black' : 'text-slate-400')) + '"><div class="w-4 h-4 mx-auto rounded-full ' + (isPending ? 'bg-amber-500 text-white animate-ping' : (isAssigned || isDeparted ? 'bg-emerald-600 text-white' : 'bg-slate-300 text-slate-600')) + ' flex items-center justify-center text-[8px] mb-1"><i class="fas fa-box"></i></div><span>' + stepLabels.s2 + '</span></div>' +
+          '<div class="text-center ' + (isDeparted ? 'text-blue-700 font-black' : (isAssigned ? 'text-emerald-700' : 'text-slate-400')) + '"><div class="w-4 h-4 mx-auto rounded-full ' + (isDeparted ? 'bg-blue-600 text-white animate-bounce' : (isAssigned ? 'bg-emerald-500 text-white' : 'bg-slate-300 text-slate-600')) + ' flex items-center justify-center text-[8px] mb-1"><i class="fas fa-route"></i></div><span>' + stepLabels.s3 + '</span></div>' +
           '<div class="text-center text-slate-400"><div class="w-4 h-4 mx-auto rounded-full bg-slate-200 text-slate-500 flex items-center justify-center text-[8px] mb-1"><i class="fas fa-home"></i></div><span>' + stepLabels.s4 + '</span></div>' +
         '</div>' +
       '</div>' +
@@ -2786,7 +2832,6 @@ async function checkActiveOrderLiveStatus() {
       "bg-gradient-to-r from-blue-600 to-sky-600 hover:from-blue-700" : 
       "bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700";
 
-    // ជួសជុលផ្គុំកូដ HTML ត្រឹមត្រូវ គ្មានកាត់ផ្តាច់ String
     cardBox.innerHTML = '<div class="p-4 bg-white rounded-3xl border-2 border-emerald-400 shadow-lg space-y-3 text-left">' +
       '<div class="flex justify-between items-start border-b pb-2">' +
         '<div>' +
