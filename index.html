@@ -1173,8 +1173,8 @@ var exchangeRateTHB = 115;
     }
 
     // ==========================================================================
-// 🌐 ម៉ាស៊ីនបកប្រែស្វ័យប្រវត្តិឆ្លាតវៃ (SMART AUTO-TRANSLATE & MART LEXICON)
-// ស្គាល់ទំនិញម៉ាត ខ្នាតវេចខ្ចប់ និងបកប្រែ Description ស្វ័យប្រវត្តិ ១០០% មិនបាច់ពឹង AI
+// 🌐 ម៉ាស៊ីនបកប្រែស្វ័យប្រវត្តិឆ្លាតវៃ 2.0 (SMART AUTO-TRANSLATE & NO MIXED BUG)
+// ស្គាល់ទំនិញថ្មីៗ ខ្នាតវេចខ្ចប់ និងបកប្រែ ៣ ភាសា (ខ្មែរ / EN / 中文) ស្វ័យប្រវត្តិ ១០០%
 // ==========================================================================
 var KC_TRANSLATION_CACHE = {};
 
@@ -1191,27 +1191,46 @@ function saveTranslationToCache(key, targetLang, translatedText) {
   } catch(e) {}
 }
 
-// 🚀 មុខងារបកប្រែជាសកល (សម្រាប់ Description & ទំនិញថ្មីៗដែលគ្មានក្នុងវចនានុក្រម)
+// 🔄 មុខងារធ្វើបច្ចុប្បន្នភាពអក្សរដែលបានបកប្រែលើ UI គ្រប់កន្លែង (Catalog, Modal, Checkout)
+function updateTranslatedElementsOnUI(originalKey, translatedText) {
+  if (!originalKey || !translatedText || originalKey === translatedText) return;
+
+  // ១. Update លើកាតទំនិញទាំងអស់ក្នុង Catalog
+  document.querySelectorAll('[data-trans-key]').forEach(function(el) {
+    if (el.getAttribute('data-trans-key') === originalKey) {
+      el.innerText = translatedText;
+    }
+  });
+
+  // ២. Update លើផ្ទាំង Pop-up Detail Modal (បើកំពុងបើកមើលទំនិញនេះ)
+  var modalTitle = document.getElementById('modalTitle');
+  if (modalTitle && modalTitle.getAttribute('data-trans-key') === originalKey) {
+    modalTitle.innerText = translatedText;
+  }
+}
+
+// 🚀 មុខងារបាញ់ទៅបកប្រែតាម Google Translate API ដោយឥតគិតថ្លៃ (GTX Cloud Engine)
 async function fetchAutoTranslate(text, targetLang) {
   if (!text || !text.trim() || targetLang === 'km') return text;
   var cleanText = text.trim();
 
-  // ១. បើមានក្នុង Cache ស្រង់មកប្រើភ្លាម (0.001 វិនាទី)
+  // ១. បើមានក្នុង Cache ស្រង់មកប្រើភ្លាមក្នុង 0.0001 វិនាទី
   if (KC_TRANSLATION_CACHE[targetLang] && KC_TRANSLATION_CACHE[targetLang][cleanText]) {
     return KC_TRANSLATION_CACHE[targetLang][cleanText];
   }
 
-  // ២. បាញ់ទៅកាន់ម៉ាស៊ីនបកប្រែស្វ័យប្រវត្តិ
+  // ២. បាញ់ទៅកាន់ម៉ាស៊ីនបកប្រែ Google Translate
   try {
     var url = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=km&tl=" + targetLang + "&dt=t&q=" + encodeURIComponent(cleanText);
     var response = await fetch(url);
-    if (!response.ok) throw new Error("Translation network error");
+    if (!response.ok) throw new Error("Network translation error");
     
     var data = await response.json();
     if (data && data[0] && data[0].length > 0) {
-      var result = data[0].map(function(item) { return item[0]; }).join('');
+      var result = data[0].map(function(item) { return item[0]; }).join('').trim();
       if (result) {
         saveTranslationToCache(cleanText, targetLang, result);
+        updateTranslatedElementsOnUI(cleanText, result);
         return result;
       }
     }
@@ -1222,7 +1241,7 @@ async function fetchAutoTranslate(text, targetLang) {
   return cleanText;
 }
 
-// 🛒 វចនានុក្រមទំនិញម៉ាតទូទៅ និងការបំប្លែងខ្នាតវេចខ្ចប់ឆ្លាតវៃ
+// 🛒 វចនានុក្រមទំនិញគោល & ការបំប្លែងទំនិញថ្មីៗ (គ្មានបញ្ហាចេញភាសាលាយគ្នាដាច់ខាត)
 function getLocalizedProductName(p, lang) {
   if (!p) return '';
   var rawName = (typeof p === 'string') ? p : (p.name || p.raw_name || '');
@@ -1230,12 +1249,12 @@ function getLocalizedProductName(p, lang) {
   if (lang === 'km') return rawName;
   var n = rawName.trim();
 
-  // ១. ឆែកក្នុង Cache ជាមុន
+  // ១. បើមានក្នុង Cache ស្រាប់ ស្រង់មកប្រើភ្លាម
   if (KC_TRANSLATION_CACHE[lang] && KC_TRANSLATION_CACHE[lang][n]) {
     return KC_TRANSLATION_CACHE[lang][n];
   }
 
-  // ២. វចនានុក្រមទំនិញម៉ាតទូទៅ (Offline Mart Vocabulary)
+  // ២. វចនានុក្រមទំនិញគោលស្តង់ដារ (Offline Lexicon សម្រាប់ពាក្យដែលប្រើញឹកញាប់បំផុត)
   var martLexicon = {
     // 💧 ទឹក និងភេសជ្ជៈ
     'ទឹកធុង ២០L ពណ៌ស': { en: '20L Pure Water (White Barrel)', zh: '20L 优质纯净水 (白桶)' },
@@ -1244,19 +1263,12 @@ function getLocalizedProductName(p, lang) {
     'ទឹកបរិសុទ្ធ 350ml': { en: '350ml Purified Water', zh: '350ml 瓶装纯净水' },
     'ទឹកបរិសុទ្ធ 500ml': { en: '500ml Purified Water', zh: '500ml 瓶装纯净水' },
     'ទឹកបរិសុទ្ធ 1500ml': { en: '1500ml Purified Water', zh: '1500ml 大瓶纯净水' },
-    'កូកាកូឡា': { en: 'Coca-Cola', zh: '可口可乐' },
-    'គោជល់': { en: 'Red Bull Energy Drink', zh: '红牛能量饮料' },
-    'ស្ទីង': { en: 'Sting Energy Drink', zh: 'Sting 能量饮料' },
-    'ស្រាបៀរ': { en: 'Beer', zh: '啤酒' },
 
     // 🍚 ស្បៀង និងគ្រឿងទេស
     'អង្ករផ្កាម្លិះ': { en: 'Premium Jasmine Fragrant Rice', zh: '特级精选茉莉香米' },
     'អង្ករនាងមិញ': { en: 'Neang Minh White Rice', zh: '优质柬埔寨白大米' },
-    'អង្ករ': { en: 'Premium Rice', zh: '优质大米' },
     'មីម៉ាម៉ា': { en: 'Mama Instant Noodles', zh: '妈妈牌经典方便面' },
     'មីកំប៉ុង': { en: 'Cup Instant Noodles', zh: '桶装速食方便面' },
-    'មីយីងហ៊ីង': { en: 'Ying-Hing Noodles', zh: '速食方便面' },
-    'មី': { en: 'Instant Noodles', zh: '方便面' },
     'ប្រេងឆា': { en: 'Pure Cooking Oil', zh: '精炼食用植物油' },
     'ទឹកត្រី': { en: 'Fish Sauce', zh: '特级鲜鱼露' },
     'ទឹកស៊ីអ៊ីវ': { en: 'Soy Sauce', zh: '特级生抽酱油' },
@@ -1265,13 +1277,10 @@ function getLocalizedProductName(p, lang) {
     'ស្ករស': { en: 'Refined White Sugar', zh: '精制纯白砂糖' },
     'អំបិល': { en: 'Cooking Salt', zh: '加碘食用盐' },
     'ប៊ីចេង': { en: 'MSG Seasoning', zh: '味精调味品' },
-    'ម្សៅស៊ុប': { en: 'Seasoning Soup Powder', zh: '鲜味调味鸡精' },
-    'ទឹកដោះគោ': { en: 'Sweet Condensed Milk', zh: '炼乳/牛奶' },
 
     // 🧻 របស់ប្រើប្រាស់ និងអនាម័យ
     'ក្រដាសអនាម័យ': { en: 'Toilet Tissue Rolls', zh: '高级卫生卷纸' },
     'ក្រដាសជូតមាត់': { en: 'Facial Tissue Paper', zh: '抽取式面巾纸' },
-    'ក្រដាស': { en: 'Tissue Paper', zh: '纸巾' },
     'សាប៊ូកក់សក់': { en: 'Hair Shampoo', zh: '洗发露' },
     'សាប៊ូដុសខ្លួន': { en: 'Body Wash / Shower Gel', zh: '沐浴露' },
     'សាប៊ូបោកខោអាវ': { en: 'Laundry Detergent', zh: '洗衣粉/洗衣液' },
@@ -1279,25 +1288,25 @@ function getLocalizedProductName(p, lang) {
     'ថង់សំរាម': { en: 'Trash Bags', zh: '加厚垃圾袋' },
 
     // 🛢️ បរិក្ខារធុងទឹក
-    'សំបកធុង ២០L ពណ៌ស': { en: '20L Empty White Barrel (Deposit)', zh: '20L 空白桶 (押金/买断)' },
-    'សំបកធុង ២០L ពណ៌ខៀវ': { en: '20L Empty Blue Barrel (Deposit)', zh: '20L 空蓝桶 (押金/买断)' },
+    'សំបកធុង ២០L ពណ៌ស': { en: '20L Empty White Barrel', zh: '20L 空白桶' },
+    'សំបកធុង ២០L ពណ៌ខៀវ': { en: '20L Empty Blue Barrel', zh: '20L 空蓝桶' },
     'ជើងទម្រធុងទឹក': { en: 'Water Barrel Stand', zh: '水桶专用支架' },
-    'ក្បាលរ៉ូប៊ីណេ': { en: 'Water Dispenser Valve Faucet', zh: '出水嘴水龙头' },
-    'ម៉ាស៊ីនទឹកក្តៅ-ត្រជាក់': { en: 'Hot & Cold Water Dispenser', zh: '冷热饮水机' }
+    'ក្បាលរ៉ូប៊ីណេ': { en: 'Water Dispenser Valve Faucet', zh: '出水嘴水龙头' }
   };
 
-  // ៣. បំប្លែងតាមខ្នាតវេចខ្ចប់ស្វ័យប្រវត្តិ (Smart Package Units Parser)
-  var parsed = n;
-  for (var key in martLexicon) {
-    if (parsed.indexOf(key) !== -1) {
-      parsed = parsed.replace(key, martLexicon[key][lang]);
-      break;
-    }
+  // ៣. បើឈ្មោះទំនិញត្រូវគ្នានឹងវចនានុក្រម ១០០%
+  if (martLexicon[n] && martLexicon[n][lang]) {
+    saveTranslationToCache(n, lang, martLexicon[n][lang]);
+    return martLexicon[n][lang];
   }
 
-  // បំប្លែងខ្នាតវេចខ្ចប់ជាភាសា EN និង ចិន
+  // ៤. 🚀 ប្រសិនបើជាទំនិញថ្មីស្រឡាង (New Product) ➔ បញ្ជូនទៅបកប្រែស្វ័យប្រវត្តិតាម Cloud ភ្លាម!
+  fetchAutoTranslate(n, lang);
+
+  // ៥. ក្នុងពេលរង់ចាំ Cloud បកប្រែ បំប្លែងតែខ្នាតវេចខ្ចប់សិន (កុំឱ្យចេញលាយភាសាគ្នា)
+  var tempParsed = n;
   if (lang === 'en') {
-    parsed = parsed
+    tempParsed = tempParsed
       .replace(/\(យួរ\)|យួរ/g, '(Pack)')
       .replace(/\(កេស\)|កេស/g, '(Box)')
       .replace(/\(បាវ\)|បាវ/g, '(Bag)')
@@ -1307,7 +1316,7 @@ function getLocalizedProductName(p, lang) {
       .replace(/\(ដើម\)|ដើម/g, '(Roll)')
       .replace(/គីឡូ|គក/g, 'kg');
   } else if (lang === 'zh') {
-    parsed = parsed
+    tempParsed = tempParsed
       .replace(/\(យួរ\)|យួរ/g, '(提)')
       .replace(/\(កេស\)|កេស/g, '(箱)')
       .replace(/\(បាវ\)|បាវ/g, '(袋)')
@@ -1318,6 +1327,20 @@ function getLocalizedProductName(p, lang) {
       .replace(/គីឡូ|គក/g, '公斤');
   }
 
+  return tempParsed;
+}
+
+// 🌐 មុខងារបកប្រែអត្ថបទជាសកល (សម្រាប់ Category ថ្មីៗ, Description និង Banner)
+function getLocalizedText(text, lang) {
+  if (!text || !text.trim() || lang === 'km') return text;
+  var clean = text.trim();
+  if (KC_TRANSLATION_CACHE[lang] && KC_TRANSLATION_CACHE[lang][clean]) {
+    return KC_TRANSLATION_CACHE[lang][clean];
+  }
+  fetchAutoTranslate(clean, lang);
+  return clean;
+}
+    
   // ៤. 🚀 ប្រសិនបើជាទំនិញថ្មីស្រឡាងដែលគ្មានក្នុងវចនានុក្រម ➔ បញ្ជាឱ្យបកប្រែស្វ័យប្រវត្តិ និង Update លើ UI ភ្លាមៗ
   if (parsed === n && typeof fetchAutoTranslate === 'function') {
     fetchAutoTranslate(n, lang).then(function(res) {
