@@ -2043,7 +2043,8 @@ function renderSettingsModule() {
     '</label>';
   });
 
-  // 📂 ០. កាតគ្រប់គ្រងប្រភេទទំនិញ (ចុចបើក POP-UP MODAL)
+  area.innerHTML = '<div class="max-w-2xl mx-auto space-y-4">' +
+    // 📂 ០. កាតគ្រប់គ្រងប្រភេទទំនិញ (ចុចបើក POP-UP MODAL)
     '<div class="card border-t-4 border-emerald-600 shadow-xl p-5 mb-0 space-y-3 bg-white">' +
       '<div class="flex justify-between items-center">' +
         '<div>' +
@@ -2058,7 +2059,6 @@ function renderSettingsModule() {
       '</div>' +
     '</div>' +
 
-  area.innerHTML = '<div class="max-w-2xl mx-auto space-y-4">' +
     // 💵 ១. កាតកំណត់អត្រាប្តូរប្រាក់ (Exchange Rates)
     '<div class="card border-t-4 border-emerald-600 shadow-xl p-5 mb-0 space-y-3.5 bg-white">' +
       '<div class="flex justify-between items-center">' +
