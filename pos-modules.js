@@ -1997,6 +1997,21 @@ function renderSettingsModule() {
     '</label>';
   });
 
+  // 📂 ០. កាតគ្រប់គ្រងប្រភេទទំនិញ (ចុចបើក POP-UP MODAL)
+    '<div class="card border-t-4 border-emerald-600 shadow-xl p-5 mb-0 space-y-3 bg-white">' +
+      '<div class="flex justify-between items-center">' +
+        '<div>' +
+          '<h3 class="font-extrabold text-slate-900 text-base flex items-center gap-2">' +
+            '<i class="fas fa-layer-group text-emerald-600"></i>ប្រភេទទំនិញ (Category Management)' +
+          '</h3>' +
+          '<p class="text-[11px] text-slate-500 font-bold mt-0.5">បង្កើត ប្តូរឈ្មោះ និងលុបប្រភេទទំនិញសម្រាប់ POS & Web</p>' +
+        '</div>' +
+        '<button type="button" onclick="openCategoryManagerModal()" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-xs active:scale-95 transition flex items-center gap-1.5">' +
+          '<i class="fas fa-sliders"></i> ចុចបើកផ្ទាំងគ្រប់គ្រង' +
+        '</button>' +
+      '</div>' +
+    '</div>' +
+
   area.innerHTML = '<div class="max-w-2xl mx-auto space-y-4">' +
     // 💵 ១. កាតកំណត់អត្រាប្តូរប្រាក់ (Exchange Rates)
     '<div class="card border-t-4 border-emerald-600 shadow-xl p-5 mb-0 space-y-3.5 bg-white">' +
