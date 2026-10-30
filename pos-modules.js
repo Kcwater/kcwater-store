@@ -185,6 +185,27 @@ function renderStockModule() {
   tCF();
   toggleChannelPrices();
   initStockModuleDropdowns();
+  // 📂 ផ្ទុក Category ពី Supabase មកដាក់ក្នុង Dropdown ភ្លាមៗ
+  loadCategoriesFromSupabase().then(function() {
+    populateProductCategoryDropdown();
+  });
+
+  if (!allProducts || allProducts.length === 0) {
+    fetchInitialPOSData().then(function() {
+      if (typeof syncOnlineSortsFromDatabase === 'function') {
+        syncOnlineSortsFromDatabase().then(renderStockTableRows);
+      } else {
+        renderStockTableRows();
+      }
+      initStockModuleDropdowns();
+    });
+  } else {
+    if (typeof syncOnlineSortsFromDatabase === 'function') {
+      syncOnlineSortsFromDatabase().then(renderStockTableRows);
+    } else {
+      renderStockTableRows();
+    }
+  }
 
   if (!allProducts || allProducts.length === 0) {
     fetchInitialPOSData().then(function() {
@@ -262,6 +283,24 @@ function toggleChannelPrices() {
     if (onlineSec) onlineSec.style.display = 'block';
     if (cont) cont.className = 'grid grid-cols-1 sm:grid-cols-2 gap-2.5 bg-emerald-50/60 p-3 rounded-2xl border border-emerald-200';
   }
+}
+
+// ==========================================================================
+// 📂 មុខងារបង្កើតជម្រើស Category ក្នុង Dropdown នៃផ្ទាំងស្តុក (Dynamic Categories)
+// ==========================================================================
+function populateProductCategoryDropdown(selectedKey) {
+  var sel = document.getElementById('pCategory');
+  if (!sel) return;
+
+  var currentVal = selectedKey || sel.value || 'GROCERY';
+  var html = '';
+
+  activeStoreCategories.forEach(function(cat) {
+    var isSel = (cat.key === currentVal) ? 'selected' : '';
+    html += '<option value="' + cat.key + '" ' + isSel + '>' + (cat.icon || '📦') + ' ' + cat.name + '</option>';
+  });
+
+  sel.innerHTML = html;
 }
 
 function initStockModuleDropdowns() {
@@ -772,6 +811,13 @@ async function prepareEditProduct(id) {
   if (badgeInp) badgeInp.value = p.badge || 'គុណភាពខ្ពស់';
   if (descInp) descInp.value = p.description || p.desc || '';
   if (catInp) catInp.value = p.category || 'GROCERY';
+  const { data: setCat } = await supabaseClient.from('settings').select('value').eq('key', 'CAT_' + p.id).maybeSingle();
+    if (setCat && setCat.value && catInp) catInp.value = setCat.value;
+    
+    // 📂 ធានាថា Dropdown ជ្រើសរើស Category ត្រូវនឹងទំនិញនេះ
+    if (typeof populateProductCategoryDropdown === 'function') {
+      populateProductCategoryDropdown(catInp ? catInp.value : 'GROCERY');
+    }
 
   try {
     const { data: setDesc } = await supabaseClient.from('settings').select('value').eq('key', 'DESC_' + p.id).maybeSingle();
