@@ -2356,11 +2356,6 @@ async function openTelegramSettingsModal() {
   await loadSettingsForm();
 }
 
-  loadSettingsForm();
-  switchSlideEditTab(0); // 👈 បង្ហាញស្លាយទី ១ ដំបូងគេ
-  if (typeof updateRatePreviewLive === 'function') updateRatePreviewLive();
-}
-
 // 🔘 មុខងារប្តូរស្ថានភាព Telegram ON/OFF
 function toggleTelegramAlertStatusLive() {
   currentTelegramAlertStatus = (currentTelegramAlertStatus === 'ON') ? 'OFF' : 'ON';
