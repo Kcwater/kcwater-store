@@ -92,55 +92,60 @@
 </head>
 <body class="pb-36 antialiased select-none">
 
-  <!-- ១. NAVBAR (KC MART - ទឹកពិសា & ទំនិញទូទៅ) -->
+  <!-- ១. NAVBAR (KC MART - ទំនើប ស្រាលភ្នែក និងមិនធ្លាក់អក្សរលើអេក្រង់តូច ១០០%) -->
   <header class="sticky top-0 z-40 kc-glass-nav">
-    <div class="max-w-md mx-auto px-4 py-3 flex justify-between items-center">
-      <div class="flex items-center gap-2.5">
-        <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-600 via-green-600 to-teal-700 flex items-center justify-center text-white text-lg shadow-md">
+    <div class="max-w-md mx-auto px-3 sm:px-4 py-2 sm:py-2.5 flex justify-between items-center gap-2">
+      
+      <!-- ផ្នែកខាងឆ្វេង៖ Logo & ឈ្មោះហាង (មាន truncate ការពារមិនឱ្យធ្លាក់ជួរ) -->
+      <div class="flex items-center gap-2 min-w-0 flex-1">
+        <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-br from-emerald-600 via-green-600 to-teal-700 flex items-center justify-center text-white text-base sm:text-lg shadow-md shrink-0 border border-white/20">
           <i class="fas fa-shop"></i>
         </div>
-        <div>
-          <div class="flex items-center gap-1.5">
-            <h1 class="text-base font-black text-slate-900 tracking-tight leading-none">KC MART</h1>
-            <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">Mart & Delivery</span>
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center gap-1.5 min-w-0">
+            <h1 class="text-sm sm:text-base font-black text-slate-900 tracking-tight leading-none truncate">KC MART</h1>
+            <span class="text-[8px] sm:text-[9px] font-black uppercase px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 shrink-0">Mart & Delivery</span>
           </div>
-          <p class="text-[10px] text-emerald-700 font-bold mt-0.5" id="txtTopSubtitle">ខេ ស៊ី ម៉ាត — ទឹកពិសា & ទំនិញទូទៅ (ប៉ោយប៉ែត)</p>
+          <p class="text-[9.5px] sm:text-[10px] text-emerald-700 font-bold leading-none mt-1 truncate block" id="txtTopSubtitle" title="ខេ ស៊ី ម៉ាត — ទឹកពិសា & ទំនិញទូទៅ (ប៉ោយប៉ែត)">
+            ខេ ស៊ី ម៉ាត — ទឹកពិសា & ទំនិញទូទៅ (ប៉ោយប៉ែត)
+          </p>
         </div>
       </div>
 
-      <div class="flex items-center gap-1.5">
+      <!-- ផ្នែកខាងស្តាំ៖ ៣ ភាសា & ប៊ូតុង Share (បង្រួមតូចល្មម បែប High-Tech Pill) -->
+      <div class="flex items-center gap-1.5 shrink-0">
         <!-- ៣ ភាសា (ខ្មែរ / EN / 中文) -->
-        <div class="flex items-center bg-slate-100 p-1 rounded-full border border-slate-200 text-xs font-black">
-          <button onclick="changeAppLanguage('km')" id="langBtn_km" class="px-2.5 py-1 rounded-full bg-emerald-700 text-white shadow-xs transition">ខ្មែរ</button>
-          <button onclick="changeAppLanguage('en')" id="langBtn_en" class="px-2.5 py-1 rounded-full text-slate-500 hover:text-slate-900 transition">EN</button>
-          <button onclick="changeAppLanguage('zh')" id="langBtn_zh" class="px-2.5 py-1 rounded-full text-slate-500 hover:text-slate-900 transition">中文</button>
+        <div class="flex items-center bg-slate-100/90 p-0.5 rounded-full border border-slate-200 text-[10px] font-black shadow-inner">
+          <button type="button" onclick="changeAppLanguage('km')" id="langBtn_km" class="px-2 py-0.5 rounded-full bg-emerald-700 text-white shadow-xs transition">ខ្មែរ</button>
+          <button type="button" onclick="changeAppLanguage('en')" id="langBtn_en" class="px-1.5 py-0.5 rounded-full text-slate-500 hover:text-slate-900 transition">EN</button>
+          <button type="button" onclick="changeAppLanguage('zh')" id="langBtn_zh" class="px-1.5 py-0.5 rounded-full text-slate-500 hover:text-slate-900 transition">中文</button>
         </div>
 
         <!-- 🔗 ប៊ូតុងចែករំលែក KC MART (Share) -->
-        <button type="button" onclick="openShareStoreModal()" class="w-8 h-8 rounded-full bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border border-emerald-300 flex items-center justify-center text-xs shadow-2xs active:scale-90 transition shrink-0" title="ចែករំលែកទៅកាន់មិត្តភក្តិ">
-          <i class="fas fa-share-nodes"></i>
+        <button type="button" onclick="openShareStoreModal()" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border border-emerald-300 flex items-center justify-center text-xs shadow-2xs active:scale-90 transition shrink-0" title="ចែករំលែកទៅកាន់មិត្តភក្តិ">
+          <i class="fas fa-share-nodes text-[11px]"></i>
         </button>
       </div>
-    </div>
-  
 
-  <!-- 🌙 ប្រអប់ជូនដំណឹងពេលផុតម៉ោងធ្វើការ (នៅក្រៅ Header ចំកណ្តាលពេញទទឹង ១០០% ទាំងលើទូរស័ព្ទ និងកុំព្យូទ័រ) -->
-  <div id="storeClosedNoticeBanner" class="w-full max-w-md mx-auto px-4 pt-2.5 pb-1 hidden">
-    <div class="p-2.5 bg-amber-50 border-2 border-amber-300 rounded-2xl flex items-center gap-2.5 text-amber-950 text-xs shadow-2xs">
-      <div class="w-7 h-7 rounded-xl bg-amber-200 text-amber-900 flex items-center justify-center text-xs shrink-0">
-        <i class="fas fa-moon"></i>
-      </div>
-      <div class="flex-1 min-w-0">
-        <div class="flex items-center gap-1.5">
-          <b class="text-amber-950 font-black text-xs" id="storeClosedTitle">បច្ចុប្បន្នផុតម៉ោងដឹកជញ្ជូនហើយ!</b>
-          <span class="text-[9px] bg-amber-200 text-amber-900 px-2 py-0.2 rounded-full font-bold shrink-0">កុម្ម៉ង់ទុកមុន</span>
+    </div>
+
+    <!-- 🌙 ប្រអប់ជូនដំណឹងពេលផុតម៉ោងធ្វើការ -->
+    <div id="storeClosedNoticeBanner" class="w-full max-w-md mx-auto px-3 sm:px-4 pt-1.5 pb-1 hidden">
+      <div class="p-2 bg-amber-50 border-2 border-amber-300 rounded-2xl flex items-center gap-2 text-amber-950 text-xs shadow-2xs">
+        <div class="w-6 h-6 rounded-xl bg-amber-200 text-amber-900 flex items-center justify-center text-xs shrink-0">
+          <i class="fas fa-moon text-[10px]"></i>
         </div>
-        <span class="text-[10px] text-amber-800 leading-tight block truncate mt-0.5" id="storeClosedTimeHint"></span>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-1.5">
+            <b class="text-amber-950 font-black text-[11px]" id="storeClosedTitle">បច្ចុប្បន្នផុតម៉ោងដឹកជញ្ជូនហើយ!</b>
+            <span class="text-[8px] bg-amber-200 text-amber-900 px-1.5 py-0.2 rounded-full font-bold shrink-0">កុម្ម៉ង់ទុកមុន</span>
+          </div>
+          <span class="text-[9.5px] text-amber-800 leading-tight block truncate mt-0.5" id="storeClosedTimeHint"></span>
+        </div>
       </div>
     </div>
-  </div>
   </header>
-
+  
   <!-- ២. BANNER & TRUST BADGES -->
   <section class="max-w-md mx-auto px-4 pt-4 pb-2 space-y-3">
    <!-- 🌟 ផ្ទាំង Slide ផ្សព្វផ្សាយស្វ័យប្រវត្តិកំពូលទំនើប (Auto Promo Slider) -->
@@ -1351,16 +1356,16 @@ function getLocalizedProductName(p, lang) {
         if (el && html !== undefined) el.innerHTML = html;
       }
 
-      // កំណត់ពណ៌ប៊ូតុងភាសាដែលកំពុងរើស
+      // កំណត់ពណ៌ប៊ូតុងភាសាដែលកំពុងរើស (ទំហំតូចស្អាត មិនរីកធំ)
       ['km', 'en', 'zh'].forEach(function(l) {
         var btn = document.getElementById('langBtn_' + l);
         if (btn) {
           btn.className = (l === lang) ? 
-            "px-2.5 py-1 rounded-full bg-emerald-700 text-white shadow-xs transition" : 
-            "px-2.5 py-1 rounded-full text-slate-500 hover:text-slate-900 transition";
+            "px-2 py-0.5 rounded-full bg-emerald-700 text-white shadow-xs transition" : 
+            "px-1.5 py-0.5 rounded-full text-slate-500 hover:text-slate-900 transition";
         }
       });
-
+      
       // 🚀 ១. បកប្រែស្វ័យប្រវត្តិចំពោះរាល់ធាតុណាដែលមានស្លាក data-i18n
       document.querySelectorAll('[data-i18n]').forEach(function(el) {
         var key = el.getAttribute('data-i18n');
