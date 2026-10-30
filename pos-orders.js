@@ -220,26 +220,95 @@ function switchAdminOnlineTab(tab) {
   renderAdminOnlineOrdersUI();
 }
 
-// 📋 មុខងារបង្ហាញបញ្ជីកុម្ម៉ង់ Online លើផ្ទាំង Admin (បង្ហាញទីតាំង និងចំណាំពេញលេញ)
+// ==========================================================================
+// 🧠 មុខងារជំនួយបំបែកព័ត៌មានទីតាំង (GPS, ម៉ោងដឹក, អគារ និងចំណាំផ្ទះ)
+// ==========================================================================
+function parseOrderLocationDetails(raw) {
+  if (!raw) return { mapUrl: '', timeText: '', buildingText: '', noteText: '' };
+  var str = String(raw).trim();
+
+  // ១. ស្រង់យកតែ Link ផែនទី Google Maps សុទ្ធ
+  var mapMatch = str.match(/https?:\/\/[^\s|\[\]]+/);
+  var mapUrl = mapMatch ? mapMatch[0] : '';
+
+  // លុប Link ចេញសិនដើម្បីងាយស្រួលញែកផ្នែកផ្សេងៗ
+  var workingStr = mapUrl ? str.replace(mapUrl, '').trim() : str;
+  if (workingStr.startsWith('|')) workingStr = workingStr.substring(1).trim();
+
+  var timeText = '';
+  var buildingText = '';
+
+  // ២. ស្រង់យកទិន្នន័យក្នុងវង់ក្រចក [...] (ម៉ោង & ប្រភេទអគារ)
+  var bracketMatches = workingStr.match(/\[(.*?)\]/g) || [];
+  bracketMatches.forEach(function(b) {
+    var content = b.replace(/^\[/, '').replace(/\]$/, '').trim();
+    if (content.includes('⚡') || content.includes('⏰') || content.includes('ដឹកភ្លាម') || content.includes('វេនដឹក') || content.includes('ម៉ោង')) {
+      timeText = content;
+    } else if (content.includes('🏠') || content.includes('🏢') || content.includes('ជាន់') || content.includes('ផ្ទាល់ដី')) {
+      buildingText = content;
+    }
+  });
+
+  // ៣. ស្រង់យកតែចំណាំផ្ទះសុទ្ធ (ដក Link និងវង់ក្រចកចេញទាំងអស់)
+  var cleanStr = workingStr;
+  bracketMatches.forEach(function(b) {
+    cleanStr = cleanStr.replace(b, '');
+  });
+  cleanStr = cleanStr.replace(/\|\s*ចំណាំ:?/gi, '').replace(/^ចំណាំ:?/gi, '').trim();
+
+  return {
+    mapUrl: mapUrl,
+    timeText: timeText,
+    buildingText: buildingText,
+    noteText: cleanStr
+  };
+}
+
+// 🎨 បង្កើតប្លុក Badges ព័ត៌មានទីតាំងស្អាតៗ
+function formatOrderLocationBadgeHTML(rawLocation) {
+  var loc = parseOrderLocationDetails(rawLocation);
+  var html = '';
+
+  // បង្ហាញផ្លាក Badges ម៉ោង និងអគារ
+  if (loc.timeText || loc.buildingText) {
+    html += '<div class="flex flex-wrap items-center gap-1.5 pt-1">';
+    if (loc.timeText) {
+      html += '<span class="px-2 py-0.5 rounded-lg bg-emerald-100 text-emerald-900 border border-emerald-300 font-black text-[10px] flex items-center gap-1"><i class="fas fa-clock text-emerald-600"></i> ' + loc.timeText + '</span>';
+    }
+    if (loc.buildingText) {
+      html += '<span class="px-2 py-0.5 rounded-lg bg-blue-100 text-blue-900 border border-blue-300 font-black text-[10px] flex items-center gap-1"><i class="fas fa-building text-blue-600"></i> ' + loc.buildingText + '</span>';
+    }
+    html += '</div>';
+  }
+
+  // បង្ហាញចំណាំទីតាំងផ្ទះសុទ្ធ
+  if (loc.noteText) {
+    html += '<div class="flex items-start gap-1.5 pt-1 text-[11px] text-slate-800 font-bold">' +
+      '<span class="text-slate-400 whitespace-nowrap"><i class="fas fa-location-dot text-rose-500 mr-1"></i>ចំណាំផ្ទះ៖</span>' +
+      '<span class="leading-snug break-words">' + loc.noteText + '</span>' +
+    '</div>';
+  }
+
+  return html;
+}
+
+// 📋 មុខងារបង្ហាញបញ្ជីកុម្ម៉ង់ Online លើផ្ទាំង Admin (កាតរៀបរយ ស្រួលមើល មិនរញ៉េរញ៉ៃ)
 function renderAdminOnlineOrdersUI() {
   var container = document.getElementById('onlineOrdersAdminListContainer');
   if (!container) return;
 
   var list = adminOnlineOrdersCache || [];
 
-  // ១. គណនាចំនួនតាមប្រភេទ
   var pendingCount = 0;
   var assignedCount = 0;
   var deliveredCount = 0;
-  var totalAmountToCollect = 0;
 
   list.forEach(function(o) {
-    if (o.status === 'Pending') { pendingCount++; totalAmountToCollect += parseFloat(o.total || 0); }
-    if (o.status === 'Assigned') { assignedCount++; totalAmountToCollect += parseFloat(o.total || 0); }
-    if (o.status === 'Delivered') { deliveredCount++; }
+    if (o.status === 'Pending') pendingCount++;
+    if (o.status === 'Assigned') assignedCount++;
+    if (o.status === 'Delivered') deliveredCount++;
   });
 
-  // ២. របារប៊ូតុងតម្រង (Filter Tabs)
   var tabsHtml = '<div class="flex flex-wrap gap-1 p-1 bg-amber-50/80 rounded-2xl border border-amber-200 text-xs mb-3 font-bold">' +
     '<button type="button" onclick="switchAdminOnlineTab(\'ACTIVE\')" class="flex-1 py-1.5 px-2 rounded-xl transition ' + (activeAdminOnlineTab === 'ACTIVE' ? 'bg-amber-600 text-white shadow-xs' : 'text-slate-600 hover:bg-white') + '">🔥 កំពុងដំណើរការ (' + (pendingCount + assignedCount) + ')</button>' +
     '<button type="button" onclick="switchAdminOnlineTab(\'PENDING\')" class="py-1.5 px-2.5 rounded-xl transition ' + (activeAdminOnlineTab === 'PENDING' ? 'bg-amber-600 text-white shadow-xs' : 'text-slate-600 hover:bg-white') + '">⏳ រង់ចាំ (' + pendingCount + ')</button>' +
@@ -247,7 +316,6 @@ function renderAdminOnlineOrdersUI() {
     '<button type="button" onclick="switchAdminOnlineTab(\'DELIVERED\')" class="py-1.5 px-2.5 rounded-xl transition ' + (activeAdminOnlineTab === 'DELIVERED' ? 'bg-emerald-600 text-white shadow-xs' : 'text-emerald-800 hover:bg-white') + '">✅ ដឹកដល់ថ្ងៃនេះ (' + deliveredCount + ')</button>' +
   '</div>';
 
-  // ៣. ចម្រាញ់ទិន្នន័យតាម Tab
   var filteredList = list.filter(function(o) {
     if (activeAdminOnlineTab === 'ACTIVE') return o.status === 'Pending' || o.status === 'Assigned';
     if (activeAdminOnlineTab === 'PENDING') return o.status === 'Pending';
@@ -264,7 +332,6 @@ function renderAdminOnlineOrdersUI() {
     return;
   }
 
-  // ៤. ស្រង់តែអ្នកដឹកជញ្ជូនរោងចក្រ KC WATER ប៉ុណ្ណោះ
   var companyDrivers = allCustomers.filter(function(c) {
     return (c.type === 'CompanyDriver' || c.linked_boss === 'KC WATER');
   });
@@ -283,13 +350,12 @@ function renderAdminOnlineOrdersUI() {
     var cleanPhone = String(o.phone || '').replace(/[^0-9]/g, '');
     var safeName = String(o.customer_name || '').replace(/'/g, "\\'");
     var dateStr = new Date(o.created_at).toLocaleString('km-KH', { dateStyle: 'short', timeStyle: 'short' });
-    var locationDisplay = (o.location_url || o.address || '').trim();
+    var rawLoc = (o.location_url || o.address || '').trim();
 
     var intlPhone = cleanPhone.startsWith('0') ? ('855' + cleanPhone.substring(1)) : ('855' + cleanPhone);
     var tgChatLink = "https://t.me/+" + intlPhone;
     var waChatLink = "https://wa.me/" + intlPhone;
 
-    // បង្កើតបញ្ជីអ្នកដឹកសម្រាប់ Order នេះ (ជ្រើសរើសឈ្មោះដែលបានចាត់ចែងស្រាប់)
     var driverOptions = '<option value="">-- រើសអ្នកដឹករបស់រោងចក្រ --</option>';
     companyDrivers.forEach(function(c) {
       var dPhone = c.phone ? (' (' + c.phone + ')') : '';
@@ -297,7 +363,6 @@ function renderAdminOnlineOrdersUI() {
       driverOptions += '<option value="' + c.full_name + '" data-phone="' + (c.phone || '') + '" ' + isSelected + '>' + c.full_name + dPhone + '</option>';
     });
 
-    // ប៊ូតុងចាត់ចែងអ្នកដឹក
     var assignDriverHtml = isDelivered ? 
       ('<div class="p-2 bg-emerald-50 rounded-xl border border-emerald-200 text-xs flex justify-between items-center text-emerald-950 font-bold">' +
         '<span>🛵 អ្នកដឹកជញ្ជូន៖ <b>' + (o.driver_name || 'KC WATER') + '</b></span>' +
@@ -315,7 +380,6 @@ function renderAdminOnlineOrdersUI() {
         '</div>' +
       '</div>');
 
-    // ជួរប៊ូតុងសកម្មភាព (ខល, Telegram, WhatsApp, ផែនទី, រូបផ្ទះ, ដឹកដល់)
     var actionButtonsHtml = '<div class="flex flex-wrap items-center justify-end gap-1.5 pt-0.5 text-xs">' +
       (cleanPhone ? 
       '<a href="tel:' + cleanPhone + '" class="px-2.5 py-1.5 bg-green-50 hover:bg-green-100 text-green-800 rounded-xl font-bold border border-green-200 shadow-2xs flex items-center gap-1 active:scale-95 transition" style="text-decoration:none;">' +
@@ -326,14 +390,14 @@ function renderAdminOnlineOrdersUI() {
       '<a href="' + tgChatLink + '" target="_blank" class="px-2.5 py-1.5 bg-sky-50 hover:bg-sky-100 text-sky-900 rounded-xl font-bold border border-sky-300 shadow-2xs flex items-center gap-1 active:scale-95 transition" style="text-decoration:none;">' +
         '<i class="fab fa-telegram text-xs text-sky-600"></i> Telegram' +
       '</a>' : '') +
-      
+
       (cleanPhone ? 
       '<a href="' + waChatLink + '" target="_blank" class="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 rounded-xl font-bold border border-emerald-300 shadow-2xs flex items-center gap-1 active:scale-95 transition" style="text-decoration:none;">' +
         '<i class="fab fa-whatsapp text-xs text-emerald-600"></i> WhatsApp' +
       '</a>' : '') +
 
-      (locationDisplay ? 
-      '<button type="button" onclick="openOrderMap(\'' + locationDisplay.replace(/'/g, "\\'") + '\')" class="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-xl font-bold border border-blue-200 shadow-2xs flex items-center gap-1 active:scale-95 transition">' +
+      (rawLoc ? 
+      '<button type="button" onclick="openOrderMap(\'' + rawLoc.replace(/'/g, "\\'") + '\')" class="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-xl font-bold border border-blue-200 shadow-2xs flex items-center gap-1 active:scale-95 transition">' +
         '<i class="fas fa-map-location-dot text-xs text-blue-600"></i> ផែនទី' +
       '</button>' : '');
 
@@ -370,7 +434,8 @@ function renderAdminOnlineOrdersUI() {
         '</div>' +
       '</div>' +
 
-      '<div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100 space-y-1 text-xs text-gray-700">' +
+      // 📦 ប្លុកព័ត៌មានទំនិញ & Badges ទីតាំងថ្មី (គ្មាន Link ឆៅរញ៉េរញ៉ៃ)
+      '<div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100 space-y-1.5 text-xs text-gray-700">' +
         '<div class="flex items-start gap-1.5">' +
           '<span class="text-gray-400 font-bold whitespace-nowrap">📦 ទំនិញ៖</span>' +
           '<b class="text-slate-900">' + o.items + '</b>' +
@@ -379,11 +444,7 @@ function renderAdminOnlineOrdersUI() {
           '<span class="text-gray-400 font-bold whitespace-nowrap">🛢️ សំបកធុង៖</span>' +
           '<span class="font-bold text-emerald-700">' + (o.barrel_swap || 'មានសំបកដូរ') + '</span>' +
         '</div>' +
-        (locationDisplay ? 
-        '<div class="flex items-start gap-1.5 pt-0.5">' +
-          '<span class="text-gray-400 font-bold whitespace-nowrap">📍 ទីតាំង & ចំណាំ៖</span>' +
-          '<span class="text-slate-800 font-bold text-[11px] leading-snug break-words">' + locationDisplay + '</span>' +
-        '</div>' : '') +
+        formatOrderLocationBadgeHTML(rawLoc) +
       '</div>' +
 
       assignDriverHtml +
@@ -393,6 +454,7 @@ function renderAdminOnlineOrdersUI() {
 
   container.innerHTML = html;
 }
+
 
 function closeOnlineOrdersModal() {
   var modal = document.getElementById('onlineOrdersAdminModal');
@@ -946,7 +1008,7 @@ function openDriverDirectQr(amount, custName) {
   }
 }
 
-// 🚚 មុខងារបង្ហាញបេសកកម្មដឹកទឹករបស់អ្នកដឹកជញ្ជូនរោងចក្រ (Refresh ស្ងាត់ៗ មិនលោតកន្ត្រាក់ឡើយ)
+// 🚚 មុខងារបង្ហាញបេសកកម្មដឹកទឹករបស់អ្នកដឹកជញ្ជូនរោងចក្រ (កាត Badges ស្រួលមើល ១០០%)
 async function renderCompanyDeliveriesModule(isSilentRefresh) {
   var area = document.getElementById('contentArea');
   if (!area) return;
@@ -984,7 +1046,6 @@ async function renderCompanyDeliveriesModule(isSilentRefresh) {
     var todayStr = getCambodiaToday();
     var todayQueryStart = todayStr + 'T00:00:00+07:00';
 
-    // ១. ទាញការងារកំពុងដឹក (Assigned) របស់អ្នកដឹកនេះ
     const { data: list, error } = await supabaseClient
       .from('orders')
       .select('*')
@@ -994,12 +1055,10 @@ async function renderCompanyDeliveriesModule(isSilentRefresh) {
 
     if (error) throw error;
 
-    // ២. ទាញការងារដែលបានដឹកជោគជ័យថ្ងៃនេះ
     var deliveredCount = 0;
     var cashToHandover = 0;
     var abaCollected = 0;
 
-    // ទាញយកប្រតិបត្តិការលក់ដែលអ្នកដឹកបានប្រគល់ទឹកថ្ងៃនេះពីតារាង transactions
     const { data: driverTransToday } = await supabaseClient
       .from('transactions')
       .select('*')
@@ -1012,7 +1071,7 @@ async function renderCompanyDeliveriesModule(isSilentRefresh) {
         var tid = t.transaction_id || t.id;
         if (!countedTransIds.has(tid)) {
           countedTransIds.add(tid);
-          deliveredCount++; // រាប់ចំនួនជើងដែលបានដឹកជោគជ័យថ្ងៃនេះ
+          deliveredCount++;
         }
         var amt = parseFloat(t.paid_khr || t.total || 0);
         if (t.payment_method === 'ABA') {
@@ -1022,6 +1081,7 @@ async function renderCompanyDeliveriesModule(isSilentRefresh) {
         }
       }
     });
+
     if (summaryBox) {
       summaryBox.innerHTML = '<div class="p-2.5 bg-emerald-50 border border-emerald-200 rounded-2xl shadow-2xs">' +
         '<span class="text-[10px] text-emerald-700 font-bold block">💵 លុយសុទ្ធក្នុងដៃ</span>' +
@@ -1054,7 +1114,7 @@ async function renderCompanyDeliveriesModule(isSilentRefresh) {
     list.forEach(function(task) {
       var cleanPhone = String(task.phone || '').replace(/[^0-9]/g, '');
       var safeName = String(task.customer_name || '').replace(/'/g, "\\'");
-      var mapTarget = task.location_url || task.address || '';
+      var rawLoc = (task.location_url || task.address || '').trim();
       var timeStr = new Date(task.created_at).toLocaleString('km-KH', { 
         timeZone: 'Asia/Phnom_Penh', 
         dateStyle: 'short', 
@@ -1067,7 +1127,6 @@ async function renderCompanyDeliveriesModule(isSilentRefresh) {
 
       var intlPhone = cleanPhone.startsWith('0') ? ('855' + cleanPhone.substring(1)) : ('855' + cleanPhone);
       var tgChatLink = "https://t.me/+" + intlPhone;
-      var waChatLink = "https://wa.me/" + intlPhone;
 
       html += '<div class="bg-white p-4 rounded-3xl border-2 border-emerald-400 shadow-md space-y-3 animate-in zoom-in duration-200">' +
         '<div class="flex justify-between items-start border-b border-slate-100 pb-2.5">' +
@@ -1084,6 +1143,7 @@ async function renderCompanyDeliveriesModule(isSilentRefresh) {
           '</div>' +
         '</div>' +
 
+        // 📦 ប្លុកព័ត៌មានទឹក & Badges ទីតាំងថ្មី (គ្មាន Link ឆៅរញ៉េរញ៉ៃ)
         '<div class="bg-emerald-50/60 p-3 rounded-2xl border border-emerald-200/80 space-y-1.5 text-xs text-slate-700">' +
           '<div class="flex items-start gap-1.5">' +
             '<span class="text-slate-400 font-bold whitespace-nowrap">📦 ទឹកត្រូវដឹក៖</span>' +
@@ -1093,17 +1153,13 @@ async function renderCompanyDeliveriesModule(isSilentRefresh) {
             '<span class="text-slate-400 font-bold whitespace-nowrap">🛢️ សំបកធុង៖</span>' +
             '<span class="font-bold text-emerald-700">' + (task.barrel_swap || 'មានសំបកដូរ') + '</span>' +
           '</div>' +
-          (task.location_url ? 
-          '<div class="flex items-start gap-1.5 pt-0.5">' +
-            '<span class="text-slate-400 font-bold whitespace-nowrap">📍 ទីតាំង & ចំណាំ៖</span>' +
-            '<span class="text-slate-800 font-bold text-[11px] leading-snug break-words">' + task.location_url + '</span>' +
-          '</div>' : '') +
+          formatOrderLocationBadgeHTML(rawLoc) +
         '</div>' +
 
-        '<div class="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1 text-xs">' +
+        '<div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-xs">' +
           (cleanPhone ? 
           '<a href="tel:' + cleanPhone + '" class="py-2 px-2.5 bg-blue-50 hover:bg-blue-100 text-blue-900 rounded-xl font-bold border border-blue-200 shadow-2xs flex items-center justify-center gap-1 active:scale-95 transition" style="text-decoration:none;">' +
-            '<i class="fas fa-phone text-blue-600"></i> ខល ' + task.phone +
+            '<i class="fas fa-phone text-blue-600"></i> ខល' +
           '</a>' : '') +
 
           (cleanPhone ? 
@@ -1111,19 +1167,15 @@ async function renderCompanyDeliveriesModule(isSilentRefresh) {
             '<i class="fab fa-telegram text-sky-600"></i> Telegram' +
           '</a>' : '') +
 
-          (mapTarget ? 
-          '<button type="button" onclick="openOrderMap(\'' + mapTarget.replace(/'/g, "\\'") + '\')" class="py-2 px-2.5 bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-xl font-bold border border-blue-200 shadow-2xs flex items-center justify-center gap-1 active:scale-95 transition">' +
+          (rawLoc ? 
+          '<button type="button" onclick="openOrderMap(\'' + rawLoc.replace(/'/g, "\\'") + '\')" class="py-2 px-2.5 bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-xl font-bold border border-blue-200 shadow-2xs flex items-center justify-center gap-1 active:scale-95 transition">' +
             '<i class="fas fa-map-location-dot text-blue-600"></i> ផែនទី' +
           '</button>' : '') +
 
           (task.photo_url ? 
           '<button type="button" onclick="viewOrderHousePhotoById(\'' + task.order_id + '\')" class="py-2 px-2.5 bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-xl font-bold border border-amber-300 shadow-2xs flex items-center justify-center gap-1 active:scale-95 transition">' +
-            '<i class="fas fa-camera text-amber-600"></i> រូបមុខផ្ទះ' +
+            '<i class="fas fa-camera text-amber-600"></i> រូបផ្ទះ' +
           '</button>' : '') +
-
-          '<button type="button" onclick="openDriverDirectQr(' + (task.total || 0) + ', \'' + safeName + '\')" class="col-span-2 sm:col-span-1 py-2 px-2.5 bg-red-50 hover:bg-red-100 text-red-700 rounded-xl font-black border border-red-200 shadow-2xs flex items-center justify-center gap-1 active:scale-95 transition">' +
-            '<i class="fas fa-qrcode text-red-600"></i> ស្កេន ABA' +
-          '</button>' +
         '</div>' +
 
         '<button type="button" onclick="completeOnlineOrder(\'' + task.order_id + '\', \'' + safeName + '\', ' + (task.total || 0) + ', \'' + (task.items || '').replace(/'/g, "\\'") + '\', \'' + driverName.replace(/'/g, "\\'") + '\', \'' + (task.payment_method || 'COD').replace(/'/g, "\\'") + '\')" class="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-green-700 hover:from-emerald-700 hover:to-green-800 text-white rounded-2xl font-black text-xs sm:text-sm shadow-md flex items-center justify-center gap-2 active:scale-95 transition">' +
