@@ -1340,20 +1340,6 @@ function getLocalizedText(text, lang) {
   fetchAutoTranslate(clean, lang);
   return clean;
 }
-    
-  // ៤. 🚀 ប្រសិនបើជាទំនិញថ្មីស្រឡាងដែលគ្មានក្នុងវចនានុក្រម ➔ បញ្ជាឱ្យបកប្រែស្វ័យប្រវត្តិ និង Update លើ UI ភ្លាមៗ
-  if (parsed === n && typeof fetchAutoTranslate === 'function') {
-    fetchAutoTranslate(n, lang).then(function(res) {
-      if (res && res !== n) {
-        document.querySelectorAll('[data-trans-key]').forEach(function(el) {
-          if (el.getAttribute('data-trans-key') === n) el.innerText = res;
-        });
-      }
-    });
-  }
-
-  return parsed;
-}
 
     // 🌐 មុខងារប្តូរ ៣ ភាសា (ខ្មែរ / EN / 中文) ពេញលេញ ១០០% ទាំង Visual Chips & Buttons
     function changeAppLanguage(lang) {
