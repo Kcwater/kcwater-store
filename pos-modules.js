@@ -3522,3 +3522,276 @@ async function saveSlidesConfigToSupabase() {
     }
   }
 }
+
+// ==========================================================================
+// 📂 ប្រព័ន្ធគ្រប់គ្រង CATEGORY (POP-UP MODAL & SUPABASE CLOUD PROTECTED)
+// ==========================================================================
+
+// 🛡️ បញ្ជី Category ស្តង់ដារលំនាំដើម (កូដការពារទំនិញចាស់មិនឱ្យបាត់បង់)
+var DEFAULT_STORE_CATEGORIES = [
+  { key: "BARREL", name: "ទឹកធុង ២០L", icon: "💧", isCore: true },
+  { key: "PACK", name: "ទឹកយួរ / ដប", icon: "📦", isCore: true },
+  { key: "GROCERY", name: "ស្បៀង & គ្រឿងទេស", icon: "🍚", isCore: true },
+  { key: "HOUSEHOLD", name: "របស់ប្រើប្រាស់ & អនាម័យ", icon: "🧻", isCore: true },
+  { key: "EQUIP", name: "បរិក្ខារ & ជើងទម្រ", icon: "🛢️", isCore: true }
+];
+
+var activeStoreCategories = JSON.parse(JSON.stringify(DEFAULT_STORE_CATEGORIES));
+
+// 📥 ១. ទាញយក Categories ពី Supabase Settings (គាំទ្រទាំង PROD & TEST)
+async function loadCategoriesFromSupabase() {
+  try {
+    const { data, error } = await supabaseClient
+      .from('settings')
+      .select('value')
+      .eq('key', 'Store_Categories')
+      .maybeSingle();
+
+    if (error) throw error;
+
+    if (data && data.value) {
+      var parsed = JSON.parse(data.value);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        // ធានាថា Core Categories មិនបាត់បង់
+        DEFAULT_STORE_CATEGORIES.forEach(function(def) {
+          if (!parsed.some(c => c.key === def.key)) {
+            parsed.unshift(def);
+          }
+        });
+        activeStoreCategories = parsed;
+      }
+    }
+  } catch(e) {
+    console.warn("Categories load warning:", e);
+    activeStoreCategories = JSON.parse(JSON.stringify(DEFAULT_STORE_CATEGORIES));
+  }
+}
+
+// 🖼️ ២. បង្កើតផ្ទាំង POP-UP MODAL គ្រប់គ្រង Category
+function injectCategoryManagerModalMarkup() {
+  if (document.getElementById('categoryManagerModal')) return;
+
+  var html = '<div id="categoryManagerModal" class="fixed inset-0 z-[7000] flex items-center justify-center p-3 sm:p-4 hidden overflow-y-auto">' +
+    '<div class="fixed inset-0 bg-slate-950/65 backdrop-blur-xs" onclick="closeCategoryManagerModal()"></div>' +
+    '<div class="bg-white rounded-3xl shadow-2xl z-10 w-full max-w-md p-5 space-y-4 text-center relative border border-slate-100 animate-in zoom-in-95 duration-200 my-auto max-h-[90dvh] flex flex-col">' +
+      
+      // ក្បាលផ្ទាំង
+      '<div class="flex justify-between items-center border-b pb-2.5">' +
+        '<div class="text-left">' +
+          '<h3 class="font-black text-slate-900 text-sm sm:text-base flex items-center gap-2">' +
+            '<i class="fas fa-layer-group text-emerald-600"></i> គ្រប់គ្រងប្រភេទទំនិញ (Categories)' +
+          '</h3>' +
+          '<p class="text-[10px] text-slate-500 font-bold mt-0.5">បង្កើត និងកំណត់ Category សម្រាប់ POS & Web</p>' +
+        '</div>' +
+        '<button type="button" onclick="closeCategoryManagerModal()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-400 hover:text-slate-700 text-lg font-bold flex items-center justify-center">&times;</button>' +
+      '</div>' +
+
+      // ទម្រង់បង្កើត Category ថ្មី
+      '<div class="p-3 bg-emerald-50/70 border-2 border-emerald-300 rounded-2xl text-left space-y-2">' +
+        '<span class="text-[10px] font-black text-emerald-950 uppercase block"><i class="fas fa-plus-circle text-emerald-600 mr-1"></i> បង្កើត Category ថ្មី</span>' +
+        '<div class="grid grid-cols-4 gap-2 text-xs">' +
+          '<div class="col-span-1">' +
+            '<label class="text-[9.5px] font-bold text-slate-600 block mb-0.5">Emoji/Icon</label>' +
+            '<input type="text" id="newCatIcon" placeholder="ឧ៖ 🥤" value="🥤" class="w-full text-center p-2 rounded-xl border border-slate-300 bg-white font-bold outline-none focus:border-emerald-500 text-sm">' +
+          '</div>' +
+          '<div class="col-span-3">' +
+            '<label class="text-[9.5px] font-bold text-slate-600 block mb-0.5">ឈ្មោះខ្មែរ (*)</label>' +
+            '<input type="text" id="newCatName" placeholder="ឧ៖ ភេសជ្ជៈ & ទឹកផ្លែឈើ" class="w-full p-2 rounded-xl border border-slate-300 bg-white font-bold outline-none focus:border-emerald-500 text-xs">' +
+          '</div>' +
+        '</div>' +
+        '<div class="grid grid-cols-3 gap-2 text-xs pt-0.5">' +
+          '<div class="col-span-2">' +
+            '<label class="text-[9.5px] font-bold text-slate-600 block mb-0.5">កូដសម្គាល់ជាអក្សរឡាតាំង (*)</label>' +
+            '<input type="text" id="newCatKey" placeholder="ឧ៖ DRINKS" class="w-full p-2 rounded-xl border border-slate-300 bg-white font-mono font-bold uppercase text-xs outline-none focus:border-emerald-500">' +
+          '</div>' +
+          '<div class="col-span-1 flex items-end">' +
+            '<button type="button" onclick="submitAddNewCategory()" class="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-xl text-xs shadow-xs active:scale-95 transition flex items-center justify-center gap-1">' +
+              '<i class="fas fa-plus"></i> បន្ថែម' +
+            '</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+
+      // បញ្ជី Category កំពុងមាន
+      '<div class="flex-1 overflow-y-auto space-y-2 text-left pr-1" id="categoriesListContainer">' +
+        '<div class="text-center py-4 text-slate-400 italic text-xs">កំពុងទាញទិន្នន័យ...</div>' +
+      '</div>' +
+
+      // ប៊ូតុងបិទ
+      '<button type="button" onclick="closeCategoryManagerModal()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition">' +
+        'រួចរាល់ (បិទ)' +
+      '</button>' +
+    '</div>' +
+  '</div>';
+
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+// 🚀 ៣. បើក និងបិទផ្ទាំង Pop-up
+async function openCategoryManagerModal() {
+  injectCategoryManagerModalMarkup();
+  await loadCategoriesFromSupabase();
+  renderCategoriesListUI();
+  var modal = document.getElementById('categoryManagerModal');
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeCategoryManagerModal() {
+  var modal = document.getElementById('categoryManagerModal');
+  if (modal) modal.classList.add('hidden');
+}
+
+// 📋 ៤. បង្ហាញបញ្ជី Category លើ Pop-up
+function renderCategoriesListUI() {
+  var container = document.getElementById('categoriesListContainer');
+  if (!container) return;
+
+  var html = '';
+  activeStoreCategories.forEach(function(cat, idx) {
+    var isCore = cat.isCore === true;
+    var badgeCore = isCore ? 
+      '<span class="px-2 py-0.5 rounded-md text-[9px] font-black bg-blue-100 text-blue-900 border border-blue-200">🔒 ប្រភេទទំនិញគោល</span>' : 
+      '<span class="px-2 py-0.5 rounded-md text-[9px] font-black bg-emerald-100 text-emerald-800 border border-emerald-200">✨ បង្កើតថ្មី</span>';
+
+    var deleteBtn = isCore ? 
+      '<span class="text-slate-300 text-xs p-1" title="ប្រភេទទំនិញគោលមិនអាចលុបបានឡើយ"><i class="fas fa-lock"></i></span>' : 
+      '<button type="button" onclick="deleteCategoryByIndex(' + idx + ')" class="text-red-400 hover:text-red-600 active:scale-90 transition p-1" title="លុប Category នេះ"><i class="fas fa-trash-can text-xs"></i></button>';
+
+    html += '<div class="p-2.5 bg-slate-50 hover:bg-slate-100 rounded-2xl border border-slate-200 flex items-center justify-between gap-2 text-xs transition">' +
+      '<div class="flex items-center gap-2 min-w-0 flex-1">' +
+        '<span class="text-xl shrink-0">' + (cat.icon || '📦') + '</span>' +
+        '<div class="min-w-0 flex-1">' +
+          '<b class="text-slate-900 block truncate text-xs">' + cat.name + '</b>' +
+          '<div class="text-[10px] text-slate-400 font-mono mt-0.5">កូដ៖ <code>' + cat.key + '</code></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="flex items-center gap-2 shrink-0">' +
+        badgeCore +
+        deleteBtn +
+      '</div>' +
+    '</div>';
+  });
+
+  container.innerHTML = html || '<div class="text-center py-4 text-slate-400 italic text-xs">គ្មាន Category ឡើយ</div>';
+}
+
+// ➕ ៥. រក្សាទុក Category ថ្មីចូល Supabase Settings (មានកូដការពារស្ទួន)
+async function submitAddNewCategory() {
+  var iconInp = document.getElementById('newCatIcon');
+  var nameInp = document.getElementById('newCatName');
+  var keyInp = document.getElementById('newCatKey');
+
+  var icon = iconInp ? iconInp.value.trim() : '📦';
+  var name = nameInp ? nameInp.value.trim() : '';
+  var key = keyInp ? keyInp.value.toUpperCase().replace(/[^A-Z0-9_]/g, '').trim() : '';
+
+  if (!name) {
+    if (typeof kcAlert === 'function') {
+      await kcAlert({ title: "ខ្វះឈ្មោះ", message: "សូមបញ្ចូលឈ្មោះខ្មែរនៃ Category ថ្មី!", type: "warning" });
+    } else {
+      showToast("សូមបញ្ចូលឈ្មោះ Category!", "error");
+    }
+    if (nameInp) nameInp.focus();
+    return;
+  }
+
+  if (!key) {
+    if (typeof kcAlert === 'function') {
+      await kcAlert({ title: "ខ្វះកូដសម្គាល់", message: "សូមបញ្ចូលកូដសម្គាល់ជាអក្សរឡាតាំង (ឧ៖ DRINKS, SNACKS)!", type: "warning" });
+    } else {
+      showToast("សូមបញ្ចូលកូដ Category!", "error");
+    }
+    if (keyInp) keyInp.focus();
+    return;
+  }
+
+  // 🛡️ កូដការពារ៖ ពិនិត្យកុំឱ្យស្ទួនកូដចាស់
+  var exists = activeStoreCategories.some(c => c.key === key);
+  if (exists) {
+    if (typeof kcAlert === 'function') {
+      await kcAlert({ title: "កូដស្ទួន", message: "កូដសម្គាល់ [" + key + "] នេះមានរួចហើយ! សូមដាក់កូដថ្មីផ្សេង។", type: "warning" });
+    } else {
+      showToast("កូដ Category នេះមានរួចហើយ!", "error");
+    }
+    return;
+  }
+
+  activeStoreCategories.push({
+    key: key,
+    name: name,
+    icon: icon || '📦',
+    isCore: false
+  });
+
+  try {
+    const { error } = await supabaseClient.from('settings').upsert([
+      { key: 'Store_Categories', value: JSON.stringify(activeStoreCategories) }
+    ]);
+    if (error) throw error;
+
+    if (nameInp) nameInp.value = '';
+    if (keyInp) keyInp.value = '';
+
+    renderCategoriesListUI();
+
+    if (typeof kcAlert === 'function') {
+      await kcAlert({
+        title: "បង្កើតជោគជ័យ! 🎉",
+        message: "បានបង្កើត Category ថ្មី [" + icon + " " + name + "] ដោយជោគជ័យ!",
+        type: "success"
+      });
+    } else {
+      showToast("បានបង្កើត Category ថ្មីជោគជ័យ!", "success");
+    }
+
+    // Update Dropdown ក្នុងផ្ទាំងស្តុកភ្លាមៗបើកំពុងបើក
+    if (typeof populateProductCategoryDropdown === 'function') {
+      populateProductCategoryDropdown();
+    }
+  } catch(err) {
+    showToast("កំហុស៖ " + err.message, "error");
+  }
+}
+
+// 🗑️ ៦. លុប Category ថ្មី (ការពារមិនឱ្យលុប Category គោល)
+async function deleteCategoryByIndex(idx) {
+  var cat = activeStoreCategories[idx];
+  if (!cat) return;
+
+  if (cat.isCore === true) {
+    if (typeof kcAlert === 'function') {
+      await kcAlert({ title: "ការពារសុវត្ថិភាព", message: "ប្រភេទទំនិញគោល [" + cat.name + "] មិនអាចលុបបានឡើយ!", type: "warning" });
+    }
+    return;
+  }
+
+  var ok = true;
+  if (typeof kcConfirm === 'function') {
+    ok = await kcConfirm({
+      title: "បញ្ជាក់ការលុប Category",
+      message: "តើអ្នកពិតជាចង់លុប Category [" + (cat.icon || '') + " " + cat.name + "] នេះមែនទេ?",
+      type: "danger",
+      confirmText: "យល់ព្រមលុប"
+    });
+  }
+
+  if (!ok) return;
+
+  activeStoreCategories.splice(idx, 1);
+
+  try {
+    const { error } = await supabaseClient.from('settings').upsert([
+      { key: 'Store_Categories', value: JSON.stringify(activeStoreCategories) }
+    ]);
+    if (error) throw error;
+
+    renderCategoriesListUI();
+    showToast("បានលុប Category ជោគជ័យ!", "info");
+
+    if (typeof populateProductCategoryDropdown === 'function') {
+      populateProductCategoryDropdown();
+    }
+  } catch(err) {
+    showToast("កំហុស៖ " + err.message, "error");
+  }
+}
