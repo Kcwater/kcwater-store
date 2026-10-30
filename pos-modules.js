@@ -2015,11 +2015,9 @@ async function delUserFromSupabase(id) {
   }
 }
 
-// ==========================================
-// ⚙️ ៥. ការកំណត់ប្រព័ន្ធ (SETTINGS: SMART DELIVERY & MULTI-PROMO CHECKBOX)
-// ==========================================
-var currentTelegramAlertStatus = "ON";
-var currentPromoRules = []; // បញ្ជីលក្ខខណ្ឌថែមទំនិញ (Buy A -> Free B)
+// ==========================================================================
+// ⚙️ ផ្ទាំង SETTINGS ស្តង់ដារថ្មី (DASHBOARD CARDS & MODAL-BASED ARCHITECTURE)
+// ==========================================================================
 
 function renderSettingsModule() {
   var area = document.getElementById('contentArea');
@@ -2027,14 +2025,201 @@ function renderSettingsModule() {
 
   var curUsd = (typeof exchangeRateUSD !== 'undefined') ? exchangeRateUSD : 4100;
   var curThb = (typeof exchangeRateTHB !== 'undefined') ? exchangeRateTHB : 115;
+  var tgStatus = (telegramConfig && telegramConfig.status) ? telegramConfig.status : 'ON';
 
-  // បញ្ជីទំនិញសម្រាប់រើសទំនិញថែម (Free Gift)
-  var freeProdOptions = '<option value="">-- រើសមុខទំនិញដែលត្រូវថែម Free --</option>';
-  (allProducts || []).forEach(function(p) {
-    freeProdOptions += '<option value="' + p.name + '">' + p.name + '</option>';
-  });
+  area.innerHTML = '<div class="max-w-3xl mx-auto space-y-4">' +
+    // ក្បាលទំព័រ
+    '<div class="flex justify-between items-center bg-white p-4 rounded-3xl border shadow-sm">' +
+      '<div>' +
+        '<h2 class="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">' +
+          '<i class="fas fa-gear text-emerald-600"></i>' +
+          '<span>ការកំណត់ប្រព័ន្ធ (System Settings)</span>' +
+        '</h2>' +
+        '<p class="text-xs text-slate-500 mt-0.5">ចុចលើកាតមុខងារនីមួយៗដើម្បីបើកផ្ទាំង Pop-up កំណត់ទិន្នន័យ</p>' +
+      '</div>' +
+      '<button onclick="renderSettingsModule()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold shadow-2xs active:scale-95 transition flex items-center gap-1.5">' +
+        '<i class="fas fa-sync-alt"></i> Refresh' +
+      '</button>' +
+    '</div>' +
 
-  // បង្កើតប្រអប់ធីក (Checkboxes) សម្រាប់រើសទំនិញច្រើនមុខព្រមគ្នា (ឧ៖ អង្ករ ៣ ប្រភេទ)
+    // 📱 ក្រឡាចត្រង្គកាតមុខងារទាំង ៦ (ចុចបើក POP-UP ដាច់ដោយឡែកពីគ្នា)
+    '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">' +
+      
+      // កាត ១៖ ប្រភេទទំនិញ
+      '<div onclick="openCategoryManagerModal()" class="card border-l-4 border-emerald-600 p-4 bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-emerald-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
+        '<div class="flex items-center gap-3">' +
+          '<div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-xl shadow-inner group-hover:scale-110 transition">' +
+            '<i class="fas fa-layer-group"></i>' +
+          '</div>' +
+          '<div>' +
+            '<b class="text-sm font-black text-slate-900 block group-hover:text-emerald-700 transition">ប្រភេទទំនិញ (Categories)</b>' +
+            '<span class="text-[11px] text-slate-500 font-bold block mt-0.5">បង្កើត ប្តូរឈ្មោះ & Emoji រហ័ស</span>' +
+          '</div>' +
+        '</div>' +
+        '<i class="fas fa-chevron-right text-slate-300 group-hover:text-emerald-600 group-hover:translate-x-1 transition text-xs"></i>' +
+      '</div>' +
+
+      // កាត ២៖ អត្រាប្តូរប្រាក់
+      '<div onclick="openExchangeRatesModal()" class="card border-l-4 border-blue-600 p-4 bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-blue-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
+        '<div class="flex items-center gap-3">' +
+          '<div class="w-12 h-12 rounded-2xl bg-blue-100 text-blue-700 flex items-center justify-center text-xl shadow-inner group-hover:scale-110 transition">' +
+            '<i class="fas fa-money-bill-transfer"></i>' +
+          '</div>' +
+          '<div>' +
+            '<b class="text-sm font-black text-slate-900 block group-hover:text-blue-700 transition">អត្រាប្តូរប្រាក់ (Exchange Rates)</b>' +
+            '<span class="text-[11px] text-blue-700 font-bold block mt-0.5">$1=' + curUsd.toLocaleString() + '៛ | 1฿=' + curThb.toLocaleString() + '៛</span>' +
+          '</div>' +
+        '</div>' +
+        '<i class="fas fa-chevron-right text-slate-300 group-hover:text-blue-600 group-hover:translate-x-1 transition text-xs"></i>' +
+      '</div>' +
+
+      // កាត ៣៖ សេវាដឹកជញ្ជូន & ម៉ោងធ្វើការ
+      '<div onclick="openDeliverySettingsModal()" class="card border-l-4 border-indigo-600 p-4 bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-indigo-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
+        '<div class="flex items-center gap-3">' +
+          '<div class="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-700 flex items-center justify-center text-xl shadow-inner group-hover:scale-110 transition">' +
+            '<i class="fas fa-truck-fast"></i>' +
+          '</div>' +
+          '<div>' +
+            '<b class="text-sm font-black text-slate-900 block group-hover:text-indigo-700 transition">សេវាដឹកជញ្ជូន & ម៉ោងធ្វើការ</b>' +
+            '<span class="text-[11px] text-slate-500 font-bold block mt-0.5">កំណត់ថ្លៃដឹក & ម៉ោងបើក/បិទហាង</span>' +
+          '</div>' +
+        '</div>' +
+        '<i class="fas fa-chevron-right text-slate-300 group-hover:text-indigo-600 group-hover:translate-x-1 transition text-xs"></i>' +
+      '</div>' +
+
+      // កាត ៤៖ ប្រព័ន្ធ Promotion
+      '<div onclick="openPromoSettingsModal()" class="card border-l-4 border-amber-500 p-4 bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-amber-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
+        '<div class="flex items-center gap-3">' +
+          '<div class="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center text-xl shadow-inner group-hover:scale-110 transition">' +
+            '<i class="fas fa-gift"></i>' +
+          '</div>' +
+          '<div>' +
+            '<b class="text-sm font-black text-slate-900 block group-hover:text-amber-700 transition">ប្រូម៉ូសិនលើ Web (Promotions)</b>' +
+            '<span class="text-[11px] text-amber-700 font-bold block mt-0.5">កាដូថែមទំនិញ & Banner ផ្សាយ</span>' +
+          '</div>' +
+        '</div>' +
+        '<i class="fas fa-chevron-right text-slate-300 group-hover:text-amber-600 group-hover:translate-x-1 transition text-xs"></i>' +
+      '</div>' +
+
+      // កាត ៥៖ ផ្ទាំងស្លាយ Web
+      '<div onclick="openSlidesSettingsModal()" class="card border-l-4 border-teal-600 p-4 bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-teal-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
+        '<div class="flex items-center gap-3">' +
+          '<div class="w-12 h-12 rounded-2xl bg-teal-100 text-teal-700 flex items-center justify-center text-xl shadow-inner group-hover:scale-110 transition">' +
+            '<i class="fas fa-images"></i>' +
+          '</div>' +
+          '<div>' +
+            '<b class="text-sm font-black text-slate-900 block group-hover:text-teal-700 transition">ផ្ទាំងស្លាយលើ Web (Slides)</b>' +
+            '<span class="text-[11px] text-slate-500 font-bold block mt-0.5">ដាក់រូបភាព & អក្សរស្លាយទាំង ៤</span>' +
+          '</div>' +
+        '</div>' +
+        '<i class="fas fa-chevron-right text-slate-300 group-hover:text-teal-600 group-hover:translate-x-1 transition text-xs"></i>' +
+      '</div>' +
+
+      // កាត ៦៖ Telegram Bot Alert
+      '<div onclick="openTelegramSettingsModal()" class="card border-l-4 border-green-600 p-4 bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-green-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
+        '<div class="flex items-center gap-3">' +
+          '<div class="w-12 h-12 rounded-2xl bg-green-100 text-green-700 flex items-center justify-center text-xl shadow-inner group-hover:scale-110 transition">' +
+            '<i class="fab fa-telegram text-blue-500"></i>' +
+          '</div>' +
+          '<div>' +
+            '<b class="text-sm font-black text-slate-900 block group-hover:text-green-700 transition">Telegram Bot Alerts</b>' +
+            '<span class="text-[11px] font-bold block mt-0.5 ' + (tgStatus === 'ON' ? 'text-green-700' : 'text-slate-400') + '">ស្ថានភាព៖ ' + (tgStatus === 'ON' ? '🔔 បើក (ON)' : '🔕 បិទ (OFF)') + '</span>' +
+          '</div>' +
+        '</div>' +
+        '<i class="fas fa-chevron-right text-slate-300 group-hover:text-green-600 group-hover:translate-x-1 transition text-xs"></i>' +
+      '</div>' +
+
+    '</div>' +
+  '</div>';
+}
+
+// ==========================================================================
+// 🌟 មុខងារ POP-UP MODALS សម្រាប់ផ្ទាំង SETTINGS នីមួយៗ
+// ==========================================================================
+
+// 💵 ១. POP-UP អត្រាប្តូរប្រាក់ (Exchange Rates Modal)
+function openExchangeRatesModal() {
+  var curUsd = (typeof exchangeRateUSD !== 'undefined') ? exchangeRateUSD : 4100;
+  var curThb = (typeof exchangeRateTHB !== 'undefined') ? exchangeRateTHB : 115;
+  var existing = document.getElementById('exchangeRatesModal');
+  if (existing) existing.remove();
+
+  var html = '<div id="exchangeRatesModal" class="fixed inset-0 z-[7000] flex items-center justify-center p-4 overflow-y-auto">' +
+    '<div class="fixed inset-0 bg-slate-950/65 backdrop-blur-xs" onclick="document.getElementById(\'exchangeRatesModal\').remove()"></div>' +
+    '<div class="bg-white rounded-3xl shadow-2xl z-10 w-full max-w-sm p-5 space-y-4 text-center relative border border-slate-100 animate-in zoom-in-95 duration-200 my-auto">' +
+      '<div class="flex justify-between items-center border-b pb-2">' +
+        '<b class="text-sm font-black text-slate-900 flex items-center gap-2"><i class="fas fa-money-bill-transfer text-blue-600"></i> អត្រាប្តូរប្រាក់ (Exchange Rates)</b>' +
+        '<button type="button" onclick="document.getElementById(\'exchangeRatesModal\').remove()" class="text-slate-400 hover:text-slate-700 text-lg font-bold">&times;</button>' +
+      '</div>' +
+      '<div class="space-y-3 text-left text-xs">' +
+        '<div class="p-3 bg-blue-50/70 rounded-2xl border-2 border-blue-200 space-y-1">' +
+          '<label class="font-black text-blue-900 uppercase block">💵 $1 ដុល្លារ = (... ៛)</label>' +
+          '<input type="number" id="set_rate_usd" value="' + curUsd + '" class="font-black border-2 border-blue-300 focus:border-blue-600 p-2.5 rounded-xl w-full text-center text-lg outline-none text-blue-950 bg-white">' +
+        '</div>' +
+        '<div class="p-3 bg-amber-50/70 rounded-2xl border-2 border-amber-200 space-y-1">' +
+          '<label class="font-black text-amber-950 uppercase block">🪙 1฿ បាត = (... ៛)</label>' +
+          '<input type="number" id="set_rate_thb" value="' + curThb + '" class="font-black border-2 border-amber-300 focus:border-amber-600 p-2.5 rounded-xl w-full text-center text-lg outline-none text-amber-950 bg-white">' +
+        '</div>' +
+      '</div>' +
+      '<div class="grid grid-cols-2 gap-2 pt-1">' +
+        '<button type="button" onclick="document.getElementById(\'exchangeRatesModal\').remove()" class="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs active:scale-95 transition">បិទ</button>' +
+        '<button type="button" onclick="saveQuickExchangeRates().then(() => document.getElementById(\'exchangeRatesModal\').remove())" class="py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-xl text-xs shadow-md active:scale-95 transition">រក្សាទុក</button>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+// 🛵 ២. POP-UP សេវាដឹកជញ្ជូន & ម៉ោងធ្វើការ (Delivery Settings Modal)
+async function openDeliverySettingsModal() {
+  var existing = document.getElementById('deliverySettingsModal');
+  if (existing) existing.remove();
+
+  var html = '<div id="deliverySettingsModal" class="fixed inset-0 z-[7000] flex items-center justify-center p-4 overflow-y-auto">' +
+    '<div class="fixed inset-0 bg-slate-950/65 backdrop-blur-xs" onclick="document.getElementById(\'deliverySettingsModal\').remove()"></div>' +
+    '<div class="bg-white rounded-3xl shadow-2xl z-10 w-full max-w-sm p-5 space-y-3.5 text-center relative border border-slate-100 animate-in zoom-in-95 duration-200 my-auto">' +
+      '<div class="flex justify-between items-center border-b pb-2">' +
+        '<b class="text-sm font-black text-slate-900 flex items-center gap-2"><i class="fas fa-truck-fast text-indigo-600"></i> សេវាដឹកជញ្ជូន & ម៉ោងធ្វើការ</b>' +
+        '<button type="button" onclick="document.getElementById(\'deliverySettingsModal\').remove()" class="text-slate-400 hover:text-slate-700 text-lg font-bold">&times;</button>' +
+      '</div>' +
+      '<div class="space-y-3 text-left text-xs">' +
+        '<div class="grid grid-cols-2 gap-2">' +
+          '<div><label class="font-bold text-slate-500 uppercase block mb-1">ម៉ោងបើក (Open)</label><input type="time" id="set_open_time" class="font-black border p-2 rounded-xl w-full text-center bg-slate-50"></div>' +
+          '<div><label class="font-bold text-slate-500 uppercase block mb-1">ម៉ោងបិទ (Close)</label><input type="time" id="set_close_time" class="font-black border p-2 rounded-xl w-full text-center bg-slate-50"></div>' +
+        '</div>' +
+        '<div class="p-2.5 bg-slate-50 rounded-2xl border border-slate-200">' +
+          '<label class="font-bold text-slate-700 uppercase block mb-1">ថ្លៃដឹកធម្មតា (៛)</label>' +
+          '<input type="number" id="set_del_fee" placeholder="2000" class="font-black border border-slate-300 p-2 rounded-xl w-full text-center bg-white">' +
+        '</div>' +
+        '<div class="p-2.5 bg-blue-50/70 rounded-2xl border border-blue-200">' +
+          '<label class="font-black text-blue-900 uppercase block mb-1">💧 ទឹកធុង ២០L ដឹក FREE</label>' +
+          '<input type="number" id="set_del_min" placeholder="2" class="font-black border-2 border-blue-300 p-2 rounded-xl w-full text-center bg-white">' +
+          '<span class="text-[9px] text-blue-700 font-bold block mt-0.5">*កុម្ម៉ង់ចាប់ពី ២ ធុងឡើង Free</span>' +
+        '</div>' +
+        '<div class="p-2.5 bg-emerald-50 rounded-2xl border-2 border-emerald-300">' +
+          '<label class="font-black text-emerald-950 uppercase block mb-1">🍚 ទំនិញទូទៅដឹក FREE</label>' +
+          '<input type="number" id="set_del_free_amount" placeholder="50000" class="font-black border-2 border-emerald-400 p-2 rounded-xl w-full text-center bg-white">' +
+          '<span class="text-[9px] text-emerald-800 font-bold block mt-0.5">*ទិញអស់ចាប់ពី ៥០,០០០៛ ឡើង Free</span>' +
+        '</div>' +
+      '</div>' +
+      '<div class="grid grid-cols-2 gap-2 pt-1">' +
+        '<button type="button" onclick="document.getElementById(\'deliverySettingsModal\').remove()" class="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs active:scale-95 transition">បិទ</button>' +
+        '<button type="button" onclick="saveSettingsToSupabase().then(() => document.getElementById(\'deliverySettingsModal\').remove())" class="py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-xl text-xs shadow-md active:scale-95 transition">រក្សាទុក</button>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+  document.body.insertAdjacentHTML('beforeend', html);
+  await loadSettingsForm();
+}
+
+// 🎁 ៣. POP-UP ប្រព័ន្ធ PROMOTION (Promo Settings Modal)
+async function openPromoSettingsModal() {
+  var existing = document.getElementById('promoSettingsModal');
+  if (existing) existing.remove();
+
+  var freeProdOptions = '<option value="">-- រើសទំនិញថែម Free --</option>';
+  (allProducts || []).forEach(function(p) { freeProdOptions += '<option value="' + p.name + '">' + p.name + '</option>'; });
+
   var buyCheckboxesHtml = '';
   (allProducts || []).forEach(function(p) {
     buyCheckboxesHtml += '<label class="flex items-center gap-2 p-1.5 hover:bg-amber-100/60 rounded-xl cursor-pointer transition select-none border border-slate-100 bg-white">' +
@@ -2043,262 +2228,133 @@ function renderSettingsModule() {
     '</label>';
   });
 
-  area.innerHTML = '<div class="max-w-2xl mx-auto space-y-4">' +
-    // 📂 ០. កាតគ្រប់គ្រងប្រភេទទំនិញ (ចុចបើក POP-UP MODAL)
-    '<div class="card border-t-4 border-emerald-600 shadow-xl p-5 mb-0 space-y-3 bg-white">' +
-      '<div class="flex justify-between items-center">' +
-        '<div>' +
-          '<h3 class="font-extrabold text-slate-900 text-base flex items-center gap-2">' +
-            '<i class="fas fa-layer-group text-emerald-600"></i>ប្រភេទទំនិញ (Category Management)' +
-          '</h3>' +
-          '<p class="text-[11px] text-slate-500 font-bold mt-0.5">បង្កើត ប្តូរឈ្មោះ និងលុបប្រភេទទំនិញសម្រាប់ POS & Web</p>' +
-        '</div>' +
-        '<button type="button" onclick="openCategoryManagerModal()" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-xs active:scale-95 transition flex items-center gap-1.5">' +
-          '<i class="fas fa-sliders"></i> ចុចបើកផ្ទាំងគ្រប់គ្រង' +
-        '</button>' +
-      '</div>' +
-    '</div>' +
-
-    // 💵 ១. កាតកំណត់អត្រាប្តូរប្រាក់ (Exchange Rates)
-    '<div class="card border-t-4 border-emerald-600 shadow-xl p-5 mb-0 space-y-3.5 bg-white">' +
-      '<div class="flex justify-between items-center">' +
-        '<div>' +
-          '<h3 class="font-extrabold text-emerald-950 text-base flex items-center gap-2">' +
-            '<i class="fas fa-money-bill-transfer text-emerald-600"></i>គ្រប់គ្រងអត្រាប្តូរប្រាក់ (Exchange Rates)' +
-          '</h3>' +
-          '<p class="text-[11px] text-gray-500 font-bold mt-0.5">*កំណត់អត្រាប្រាក់រៀល (៛), បាតថៃ (฿), និងដុល្លារ ($) សម្រាប់ POS & Store Web</p>' +
-        '</div>' +
-        '<span class="text-[10px] text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full font-black border border-emerald-300">Auto-Sync</span>' +
-      '</div>' +
-      '<div class="grid grid-cols-2 gap-3 text-xs">' +
-        '<div class="p-3 bg-blue-50/60 rounded-2xl border-2 border-blue-200 space-y-1.5">' +
-          '<label class="font-black text-blue-900 uppercase block">💵 $1 ដុល្លារ = (... ៛)</label>' +
-          '<input type="number" id="set_rate_usd" oninput="updateRatePreviewLive()" value="' + curUsd + '" class="font-black border-2 border-blue-300 focus:border-blue-600 p-2.5 rounded-xl w-full text-center text-base outline-none text-blue-950 bg-white">' +
-        '</div>' +
-        '<div class="p-3 bg-amber-50/60 rounded-2xl border-2 border-amber-200 space-y-1.5">' +
-          '<label class="font-black text-amber-950 uppercase block">🪙 1฿ បាត = (... ៛)</label>' +
-          '<input type="number" id="set_rate_thb" oninput="updateRatePreviewLive()" value="' + curThb + '" class="font-black border-2 border-amber-300 focus:border-amber-600 p-2.5 rounded-xl w-full text-center text-base outline-none text-amber-950 bg-white">' +
-        '</div>' +
-      '</div>' +
-      '<button type="button" onclick="saveQuickExchangeRates()" id="btnSaveQuickRates" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl shadow-xs transition">' +
-        '<i class="fas fa-floppy-disk mr-1"></i> រក្សាទុកអត្រាប្តូរប្រាក់' +
-      '</button>' +
-    '</div>' +
-
-    // 🛵 ២. កាតម៉ោងបើក/បិទ & សេវាដឹកឆ្លាតវៃ (ការពារហាងមិនឱ្យខាតថ្លៃដឹក)
-    '<div class="card border-t-4 border-indigo-600 shadow-xl p-5 mb-0 space-y-3.5 bg-white">' +
-      '<div>' +
-        '<h2 class="font-extrabold text-indigo-950 text-base flex items-center gap-2"><i class="fas fa-truck-fast text-indigo-600"></i>សេវាដឹកជញ្ជូន & ម៉ោងធ្វើការ (Delivery Rules)</h2>' +
-        '<p class="text-[10px] text-gray-500 font-bold mt-0.5">បែងចែកលក្ខខណ្ឌ Free រវាងទឹកធុង ២០L និងទំនិញទូទៅ/គ្រឿងទេស</p>' +
-      '</div>' +
-
-      '<div class="grid grid-cols-2 gap-2 text-xs">' +
-        '<div><label class="font-bold text-gray-500 uppercase block mb-1">ម៉ោងបើក (Open)</label><input type="time" id="set_open_time" class="font-black border p-2 rounded-xl w-full text-center bg-slate-50"></div>' +
-        '<div><label class="font-bold text-gray-500 uppercase block mb-1">ម៉ោងបិទ (Close)</label><input type="time" id="set_close_time" class="font-black border p-2 rounded-xl w-full text-center bg-slate-50"></div>' +
-      '</div>' +
-
-      '<div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs pt-1">' +
-        '<div class="p-2.5 bg-slate-50 rounded-2xl border border-slate-200">' +
-          '<label class="font-bold text-slate-700 uppercase block mb-1">ថ្លៃដឹកធម្មតា (៛)</label>' +
-          '<input type="number" id="set_del_fee" placeholder="ឧ៖ 2000" class="font-black border border-slate-300 p-2 rounded-xl w-full text-center text-slate-900 bg-white">' +
-          '<span class="text-[9px] text-slate-400 block mt-1">*គិតពេលទិញតិចតួច</span>' +
-        '</div>' +
-        '<div class="p-2.5 bg-blue-50/70 rounded-2xl border border-blue-200">' +
-          '<label class="font-black text-blue-900 uppercase block mb-1">💧 ទឹកធុង ២០L ដឹក FREE</label>' +
-          '<input type="number" id="set_del_min" placeholder="ឧ៖ 2" class="font-black border-2 border-blue-300 p-2 rounded-xl w-full text-center text-blue-900 bg-white">' +
-          '<span class="text-[9px] text-blue-700 font-bold block mt-1">*កុម្ម៉ង់ចាប់ពី ២ ធុងឡើង Free</span>' +
-        '</div>' +
-        '<div class="p-2.5 bg-emerald-50 rounded-2xl border-2 border-emerald-300">' +
-          '<label class="font-black text-emerald-950 uppercase block mb-1">🍚 ទំនិញទូទៅដឹក FREE</label>' +
-          '<input type="number" id="set_del_free_amount" placeholder="ឧ៖ 50000" class="font-black border-2 border-emerald-400 bg-white text-emerald-900 p-2 rounded-xl w-full text-center">' +
-          '<span class="text-[9px] text-emerald-800 font-bold block mt-1">*ទិញអស់ចាប់ពី ៥០,០០០៛ ឡើង Free</span>' +
-        '</div>' +
-      '</div>' +
-    '</div>' +
-
-    // 🎁 ៣. កាត PROMOTION កម្រិតខ្ពស់ (មាន Checkbox រើសទំនិញច្រើនមុខព្រមគ្នា A ថែម B)
-    '<div class="card border-t-4 border-amber-500 shadow-xl p-5 mb-0 space-y-3.5 bg-white">' +
+  var html = '<div id="promoSettingsModal" class="fixed inset-0 z-[7000] flex items-center justify-center p-3 sm:p-4 overflow-y-auto">' +
+    '<div class="fixed inset-0 bg-slate-950/65 backdrop-blur-xs" onclick="document.getElementById(\'promoSettingsModal\').remove()"></div>' +
+    '<div class="bg-white rounded-3xl shadow-2xl z-10 w-full max-w-md p-5 space-y-3.5 text-center relative border border-slate-100 animate-in zoom-in-95 duration-200 my-auto max-h-[92dvh] flex flex-col">' +
       '<div class="flex justify-between items-center border-b pb-2">' +
-        '<div>' +
-          '<h3 class="font-extrabold text-amber-950 text-base flex items-center gap-2">' +
-            '<i class="fas fa-gift text-amber-500"></i>ប្រព័ន្ធ Promotion លើ Website' +
-          '</h3>' +
-          '<p class="text-[10px] text-gray-400 font-bold mt-0.5">រូបភាព Banner, កាលបរិច្ឆេទ & ថែមទំនិញច្រើនមុខព្រមគ្នា</p>' +
-        '</div>' +
-        '<select id="set_promo_status" class="text-xs font-black border-2 border-amber-400 bg-amber-50 rounded-xl p-2">' +
-          '<option value="OFF">🔕 បិទ (OFF)</option>' +
-          '<option value="ON">🔔 បើក (ON)</option>' +
-        '</select>' +
+        '<b class="text-sm font-black text-slate-900 flex items-center gap-2"><i class="fas fa-gift text-amber-500"></i> ប្រូម៉ូសិនលើ Website</b>' +
+        '<button type="button" onclick="document.getElementById(\'promoSettingsModal\').remove()" class="text-slate-400 hover:text-slate-700 text-lg font-bold">&times;</button>' +
       '</div>' +
-
-      // កាលបរិច្ឆេទ ចាប់ផ្តើម & បញ្ចប់
-      '<div class="p-3 bg-amber-50/60 rounded-2xl border border-amber-200 space-y-1.5">' +
-        '<label class="text-[10px] font-black text-amber-950 uppercase block"><i class="fas fa-calendar-days text-amber-600 mr-1"></i> កំណត់ពេលចាប់ផ្តើម និងបញ្ចប់ Promotion (Auto-Timer)</label>' +
-        '<div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-bold">' +
-          '<div><span class="text-[9.5px] text-gray-500 block mb-0.5">ថ្ងៃ & ម៉ោងចាប់ផ្តើម៖</span><input type="datetime-local" id="set_promo_start" class="border border-amber-300 p-2 rounded-xl w-full bg-white"></div>' +
-          '<div><span class="text-[9.5px] text-gray-500 block mb-0.5">ថ្ងៃ & ម៉ោងបញ្ចប់៖</span><input type="datetime-local" id="set_promo_end" class="border border-amber-300 p-2 rounded-xl w-full bg-white"></div>' +
-        '</div>' +
-      '</div>' +
-
-      // ពាក្យផ្សាយ & រូបថត Banner Promotion
-      '<div class="space-y-2 text-xs">' +
-        '<div>' +
-          '<label class="text-[10px] font-black text-gray-600 uppercase block mb-1">ពាក្យផ្សាយ Promotion លើក្បាលទំព័រ</label>' +
-          '<input type="text" id="set_promo_banner" placeholder="ឧ៖ 🎁 ប្រូម៉ូសិនពិសេស! ទិញអង្ករ ១បាវ ថែមទឹកធុងខៀវ ២ធុង Free!" class="border-2 border-amber-200 focus:border-amber-500 p-2.5 rounded-xl w-full font-bold bg-white">' +
-        '</div>' +
-
-        // ប្រអប់រូបភាព Banner Promotion
-        '<div class="p-3 bg-slate-50 border-2 border-dashed border-amber-300 rounded-2xl flex items-center justify-between gap-3">' +
-          '<div class="flex items-center gap-2.5">' +
-            '<div class="w-16 h-12 rounded-xl bg-white border flex items-center justify-center overflow-hidden shadow-xs shrink-0">' +
-              '<img id="promoBannerImgPreview" src="https://cdn-icons-png.flaticon.com/512/3100/3100566.png" class="max-w-full max-h-full object-cover">' +
-            '</div>' +
-            '<div>' +
-              '<b class="text-xs text-slate-800 block">រូបភាព Banner Promotion</b>' +
-              '<span class="text-[9.5px] text-slate-400 block" id="promoImgStatusNote">អាច Upload រូបផ្សាយពាណិជ្ជកម្មផ្ទាល់</span>' +
-              '<input type="hidden" id="set_promo_img_base64" value="">' +
-            '</div>' +
-          '</div>' +
-          '<label class="cursor-pointer px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-xs shadow-xs active:scale-95 transition whitespace-nowrap">' +
-            '<i class="fas fa-image mr-1"></i> រើសរូប Banner' +
-            '<input type="file" accept="image/*" onchange="previewPromoBannerFile(this)" class="hidden">' +
-          '</label>' +
-        '</div>' +
-      '</div>' +
-
-      // 🛒 បង្កើតលក្ខខណ្ឌថែមទំនិញ (Checkboxes រើសច្រើនមុខព្រមគ្នា)
-      '<div class="p-3.5 bg-gradient-to-br from-amber-50/80 to-orange-50/50 rounded-2xl border-2 border-amber-300 space-y-2.5">' +
-        '<div class="flex justify-between items-center">' +
-          '<b class="text-xs text-amber-950 font-black flex items-center gap-1"><i class="fas fa-boxes-packing text-amber-600"></i> លក្ខខណ្ឌថែមទំនិញ (ធីកជ្រើសរើសទំនិញច្រើនមុខព្រមគ្នា)</b>' +
-          '<span class="text-[9px] text-amber-800 bg-amber-200 px-2 py-0.5 rounded-full font-bold">Multi-Select</span>' +
-        '</div>' +
-
-        '<div class="bg-white p-3 rounded-xl border border-amber-200 space-y-2.5 text-xs shadow-2xs">' +
-          '<div>' +
-            '<div class="flex justify-between items-center mb-1">' +
-              '<span class="text-[10px] font-black text-amber-950 uppercase">១. ធីកជ្រើសរើសមុខទំនិញដែលត្រូវទិញ (អាចរើសលើសពី ១មុខ)៖</span>' +
-              '<button type="button" onclick="toggleAllPromoCheckboxes(true)" class="text-[10px] text-blue-600 font-bold hover:underline">រើសទាំងអស់</button>' +
-            '</div>' +
-            '<div class="max-h-36 overflow-y-auto p-1.5 bg-slate-50 rounded-xl border border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-1">' +
-              buyCheckboxesHtml +
-            '</div>' +
-          '</div>' +
-
-          '<div class="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">' +
-            '<div>' +
-              '<span class="text-[9.5px] font-bold text-gray-600 block mb-0.5">ចំនួនទិញ (Buy Qty)៖</span>' +
-              '<input type="number" id="pr_buy_qty" placeholder="ឧ៖ 1" value="1" class="font-black border p-2 rounded-xl w-full text-center bg-slate-50">' +
-            '</div>' +
-            '<div>' +
-              '<span class="text-[9.5px] font-bold text-emerald-900 block mb-0.5">២. ថែមជូន Free (Gift)៖</span>' +
-              '<select id="pr_free_prod" class="font-bold border-2 border-emerald-300 p-2 rounded-xl w-full bg-emerald-50 text-emerald-950 text-xs">' + freeProdOptions + '</select>' +
-            '</div>' +
-            '<div>' +
-              '<span class="text-[9.5px] font-bold text-emerald-900 block mb-0.5">ចំនួនថែម (Free Qty)៖</span>' +
-              '<input type="number" id="pr_free_qty" placeholder="ឧ៖ 2" value="2" class="font-black border-2 border-emerald-300 p-2 rounded-xl w-full text-center text-emerald-950 bg-emerald-50">' +
-            '</div>' +
-          '</div>' +
-
-          '<button type="button" onclick="addNewPromoRule()" class="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-black text-xs rounded-xl shadow-xs active:scale-95 transition flex items-center justify-center gap-1.5">' +
-            '<i class="fas fa-plus"></i> + បញ្ចូលលក្ខខណ្ឌ Promotion សម្រាប់ទំនិញដែលបានធីក' +
-          '</button>' +
-        '</div>' +
-
-        // បញ្ជីលក្ខខណ្ឌកំពុងដំណើរការ
-        '<div id="activePromoRulesContainer" class="space-y-1.5 pt-1"></div>' +
-      '</div>' +
-    '</div>' +
-
-    // 🖼️ ៥. កាតគ្រប់គ្រងផ្ទាំងស្លាយ Web (Banner & Slide Manager)
-    '<div class="card border-t-4 border-teal-600 shadow-xl p-5 mb-0 space-y-3.5 bg-white">' +
-      '<div class="flex justify-between items-center border-b pb-2">' +
-        '<div>' +
-          '<h3 class="font-extrabold text-teal-950 text-base flex items-center gap-2">' +
-            '<i class="fas fa-images text-teal-600"></i>គ្រប់គ្រងផ្ទាំងស្លាយលើ Web (Slides & Banners)' +
-          '</h3>' +
-          '<p class="text-[10px] text-gray-500 font-bold mt-0.5">ដាក់រូបភាពទំនិញពិត និងកែអក្សរលើស្លាយទាំង ៤</p>' +
-        '</div>' +
-        '<span class="text-[10px] font-black text-teal-800 bg-teal-100 px-2.5 py-0.5 rounded-full border border-teal-300">Web Slides</span>' +
-      '</div>' +
-
-      // ប៊ូតុងរើសស្លាយ ១ ដល់ ៤
-      '<div class="grid grid-cols-4 gap-1.5 p-1 bg-slate-100 rounded-2xl border text-xs font-bold">' +
-        '<button type="button" id="tabSlide_0" onclick="switchSlideEditTab(0)" class="py-2 rounded-xl bg-teal-700 text-white shadow-xs">ស្លាយ ១ (ទឹក)</button>' +
-        '<button type="button" id="tabSlide_1" onclick="switchSlideEditTab(1)" class="py-2 rounded-xl text-slate-600 hover:bg-white">ស្លាយ ២ (ស្បៀង)</button>' +
-        '<button type="button" id="tabSlide_2" onclick="switchSlideEditTab(2)" class="py-2 rounded-xl text-slate-600 hover:bg-white">ស្លាយ ៣ (ប្រើប្រាស់)</button>' +
-        '<button type="button" id="tabSlide_3" onclick="switchSlideEditTab(3)" class="py-2 rounded-xl text-slate-600 hover:bg-white">ស្លាយ ៤ (ដឹកជញ្ជូន)</button>' +
-      '</div>' +
-
-      // ប្រអប់បញ្ចូលរូបភាព
-      '<div class="p-3 bg-slate-50 border-2 border-dashed border-teal-300 rounded-2xl flex items-center justify-between gap-3">' +
-        '<div class="flex items-center gap-2.5">' +
-          '<div class="w-20 h-14 rounded-xl bg-white border flex items-center justify-center overflow-hidden shadow-xs shrink-0">' +
-            '<img id="slideImgPreview" src="https://cdn-icons-png.flaticon.com/512/3100/3100566.png" class="w-full h-full object-cover">' +
-          '</div>' +
-          '<div>' +
-            '<b class="text-xs text-slate-800 block" id="slideImgTitleHint">រូបភាពស្លាយ</b>' +
-            '<span class="text-[9.5px] text-slate-400 block" id="slideImgNote">អាច Upload រូបទំនិញជាក់ស្តែង</span>' +
-          '</div>' +
-        '</div>' +
-        '<div class="flex items-center gap-1.5">' +
-          '<label class="cursor-pointer px-3 py-2 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl text-xs shadow-xs active:scale-95 transition whitespace-nowrap">' +
-            '<i class="fas fa-camera mr-1"></i> រើសរូបភាព' +
-            '<input type="file" accept="image/*" onchange="previewSlideImageFile(this)" class="hidden">' +
-          '</label>' +
-          '<button type="button" onclick="removeSlideImage()" class="p-2 text-red-500 hover:bg-red-50 rounded-xl active:scale-90" title="លុបរូប">' +
-            '<i class="fas fa-trash-can text-xs"></i>' +
-          '</button>' +
-        '</div>' +
-      '</div>' +
-
-      // ប្រអប់កែប្រែអក្សរ
-      '<div class="space-y-2 text-xs text-left">' +
-        // 🔘 ប៊ូតុងបិទ/បើកស្លាយ (ON / OFF)
-        '<div>' +
-          '<label class="text-[10px] font-black text-slate-700 uppercase block mb-1">ស្ថានភាពស្លាយនេះ (Status) *</label>' +
-          '<select id="inp_slide_status" onchange="onSlideFieldChanged()" class="font-black border-2 border-teal-400 bg-teal-50 text-teal-950 p-2 rounded-xl w-full text-xs outline-none">' +
-            '<option value="ON">🔔 បើកបង្ហាញលើ Web (ON)</option>' +
-            '<option value="OFF">🔕 បិទមិនបង្ហាញ (OFF)</option>' +
+      '<div class="flex-1 overflow-y-auto space-y-3 text-left text-xs pr-1">' +
+        '<div class="flex justify-between items-center bg-amber-50 p-2.5 rounded-2xl border border-amber-200">' +
+          '<b class="text-amber-950 text-xs">ស្ថានភាពប្រូម៉ូសិន</b>' +
+          '<select id="set_promo_status" class="text-xs font-black border-2 border-amber-400 bg-white rounded-xl p-1.5">' +
+            '<option value="OFF">🔕 បិទ (OFF)</option><option value="ON">🔔 បើក (ON)</option>' +
           '</select>' +
         '</div>' +
-        '<div>' +
-          '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">ផ្លាកសម្គាល់ខាងលើ (Tag)</label>' +
-          '<input type="text" id="inp_slide_tag" oninput="onSlideFieldChanged()" class="font-bold border p-2 rounded-xl w-full bg-white">' +
+        '<div class="grid grid-cols-2 gap-2">' +
+          '<div><span class="text-[9.5px] font-bold text-slate-500 block mb-0.5">ម៉ោងចាប់ផ្តើម៖</span><input type="datetime-local" id="set_promo_start" class="border p-2 rounded-xl w-full bg-white text-[10px]"></div>' +
+          '<div><span class="text-[9.5px] font-bold text-slate-500 block mb-0.5">ម៉ោងបញ្ចប់៖</span><input type="datetime-local" id="set_promo_end" class="border p-2 rounded-xl w-full bg-white text-[10px]"></div>' +
         '</div>' +
-        '<div>' +
-          '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">ចំណងជើងធំ (Title) *</label>' +
-          '<input type="text" id="inp_slide_title" oninput="onSlideFieldChanged()" class="font-black border-2 border-teal-300 focus:border-teal-600 p-2 rounded-xl w-full text-slate-900 bg-white text-sm">' +
+        '<div><label class="text-[10px] font-bold text-slate-600 block mb-1">ពាក្យផ្សាយ Promotion លើក្បាលទំព័រ</label><input type="text" id="set_promo_banner" placeholder="ឧ៖ 🎁 ប្រូម៉ូសិនពិសេស..." class="border p-2 rounded-xl w-full font-bold bg-white"></div>' +
+        '<div class="p-3 bg-slate-50 border-2 border-dashed border-amber-300 rounded-2xl flex items-center justify-between gap-2">' +
+          '<div class="flex items-center gap-2">' +
+            '<img id="promoBannerImgPreview" src="https://cdn-icons-png.flaticon.com/512/3100/3100566.png" class="w-14 h-10 object-cover rounded-xl border bg-white">' +
+            '<span class="text-[10px] text-slate-500 font-bold" id="promoImgStatusNote">រូបភាព Banner</span>' +
+            '<input type="hidden" id="set_promo_img_base64" value="">' +
+          '</div>' +
+          '<label class="cursor-pointer px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-xs active:scale-95 transition"><i class="fas fa-image mr-1"></i> រើសរូប<input type="file" accept="image/*" onchange="previewPromoBannerFile(this)" class="hidden"></label>' +
         '</div>' +
-        '<div>' +
-          '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">ការពិពណ៌នាសង្ខេប (Description)</label>' +
-          '<textarea id="inp_slide_desc" oninput="onSlideFieldChanged()" rows="2" class="font-bold border p-2 rounded-xl w-full bg-white text-xs"></textarea>' +
-        '</div>' +
-      '</div>' +
-
-      '<button type="button" onclick="saveSlidesConfigToSupabase()" id="btnSaveSlidesAction" class="w-full py-3 bg-teal-700 hover:bg-teal-800 text-white rounded-2xl font-black text-xs sm:text-sm shadow-md active:scale-95 transition flex items-center justify-center gap-1.5">' +
-        '<i class="fas fa-floppy-disk"></i> រក្សាទុកផ្ទាំងស្លាយទាំងអស់ (Save Slides)' +
-      '</button>' +
-    '</div>' +
-
-// 🔔 ៤. Telegram Bot Alert (គាំទ្រទាំង Group ថៅកែ និង Group អ្នកដឹក)
-    '<div class="card border-t-4 border-green-600 shadow-xl p-5 mb-0 space-y-3">' +
-      '<div class="flex justify-between items-center">' +
-        '<h3 class="font-extrabold text-green-950 text-base flex items-center gap-2"><i class="fab fa-telegram text-blue-500"></i>Telegram Bot Alert</h3>' +
-        '<div class="flex items-center gap-1.5">' +
-          '<button type="button" id="btnToggleTelegramStatus" onclick="toggleTelegramAlertStatusLive()" class="px-3 py-1.5 rounded-xl text-xs font-black shadow-xs active:scale-95 transition flex items-center gap-1.5"></button>' +
-          '<button type="button" onclick="testTelegramAlertNow()" class="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold rounded-xl border border-blue-200">🔔 តេស្ត</button>' +
+        '<div class="p-3 bg-amber-50/70 rounded-2xl border border-amber-300 space-y-2">' +
+          '<div class="flex justify-between items-center mb-1"><span class="text-[10px] font-black text-amber-950 uppercase">១. ធីកទំនិញដែលត្រូវទិញ (Multi-Select)៖</span><button type="button" onclick="toggleAllPromoCheckboxes(true)" class="text-[10px] text-blue-600 font-bold">រើសទាំងអស់</button></div>' +
+          '<div class="max-h-28 overflow-y-auto p-1 bg-white rounded-xl border border-amber-200 grid grid-cols-1 gap-1">' + buyCheckboxesHtml + '</div>' +
+          '<div class="grid grid-cols-3 gap-1.5 pt-1">' +
+            '<div><span class="text-[9px] font-bold block mb-0.5">ចំនួនទិញ៖</span><input type="number" id="pr_buy_qty" value="1" class="font-black border p-1.5 rounded-xl w-full text-center bg-white"></div>' +
+            '<div><span class="text-[9px] font-bold block mb-0.5">ថែម Free៖</span><select id="pr_free_prod" class="font-bold border p-1.5 rounded-xl w-full bg-white text-[10px]">' + freeProdOptions + '</select></div>' +
+            '<div><span class="text-[9px] font-bold block mb-0.5">ចំនួនថែម៖</span><input type="number" id="pr_free_qty" value="1" class="font-black border p-1.5 rounded-xl w-full text-center bg-white"></div>' +
+          '</div>' +
+          '<button type="button" onclick="addNewPromoRule()" class="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white font-black rounded-xl text-xs shadow-xs active:scale-95 transition"><i class="fas fa-plus mr-1"></i> បញ្ចូលលក្ខខណ្ឌ Promotion</button>' +
+          '<div id="activePromoRulesContainer" class="space-y-1 pt-1"></div>' +
         '</div>' +
       '</div>' +
-      '<div class="space-y-2 text-xs">' +
-        '<div><span class="text-[9.5px] font-bold text-gray-500 block mb-0.5">🔑 Telegram Bot Token៖</span><input type="password" id="set_tg_token" placeholder="Bot Token (ឧ៖ 123456:ABC-DEF...)" class="border p-2 rounded-xl w-full font-mono bg-white"></div>' +
-        '<div><span class="text-[9.5px] font-bold text-gray-500 block mb-0.5">🏢 Chat ID ក្រុមថៅកែ (ដំណឹងទី១៖ ភ្ញៀវដកទឹក, លក់, ចំណាយ, ស្តុក)៖</span><input type="text" id="set_tg_chatid" placeholder="Chat ID ថៅកែ (ឧ៖ -100xxxxxxxxxx)" class="border p-2 rounded-xl w-full font-mono bg-white"></div>' +
-        '<div><span class="text-[9.5px] font-black text-blue-900 block mb-0.5">🛵 Chat ID ក្រុមអ្នកដឹកជញ្ជូន (ដំណឹងទី២៖ ចាត់ចែងការងារដឹកទឹក)៖</span><input type="text" id="set_tg_driver_chatid" placeholder="Chat ID ក្រុមអ្នកដឹក (ឧ៖ -100yyyyyyyyyy)" class="border-2 border-blue-300 p-2 rounded-xl w-full font-mono bg-blue-50/50 text-blue-950"></div>' +
+      '<div class="grid grid-cols-2 gap-2 pt-1 border-t">' +
+        '<button type="button" onclick="document.getElementById(\'promoSettingsModal\').remove()" class="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs active:scale-95 transition">បិទ</button>' +
+        '<button type="button" onclick="saveSettingsToSupabase().then(() => document.getElementById(\'promoSettingsModal\').remove())" class="py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-black rounded-xl text-xs shadow-md active:scale-95 transition">រក្សាទុក</button>' +
       '</div>' +
-      '<button onclick="saveSettingsToSupabase()" id="btnSaveAllSettings" class="btn-green py-3.5 text-sm font-black shadow-md flex items-center justify-center gap-2">' +
-        '<i class="fas fa-floppy-disk"></i> រក្សាទុកការកំណត់ទាំងអស់ (Save All Settings)' +
-      '</button>' +
     '</div>' +
   '</div>';
+  document.body.insertAdjacentHTML('beforeend', html);
+  await loadSettingsForm();
+}
+
+// 🖼️ ៤. POP-UP ផ្ទាំងស្លាយលើ WEB (Slides Settings Modal)
+async function openSlidesSettingsModal() {
+  var existing = document.getElementById('slidesSettingsModal');
+  if (existing) existing.remove();
+
+  var html = '<div id="slidesSettingsModal" class="fixed inset-0 z-[7000] flex items-center justify-center p-3 sm:p-4 overflow-y-auto">' +
+    '<div class="fixed inset-0 bg-slate-950/65 backdrop-blur-xs" onclick="document.getElementById(\'slidesSettingsModal\').remove()"></div>' +
+    '<div class="bg-white rounded-3xl shadow-2xl z-10 w-full max-w-md p-5 space-y-3.5 text-center relative border border-slate-100 animate-in zoom-in-95 duration-200 my-auto max-h-[92dvh] flex flex-col">' +
+      '<div class="flex justify-between items-center border-b pb-2">' +
+        '<b class="text-sm font-black text-slate-900 flex items-center gap-2"><i class="fas fa-images text-teal-600"></i> គ្រប់គ្រងផ្ទាំងស្លាយ Web (Slides)</b>' +
+        '<button type="button" onclick="document.getElementById(\'slidesSettingsModal\').remove()" class="text-slate-400 hover:text-slate-700 text-lg font-bold">&times;</button>' +
+      '</div>' +
+      '<div class="grid grid-cols-4 gap-1 p-1 bg-slate-100 rounded-2xl border text-xs font-bold">' +
+        '<button type="button" id="tabSlide_0" onclick="switchSlideEditTab(0)" class="py-1.5 rounded-xl bg-teal-700 text-white text-[11px]">ស្លាយ ១</button>' +
+        '<button type="button" id="tabSlide_1" onclick="switchSlideEditTab(1)" class="py-1.5 rounded-xl text-slate-600 hover:bg-white text-[11px]">ស្លាយ ២</button>' +
+        '<button type="button" id="tabSlide_2" onclick="switchSlideEditTab(2)" class="py-1.5 rounded-xl text-slate-600 hover:bg-white text-[11px]">ស្លាយ ៣</button>' +
+        '<button type="button" id="tabSlide_3" onclick="switchSlideEditTab(3)" class="py-1.5 rounded-xl text-slate-600 hover:bg-white text-[11px]">ស្លាយ ៤</button>' +
+      '</div>' +
+      '<div class="flex-1 overflow-y-auto space-y-2 text-left text-xs pr-1">' +
+        '<div class="p-2.5 bg-slate-50 border-2 border-dashed border-teal-300 rounded-2xl flex items-center justify-between gap-2">' +
+          '<div class="flex items-center gap-2">' +
+            '<img id="slideImgPreview" src="https://cdn-icons-png.flaticon.com/512/3100/3100566.png" class="w-16 h-12 object-cover rounded-xl border bg-white">' +
+            '<span class="text-[10px] text-slate-600 font-bold" id="slideImgTitleHint">រូបភាពស្លាយ</span>' +
+          '</div>' +
+          '<div class="flex items-center gap-1">' +
+            '<label class="cursor-pointer px-2.5 py-1.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl text-xs active:scale-95 transition"><i class="fas fa-camera mr-1"></i> រើសរូប<input type="file" accept="image/*" onchange="previewSlideImageFile(this)" class="hidden"></label>' +
+            '<button type="button" onclick="removeSlideImage()" class="p-1.5 text-red-500 hover:bg-red-50 rounded-lg"><i class="fas fa-trash-can text-xs"></i></button>' +
+          '</div>' +
+        '</div>' +
+        '<div><label class="text-[10px] font-black block mb-0.5">ស្ថានភាពស្លាយនេះ (Status) *</label><select id="inp_slide_status" onchange="onSlideFieldChanged()" class="font-black border border-teal-400 bg-teal-50 p-2 rounded-xl w-full text-xs"><option value="ON">🔔 បើក (ON)</option><option value="OFF">🔕 បិទ (OFF)</option></select></div>' +
+        '<div><label class="text-[10px] font-bold text-slate-500 block mb-0.5">ផ្លាកសម្គាល់ (Tag)</label><input type="text" id="inp_slide_tag" oninput="onSlideFieldChanged()" class="font-bold border p-2 rounded-xl w-full bg-white"></div>' +
+        '<div><label class="text-[10px] font-bold text-slate-500 block mb-0.5">ចំណងជើងធំ (Title) *</label><input type="text" id="inp_slide_title" oninput="onSlideFieldChanged()" class="font-black border p-2 rounded-xl w-full bg-white text-xs"></div>' +
+        '<div><label class="text-[10px] font-bold text-slate-500 block mb-0.5">ការពិពណ៌នា (Description)</label><textarea id="inp_slide_desc" oninput="onSlideFieldChanged()" rows="2" class="font-bold border p-2 rounded-xl w-full bg-white text-xs"></textarea></div>' +
+      '</div>' +
+      '<div class="grid grid-cols-2 gap-2 pt-1 border-t">' +
+        '<button type="button" onclick="document.getElementById(\'slidesSettingsModal\').remove()" class="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs active:scale-95 transition">បិទ</button>' +
+        '<button type="button" onclick="saveSlidesConfigToSupabase().then(() => document.getElementById(\'slidesSettingsModal\').remove())" class="py-2.5 bg-teal-700 hover:bg-teal-800 text-white font-black rounded-xl text-xs shadow-md active:scale-95 transition">រក្សាទុកស្លាយ</button>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+  document.body.insertAdjacentHTML('beforeend', html);
+  await loadSettingsForm();
+  switchSlideEditTab(0);
+}
+
+// 🔔 ៥. POP-UP TELEGRAM BOT ALERTS (Telegram Settings Modal)
+async function openTelegramSettingsModal() {
+  var existing = document.getElementById('telegramSettingsModal');
+  if (existing) existing.remove();
+
+  var html = '<div id="telegramSettingsModal" class="fixed inset-0 z-[7000] flex items-center justify-center p-4 overflow-y-auto">' +
+    '<div class="fixed inset-0 bg-slate-950/65 backdrop-blur-xs" onclick="document.getElementById(\'telegramSettingsModal\').remove()"></div>' +
+    '<div class="bg-white rounded-3xl shadow-2xl z-10 w-full max-w-sm p-5 space-y-3.5 text-center relative border border-slate-100 animate-in zoom-in-95 duration-200 my-auto">' +
+      '<div class="flex justify-between items-center border-b pb-2">' +
+        '<b class="text-sm font-black text-slate-900 flex items-center gap-2"><i class="fab fa-telegram text-blue-500"></i> Telegram Bot Alerts</b>' +
+        '<button type="button" onclick="document.getElementById(\'telegramSettingsModal\').remove()" class="text-slate-400 hover:text-slate-700 text-lg font-bold">&times;</button>' +
+      '</div>' +
+      '<div class="flex justify-between items-center bg-slate-50 p-2.5 rounded-2xl border">' +
+        '<span class="text-xs font-bold text-slate-700">ស្ថានភាព Alert</span>' +
+        '<div class="flex items-center gap-1.5">' +
+          '<button type="button" id="btnToggleTelegramStatus" onclick="toggleTelegramAlertStatusLive()" class="px-2.5 py-1 rounded-xl text-xs font-black shadow-xs"></button>' +
+          '<button type="button" onclick="testTelegramAlertNow()" class="px-2 py-1 bg-blue-50 text-blue-700 text-xs font-bold rounded-xl border border-blue-200">🔔 តេស្ត</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="space-y-2 text-left text-xs">' +
+        '<div><span class="text-[9.5px] font-bold text-slate-500 block mb-0.5">🔑 Bot Token៖</span><input type="password" id="set_tg_token" class="border p-2 rounded-xl w-full font-mono bg-white text-xs"></div>' +
+        '<div><span class="text-[9.5px] font-bold text-slate-500 block mb-0.5">🏢 Chat ID ថៅកែ (លក់/ចំណាយ/ស្តុក)៖</span><input type="text" id="set_tg_chatid" class="border p-2 rounded-xl w-full font-mono bg-white text-xs"></div>' +
+        '<div><span class="text-[9.5px] font-black text-blue-900 block mb-0.5">🛵 Chat ID ក្រុមអ្នកដឹក (ចាត់ចែងដឹកទឹក)៖</span><input type="text" id="set_tg_driver_chatid" class="border-2 border-blue-300 p-2 rounded-xl w-full font-mono bg-blue-50/50 text-blue-950 text-xs"></div>' +
+      '</div>' +
+      '<div class="grid grid-cols-2 gap-2 pt-1">' +
+        '<button type="button" onclick="document.getElementById(\'telegramSettingsModal\').remove()" class="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs active:scale-95 transition">បិទ</button>' +
+        '<button type="button" onclick="saveSettingsToSupabase().then(() => document.getElementById(\'telegramSettingsModal\').remove())" class="py-2.5 bg-green-600 hover:bg-green-700 text-white font-black rounded-xl text-xs shadow-md active:scale-95 transition">រក្សាទុក</button>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+  document.body.insertAdjacentHTML('beforeend', html);
+  await loadSettingsForm();
+}
 
   loadSettingsForm();
   switchSlideEditTab(0); // 👈 បង្ហាញស្លាយទី ១ ដំបូងគេ
