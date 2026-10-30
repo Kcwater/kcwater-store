@@ -1811,21 +1811,31 @@ function toggleFavoriteProduct(prodId, event) {
   renderCatalogGrid(activeCatalogCategoryFilter);
 }
 
-// ==========================================
-// 📂 មុខងារបង្កើតប្រអប់ប្រភេទស្វ័យប្រវត្តិ (បង្ហាញតែប្រអប់ដែលមានទំនិញ + ❤️ ចូលចិត្ត)
-// ==========================================
+// ==========================================================================
+// 📂 បញ្ជី CATEGORIES លើ WEB (SYNC ពី SUPABASE អូតូ)
+// ==========================================================================
+var DYNAMIC_STORE_CATEGORIES = [
+  { key: "BARREL", name: "ទឹកធុង ២០L", icon: "💧" },
+  { key: "PACK", name: "ទឹកយួរ / ដប", icon: "📦" },
+  { key: "GROCERY", name: "ស្បៀង & គ្រឿងទេស", icon: "🍚" },
+  { key: "HOUSEHOLD", name: "របស់ប្រើប្រាស់", icon: "🧻" },
+  { key: "EQUIP", name: "បរិក្ខារ / ជើងទម្រ", icon: "🛢️" }
+];
+
+// ==========================================================================
+// 📂 មុខងារបង្កើតប្រអប់ប្រភេទស្វ័យប្រវត្តិ (DYNAMIC CATEGORIES & AUTO-HIDE 0 ITEMS)
+// ==========================================================================
 var activeCatalogCategoryFilter = 'ALL';
 
 function renderCategoryChips() {
   var container = document.getElementById('categoryChipsContainer');
   if (!container) return;
 
-  // ១. រាប់ចំនួនទំនិញជាក់ស្តែងតាមប្រភេទនីមួយៗ
-  var counts = { GROCERY: 0, HOUSEHOLD: 0, BARREL: 0, PACK: 0, EQUIP: 0, GENERAL: 0 };
+  // ១. រាប់ចំនួនទំនិញជាក់ស្តែងតាម Category នីមួយៗ (រាប់គ្រប់ Category ទាំងអស់)
+  var counts = {};
   STORE_CATALOG.forEach(function(item) {
     var c = (item.cat || 'GENERAL').toUpperCase();
-    if (counts[c] !== undefined) counts[c]++;
-    else counts.GENERAL++;
+    counts[c] = (counts[c] || 0) + 1;
   });
 
   // ២. រាប់ចំនួនទំនិញដែលភ្ញៀវបានចុចបេះដូង ❤️
@@ -1837,55 +1847,59 @@ function renderCategoryChips() {
     }
   });
 
-  // ៣. វចនានុក្រមឈ្មោះតាម ៣ ភាសា
-  var labels = {
-    ALL: (currentLang === 'en' ? 'All' : (currentLang === 'zh' ? '全部' : 'ទាំងអស់')),
-    FAVORITES: (currentLang === 'en' ? '❤️ Favorites' : (currentLang === 'zh' ? '❤️ 收藏' : '❤️ ចូលចិត្ត')) + (favCount > 0 ? ' (' + favCount + ')' : ''),
-    GROCERY: (currentLang === 'en' ? '🍚 Food & Groceries' : (currentLang === 'zh' ? '🍚 粮油副食' : '🍚 ស្បៀង & គ្រឿងទេស')),
-    HOUSEHOLD: (currentLang === 'en' ? '🧻 Daily Essentials' : (currentLang === 'zh' ? '🧻 日常百货' : '🧻 របស់ប្រើប្រាស់')),
-    BARREL: (currentLang === 'en' ? '💧 20L Barrels' : (currentLang === 'zh' ? '💧 20L 大桶水' : '💧 ទឹកធុង ២០L')),
-    PACK: (currentLang === 'en' ? '📦 Bottled Packs' : (currentLang === 'zh' ? '📦 瓶装/提装' : '📦 ទឹកយួរ / ដប')),
-    EQUIP: (currentLang === 'en' ? '🛢️ Stands & Equipment' : (currentLang === 'zh' ? '🛢️ 支架配件' : '🛢️ ជើងទម្រ / បរិក្ខារ'))
-  };
+  // ៣. វចនានុក្រមបកប្រែពាក្យ All & Favorites តាម ៣ ភាសា
+  var labelAll = (currentLang === 'en' ? 'All' : (currentLang === 'zh' ? '全部' : 'ទាំងអស់'));
+  var labelFav = (currentLang === 'en' ? '❤️ Favorites' : (currentLang === 'zh' ? '❤️ 收藏' : '❤️ ចូលចិត្ត')) + (favCount > 0 ? ' (' + favCount + ')' : '');
 
   var html = '';
 
-  // ក. ប៊ូតុង "ទាំងអស់" (បង្ហាញជានិច្ច)
+  // ក. ប៊ូតុង "ទាំងអស់" (All)
   var isAllActive = (activeCatalogCategoryFilter === 'ALL');
   html += '<button type="button" onclick="filterCatalog(\'ALL\', this)" id="catBtn_ALL" class="cat-chip px-4 py-2 rounded-2xl whitespace-nowrap active:scale-95 transition ' + 
-    (isAllActive ? 'bg-emerald-700 text-white shadow-xs' : 'bg-white text-slate-600 border border-slate-200') + '">' + 
-    labels.ALL + 
+    (isAllActive ? 'bg-emerald-700 text-white shadow-xs font-black' : 'bg-white text-slate-600 border border-slate-200') + '">' + 
+    labelAll + 
   '</button>';
 
-  // ខ. ប៊ូតុង "❤️ ចូលចិត្ត" (បង្ហាញតែពេលមានចុចបេះដូង favCount > 0 បើគ្មានទេគឺលាក់ចោល ១០០%)
+  // ខ. ប៊ូតុង "❤️ ចូលចិត្ត" (បង្ហាញតែពេល favCount > 0)
   if (favCount > 0) {
     var isFavActive = (activeCatalogCategoryFilter === 'FAVORITES');
     html += '<button type="button" onclick="filterCatalog(\'FAVORITES\', this)" id="catBtn_FAVORITES" class="cat-chip px-3.5 py-2 rounded-2xl whitespace-nowrap active:scale-95 transition flex items-center gap-1 ' + 
       (isFavActive ? 'bg-rose-600 text-white shadow-xs font-black' : 'bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100') + '">' + 
-      labels.FAVORITES + 
+      labelFav + 
     '</button>';
   } else {
-    // បើភ្ញៀវដកបេះដូងអស់ ឱ្យត្រឡប់ទៅមើលទំនិញទាំងអស់ (ALL) វិញស្វ័យប្រវត្តិ
     if (activeCatalogCategoryFilter === 'FAVORITES') {
       activeCatalogCategoryFilter = 'ALL';
     }
   }
 
-  // គ. ត្រួតពិនិត្យ និងបង្ហាញតែប្រអប់ណាដែលមានចំនួនទំនិញ > 0 ប៉ុណ្ណោះ!
-  var categoriesToCheck = [
-    { key: 'GROCERY', label: labels.GROCERY, count: counts.GROCERY },
-    { key: 'HOUSEHOLD', label: labels.HOUSEHOLD, count: counts.HOUSEHOLD },
-    { key: 'BARREL', label: labels.BARREL, count: counts.BARREL },
-    { key: 'PACK', label: labels.PACK, count: counts.PACK },
-    { key: 'EQUIP', label: labels.EQUIP, count: counts.EQUIP }
-  ];
+  // គ. វចនានុក្រមបកប្រែ ៣ ភាសាសម្រាប់ Category គោល
+  var defaultTranslations = {
+    BARREL: { en: '💧 20L Barrels', zh: '💧 20L 大桶水', km: '💧 ទឹកធុង ២០L' },
+    PACK: { en: '📦 Bottled Packs', zh: '📦 瓶装/提装', km: '📦 ទឹកយួរ / ដប' },
+    GROCERY: { en: '🍚 Food & Groceries', zh: '🍚 粮油副食', km: '🍚 ស្បៀង & គ្រឿងទេស' },
+    HOUSEHOLD: { en: '🧻 Daily Essentials', zh: '🧻 日常百货', km: '🧻 របស់ប្រើប្រាស់' },
+    EQUIP: { en: '🛢️ Stands & Equipment', zh: '🛢️ 支架配件', km: '🛢️ ជើងទម្រ / បរិក្ខារ' }
+  };
 
-  categoriesToCheck.forEach(function(cat) {
-    if (cat.count > 0) { // ✅ បើគ្មានទំនិញ វាមិនបង្កើតប៊ូតុងឡើយ
-      var isActive = (activeCatalogCategoryFilter === cat.key);
-      html += '<button type="button" onclick="filterCatalog(\'' + cat.key + '\', this)" id="catBtn_' + cat.key + '" class="cat-chip px-4 py-2 rounded-2xl whitespace-nowrap active:scale-95 transition ' + 
-        (isActive ? 'bg-emerald-700 text-white shadow-xs' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50') + '">' + 
-        cat.label + 
+  // ឃ. បង្កើតប៊ូតុងតាម Dynamic Categories (បង្ហាញតែ Category ណាដែលមានទំនិញ > 0)
+  DYNAMIC_STORE_CATEGORIES.forEach(function(cat) {
+    var cKey = cat.key.toUpperCase();
+    var itemCount = counts[cKey] || 0;
+
+    if (itemCount > 0) { // ✅ បើគ្មានទំនិញ មិនបង្ហាញឡើយ
+      var isActive = (activeCatalogCategoryFilter === cKey);
+      var displayName = '';
+
+      if (defaultTranslations[cKey]) {
+        displayName = defaultTranslations[cKey][currentLang] || defaultTranslations[cKey].km;
+      } else {
+        displayName = (cat.icon || '📦') + ' ' + cat.name;
+      }
+
+      html += '<button type="button" onclick="filterCatalog(\'' + cKey + '\', this)" id="catBtn_' + cKey + '" class="cat-chip px-4 py-2 rounded-2xl whitespace-nowrap active:scale-95 transition ' + 
+        (isActive ? 'bg-emerald-700 text-white shadow-xs font-black' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50') + '">' + 
+        displayName + 
       '</button>';
     }
   });
@@ -2939,6 +2953,16 @@ async function loadStoreSettingsFromSupabase() {
       sMap = {};
       settings.forEach(r => { sMap[r.key] = r.value; });
       window.__kcCachedSettingsMap = sMap;
+    }
+
+    // 📂 ទាញយក Category ពី Cloud Supabase
+    if (sMap['Store_Categories']) {
+      try {
+        var parsedCats = JSON.parse(sMap['Store_Categories']);
+        if (Array.isArray(parsedCats) && parsedCats.length > 0) {
+          DYNAMIC_STORE_CATEGORIES = parsedCats;
+        }
+      } catch(e) {}
     }
 
     // ១. កំណត់ Telegram Bot Settings
