@@ -1896,19 +1896,21 @@ function renderCategoryChips() {
     EQUIP: { en: '🛢️ Stands & Equipment', zh: '🛢️ 支架配件', km: '🛢️ ជើងទម្រ / បរិក្ខារ' }
   };
 
-  // ឃ. បង្កើតប៊ូតុងតាម Dynamic Categories (បង្ហាញតែ Category ណាដែលមានទំនិញ > 0)
+  // ឃ. បង្កើតប៊ូតុងតាម Dynamic Categories (បកប្រែ ៣ ភាសាស្វ័យប្រវត្តិ ១០០%)
   DYNAMIC_STORE_CATEGORIES.forEach(function(cat) {
     var cKey = cat.key.toUpperCase();
     var itemCount = counts[cKey] || 0;
 
-    if (itemCount > 0) { // ✅ បើគ្មានទំនិញ មិនបង្ហាញឡើយ
+    if (itemCount > 0) { // ✅ បង្ហាញតែ Category ណាដែលមានទំនិញ
       var isActive = (activeCatalogCategoryFilter === cKey);
       var displayName = '';
 
       if (defaultTranslations[cKey]) {
         displayName = defaultTranslations[cKey][currentLang] || defaultTranslations[cKey].km;
       } else {
-        displayName = (cat.icon || '📦') + ' ' + cat.name;
+        // 🌐 បើជា Category ថ្មីស្រឡាង បញ្ជូនទៅបកប្រែស្វ័យប្រវត្តិភ្លាម
+        var translatedCatName = (currentLang === 'km') ? cat.name : getLocalizedText(cat.name, currentLang);
+        displayName = (cat.icon || '📦') + ' <span data-trans-key="' + cat.name + '">' + translatedCatName + '</span>';
       }
 
       html += '<button type="button" onclick="filterCatalog(\'' + cKey + '\', this)" id="catBtn_' + cKey + '" class="cat-chip px-4 py-2 rounded-2xl whitespace-nowrap active:scale-95 transition ' + 
