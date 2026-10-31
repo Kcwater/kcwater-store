@@ -440,7 +440,7 @@ function switchStockSortView(tab) {
   renderStockTableRows();
 }
 
-// 📋 មុខងារបង្ហាញតារាងទំនិញ (មានប៊ូតុងព្រួញ ⬆️ ⬇️ រៀបលំដាប់ងាយស្រួលបំផុត ១ ឃ្លីក & ពហុរូបិយប័ណ្ណ)
+// 📋 មុខងារបង្ហាញតារាងទំនិញ (មានបង្ហាញឈ្មោះដេប៉ូផ្គត់ផ្គង់ & ប៊ូតុង ⬆️ ⬇️ រៀបលំដាប់)
 function renderStockTableRows() {
   var tbody = document.getElementById('stockModuleTableBody');
   if (!tbody) return;
@@ -524,9 +524,7 @@ function renderStockTableRows() {
     var sortPosNum = (p.sort_order !== null && p.sort_order !== undefined && p.sort_order !== '') ? parseInt(p.sort_order) : 99;
     var sortWebNum = (p.online_sort_order !== null && p.online_sort_order !== undefined && p.online_sort_order !== '') ? parseInt(p.online_sort_order) : sortPosNum;
 
-    // ⚡ រចនាបថប៊ូតុង ⬆️ ⬇️ រៀបលំដាប់រហ័សតាម Tab ដែលកំពុងបើក
     var sortControlHtml = '';
-
     if (isWebTab) {
       if (isForWeb) {
         sortControlHtml = '<div class="flex items-center justify-center gap-1">' +
@@ -551,6 +549,17 @@ function renderStockTableRows() {
       }
     }
 
+    // 🏬 រកឈ្មោះដេប៉ូដែលផ្គត់ផ្គង់ទំនិញនេះ
+    var depotBadge = '';
+    if (p.type === 'ផលិតឯង') {
+      depotBadge = '<span class="text-[9px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.2 rounded border border-blue-200 inline-flex items-center gap-1 mt-0.5"><i class="fas fa-droplet text-[8px] text-blue-500"></i> ឃ្លាំង KC</span>';
+    } else {
+      var dObj = (activePartnerDepots || []).find(d => d.id === p.depot_id);
+      var dName = dObj ? dObj.name : 'ដេប៉ូដៃគូ';
+      var dTerm = (dObj && dObj.payTerms === 'CASH') ? '💵' : '📝';
+      depotBadge = '<span class="text-[9px] font-bold text-rose-800 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-200 inline-flex items-center gap-1 mt-0.5" title="' + dName + '"><i class="fas fa-shop-lock text-[8px] text-rose-500"></i> ' + dTerm + ' ' + dName + '</span>';
+    }
+
     html += '<tr class="border-b hover:bg-gray-50">' +
       '<td class="p-2 text-center ' + (isWebTab ? 'bg-emerald-50/30' : 'bg-blue-50/30') + ' whitespace-nowrap">' +
         sortControlHtml +
@@ -559,6 +568,7 @@ function renderStockTableRows() {
       '<td class="p-2.5 font-bold text-gray-800">' + 
         p.name + 
         '<br><span class="text-[9px] text-gray-400 font-normal">' + p.type + ' | ' + curr + '</span>' +
+        '<br>' + depotBadge + 
       '</td>' +
       '<td class="p-2.5 text-center">' + chBadge + '</td>' +
       '<td class="p-2.5 text-center text-[10.5px] leading-tight">' + 
@@ -731,17 +741,33 @@ async function autoFixAllSortDuplicates() {
   }
 }
 
-// 🔄 ទាញលេខ Web ពី Database មកបញ្ចូលលើ allProducts ជានិច្ច
+// 🔄 ទាញលេខ Web & ដេប៉ូផ្គត់ផ្គង់ ពី Database មកបញ្ចូលលើ allProducts ជានិច្ច
 async function syncOnlineSortsFromDatabase() {
   try {
-    const { data: setList } = await supabaseClient.from('settings').select('key, value').like('key', 'ONLINE_SORT_%');
-    var map = {};
-    (setList || []).forEach(r => { map[r.key.replace('ONLINE_SORT_', '')] = parseInt(r.value); });
-    allProducts.forEach(p => {
-      if (map[p.id] !== undefined) p.online_sort_order = map[p.id];
+    const [sortRes, depotRes] = await Promise.all([
+      supabaseClient.from('settings').select('key, value').like('key', 'ONLINE_SORT_%'),
+      supabaseClient.from('settings').select('key, value').like('key', 'DEPOT_%')
+    ]);
+
+    var sortMap = {};
+    var depotMap = {};
+
+    (sortRes.data || []).forEach(function(r) {
+      sortMap[r.key.replace('ONLINE_SORT_', '')] = parseInt(r.value);
+    });
+
+    (depotRes.data || []).forEach(function(r) {
+      depotMap[r.key.replace('DEPOT_', '')] = r.value;
+    });
+
+    allProducts.forEach(function(p) {
+      if (sortMap[p.id] !== undefined) p.online_sort_order = sortMap[p.id];
+      // ភ្ជាប់ដេប៉ូជាមួយទំនិញ (បើផលិតឯង គឺឃ្លាំងរោងចក្រ KC)
+      p.depot_id = depotMap[p.id] || (p.type === 'ផលិតឯង' ? 'DEPOT_KC' : 'DEPOT_KC');
     });
   } catch(e) {}
 }
+
 // 🧹 មុខងារជម្រះប្រអប់បញ្ចូលទិន្នន័យទំនិញឱ្យនៅទទេស្អាត ១០០% ត្រៀមបញ្ចូលទំនិញថ្មី (ជួសជុល bug រួចរាល់)
 function cancelEditProduct() {
   editingProductId = null;
