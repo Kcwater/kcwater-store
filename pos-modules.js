@@ -8,7 +8,7 @@ var editingProductId = null;
 var custPortalDataCache = null;
 var currentCustPayMode = "ABA";
 
-// 📦 ១. គ្រប់គ្រងស្តុក & បង្កើតទំនិញ (មានប្រព័ន្ធ Live KHR Converter បង្ហាញលុយខ្មែរអូតូពេលវាយ ฿ ឬ $)
+// 📦 ១. គ្រប់គ្រងស្តុក & បង្កើតទំនិញ (មានភ្ជាប់ប្រអប់រើសដេប៉ូដៃគូផ្គត់ផ្គង់)
 function renderStockModule() {
   var area = document.getElementById('contentArea');
   if (!area) return;
@@ -60,6 +60,17 @@ function renderStockModule() {
               '<input type="number" id="pInitialStock" placeholder="ឧ៖ 50 ឬ 10" value="50" class="border-2 border-blue-300 focus:border-blue-600 p-2.5 rounded-xl font-black text-blue-900 w-full text-xs outline-none bg-blue-50/30">' +
             '</div>' +
           '</div>' +
+
+          // 🏬 ប្រអប់ជ្រើសរើសដេប៉ូដៃគូផ្គត់ផ្គង់ (Supplier Depot)
+          '<div class="p-2.5 bg-rose-50/70 rounded-2xl border-2 border-rose-200 space-y-1">' +
+            '<div class="flex justify-between items-center">' +
+              '<label class="text-[10px] font-black text-rose-950 uppercase flex items-center gap-1">' +
+                '<i class="fas fa-shop-lock text-rose-600"></i> ដេប៉ូដៃគូផ្គត់ផ្គង់ (Supplier Depot) *' +
+              '</label>' +
+              '<span id="pDepotTermsBadge"></span>' +
+            '</div>' +
+            '<select id="pSupplierDepot" onchange="onProductDepotChange()" class="border-2 border-rose-300 focus:border-rose-600 p-2 rounded-xl font-black w-full text-xs bg-white text-rose-950 outline-none"></select>' +
+          '</div>' +
         '</div>' +
   
         // 🏷️ ប៉ុស្តិ៍លក់, ប្រភេទទំនិញ, និង ផ្លាកសម្គាល់
@@ -96,7 +107,7 @@ function renderStockModule() {
           '</div>' +
         '</div>' +
 
-        // 💵 ប្រអប់តម្លៃ (POS vs Online) មានភ្ជាប់ Live KHR Hint
+        // 💵 ប្រអប់តម្លៃ (POS vs Online)
         '<div id="priceInputsContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 bg-emerald-50/60 p-3 rounded-2xl border border-emerald-200">' +
           '<div id="secPosPrice">' +
             '<div class="flex justify-between items-center mb-1">' +
@@ -197,12 +208,14 @@ function renderStockModule() {
   toggleChannelPrices();
   initStockModuleDropdowns();
 
-  // 📂 ផ្ទុក Category ពី Supabase មកដាក់ក្នុង Dropdown
+  // 📂 ផ្ទុក Category & ដេប៉ូដៃគូ មកដាក់ក្នុង Dropdown ស្វ័យប្រវត្តិ
   loadCategoriesFromSupabase().then(function() {
     populateProductCategoryDropdown();
   });
+  loadDepotsFromSupabase().then(function() {
+    populateProductDepotDropdown();
+  });
 
-  // ⚡ ហៅទិន្នន័យតែម្តងគត់យ៉ាងត្រឹមត្រូវ
   if (!allProducts || allProducts.length === 0) {
     fetchInitialPOSData().then(function() {
       if (typeof syncOnlineSortsFromDatabase === 'function') {
@@ -787,7 +800,7 @@ function cancelEditProduct() {
   if (nameInp) setTimeout(function() { nameInp.focus(); }, 150);
 }
 
-// 📋 មុខងាររៀបចំកែប្រែទំនិញ (ទាញ Category, Description & បង្ហាញការបំប្លែងលុយខ្មែរភ្លាមៗ)
+// 📋 មុខងាររៀបចំកែប្រែទំនិញ (ទាញ Category, ដេប៉ូដៃគូផ្គត់ផ្គង់ & Description)
 async function prepareEditProduct(id) {
   var p = allProducts.find(item => item.id === id);
   if (!p) return;
@@ -818,27 +831,18 @@ async function prepareEditProduct(id) {
   }
   document.getElementById('pChannel').value = p.channel || 'ALL';
 
-  // 🔢 កំណត់លេខរៀង POS និង Web
   var sortPosVal = (p.sort_order !== undefined && p.sort_order !== null && p.sort_order !== '') ? parseInt(p.sort_order) : 1;
   var sortOnlineVal = (p.online_sort_order !== undefined && p.online_sort_order !== null && p.online_sort_order !== '') ? parseInt(p.online_sort_order) : sortPosVal;
   
   if (document.getElementById('pSortPos')) document.getElementById('pSortPos').value = sortPosVal;
   if (document.getElementById('pSortOnline')) document.getElementById('pSortOnline').value = sortOnlineVal;
 
-  // 📂 ទាញយក Category, Badge និង Description
   var catInp = document.getElementById('pCategory');
   var badgeInp = document.getElementById('pBadge');
   var descInp = document.getElementById('pDesc');
   if (badgeInp) badgeInp.value = p.badge || 'គុណភាពខ្ពស់';
   if (descInp) descInp.value = p.description || p.desc || '';
   if (catInp) catInp.value = p.category || 'GROCERY';
-  const { data: setCat } = await supabaseClient.from('settings').select('value').eq('key', 'CAT_' + p.id).maybeSingle();
-    if (setCat && setCat.value && catInp) catInp.value = setCat.value;
-    
-    // 📂 ធានាថា Dropdown ជ្រើសរើស Category ត្រូវនឹងទំនិញនេះ
-    if (typeof populateProductCategoryDropdown === 'function') {
-      populateProductCategoryDropdown(catInp ? catInp.value : 'GROCERY');
-    }
 
   try {
     const { data: setDesc } = await supabaseClient.from('settings').select('value').eq('key', 'DESC_' + p.id).maybeSingle();
@@ -850,12 +854,21 @@ async function prepareEditProduct(id) {
     const { data: setCat } = await supabaseClient.from('settings').select('value').eq('key', 'CAT_' + p.id).maybeSingle();
     if (setCat && setCat.value && catInp) catInp.value = setCat.value;
 
+    // 🏬 ទាញយកដេប៉ូដែលផ្គត់ផ្គង់ទំនិញនេះ
+    const { data: setDepot } = await supabaseClient.from('settings').select('value').eq('key', 'DEPOT_' + p.id).maybeSingle();
+    var currentDepotId = setDepot ? setDepot.value : 'DEPOT_KC';
+    populateProductDepotDropdown(currentDepotId);
+
     const { data: setWebSort } = await supabaseClient.from('settings').select('value').eq('key', 'ONLINE_SORT_' + p.id).maybeSingle();
     if (setWebSort && setWebSort.value && document.getElementById('pSortOnline')) {
       document.getElementById('pSortOnline').value = setWebSort.value;
       p.online_sort_order = parseInt(setWebSort.value);
     }
   } catch(e) {}
+
+  if (typeof populateProductCategoryDropdown === 'function') {
+    populateProductCategoryDropdown(catInp ? catInp.value : 'GROCERY');
+  }
 
   var preview = document.getElementById('pImgPreview');
   if (preview) preview.src = p.img || 'https://cdn-icons-png.flaticon.com/512/3100/3100566.png';
@@ -864,7 +877,6 @@ async function prepareEditProduct(id) {
   tCF();
   toggleChannelPrices();
 
-  // 🪙 ដំណើរការគណនាបំប្លែងលុយខ្មែរភ្លាមៗលើអេក្រង់កែប្រែ
   if (typeof updateProductCostPreviewLive === 'function') {
     updateProductCostPreviewLive();
   }
@@ -872,7 +884,7 @@ async function prepareEditProduct(id) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// 💾 រក្សាទុកទំនិញ (ចាប់យកចំនួនស្តុកដំបូងពីប្រអប់បញ្ចូលដោយផ្ទាល់ & គ្មានកូដស្ទួន)
+// 💾 រក្សាទុកទំនិញ (រួមទាំងរក្សាទុកដេប៉ូដៃគូផ្គត់ផ្គង់ DEPOT_${prodId})
 async function saveProductToSupabase() {
   var nameInp = document.getElementById('pN');
   var name = nameInp ? nameInp.value.trim() : '';
@@ -896,11 +908,11 @@ async function saveProductToSupabase() {
   var descVal = document.getElementById('pDesc') ? document.getElementById('pDesc').value.trim() : '';
   var badgeVal = document.getElementById('pBadge') ? document.getElementById('pBadge').value : 'គុណភាពខ្ពស់';
   var catVal = document.getElementById('pCategory') ? document.getElementById('pCategory').value : 'GROCERY';
+  var depotVal = document.getElementById('pSupplierDepot') ? document.getElementById('pSupplierDepot').value : 'DEPOT_KC';
   
   var sortPosNum = parseInt(document.getElementById('pSortPos') ? document.getElementById('pSortPos').value || 1 : 1);
   var sortOnlineNum = parseInt(document.getElementById('pSortOnline') ? document.getElementById('pSortOnline').value || sortPosNum : sortPosNum);
 
-  // 📦 ចាប់យកចំនួនស្តុកដំបូងដែលអ្នកបានវាយ (ឧ. 50 ឬ 10)
   var initialStockVal = parseFloat(document.getElementById('pInitialStock') ? document.getElementById('pInitialStock').value || 0 : 0);
   var prodType = document.getElementById('pTy').value;
 
@@ -936,20 +948,19 @@ async function saveProductToSupabase() {
     }
 
     if (editingProductId) {
-      // ករណីកែប្រែ៖ ធ្វើបច្ចុប្បន្នភាពស្តុកតាមប្រអប់ដែលអ្នកបានកែ
       payload.stock = (prodType === 'ផលិតឯង') ? 0 : initialStockVal;
       await supabaseClient.from('products').update(payload).eq('id', editingProductId);
     } else {
-      // ករណីបង្កើតថ្មី៖ យកចំនួនស្តុកដែលបានវាយ (មិនបង្ខំដាក់ 0 ឡើយ)
       payload.stock = (prodType === 'ផលិតឯង') ? 0 : initialStockVal;
       await supabaseClient.from('products').insert([payload]);
     }
 
-    // 🌐 រក្សាទុក Description, Badge, Category និងលេខរៀង Web ចូលតារាង Settings
+    // 🌐 រក្សាទុក Description, Badge, Category, Online Sort និង ដេប៉ូផ្គត់ផ្គង់ (DEPOT_${prodId})
     var settingRows = [
       { key: 'DESC_' + prodId, value: descVal },
       { key: 'BADGE_' + prodId, value: badgeVal },
       { key: 'CAT_' + prodId, value: catVal },
+      { key: 'DEPOT_' + prodId, value: depotVal },
       { key: 'ONLINE_SORT_' + prodId, value: String(sortOnlineNum) }
     ];
     await supabaseClient.from('settings').upsert(settingRows);
@@ -2070,7 +2081,7 @@ async function delUserFromSupabase(id) {
 }
 
 // ==========================================================================
-// ⚙️ ផ្ទាំង SETTINGS ស្តង់ដារថ្មី (DASHBOARD CARDS & MODAL-BASED ARCHITECTURE)
+// ⚙️ ផ្ទាំង SETTINGS ស្តង់ដារ (មានបន្ថែម ៧. ដេប៉ូដៃគូផ្គត់ផ្គង់ PARTNER DEPOTS)
 // ==========================================================================
 
 function renderSettingsModule() {
@@ -2096,7 +2107,7 @@ function renderSettingsModule() {
       '</button>' +
     '</div>' +
 
-    // 📱 ក្រឡាចត្រង្គកាតមុខងារទាំង ៦ (ចុចបើក POP-UP ដាច់ដោយឡែកពីគ្នា)
+    // 📱 ក្រឡាចត្រង្គកាតមុខងារទាំង ៧ (រួមបញ្ចូលដេប៉ូដៃគូផ្គត់ផ្គង់)
     '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">' +
       
       // កាត ១៖ ប្រភេទទំនិញ
@@ -2127,7 +2138,21 @@ function renderSettingsModule() {
         '<i class="fas fa-chevron-right text-slate-300 group-hover:text-blue-600 group-hover:translate-x-1 transition text-xs"></i>' +
       '</div>' +
 
-      // កាត ៣៖ សេវាដឹកជញ្ជូន & ម៉ោងធ្វើការ
+      // 🌟 កាត ៣ (ថ្មី)៖ ដេប៉ូដៃគូផ្គត់ផ្គង់ (PARTNER DEPOTS)
+      '<div onclick="openDepotManagerModal()" class="card border-l-4 border-rose-600 p-4 bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-rose-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
+        '<div class="flex items-center gap-3">' +
+          '<div class="w-12 h-12 rounded-2xl bg-rose-100 text-rose-700 flex items-center justify-center text-xl shadow-inner group-hover:scale-110 transition">' +
+            '<i class="fas fa-shop-lock"></i>' +
+          '</div>' +
+          '<div>' +
+            '<b class="text-sm font-black text-slate-900 block group-hover:text-rose-700 transition">ដេប៉ូដៃគូផ្គត់ផ្គង់ (Depots)</b>' +
+            '<span class="text-[11px] text-rose-700 font-bold block mt-0.5">ដេប៉ូអង្ករ, គ្រឿងទេស, ទីតាំង & វិធីទូទាត់</span>' +
+          '</div>' +
+        '</div>' +
+        '<i class="fas fa-chevron-right text-slate-300 group-hover:text-rose-600 group-hover:translate-x-1 transition text-xs"></i>' +
+      '</div>' +
+
+      // កាត ៤៖ សេវាដឹកជញ្ជូន & ម៉ោងធ្វើការ
       '<div onclick="openDeliverySettingsModal()" class="card border-l-4 border-indigo-600 p-4 bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-indigo-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
         '<div class="flex items-center gap-3">' +
           '<div class="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-700 flex items-center justify-center text-xl shadow-inner group-hover:scale-110 transition">' +
@@ -2141,7 +2166,7 @@ function renderSettingsModule() {
         '<i class="fas fa-chevron-right text-slate-300 group-hover:text-indigo-600 group-hover:translate-x-1 transition text-xs"></i>' +
       '</div>' +
 
-      // កាត ៤៖ ប្រព័ន្ធ Promotion
+      // កាត ៥៖ ប្រព័ន្ធ Promotion
       '<div onclick="openPromoSettingsModal()" class="card border-l-4 border-amber-500 p-4 bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-amber-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
         '<div class="flex items-center gap-3">' +
           '<div class="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center text-xl shadow-inner group-hover:scale-110 transition">' +
@@ -2155,7 +2180,7 @@ function renderSettingsModule() {
         '<i class="fas fa-chevron-right text-slate-300 group-hover:text-amber-600 group-hover:translate-x-1 transition text-xs"></i>' +
       '</div>' +
 
-      // កាត ៥៖ ផ្ទាំងស្លាយ Web
+      // កាត ៦៖ ផ្ទាំងស្លាយ Web
       '<div onclick="openSlidesSettingsModal()" class="card border-l-4 border-teal-600 p-4 bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-teal-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
         '<div class="flex items-center gap-3">' +
           '<div class="w-12 h-12 rounded-2xl bg-teal-100 text-teal-700 flex items-center justify-center text-xl shadow-inner group-hover:scale-110 transition">' +
@@ -2169,8 +2194,8 @@ function renderSettingsModule() {
         '<i class="fas fa-chevron-right text-slate-300 group-hover:text-teal-600 group-hover:translate-x-1 transition text-xs"></i>' +
       '</div>' +
 
-      // កាត ៦៖ Telegram Bot Alert
-      '<div onclick="openTelegramSettingsModal()" class="card border-l-4 border-green-600 p-4 bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-green-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
+      // កាត ៧៖ Telegram Bot Alert
+      '<div onclick="openTelegramSettingsModal()" class="card border-l-4 border-green-600 p-4 bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-green-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0 sm:col-span-2">' +
         '<div class="flex items-center gap-3">' +
           '<div class="w-12 h-12 rounded-2xl bg-green-100 text-green-700 flex items-center justify-center text-xl shadow-inner group-hover:scale-110 transition">' +
             '<i class="fab fa-telegram text-blue-500"></i>' +
@@ -2185,6 +2210,353 @@ function renderSettingsModule() {
 
     '</div>' +
   '</div>';
+}
+
+// ==========================================================================
+// 🏬 ប្រព័ន្ធគ្រប់គ្រងដេប៉ូដៃគូផ្គត់ផ្គង់ (PARTNER DEPOTS ENGINE)
+// ==========================================================================
+
+var activePartnerDepots = [
+  { id: "DEPOT_KC", name: "រោងចក្រទឹក KC WATER (ឃ្លាំងផ្ទាល់)", phone: "077 934 748", location: "ក្រុងប៉ោយប៉ែត", mapUrl: "", payTerms: "CASH", isInternal: true }
+];
+var editingDepotId = null;
+
+// 📥 ១. ទាញយកបញ្ជីដេប៉ូពី Supabase Settings (គាំទ្រទាំង PROD & TEST)
+async function loadDepotsFromSupabase() {
+  try {
+    const { data, error } = await supabaseClient
+      .from('settings')
+      .select('value')
+      .eq('key', 'Store_Partner_Depots')
+      .maybeSingle();
+
+    if (error) throw error;
+
+    if (data && data.value) {
+      var parsed = JSON.parse(data.value);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        // ធានាថារោងចក្រ KC WATER នៅជាប់លេខ ១ ជានិច្ច
+        if (!parsed.some(d => d.id === 'DEPOT_KC')) {
+          parsed.unshift(activePartnerDepots[0]);
+        }
+        activePartnerDepots = parsed;
+      }
+    }
+  } catch(e) {
+    console.warn("Depots load warning:", e);
+  }
+}
+
+// 🖼️ ២. បង្កើតផ្ទាំង POP-UP MODAL គ្រប់គ្រងដេប៉ូ
+function injectDepotManagerModalMarkup() {
+  var existing = document.getElementById('depotManagerModal');
+  if (existing) existing.remove();
+
+  var html = '<div id="depotManagerModal" class="fixed inset-0 z-[7000] flex items-center justify-center p-3 sm:p-4 hidden overflow-y-auto">' +
+    '<div class="fixed inset-0 bg-slate-950/65 backdrop-blur-xs" onclick="closeDepotManagerModal()"></div>' +
+    '<div class="bg-white rounded-3xl shadow-2xl z-10 w-full max-w-md p-5 space-y-3.5 text-center relative border border-slate-100 animate-in zoom-in-95 duration-200 my-auto max-h-[92dvh] flex flex-col">' +
+      
+      // ក្បាលផ្ទាំង
+      '<div class="flex justify-between items-center border-b pb-2.5">' +
+        '<div class="text-left">' +
+          '<h3 class="font-black text-slate-900 text-sm sm:text-base flex items-center gap-2">' +
+            '<i class="fas fa-shop-lock text-rose-600"></i> ដេប៉ូដៃគូផ្គត់ផ្គង់ (Partner Depots)' +
+          '</h3>' +
+          '<p class="text-[10px] text-slate-500 font-bold mt-0.5">គ្រប់គ្រងទីតាំងដេប៉ូដែលត្រូវទៅយកអីវ៉ាន់ និងវិធីទូទាត់ថ្លៃដើម</p>' +
+        '</div>' +
+        '<button type="button" onclick="closeDepotManagerModal()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-400 hover:text-slate-700 text-lg font-bold flex items-center justify-center">&times;</button>' +
+      '</div>' +
+
+      // ទម្រង់បញ្ចូល/កែប្រែដេប៉ូ
+      '<div class="p-3 bg-rose-50/70 border-2 border-rose-200 rounded-2xl text-left space-y-2.5">' +
+        '<div class="flex justify-between items-center">' +
+          '<span id="depotFormTitle" class="text-[10px] font-black text-rose-950 uppercase flex items-center gap-1">' +
+            '<i class="fas fa-plus-circle text-rose-600"></i> បង្កើតដេប៉ូដៃគូថ្មី' +
+          '</span>' +
+          '<button type="button" id="btnCancelEditDepot" onclick="cancelEditDepot()" class="text-[10px] font-bold text-slate-500 hover:text-red-600 hidden">' +
+            '<i class="fas fa-times"></i> បោះបង់' +
+          '</button>' +
+        '</div>' +
+
+        '<div class="space-y-2 text-xs">' +
+          '<div>' +
+            '<label class="text-[9.5px] font-bold text-slate-600 block mb-0.5">ឈ្មោះដេប៉ូ (*)</label>' +
+            '<input type="text" id="newDepotName" placeholder="ឧ៖ ដេប៉ូ ក - អង្ករសិរីសួស្តី" class="w-full p-2.5 rounded-xl border border-slate-300 bg-white font-bold outline-none focus:border-rose-500">' +
+          '</div>' +
+
+          '<div class="grid grid-cols-2 gap-2">' +
+            '<div>' +
+              '<label class="text-[9.5px] font-bold text-slate-600 block mb-0.5">លេខទូរស័ព្ទដេប៉ូ (*)</label>' +
+              '<input type="tel" id="newDepotPhone" placeholder="ឧ៖ 012 345 678" class="w-full p-2 rounded-xl border border-slate-300 bg-white font-bold font-mono outline-none focus:border-rose-500">' +
+            '</div>' +
+            '<div>' +
+              '<label class="text-[9.5px] font-black text-rose-950 block mb-0.5">វិធីទូទាត់ថ្លៃដើម (*)</label>' +
+              '<select id="newDepotPayTerms" class="w-full p-2 rounded-xl border-2 border-rose-300 bg-white font-black text-rose-900 outline-none">' +
+                '<option value="CREDIT">📝 កត់ជំពាក់ដេប៉ូ (Credit)</option>' +
+                '<option value="CASH">💵 បង់លុយសុទ្ធភ្លាម (Cash)</option>' +
+              '</select>' +
+            '</div>' +
+          '</div>' +
+
+          '<div>' +
+            '<label class="text-[9.5px] font-bold text-slate-600 block mb-0.5">ចំណាំទីតាំងដេប៉ូ (Location Landmark)</label>' +
+            '<input type="text" id="newDepotLocation" placeholder="ឧ៖ ខាងជើងផ្សារត្រីប៉ោយប៉ែត ច្រកចូលទី២..." class="w-full p-2 rounded-xl border border-slate-300 bg-white font-bold outline-none focus:border-rose-500">' +
+          '</div>' +
+
+          '<div>' +
+            '<label class="text-[9.5px] font-bold text-slate-600 block mb-0.5">Link ផែនទី Google Maps ដេប៉ូ (បើមាន)</label>' +
+            '<input type="text" id="newDepotMapUrl" placeholder="https://maps.app.goo.gl/..." class="w-full p-2 rounded-xl border border-slate-300 bg-white font-mono text-[11px] outline-none focus:border-rose-500">' +
+          '</div>' +
+        '</div>' +
+
+        '<button type="button" id="btnSubmitDepotAction" onclick="submitSaveDepot()" class="w-full py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-black rounded-xl text-xs shadow-xs active:scale-95 transition flex items-center justify-center gap-1.5">' +
+          '<i class="fas fa-plus"></i> <span id="btnSubmitDepotText">បន្ថែមដេប៉ូ</span>' +
+        '</button>' +
+      '</div>' +
+
+      // បញ្ជីដេប៉ូកំពុងមាន
+      '<div class="flex-1 overflow-y-auto space-y-2 text-left pr-1" id="depotsListContainer">' +
+        '<div class="text-center py-4 text-slate-400 italic text-xs">កំពុងទាញទិន្នន័យ...</div>' +
+      '</div>' +
+
+      // ប៊ូតុងបិទ
+      '<button type="button" onclick="closeDepotManagerModal()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition">' +
+        'រួចរាល់ (បិទ)' +
+      '</button>' +
+    '</div>' +
+  '</div>';
+
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+// 🚀 ៣. បើក និងបិទផ្ទាំង Pop-up ដេប៉ូ
+async function openDepotManagerModal() {
+  injectDepotManagerModalMarkup();
+  cancelEditDepot();
+  await loadDepotsFromSupabase();
+  renderDepotsListUI();
+  var modal = document.getElementById('depotManagerModal');
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeDepotManagerModal() {
+  var modal = document.getElementById('depotManagerModal');
+  if (modal) modal.classList.add('hidden');
+  cancelEditDepot();
+}
+
+// 📋 ៤. បង្ហាញបញ្ជីដេប៉ូលើ Pop-up
+function renderDepotsListUI() {
+  var container = document.getElementById('depotsListContainer');
+  if (!container) return;
+
+  var html = '';
+  activePartnerDepots.forEach(function(d, idx) {
+    var isInternal = (d.isInternal === true || d.id === 'DEPOT_KC');
+    var badgeInternal = isInternal ? 
+      '<span class="px-2 py-0.5 rounded-md text-[9px] font-black bg-blue-100 text-blue-900 border border-blue-200">🏢 រោងចក្រផ្ទាល់</span>' : 
+      '<span class="px-2 py-0.5 rounded-md text-[9px] font-black bg-rose-100 text-rose-800 border border-rose-200">🏬 ដេប៉ូដៃគូ</span>';
+
+    var termBadge = (d.payTerms === 'CASH') ? 
+      '<span class="px-2 py-0.5 rounded-md text-[9px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300">💵 បង់លុយសុទ្ធ</span>' : 
+      '<span class="px-2 py-0.5 rounded-md text-[9px] font-black bg-amber-100 text-amber-900 border border-amber-300">📝 កត់ជំពាក់</span>';
+
+    var editBtn = '<button type="button" onclick="prepareEditDepotById(\'' + d.id + '\')" class="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-lg text-[10px] font-black active:scale-90 transition flex items-center gap-1 shadow-2xs">' +
+      '<i class="fas fa-pen-to-square text-amber-600"></i> កែប្រែ' +
+    '</button>';
+
+    var deleteBtn = isInternal ? 
+      '<span class="text-slate-300 text-xs p-1" title="ឃ្លាំងរោងចក្រផ្ទាល់មិនអាចលុបបានឡើយ"><i class="fas fa-lock"></i></span>' : 
+      '<button type="button" onclick="deleteDepotById(\'' + d.id + '\')" class="p-1 text-red-400 hover:text-red-600 active:scale-90 transition" title="លុបដេប៉ូនេះ"><i class="fas fa-trash-can text-xs"></i></button>';
+
+    html += '<div class="p-3 bg-slate-50 hover:bg-slate-100 rounded-2xl border border-slate-200 space-y-1.5 transition text-xs">' +
+      '<div class="flex items-center justify-between gap-2">' +
+        '<div class="flex items-center gap-2 min-w-0 flex-1">' +
+          '<div class="w-8 h-8 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-sm shrink-0">' +
+            (isInternal ? '💧' : '🏬') +
+          '</div>' +
+          '<div class="min-w-0 flex-1">' +
+            '<b class="text-slate-900 block truncate text-xs">' + d.name + '</b>' +
+            '<span class="text-[10px] text-emerald-800 font-bold font-mono">📞 ' + (d.phone || '-') + '</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="flex items-center gap-1 shrink-0">' +
+          badgeInternal +
+          termBadge +
+        '</div>' +
+      '</div>' +
+
+      (d.location ? '<div class="text-[10.5px] text-slate-600 font-medium truncate"><i class="fas fa-location-dot text-rose-500 mr-1"></i>' + d.location + '</div>' : '') +
+
+      '<div class="flex items-center justify-between pt-1 border-t border-slate-200/60 text-[10px]">' +
+        (d.mapUrl ? '<a href="' + d.mapUrl + '" target="_blank" class="text-blue-600 font-bold hover:underline flex items-center gap-1"><i class="fas fa-map-location-dot"></i> បើកផែនទី Google Maps</a>' : '<span class="text-slate-400 italic">គ្មាន Link ផែនទី</span>') +
+        '<div class="flex items-center gap-1.5">' +
+          editBtn +
+          deleteBtn +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  });
+
+  container.innerHTML = html || '<div class="text-center py-4 text-slate-400 italic text-xs">គ្មានដេប៉ូឡើយ</div>';
+}
+
+// ✏️ ៥. រៀបចំកែប្រែដេប៉ូ
+function prepareEditDepotById(id) {
+  var d = activePartnerDepots.find(item => item.id === id);
+  if (!d) return;
+
+  editingDepotId = d.id;
+
+  var titleEl = document.getElementById('depotFormTitle');
+  var btnCancel = document.getElementById('btnCancelEditDepot');
+  var btnSubmitText = document.getElementById('btnSubmitDepotText');
+  var btnSubmit = document.getElementById('btnSubmitDepotAction');
+
+  if (titleEl) titleEl.innerHTML = '<i class="fas fa-pen-to-square text-amber-600"></i> កែសម្រួលដេប៉ូ៖ [' + d.name + ']';
+  if (btnCancel) btnCancel.classList.remove('hidden');
+  if (btnSubmitText) btnSubmitText.innerText = "រក្សាទុកការកែប្រែ";
+  if (btnSubmit) btnSubmit.className = "w-full py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-black rounded-xl text-xs shadow-xs active:scale-95 transition flex items-center justify-center gap-1.5";
+
+  document.getElementById('newDepotName').value = d.name || '';
+  document.getElementById('newDepotPhone').value = d.phone || '';
+  document.getElementById('newDepotLocation').value = d.location || '';
+  document.getElementById('newDepotMapUrl').value = d.mapUrl || '';
+  document.getElementById('newDepotPayTerms').value = d.payTerms || 'CREDIT';
+}
+
+// ❌ ៦. បោះបង់ការកែប្រែដេប៉ូ
+function cancelEditDepot() {
+  editingDepotId = null;
+  var titleEl = document.getElementById('depotFormTitle');
+  var btnCancel = document.getElementById('btnCancelEditDepot');
+  var btnSubmitText = document.getElementById('btnSubmitDepotText');
+  var btnSubmit = document.getElementById('btnSubmitDepotAction');
+
+  if (titleEl) titleEl.innerHTML = '<i class="fas fa-plus-circle text-rose-600"></i> បង្កើតដេប៉ូដៃគូថ្មី';
+  if (btnCancel) btnCancel.classList.add('hidden');
+  if (btnSubmitText) btnSubmitText.innerText = "បន្ថែមដេប៉ូ";
+  if (btnSubmit) btnSubmit.className = "w-full py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-black rounded-xl text-xs shadow-xs active:scale-95 transition flex items-center justify-center gap-1.5";
+
+  if (document.getElementById('newDepotName')) document.getElementById('newDepotName').value = '';
+  if (document.getElementById('newDepotPhone')) document.getElementById('newDepotPhone').value = '';
+  if (document.getElementById('newDepotLocation')) document.getElementById('newDepotLocation').value = '';
+  if (document.getElementById('newDepotMapUrl')) document.getElementById('newDepotMapUrl').value = '';
+  if (document.getElementById('newDepotPayTerms')) document.getElementById('newDepotPayTerms').value = 'CREDIT';
+}
+
+// 💾 ៧. រក្សាទុកដេប៉ូ (បង្កើតថ្មី ឬ កែប្រែដេប៉ូចាស់)
+async function submitSaveDepot() {
+  var nameInp = document.getElementById('newDepotName');
+  var phoneInp = document.getElementById('newDepotPhone');
+  var locInp = document.getElementById('newDepotLocation');
+  var mapInp = document.getElementById('newDepotMapUrl');
+  var termsInp = document.getElementById('newDepotPayTerms');
+
+  var name = nameInp ? nameInp.value.trim() : '';
+  var phone = phoneInp ? phoneInp.value.trim() : '';
+  var loc = locInp ? locInp.value.trim() : '';
+  var mapUrl = mapInp ? mapInp.value.trim() : '';
+  var payTerms = termsInp ? termsInp.value : 'CREDIT';
+
+  if (!name) {
+    if (typeof kcAlert === 'function') {
+      await kcAlert({ title: "ខ្វះឈ្មោះដេប៉ូ", message: "សូមបញ្ចូលឈ្មោះដេប៉ូដៃគូ!", type: "warning" });
+    } else {
+      showToast("សូមបញ្ចូលឈ្មោះដេប៉ូ!", "error");
+    }
+    if (nameInp) nameInp.focus();
+    return;
+  }
+
+  // ករណីកែប្រែដេប៉ូចាស់
+  if (editingDepotId) {
+    var cur = activePartnerDepots.find(d => d.id === editingDepotId);
+    if (cur) {
+      cur.name = name;
+      cur.phone = phone;
+      cur.location = loc;
+      cur.mapUrl = mapUrl;
+      cur.payTerms = payTerms;
+    }
+  } 
+  // ករណីបង្កើតដេប៉ូថ្មី
+  else {
+    activePartnerDepots.push({
+      id: "DEPOT_" + Date.now(),
+      name: name,
+      phone: phone,
+      location: loc,
+      mapUrl: mapUrl,
+      payTerms: payTerms,
+      isInternal: false
+    });
+  }
+
+  try {
+    const { error } = await supabaseClient.from('settings').upsert([
+      { key: 'Store_Partner_Depots', value: JSON.stringify(activePartnerDepots) }
+    ]);
+    if (error) throw error;
+
+    var wasEditing = (editingDepotId !== null);
+    cancelEditDepot();
+    renderDepotsListUI();
+
+    if (typeof kcAlert === 'function') {
+      await kcAlert({
+        title: "ជោគជ័យ! 🎉",
+        message: wasEditing ? "បានធ្វើបច្ចុប្បន្នភាពដេប៉ូជោគជ័យ!" : "បានបង្កើតដេប៉ូដៃគូថ្មីជោគជ័យ!",
+        type: "success"
+      });
+    } else {
+      showToast("បានរក្សាទុកដេប៉ូជោគជ័យ!", "success");
+    }
+
+  } catch(err) {
+    showToast("កំហុស៖ " + err.message, "error");
+  }
+}
+
+// 🗑️ ៨. លុបដេប៉ូដៃគូ (ការពារមិនឱ្យលុបឃ្លាំងរោងចក្រ KC)
+async function deleteDepotById(id) {
+  var d = activePartnerDepots.find(item => item.id === id);
+  if (!d) return;
+
+  if (d.isInternal === true || d.id === 'DEPOT_KC') {
+    if (typeof kcAlert === 'function') {
+      await kcAlert({ title: "ការពារសុវត្ថិភាព", message: "ឃ្លាំងរោងចក្រផ្ទាល់ មិនអាចលុបបានឡើយ!", type: "warning" });
+    }
+    return;
+  }
+
+  var ok = true;
+  if (typeof kcConfirm === 'function') {
+    ok = await kcConfirm({
+      title: "បញ្ជាក់ការលុបដេប៉ូ",
+      message: "តើអ្នកពិតជាចង់លុបដេប៉ូដៃគូ [" + d.name + "] នេះមែនទេ?",
+      type: "danger",
+      confirmText: "យល់ព្រមលុប"
+    });
+  }
+
+  if (!ok) return;
+
+  activePartnerDepots = activePartnerDepots.filter(item => item.id !== id);
+
+  try {
+    const { error } = await supabaseClient.from('settings').upsert([
+      { key: 'Store_Partner_Depots', value: JSON.stringify(activePartnerDepots) }
+    ]);
+    if (error) throw error;
+
+    cancelEditDepot();
+    renderDepotsListUI();
+    showToast("បានលុបដេប៉ូជោគជ័យ!", "info");
+
+  } catch(err) {
+    showToast("កំហុស៖ " + err.message, "error");
+  }
 }
 
 // ==========================================================================
@@ -4081,5 +4453,44 @@ async function deleteCategoryByIndex(idx) {
     }
   } catch(err) {
     showToast("កំហុស៖ " + err.message, "error");
+  }
+}
+
+// ==========================================================================
+// 🏬 មុខងារបង្កើតជម្រើសដេប៉ូដៃគូ (DYNAMIC SUPPLIER DEPOT DROPDOWN)
+// ==========================================================================
+function populateProductDepotDropdown(selectedDepotId) {
+  var sel = document.getElementById('pSupplierDepot');
+  if (!sel) return;
+
+  var currentVal = selectedDepotId || sel.value || 'DEPOT_KC';
+  var html = '';
+
+  activePartnerDepots.forEach(function(d) {
+    var isSel = (d.id === currentVal) ? 'selected' : '';
+    var termTag = (d.payTerms === 'CASH') ? ' [💵 លុយសុទ្ធ]' : ' [📝 កត់ជំពាក់]';
+    html += '<option value="' + d.id + '" ' + isSel + '>' + (d.isInternal ? '💧 ' : '🏬 ') + d.name + termTag + '</option>';
+  });
+
+  sel.innerHTML = html;
+  onProductDepotChange();
+}
+
+function onProductDepotChange() {
+  var sel = document.getElementById('pSupplierDepot');
+  var badge = document.getElementById('pDepotTermsBadge');
+  if (!sel || !badge) return;
+
+  var depotId = sel.value;
+  var d = activePartnerDepots.find(item => item.id === depotId);
+
+  if (d) {
+    if (d.payTerms === 'CASH') {
+      badge.innerHTML = '<span class="bg-emerald-100 text-emerald-900 border border-emerald-300 px-2 py-0.5 rounded-full font-black text-[9.5px]">💵 ទៅយកបង់លុយសុទ្ធ</span>';
+    } else {
+      badge.innerHTML = '<span class="bg-amber-100 text-amber-900 border border-amber-300 px-2 py-0.5 rounded-full font-black text-[9.5px]">📝 ទៅយកកត់ជំពាក់ដេប៉ូ</span>';
+    }
+  } else {
+    badge.innerHTML = '';
   }
 }
