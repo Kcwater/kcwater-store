@@ -43,14 +43,25 @@ function renderStockModule() {
           '</select>' +
         '</div>' +
 
-        '<div id="cSec" style="display:block">' +
-          '<div class="flex justify-between items-center mb-1">' +
-            '<label class="text-[10px] font-bold text-gray-500 uppercase">ថ្លៃដើមទិញចូល (Cost)</label>' +
-            '<span id="pCoPreviewHint" class="text-[10px] font-black text-emerald-700"></span>' +
-          '</div>' +
-          '<input type="number" id="pCo" oninput="updateProductCostPreviewLive()" placeholder="ថ្លៃដើម (ឧ៖ ៤,០០០ ឬ 35฿ ឬ $1.5)" class="border p-2.5 rounded-xl font-bold w-full text-xs outline-none focus:border-green-600">' +
-        '</div>' +
-
+        <div id="cSec" style="display:block" class="space-y-2">
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <div class="flex justify-between items-center mb-1">
+                <label class="text-[10px] font-bold text-gray-500 uppercase">ថ្លៃដើមទិញចូល (Cost)</label>
+                <span id="pCoPreviewHint" class="text-[10px] font-black text-emerald-700"></span>
+              </div>
+              <input type="number" id="pCo" oninput="updateProductCostPreviewLive()" placeholder="ថ្លៃដើម (ឧ៖ ៤,០០០)" class="border p-2.5 rounded-xl font-bold w-full text-xs outline-none focus:border-green-600">
+            </div>
+            <div>
+              <div class="flex justify-between items-center mb-1">
+                <label class="text-[10px] font-black text-blue-900 uppercase">📦 ចំនួនស្តុកដំបូង (Stock) *</label>
+                <span class="text-[9px] text-slate-400 font-bold">*សម្រាប់លក់លើ Web</span>
+              </div>
+              <input type="number" id="pInitialStock" placeholder="ឧ៖ 50 ឬ 10" value="50" class="border-2 border-blue-300 focus:border-blue-600 p-2.5 rounded-xl font-black text-blue-900 w-full text-xs outline-none bg-blue-50/30">
+            </div>
+          </div>
+        </div>
+  
         // 🏷️ ប៉ុស្តិ៍លក់, ប្រភេទទំនិញ, និង ផ្លាកសម្គាល់
         '<div class="grid grid-cols-1 sm:grid-cols-3 gap-2">' +
           '<div>' +
@@ -752,6 +763,10 @@ function cancelEditProduct() {
   if (document.getElementById('pSortOnline')) document.getElementById('pSortOnline').value = nextSortNum;
   if (document.getElementById('pDesc')) document.getElementById('pDesc').value = '';
   if (document.getElementById('pMin')) document.getElementById('pMin').value = 5;
+  if (document.getElementById('pInitialStock')) {
+    document.getElementById('pInitialStock').value = 50;
+  }
+  
 
   // 🖼️ សម្អាតប្រអប់រូបភាព
   if (document.getElementById('pImgPreview')) {
@@ -795,6 +810,9 @@ async function prepareEditProduct(id) {
   document.getElementById('pPr').value = p.price || 0;
   document.getElementById('pOnlinePr').value = p.online_price || p.price || 0;
   document.getElementById('pMin').value = p.min_stock || 5;
+  if (document.getElementById('pInitialStock')) {
+    document.getElementById('pInitialStock').value = p.stock || 0;
+  }
   document.getElementById('pChannel').value = p.channel || 'ALL';
 
   // 🔢 កំណត់លេខរៀង POS និង Web
@@ -851,7 +869,7 @@ async function prepareEditProduct(id) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// 💾 រក្សាទុកទំនិញ (ដោះស្រាយបញ្ហាលេខរៀង POS & Web ឱ្យត្រឹមត្រូវ ១០០%)
+// 💾 រក្សាទុកទំនិញ (ចាប់យកចំនួនស្តុកដំបូងពីប្រអប់បញ្ចូលដោយផ្ទាល់)
 async function saveProductToSupabase() {
   var name = document.getElementById('pN').value.trim();
   if (!name) { showToast("សូមបញ្ចូលឈ្មោះទំនិញ!", "error"); return; }
@@ -862,26 +880,77 @@ async function saveProductToSupabase() {
   var badgeVal = document.getElementById('pBadge') ? document.getElementById('pBadge').value : 'គុណភាពខ្ពស់';
   var catVal = document.getElementById('pCategory') ? document.getElementById('pCategory').value : 'GROCERY';
   
-  // 🔢 ទាញយកលេខរៀងពិតប្រាកដពីប្រអប់លើអេក្រង់
   var sortPosNum = parseInt(document.getElementById('pSortPos') ? document.getElementById('pSortPos').value || 1 : 1);
   var sortOnlineNum = parseInt(document.getElementById('pSortOnline') ? document.getElementById('pSortOnline').value || sortPosNum : sortPosNum);
+
+  // 📦 ចាប់យកចំនួនស្តុកដំបូងដែលអ្នកបានវាយ (ឧ. 50 ឬ 10)
+  var initialStockVal = parseFloat(document.getElementById('pInitialStock') ? document.getElementById('pInitialStock').value || 0 : 0);
+  var prodType = document.getElementById('pTy').value;
 
   var payload = {
     id: prodId,
     name: name,
-    type: document.getElementById('pTy').value,
+    type: prodType,
     currency: document.getElementById('pCu').value,
     cost: parseFloat(document.getElementById('pCo') ? document.getElementById('pCo').value || 0 : 0),
     price: parseFloat(document.getElementById('pPr').value || 0),
     online_price: parseFloat(document.getElementById('pOnlinePr').value || 0),
     min_stock: parseFloat(document.getElementById('pMin').value || 5),
     channel: document.getElementById('pChannel').value,
-    sort_order: sortPosNum, // 🚚 លេខរៀងសម្រាប់ POS
+    sort_order: sortPosNum,
     img: imgData
   };
 
   var btn = document.getElementById('btnSaveProdAction');
   btn.disabled = true;
+
+  try {
+    var targetId = editingProductId || prodId;
+    var conflictingItems = allProducts.filter(function(item) {
+      return item.id !== targetId && parseInt(item.sort_order) === sortPosNum;
+    });
+
+    if (conflictingItems.length > 0) {
+      for (var c = 0; c < conflictingItems.length; c++) {
+        var shiftedSort = sortPosNum + c + 1;
+        await supabaseClient.from('products').update({ sort_order: shiftedSort }).eq('id', conflictingItems[c].id);
+        conflictingItems[c].sort_order = shiftedSort;
+      }
+    }
+
+    if (editingProductId) {
+      // ករណីកែប្រែ៖ ធ្វើបច្ចុប្បន្នភាពស្តុកតាមប្រអប់ដែលអ្នកបានកែ
+      payload.stock = (prodType === 'ផលិតឯង') ? 0 : initialStockVal;
+      await supabaseClient.from('products').update(payload).eq('id', editingProductId);
+    } else {
+      // ករណីបង្កើតថ្មី៖ យកចំនួនស្តុកដែលបានវាយ (លែងបង្ខំដាក់ 0 ទៀតហើយ)
+      payload.stock = (prodType === 'ផលិតឯង') ? 0 : initialStockVal;
+      await supabaseClient.from('products').insert([payload]);
+    }
+
+    // រក្សាទុកការកំណត់បន្ថែម
+    var settingRows = [
+      { key: 'DESC_' + prodId, value: descVal },
+      { key: 'BADGE_' + prodId, value: badgeVal },
+      { key: 'CAT_' + prodId, value: catVal },
+      { key: 'ONLINE_SORT_' + prodId, value: String(sortOnlineNum) }
+    ];
+    await supabaseClient.from('settings').upsert(settingRows);
+
+    showToast(editingProductId ? "បានធ្វើបច្ចុប្បន្នភាពទំនិញជោគជ័យ!" : "បានបង្កើតទំនិញថ្មីជោគជ័យ!", "success");
+    cancelEditProduct();
+    await fetchInitialPOSData();
+    if (typeof syncOnlineSortsFromDatabase === 'function') {
+      await syncOnlineSortsFromDatabase();
+    }
+    renderStockTableRows();
+    initStockModuleDropdowns();
+  } catch(err) {
+    showToast("កំហុស៖ " + err.message, "error");
+  } finally {
+    btn.disabled = false;
+  }
+}
 
   try {
     // 🔄 ការពារកុំឱ្យស្ទួនលេខរៀង POS៖ បើមានទំនិញចាស់ផ្សេងទៀតជាប់លេខរៀងនេះ រំកិលវាចុះក្រោមអូតូ
