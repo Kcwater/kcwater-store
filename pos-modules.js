@@ -196,11 +196,13 @@ function renderStockModule() {
   tCF();
   toggleChannelPrices();
   initStockModuleDropdowns();
-  // 📂 ផ្ទុក Category ពី Supabase មកដាក់ក្នុង Dropdown ភ្លាមៗ
+
+  // 📂 ផ្ទុក Category ពី Supabase មកដាក់ក្នុង Dropdown
   loadCategoriesFromSupabase().then(function() {
     populateProductCategoryDropdown();
   });
 
+  // ⚡ ហៅទិន្នន័យតែម្តងគត់យ៉ាងត្រឹមត្រូវ
   if (!allProducts || allProducts.length === 0) {
     fetchInitialPOSData().then(function() {
       if (typeof syncOnlineSortsFromDatabase === 'function') {
@@ -217,6 +219,7 @@ function renderStockModule() {
       renderStockTableRows();
     }
   }
+}
 
   if (!allProducts || allProducts.length === 0) {
     fetchInitialPOSData().then(function() {
