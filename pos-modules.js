@@ -872,10 +872,24 @@ async function prepareEditProduct(id) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// 💾 រក្សាទុកទំនិញ (ចាប់យកចំនួនស្តុកដំបូងពីប្រអប់បញ្ចូលដោយផ្ទាល់)
+// 💾 រក្សាទុកទំនិញ (ចាប់យកចំនួនស្តុកដំបូងពីប្រអប់បញ្ចូលដោយផ្ទាល់ & គ្មានកូដស្ទួន)
 async function saveProductToSupabase() {
-  var name = document.getElementById('pN').value.trim();
-  if (!name) { showToast("សូមបញ្ចូលឈ្មោះទំនិញ!", "error"); return; }
+  var nameInp = document.getElementById('pN');
+  var name = nameInp ? nameInp.value.trim() : '';
+
+  if (!name) {
+    if (typeof kcAlert === 'function') {
+      await kcAlert({
+        title: "ខ្វះព័ត៌មាន",
+        message: "សូមបញ្ចូលឈ្មោះទំនិញ!",
+        type: "warning"
+      });
+    } else {
+      showToast("សូមបញ្ចូលឈ្មោះទំនិញ!", "error");
+    }
+    if (nameInp) nameInp.focus();
+    return;
+  }
 
   var prodId = document.getElementById('pI').value;
   var imgData = document.getElementById('pImgBase64').value || "https://cdn-icons-png.flaticon.com/512/3100/3100566.png";
@@ -905,7 +919,7 @@ async function saveProductToSupabase() {
   };
 
   var btn = document.getElementById('btnSaveProdAction');
-  btn.disabled = true;
+  if (btn) btn.disabled = true;
 
   try {
     var targetId = editingProductId || prodId;
@@ -926,12 +940,12 @@ async function saveProductToSupabase() {
       payload.stock = (prodType === 'ផលិតឯង') ? 0 : initialStockVal;
       await supabaseClient.from('products').update(payload).eq('id', editingProductId);
     } else {
-      // ករណីបង្កើតថ្មី៖ យកចំនួនស្តុកដែលបានវាយ (លែងបង្ខំដាក់ 0 ទៀតហើយ)
+      // ករណីបង្កើតថ្មី៖ យកចំនួនស្តុកដែលបានវាយ (មិនបង្ខំដាក់ 0 ឡើយ)
       payload.stock = (prodType === 'ផលិតឯង') ? 0 : initialStockVal;
       await supabaseClient.from('products').insert([payload]);
     }
 
-    // រក្សាទុកការកំណត់បន្ថែម
+    // 🌐 រក្សាទុក Description, Badge, Category និងលេខរៀង Web ចូលតារាង Settings
     var settingRows = [
       { key: 'DESC_' + prodId, value: descVal },
       { key: 'BADGE_' + prodId, value: badgeVal },
@@ -940,7 +954,16 @@ async function saveProductToSupabase() {
     ];
     await supabaseClient.from('settings').upsert(settingRows);
 
-    showToast(editingProductId ? "បានធ្វើបច្ចុប្បន្នភាពទំនិញជោគជ័យ!" : "បានបង្កើតទំនិញថ្មីជោគជ័យ!", "success");
+    if (typeof kcAlert === 'function') {
+      await kcAlert({
+        title: "ជោគជ័យ! 🎉",
+        message: editingProductId ? "បានធ្វើបច្ចុប្បន្នភាពទំនិញជោគជ័យ!" : "បានបង្កើតទំនិញថ្មីជោគជ័យ!",
+        type: "success"
+      });
+    } else {
+      showToast(editingProductId ? "បានធ្វើបច្ចុប្បន្នភាពទំនិញជោគជ័យ!" : "បានបង្កើតទំនិញថ្មីជោគជ័យ!", "success");
+    }
+
     cancelEditProduct();
     await fetchInitialPOSData();
     if (typeof syncOnlineSortsFromDatabase === 'function') {
@@ -948,10 +971,15 @@ async function saveProductToSupabase() {
     }
     renderStockTableRows();
     initStockModuleDropdowns();
+
   } catch(err) {
-    showToast("កំហុស៖ " + err.message, "error");
+    if (typeof kcAlert === 'function') {
+      await kcAlert({ title: "កំហុស", message: err.message, type: "danger" });
+    } else {
+      showToast("កំហុស៖ " + err.message, "error");
+    }
   } finally {
-    btn.disabled = false;
+    if (btn) btn.disabled = false;
   }
 }
 
