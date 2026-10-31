@@ -851,7 +851,7 @@ async function completeOnlineOrder(orderId, custName, total, itemsText, driverNa
   document.getElementById('completeDeliveryModal').classList.remove('hidden');
 }
 
-// 💾 មុខងារកត់ត្រាការដឹកដល់ បំបែកទំនិញ ចេញវិក្កយបត្រ & កាត់ស្តុក (កែសម្រួលរួចរាល់)
+// 💾 មុខងារកត់ត្រាការដឹកដល់ បំបែកទំនិញ ចេញវិក្កយបត្រ & បែងចែកថ្លៃដឹកច្បាស់ៗ
 async function executeFinalCompleteDelivery() {
   if (!activeDeliveryTaskData) return;
 
@@ -905,14 +905,12 @@ async function executeFinalCompleteDelivery() {
 
       // 🎁 ឆែកមើលថាតើជាទំនិញថែម Promotion Free ដែរឬទេ
       var isFreeGift = rawName.includes('[Free]') || rawName.includes('🎁') || rawName.includes('កាដូ');
-      // សម្អាតស្លាក [Free] ចេញ ដើម្បីយកឈ្មោះទំនិញសុទ្ធទៅកាត់ស្តុក
       var cleanName = rawName.replace(/🎁\s*\[Free\]/gi, '').replace(/\[Free\]/gi, '').replace(/\[កាដូថែម Free\]/gi, '').trim();
 
       var matchedProd = allProducts.find(function(p) {
         return p.name.trim().toLowerCase() === cleanName.toLowerCase();
       });
 
-      // បើជាទំនិញ Free គឺតម្លៃ = 0៛ បើជាទំនិញទិញធម្មតា គឺយកតម្លៃលក់
       var unitPrice = isFreeGift ? 0 : (matchedProd ? parseFloat(matchedProd.online_price || matchedProd.price || 0) : 0);
       var lineTotal = unitPrice * qty;
       totalAllocated += lineTotal;
@@ -921,7 +919,7 @@ async function executeFinalCompleteDelivery() {
         transaction_id: tid,
         customer_name: custName,
         product_name: isFreeGift ? ("🎁 [Free] " + (matchedProd ? matchedProd.name : cleanName)) : (matchedProd ? matchedProd.name : rawName),
-        clean_product_name: matchedProd ? matchedProd.name : cleanName, // សម្រាប់កាត់ស្តុក
+        clean_product_name: matchedProd ? matchedProd.name : cleanName,
         qty: qty,
         price: unitPrice,
         currency: "KHR",
@@ -933,13 +931,16 @@ async function executeFinalCompleteDelivery() {
       });
     });
 
-    // បើនៅសល់ប្រាក់ថ្លៃដឹក ឬទំនិញដទៃ ផ្គុំចូលជាជួរថ្លៃដឹកជញ្ជូន
+    // 🚚 បែងចែកច្បាស់ៗរវាង «សេវាដឹកជញ្ជូន» និង «ថ្លៃទិញសំបកធុង»
     var diff = total - totalAllocated;
     if (diff > 0) {
+      var isBarrelDeposit = (task.barrel_swap && task.barrel_swap.includes('ទិញសំបក'));
+      var lineLabel = isBarrelDeposit ? "ថ្លៃទិញសំបកធុងថ្មី (Barrel Deposit)" : "សេវាដឹកជញ្ជូនដល់ផ្ទះ (Delivery Fee)";
+
       rowsToInsert.push({
         transaction_id: tid,
         customer_name: custName,
-        product_name: "សេវាដឹកជញ្ជូន / សំបកធុង",
+        product_name: lineLabel,
         clean_product_name: "",
         qty: 1,
         price: diff,
@@ -956,13 +957,13 @@ async function executeFinalCompleteDelivery() {
     if (rowsToInsert.length > 0) {
       var rowsForDb = rowsToInsert.map(function(r) {
         var copy = Object.assign({}, r);
-        delete copy.clean_product_name; // ដក Field បណ្តោះអាសន្នចេញមុន Save
+        delete copy.clean_product_name;
         return copy;
       });
       await supabaseClient.from('transactions').insert(rowsForDb);
     }
 
-    // ៤. កាត់ស្តុកទំនិញទិញគេ (កាត់ទាំងទំនិញលក់ធម្មតា និងទំនិញ Promotion Free ត្រឹមត្រូវ ១០០%)
+    // ៤. កាត់ស្តុកទំនិញទិញគេ
     for (var i = 0; i < rowsToInsert.length; i++) {
       var row = rowsToInsert[i];
       var targetSearchName = (row.clean_product_name || row.product_name).toLowerCase();
@@ -981,7 +982,7 @@ async function executeFinalCompleteDelivery() {
     closeCompleteDeliveryModal();
     showToast("បានកត់ត្រាការដឹកដល់ និងប្រមូលប្រាក់ជោគជ័យ!", "success");
 
-    // ៦. 🧾 បង្កើតវិក្កយបត្រឌីជីថល Pop-up ភ្លាមៗ (Digital Receipt)
+    // ៦. 🧾 បង្កើតវិក្កយបត្រឌីជីថល Pop-up ភ្លាមៗ
     if (typeof generateReceiptImage === 'function') {
       try {
         generateReceiptImage(tid, custName, total, total, rowsToInsert, "វិក្កយបត្រដឹកជញ្ជូន (DELIVERY RECEIPT)");
@@ -994,7 +995,7 @@ async function executeFinalCompleteDelivery() {
     if (typeof playOrderChime === 'function') playOrderChime();
     if (typeof confetti === 'function') confetti({ particleCount: 120, spread: 80 });
 
-    // ៨. 🔄 បញ្ជា Refresh ផ្ទាំង Admin + អ្នកដឹកភ្លាមៗ ដោយមិនបាច់ចុច Refresh លើ Browser
+    // ៨. 🔄 Refresh ផ្ទាំង Admin + អ្នកដឹកភ្លាមៗ
     if (currentUser && currentUser.type === 'CompanyDriver') {
       if (typeof renderCompanyDeliveriesModule === 'function') renderCompanyDeliveriesModule();
     }
