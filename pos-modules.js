@@ -237,7 +237,7 @@ function renderStockModule() {
       renderStockTableRows();
     }
   }
-}
+
 
 // 🪙 មុខងារជំនួយគណនាបំប្លែងលុយថៃ ฿ និងដុល្លារ $ ចេញជាលុយខ្មែរ ៛ ភ្លាមៗ (Live Preview)
 function updateProductCostPreviewLive() {
