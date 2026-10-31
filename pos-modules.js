@@ -43,24 +43,24 @@ function renderStockModule() {
           '</select>' +
         '</div>' +
 
-        <div id="cSec" style="display:block" class="space-y-2">
-          <div class="grid grid-cols-2 gap-2">
-            <div>
-              <div class="flex justify-between items-center mb-1">
-                <label class="text-[10px] font-bold text-gray-500 uppercase">ថ្លៃដើមទិញចូល (Cost)</label>
-                <span id="pCoPreviewHint" class="text-[10px] font-black text-emerald-700"></span>
-              </div>
-              <input type="number" id="pCo" oninput="updateProductCostPreviewLive()" placeholder="ថ្លៃដើម (ឧ៖ ៤,០០០)" class="border p-2.5 rounded-xl font-bold w-full text-xs outline-none focus:border-green-600">
-            </div>
-            <div>
-              <div class="flex justify-between items-center mb-1">
-                <label class="text-[10px] font-black text-blue-900 uppercase">📦 ចំនួនស្តុកដំបូង (Stock) *</label>
-                <span class="text-[9px] text-slate-400 font-bold">*សម្រាប់លក់លើ Web</span>
-              </div>
-              <input type="number" id="pInitialStock" placeholder="ឧ៖ 50 ឬ 10" value="50" class="border-2 border-blue-300 focus:border-blue-600 p-2.5 rounded-xl font-black text-blue-900 w-full text-xs outline-none bg-blue-50/30">
-            </div>
-          </div>
-        </div>
+        '<div id="cSec" style="display:block" class="space-y-2">' +
+          '<div class="grid grid-cols-2 gap-2">' +
+            '<div>' +
+              '<div class="flex justify-between items-center mb-1">' +
+                '<label class="text-[10px] font-bold text-gray-500 uppercase">ថ្លៃដើមទិញចូល (Cost)</label>' +
+                '<span id="pCoPreviewHint" class="text-[10px] font-black text-emerald-700"></span>' +
+              '</div>' +
+              '<input type="number" id="pCo" oninput="updateProductCostPreviewLive()" placeholder="ថ្លៃដើម (ឧ៖ ៤,០០០)" class="border p-2.5 rounded-xl font-bold w-full text-xs outline-none focus:border-green-600">' +
+            '</div>' +
+            '<div>' +
+              '<div class="flex justify-between items-center mb-1">' +
+                '<label class="text-[10px] font-black text-blue-900 uppercase">📦 ចំនួនស្តុកដំបូង (Stock) *</label>' +
+                '<span class="text-[9px] text-slate-400 font-bold">*សម្រាប់លក់លើ Web</span>' +
+              '</div>' +
+              '<input type="number" id="pInitialStock" placeholder="ឧ៖ 50 ឬ 10" value="50" class="border-2 border-blue-300 focus:border-blue-600 p-2.5 rounded-xl font-black text-blue-900 w-full text-xs outline-none bg-blue-50/30">' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
   
         // 🏷️ ប៉ុស្តិ៍លក់, ប្រភេទទំនិញ, និង ផ្លាកសម្គាល់
         '<div class="grid grid-cols-1 sm:grid-cols-3 gap-2">' +
