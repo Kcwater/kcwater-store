@@ -768,13 +768,13 @@ async function syncOnlineSortsFromDatabase() {
   } catch(e) {}
 }
 
-// 🧹 មុខងារជម្រះប្រអប់បញ្ចូលទិន្នន័យទំនិញឱ្យនៅទទេស្អាត ១០០% ត្រៀមបញ្ចូលទំនិញថ្មី (ជួសជុល bug រួចរាល់)
+// 🧹 មុខងារកំណត់គ្រប់ប្រអប់បញ្ចូលទំនិញទៅសភាពដើមវិញស្វ័យប្រវត្តិ (Auto-Reset Defaults)
 function cancelEditProduct() {
   editingProductId = null;
   
   var titleEl = document.getElementById('prodFormTitle');
   if (titleEl) {
-    titleEl.innerHTML = '<i class="fas fa-boxes-stacked text-green-600"></i>គ្រប់គ្រងទំនិញ (Products)';
+    titleEl.innerHTML = '<i class="fas fa-boxes-stacked text-green-600"></i>គ្រប់គ្រងទំនិញ (KC MART Products)';
   }
   
   var btnCancel = document.getElementById('btnCancelEditProd');
@@ -787,28 +787,33 @@ function cancelEditProduct() {
     btn.disabled = false;
   }
 
-  // 🔢 គណនាលេខរៀងបន្ទាប់សម្រាប់ទំនិញថ្មី
+  // 🔢 គណនាលេខរៀងបន្ទាប់សម្រាប់ទំនិញថ្មីអូតូ (ឡើងលេខថ្មីមិនឱ្យស្ទួន)
   var nextSortNum = (allProducts && allProducts.length > 0) ? (allProducts.length + 1) : 1;
 
-  // 🧼 ជម្រះគ្រប់ប្រអប់ឱ្យទទេស្អាតទាំងអស់
+  // 🧼 កំណត់ទិន្នន័យត្រឡប់ទៅសភាពដើមវិញ (Default State)
   if (document.getElementById('pI')) document.getElementById('pI').value = 'P-' + Math.floor(Math.random() * 9000 + 1000);
   if (document.getElementById('pN')) document.getElementById('pN').value = '';
   if (document.getElementById('pTy')) document.getElementById('pTy').value = 'ទិញគេ';
   if (document.getElementById('pCu')) document.getElementById('pCu').value = 'KHR';
   if (document.getElementById('pCo')) document.getElementById('pCo').value = '';
+  if (document.getElementById('pPr')) document.getElementById('pPr').value = '';
+  if (document.getElementById('pOnlinePr')) document.getElementById('pOnlinePr').value = '';
   if (document.getElementById('pChannel')) document.getElementById('pChannel').value = 'ALL';
   if (document.getElementById('pCategory')) document.getElementById('pCategory').value = 'GROCERY';
   if (document.getElementById('pBadge')) document.getElementById('pBadge').value = 'គុណភាពខ្ពស់';
-  if (document.getElementById('pPr')) document.getElementById('pPr').value = '';
-  if (document.getElementById('pOnlinePr')) document.getElementById('pOnlinePr').value = '';
+  if (document.getElementById('pDesc')) document.getElementById('pDesc').value = '';
+
+  // 🌟 កំណត់ត្រឡប់ទៅសភាពដើមតាមការស្នើសុំរបស់អ្នក៖
+  if (document.getElementById('pInitialStock')) document.getElementById('pInitialStock').value = 50;
+  if (document.getElementById('pMin')) document.getElementById('pMin').value = 5;
   if (document.getElementById('pSortPos')) document.getElementById('pSortPos').value = nextSortNum;
   if (document.getElementById('pSortOnline')) document.getElementById('pSortOnline').value = nextSortNum;
-  if (document.getElementById('pDesc')) document.getElementById('pDesc').value = '';
-  if (document.getElementById('pMin')) document.getElementById('pMin').value = 5;
-  if (document.getElementById('pInitialStock')) {
-    document.getElementById('pInitialStock').value = 50;
+
+  // 🏬 កំណត់ដេប៉ូត្រឡប់ទៅ «រោងចក្រទឹក KC WATER (ឃ្លាំងផ្ទាល់)» វិញអូតូ
+  if (document.getElementById('pSupplierDepot')) {
+    document.getElementById('pSupplierDepot').value = 'DEPOT_KC';
+    if (typeof onProductDepotChange === 'function') onProductDepotChange();
   }
-  
 
   // 🖼️ សម្អាតប្រអប់រូបភាព
   if (document.getElementById('pImgPreview')) {
@@ -818,13 +823,22 @@ function cancelEditProduct() {
   if (document.getElementById('pImgFileInput')) document.getElementById('pImgFileInput').value = '';
   if (document.getElementById('pImgNote')) document.getElementById('pImgNote').innerText = 'អាចថតរូប ឬជ្រើសរូបភាពពីទូរស័ព្ទ';
 
+  // 🪙 សម្អាតអក្សរជំនួយតម្លៃលុយខ្មែរ (Live KHR Hints)
+  var coHint = document.getElementById('pCoPreviewHint');
+  var prHint = document.getElementById('pPrPreviewHint');
+  var opHint = document.getElementById('pOnlinePrPreviewHint');
+  if (coHint) coHint.innerText = '';
+  if (prHint) prHint.innerText = '';
+  if (opHint) opHint.innerText = '';
+
   if (typeof tCF === 'function') tCF();
   if (typeof toggleChannelPrices === 'function') toggleChannelPrices();
 
-  // 🎯 ដាក់ Cursor ឱ្យមកចាំនៅប្រអប់ឈ្មោះទំនិញអូតូ ងាយស្រួលវាយទំនិញបន្ទាប់ភ្លាមៗ
+  // 🎯 ដាក់ Cursor ឱ្យមកចាំនៅប្រអប់ឈ្មោះទំនិញអូតូ ងាយស្រួលវាយទំនិញថ្មីភ្លាមៗ
   var nameInp = document.getElementById('pN');
   if (nameInp) setTimeout(function() { nameInp.focus(); }, 150);
 }
+
 
 // 📋 មុខងាររៀបចំកែប្រែទំនិញ (ទាញ Category, ដេប៉ូដៃគូផ្គត់ផ្គង់ & Description)
 async function prepareEditProduct(id) {
@@ -910,7 +924,7 @@ async function prepareEditProduct(id) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// 💾 រក្សាទុកទំនិញ (រួមទាំងរក្សាទុកដេប៉ូដៃគូផ្គត់ផ្គង់ DEPOT_${prodId})
+// 💾 រក្សាទុកទំនិញ & កំណត់ឡើងលេខរៀងថ្មីព្រមទាំង Reset សភាពដើមអូតូ
 async function saveProductToSupabase() {
   var nameInp = document.getElementById('pN');
   var name = nameInp ? nameInp.value.trim() : '';
@@ -1001,11 +1015,14 @@ async function saveProductToSupabase() {
       showToast(editingProductId ? "បានធ្វើបច្ចុប្បន្នភាពទំនិញជោគជ័យ!" : "បានបង្កើតទំនិញថ្មីជោគជ័យ!", "success");
     }
 
-    cancelEditProduct();
+    // 🔄 ទាញបញ្ជីទំនិញថ្មីពី Supabase ជាមុនសិន
     await fetchInitialPOSData();
     if (typeof syncOnlineSortsFromDatabase === 'function') {
       await syncOnlineSortsFromDatabase();
     }
+
+    // 🌟 កំណត់ទម្រង់ឱ្យត្រឡប់ទៅសភាពដើមវិញ និងឡើងលេខរៀងថ្មីអូតូភ្លាមៗ
+    cancelEditProduct();
     renderStockTableRows();
     initStockModuleDropdowns();
 
