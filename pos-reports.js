@@ -622,26 +622,96 @@ function executePdfGeneration() {
 }
 
 // ==========================================
-// 📉 ២. របាយការណ៍បញ្ជីអ្នកជំពាក់សរុប (DEBTORS REPORT)
+// 📉 ២. របាយការណ៍បញ្ជីជំពាក់ (DEBTORS REPORT - ម៉ូយជំពាក់ & យើងជំពាក់ដេប៉ូ)
 // ==========================================
+var activeDebtorsTab = 'CUSTOMERS'; // 'CUSTOMERS' ឬ 'DEPOTS'
+
 async function renderDebtorsReportModule() {
   var area = document.getElementById('contentArea');
+  if (!area) return;
+
   area.innerHTML = '<div class="max-w-2xl mx-auto space-y-4">' +
-    '<div class="card border-t-4 border-red-600 shadow-xl p-5 mb-0">' +
-      '<div class="flex justify-between items-center mb-3">' +
-        '<h2 class="font-extrabold text-red-800 text-base flex items-center gap-2"><i class="fas fa-hand-holding-dollar text-red-600"></i>បញ្ជីអ្នកជំពាក់ប្រាក់សរុប (Debtors Report)</h2>' +
-        '<button onclick="renderDebtorsReportModule()" class="px-3 py-1.5 bg-red-50 text-red-700 rounded-xl text-xs font-bold border active:scale-95 transition flex items-center gap-1"><i class="fas fa-sync-alt"></i> Refresh</button>' +
+    // ក្បាលទំព័រ
+    '<div class="flex justify-between items-center bg-white p-4 rounded-2xl border shadow-sm">' +
+      '<div>' +
+        '<h2 class="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">' +
+          '<i class="fas fa-hand-holding-dollar text-red-600"></i>' +
+          '<span>របាយការណ៍បំណុលជំពាក់ (Debts & Payables)</span>' +
+        '</h2>' +
+        '<p class="text-xs text-slate-500 mt-0.5">គ្រប់គ្រងបំណុលម៉ូយជំពាក់យើង & បំណុលយើងជំពាក់ដេប៉ូដៃគូ</p>' +
       '</div>' +
-      '<div class="bg-red-50 p-3.5 rounded-2xl border border-red-200 text-center mb-3">' +
-        '<div class="text-[11px] font-bold text-red-700 uppercase mb-1">ទឹកប្រាក់ដែលគេជំពាក់សរុបទាំងអស់</div>' +
-        '<div id="debtorsGrandTotalText" class="text-xl font-black text-red-800">0 ៛</div>' +
-      '</div>' +
-      '<input type="text" id="debtorSearchInp" onkeyup="filterDebtorsCards()" placeholder="🔍 វាយឈ្មោះម៉ូយដើម្បីស្វែងរក..." class="font-bold border p-2.5 rounded-xl w-full text-xs">' +
+      '<button onclick="renderDebtorsReportModule()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold border active:scale-95 transition flex items-center gap-1.5 shadow-2xs">' +
+        '<i class="fas fa-sync-alt"></i> Refresh' +
+      '</button>' +
     '</div>' +
-    '<div class="space-y-2.5" id="debtorsCardsContainer"><div class="card text-center py-8 italic text-gray-400">កំពុងទាញទិន្នន័យ...</div></div>' +
+
+    // របារប្តូរផ្ទាំង ២ (Tabs: ម៉ូយជំពាក់យើង vs យើងជំពាក់ដេប៉ូ)
+    '<div class="flex bg-white p-1.5 rounded-2xl border shadow-xs gap-1.5 text-xs font-bold">' +
+      '<button type="button" id="tabBtnDebtorCust" onclick="switchDebtorsTab(\'CUSTOMERS\')" class="flex-1 py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 bg-red-600 text-white shadow">' +
+        '<i class="fas fa-users text-sm"></i> ១. ម៉ូយជំពាក់យើង (Receivables)' +
+      '</button>' +
+      '<button type="button" id="tabBtnDebtorDepot" onclick="switchDebtorsTab(\'DEPOTS\')" class="flex-1 py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 bg-slate-100 text-slate-600 hover:bg-slate-200">' +
+        '<i class="fas fa-shop-lock text-sm text-rose-600"></i> ២. យើងជំពាក់ដេប៉ូ (Payables)' +
+      '</button>' +
+    '</div>' +
+
+    // ផ្នែកទី ១៖ ម៉ូយជំពាក់យើង (Customers Debt Section)
+    '<div id="secDebtorsCustomers" class="space-y-3">' +
+      '<div class="card border-t-4 border-red-600 shadow-xl p-5 mb-0 space-y-3">' +
+        '<div class="bg-red-50 p-3.5 rounded-2xl border border-red-200 text-center">' +
+          '<div class="text-[11px] font-bold text-red-700 uppercase mb-1">ទឹកប្រាក់ដែលម៉ូយជំពាក់រោងចក្រសរុប</div>' +
+          '<div id="debtorsGrandTotalText" class="text-xl font-black text-red-800">0 ៛</div>' +
+        '</div>' +
+        '<input type="text" id="debtorSearchInp" onkeyup="filterDebtorsCards()" placeholder="🔍 វាយឈ្មោះម៉ូយដើម្បីស្វែងរក..." class="font-bold border p-2.5 rounded-xl w-full text-xs outline-none focus:border-red-500 bg-slate-50 focus:bg-white">' +
+      '</div>' +
+      '<div class="space-y-2.5" id="debtorsCardsContainer">' +
+        '<div class="card text-center py-8 italic text-slate-400 text-xs"><i class="fas fa-spinner fa-spin mr-1"></i> កំពុងទាញទិន្នន័យ...</div>' +
+      '</div>' +
+    '</div>' +
+
+    // ផ្នែកទី ២៖ យើងជំពាក់ដេប៉ូដៃគូ (Partner Depots Debt Section)
+    '<div id="secDebtorsDepots" class="space-y-3 hidden">' +
+      '<div class="card border-t-4 border-rose-600 shadow-xl p-5 mb-0 space-y-3">' +
+        '<div class="bg-rose-50 p-3.5 rounded-2xl border border-rose-200 text-center">' +
+          '<div class="text-[11px] font-bold text-rose-800 uppercase mb-1">ថ្លៃដើមដែលយើងត្រូវទូទាត់សងដេប៉ូដៃគូសរុប</div>' +
+          '<div id="depotDebtsGrandTotalText" class="text-xl font-black text-rose-800">0 ៛</div>' +
+        '</div>' +
+        '<p class="text-[11px] text-slate-500 italic text-center">*គណនាពីទំនិញដែលបានដកពីដេប៉ូនានាដោយ «កត់ជំពាក់» ដែលមិនទាន់បានទូទាត់សង</p>' +
+      '</div>' +
+      '<div class="space-y-2.5" id="depotDebtsCardsContainer">' +
+        '<div class="card text-center py-8 italic text-slate-400 text-xs"><i class="fas fa-spinner fa-spin mr-1"></i> កំពុងគណនាបំណុលដេប៉ូ...</div>' +
+      '</div>' +
+    '</div>' +
+
   '</div>';
 
   await fetchDebtorsListFromSupabase();
+}
+
+function switchDebtorsTab(tab) {
+  activeDebtorsTab = tab;
+  var btnCust = document.getElementById('tabBtnDebtorCust');
+  var btnDepot = document.getElementById('tabBtnDebtorDepot');
+  var secCust = document.getElementById('secDebtorsCustomers');
+  var secDepot = document.getElementById('secDebtorsDepots');
+
+  if (!btnCust || !btnDepot || !secCust || !secDepot) return;
+
+  if (tab === 'CUSTOMERS') {
+    btnCust.className = "flex-1 py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 bg-red-600 text-white shadow";
+    btnDepot.className = "flex-1 py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 bg-slate-100 text-slate-600 hover:bg-slate-200";
+    secCust.classList.remove('hidden');
+    secDepot.classList.add('hidden');
+    fetchDebtorsListFromSupabase();
+  } else {
+    btnDepot.className = "flex-1 py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 bg-rose-600 text-white shadow";
+    btnCust.className = "flex-1 py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 bg-slate-100 text-slate-600 hover:bg-slate-200";
+    secDepot.classList.remove('hidden');
+    secCust.classList.add('hidden');
+    if (typeof fetchPartnerDepotDebts === 'function') {
+      fetchPartnerDepotDebts();
+    }
+  }
 }
 
 async function fetchDebtorsListFromSupabase() {
