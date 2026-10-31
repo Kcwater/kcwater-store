@@ -408,6 +408,11 @@ function renderAdminOnlineOrdersUI() {
       '</button>';
     }
 
+    // 🌟 បន្ថែមប៊ូតុងមើលបញ្ជីដេប៉ូសម្រាប់ Admin
+    actionButtonsHtml += '<button type="button" onclick="openOrderPickupManifestModal(\'' + o.order_id + '\')" class="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-900 rounded-xl font-bold border border-rose-300 shadow-2xs flex items-center gap-1 active:scale-95 transition">' +
+      '<i class="fas fa-boxes-packing text-xs text-rose-600"></i> បញ្ជីដេប៉ូ' +
+    '</button>';
+
     if (!isDelivered) {
       actionButtonsHtml += '<button type="button" onclick="cancelOnlineOrder(\'' + o.order_id + '\', \'' + safeName + '\')" class="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 rounded-xl font-bold border border-red-200 shadow-2xs flex items-center gap-1 active:scale-95 transition">' +
         '<i class="fas fa-trash-can text-xs text-red-500"></i> បោះបង់' +
@@ -1247,24 +1252,29 @@ async function renderCompanyDeliveriesModule(isSilentRefresh) {
           formatOrderLocationBadgeHTML(rawLoc) +
         '</div>' +
 
-        '<div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-xs">' +
+        '<div class="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1 text-xs">' +
+          // 🌟 ប៊ូតុងថ្មី៖ បើកមើលបញ្ជីដេប៉ូដែលត្រូវទៅយកអីវ៉ាន់
+          '<button type="button" onclick="openOrderPickupManifestModal(\'' + task.order_id + '\')" class="py-2 px-2 bg-rose-50 hover:bg-rose-100 text-rose-900 rounded-xl font-black border border-rose-300 shadow-2xs flex items-center justify-center gap-1 active:scale-95 transition">' +
+            '<i class="fas fa-boxes-packing text-rose-600"></i> យកអីវ៉ាន់' +
+          '</button>' +
+
           (cleanPhone ? 
-          '<a href="tel:' + cleanPhone + '" class="py-2 px-2.5 bg-blue-50 hover:bg-blue-100 text-blue-900 rounded-xl font-bold border border-blue-200 shadow-2xs flex items-center justify-center gap-1 active:scale-95 transition" style="text-decoration:none;">' +
+          '<a href="tel:' + cleanPhone + '" class="py-2 px-2 bg-blue-50 hover:bg-blue-100 text-blue-900 rounded-xl font-bold border border-blue-200 shadow-2xs flex items-center justify-center gap-1 active:scale-95 transition" style="text-decoration:none;">' +
             '<i class="fas fa-phone text-blue-600"></i> ខល' +
           '</a>' : '') +
 
           (cleanPhone ? 
-          '<a href="' + tgChatLink + '" target="_blank" class="py-2 px-2.5 bg-sky-50 hover:bg-sky-100 text-sky-900 rounded-xl font-bold border border-sky-300 shadow-2xs flex items-center justify-center gap-1 active:scale-95 transition" style="text-decoration:none;">' +
+          '<a href="' + tgChatLink + '" target="_blank" class="py-2 px-2 bg-sky-50 hover:bg-sky-100 text-sky-900 rounded-xl font-bold border border-sky-300 shadow-2xs flex items-center justify-center gap-1 active:scale-95 transition" style="text-decoration:none;">' +
             '<i class="fab fa-telegram text-sky-600"></i> Telegram' +
           '</a>' : '') +
 
           (rawLoc ? 
-          '<button type="button" onclick="openOrderMap(\'' + rawLoc.replace(/'/g, "\\'") + '\')" class="py-2 px-2.5 bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-xl font-bold border border-blue-200 shadow-2xs flex items-center justify-center gap-1 active:scale-95 transition">' +
+          '<button type="button" onclick="openOrderMap(\'' + rawLoc.replace(/'/g, "\\'") + '\')" class="py-2 px-2 bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-xl font-bold border border-blue-200 shadow-2xs flex items-center justify-center gap-1 active:scale-95 transition">' +
             '<i class="fas fa-map-location-dot text-blue-600"></i> ផែនទី' +
           '</button>' : '') +
 
           (task.photo_url ? 
-          '<button type="button" onclick="viewOrderHousePhotoById(\'' + task.order_id + '\')" class="py-2 px-2.5 bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-xl font-bold border border-amber-300 shadow-2xs flex items-center justify-center gap-1 active:scale-95 transition">' +
+          '<button type="button" onclick="viewOrderHousePhotoById(\'' + task.order_id + '\')" class="py-2 px-2 bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-xl font-bold border border-amber-300 shadow-2xs flex items-center justify-center gap-1 active:scale-95 transition">' +
             '<i class="fas fa-camera text-amber-600"></i> រូបផ្ទះ' +
           '</button>' : '') +
         '</div>' +
@@ -1693,4 +1703,254 @@ async function loadOnlineHubProductsTab() {
 
   html += '</div></div>';
   area.innerHTML = html;
+}
+
+// ==========================================================================
+// 📦 មុខងារបង្ហាញបញ្ជីទីតាំងត្រូវទៅយកអីវ៉ាន់តាមដេប៉ូ (PICK-UP MANIFEST MODAL)
+// ==========================================================================
+async function openOrderPickupManifestModal(orderId) {
+  if (!orderId) return;
+
+  // ១. បើកផ្ទាំង Loading ជាមុនសិន
+  var existing = document.getElementById('orderPickupManifestModal');
+  if (existing) existing.remove();
+
+  var modalHtml = '<div id="orderPickupManifestModal" class="fixed inset-0 z-[8000] flex items-center justify-center p-3 sm:p-4 overflow-y-auto">' +
+    '<div class="fixed inset-0 bg-slate-950/70 backdrop-blur-xs" onclick="closeOrderPickupManifestModal()"></div>' +
+    '<div class="bg-white rounded-3xl shadow-2xl z-10 w-full max-w-md p-5 space-y-3.5 text-center relative border border-slate-100 animate-in zoom-in-95 duration-200 my-auto max-h-[92dvh] flex flex-col">' +
+      '<div class="flex justify-between items-center border-b pb-2">' +
+        '<div class="text-left">' +
+          '<h3 class="font-black text-slate-900 text-sm sm:text-base flex items-center gap-1.5">' +
+            '<i class="fas fa-boxes-packing text-rose-600"></i> បញ្ជីទីតាំងទៅយកអីវ៉ាន់ (Pick-up Route)' +
+          '</h3>' +
+          '<p class="text-[10px] text-slate-500 font-mono mt-0.5" id="pmOrderCodeLabel">កូដ៖ ' + orderId + '</p>' +
+        '</div>' +
+        '<button type="button" onclick="closeOrderPickupManifestModal()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-400 hover:text-slate-700 text-lg font-bold flex items-center justify-center">&times;</button>' +
+      '</div>' +
+      '<div id="pickupManifestContentArea" class="flex-1 overflow-y-auto space-y-2.5 text-left text-xs pr-1">' +
+        '<div class="text-center py-8 text-slate-400 italic text-xs"><i class="fas fa-spinner fa-spin mr-1 text-rose-600"></i> កំពុងរៀបចំផ្លូវទៅយកអីវ៉ាន់...</div>' +
+      '</div>' +
+      '<div id="pickupManifestSummaryFooter" class="pt-2 border-t text-left"></div>' +
+      '<button type="button" onclick="closeOrderPickupManifestModal()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition">' +
+        'យល់ព្រម (បិទ)' +
+      '</button>' +
+    '</div>' +
+  '</div>';
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+  try {
+    // ២. ទាញយកព័ត៌មាន Order ពី Database
+    const { data: order, error: ordErr } = await supabaseClient
+      .from('orders')
+      .select('*')
+      .eq('order_id', orderId)
+      .maybeSingle();
+
+    if (ordErr || !order) throw new Error("រកមិនឃើញទិន្នន័យនៃការកុម្ម៉ង់នេះឡើយ");
+
+    // ៣. ទាញយកបញ្ជីដេប៉ូ & ការភ្ជាប់ទំនិញជាមួយដេប៉ូ (DEPOT_...)
+    if (typeof loadDepotsFromSupabase === 'function') {
+      await loadDepotsFromSupabase();
+    }
+    const { data: depotSettings } = await supabaseClient
+      .from('settings')
+      .select('key, value')
+      .like('key', 'DEPOT_%');
+
+    var prodDepotMap = {};
+    (depotSettings || []).forEach(function(r) {
+      var pId = r.key.replace('DEPOT_', '');
+      prodDepotMap[pId] = r.value;
+    });
+
+    // ៤. ធានាថាមានបញ្ជីទំនិញ (allProducts) ក្នុង Memory
+    if (!allProducts || allProducts.length === 0) {
+      const { data: prods } = await supabaseClient.from('products').select('*');
+      if (prods) allProducts = prods;
+    }
+
+    var rateUSD = (typeof exchangeRateUSD !== 'undefined') ? exchangeRateUSD : 4100;
+    var rateTHB = (typeof exchangeRateTHB !== 'undefined') ? exchangeRateTHB : 115;
+
+    // ៥. បំបែកមុខទំនិញក្នុង Order ដាក់តាមដេប៉ូនីមួយៗ
+    var depotGroups = {};
+    var totalCashToPayDepots = 0;
+    var totalCreditWithDepots = 0;
+    var totalCostAll = 0;
+
+    var rawItemsText = order.items || '';
+    var itemParts = rawItemsText.split(',');
+
+    itemParts.forEach(function(partStr) {
+      var str = partStr.trim();
+      if (!str) return;
+
+      var seg = str.split('x');
+      var rawName = seg[0] ? seg[0].trim() : str;
+      var qty = (seg.length >= 2) ? parseFloat(seg[1].trim() || 1) : 1;
+      if (isNaN(qty) || qty <= 0) qty = 1;
+
+      // សម្អាតឈ្មោះទំនិញ
+      var cleanName = rawName.replace(/🎁\s*\[Free\]/gi, '').replace(/\[Free\]/gi, '').trim();
+
+      // រក Product ក្នុងឃ្លាំង
+      var matchedProd = (allProducts || []).find(function(p) {
+        return p.name.trim().toLowerCase() === cleanName.toLowerCase();
+      });
+
+      var prodType = matchedProd ? matchedProd.type : 'ផលិតឯង';
+      var depotId = 'DEPOT_KC'; // លំនាំដើមគឺរោងចក្រទឹក KC
+
+      if (matchedProd && matchedProd.id && prodDepotMap[matchedProd.id]) {
+        depotId = prodDepotMap[matchedProd.id];
+      }
+
+      // រកព័ត៌មានលម្អិតដេប៉ូ
+      var depotObj = (activePartnerDepots || []).find(d => d.id === depotId) || {
+        id: depotId,
+        name: (depotId === 'DEPOT_KC' ? 'រោងចក្រទឹក KC WATER (ឃ្លាំងផ្ទាល់)' : 'ដេប៉ូដៃគូ'),
+        phone: '077 934 748',
+        location: '',
+        mapUrl: '',
+        payTerms: 'CASH',
+        isInternal: (depotId === 'DEPOT_KC')
+      };
+
+      // គណនាថ្លៃដើម
+      var rawCost = matchedProd ? parseFloat(matchedProd.cost || 0) : 0;
+      var costCurr = matchedProd ? (matchedProd.currency || 'KHR').toUpperCase() : 'KHR';
+      var costKhr = rawCost;
+      if (costCurr === 'USD') costKhr = Math.round(rawCost * rateUSD);
+      else if (costCurr === 'THB') costKhr = Math.round(rawCost * rateTHB);
+
+      var lineTotalCost = costKhr * qty;
+      totalCostAll += lineTotalCost;
+
+      if (!depotGroups[depotId]) {
+        depotGroups[depotId] = {
+          depot: depotObj,
+          items: [],
+          totalCost: 0
+        };
+      }
+
+      depotGroups[depotId].items.push({
+        name: cleanName,
+        qty: qty,
+        unitCostKhr: costKhr,
+        totalCostKhr: lineTotalCost,
+        isFreeGift: rawName.includes('Free') || rawName.includes('🎁')
+      });
+      depotGroups[depotId].totalCost += lineTotalCost;
+
+      if (!depotObj.isInternal) {
+        if (depotObj.payTerms === 'CASH') {
+          totalCashToPayDepots += lineTotalCost;
+        } else {
+          totalCreditWithDepots += lineTotalCost;
+        }
+      }
+    });
+
+    // ៦. បង្កើត UI បង្ហាញតាមដេប៉ូ
+    var contentArea = document.getElementById('pickupManifestContentArea');
+    var footerArea = document.getElementById('pickupManifestSummaryFooter');
+    if (!contentArea) return;
+
+    var html = '';
+    var groupKeys = Object.keys(depotGroups);
+
+    if (groupKeys.length === 0) {
+      contentArea.innerHTML = '<div class="text-center py-6 text-slate-400 italic">មិនមានទំនិញក្នុង Order នេះឡើយ</div>';
+      return;
+    }
+
+    var stepIndex = 1;
+    groupKeys.forEach(function(dId) {
+      var grp = depotGroups[dId];
+      var d = grp.depot;
+      var isInternal = (d.isInternal === true || d.id === 'DEPOT_KC');
+
+      var cleanPhone = String(d.phone || '').replace(/[^0-9]/g, '');
+      var payTermsBadge = isInternal ? 
+        '<span class="px-2 py-0.5 rounded-full text-[9px] font-black bg-blue-100 text-blue-900 border border-blue-200">💧 លើកចេញពីរោងចក្រ</span>' : 
+        (d.payTerms === 'CASH' ? 
+          '<span class="px-2 py-0.5 rounded-full text-[9px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300">💵 បង់លុយសុទ្ធ ៛ ' + grp.totalCost.toLocaleString() + '</span>' : 
+          '<span class="px-2 py-0.5 rounded-full text-[9px] font-black bg-amber-100 text-amber-900 border border-amber-300">📝 កត់ជំពាក់ដេប៉ូ ៛ ' + grp.totalCost.toLocaleString() + '</span>');
+
+      var itemsListHtml = '';
+      grp.items.forEach(function(itm) {
+        itemsListHtml += '<div class="flex justify-between items-center text-xs py-1 border-b border-slate-100 last:border-none">' +
+          '<div class="flex items-center gap-1.5">' +
+            '<span class="w-1.5 h-1.5 rounded-full ' + (isInternal ? 'bg-blue-500' : 'bg-rose-500') + '"></span>' +
+            '<b class="text-slate-800">' + itm.name + '</b>' +
+            (itm.isFreeGift ? '<span class="text-[9px] font-black bg-amber-100 text-amber-900 px-1.5 rounded">Free</span>' : '') +
+          '</div>' +
+          '<div class="text-right">' +
+            '<b class="text-blue-700 font-mono text-xs">x ' + itm.qty + '</b>' +
+            (!isInternal && itm.totalCostKhr > 0 ? ('<span class="text-[10px] text-slate-400 block font-normal">ដើម: ៛ ' + itm.totalCostKhr.toLocaleString() + '</span>') : '') +
+          '</div>' +
+        '</div>';
+      });
+
+      html += '<div class="p-3 bg-slate-50 rounded-2xl border-2 ' + (isInternal ? 'border-blue-200 bg-blue-50/20' : 'border-rose-200 bg-rose-50/20') + ' space-y-2">' +
+        '<div class="flex justify-between items-start gap-1">' +
+          '<div class="flex items-center gap-2 min-w-0 flex-1">' +
+            '<div class="w-6 h-6 rounded-lg ' + (isInternal ? 'bg-blue-600 text-white' : 'bg-rose-600 text-white') + ' flex items-center justify-center font-black text-xs shrink-0">' +
+              stepIndex +
+            '</div>' +
+            '<div class="min-w-0 flex-1">' +
+              '<b class="text-slate-900 block truncate text-xs">' + d.name + '</b>' +
+              (d.phone ? '<span class="text-[10px] text-emerald-800 font-bold font-mono">📞 ' + d.phone + '</span>' : '') +
+            '</div>' +
+          '</div>' +
+          '<div class="shrink-0">' + payTermsBadge + '</div>' +
+        '</div>' +
+
+        (d.location ? '<div class="text-[10.5px] text-slate-600 font-medium"><i class="fas fa-location-dot text-rose-500 mr-1"></i>' + d.location + '</div>' : '') +
+
+        // បញ្ជីទំនិញត្រូវដកពីដេប៉ូនោះ
+        '<div class="bg-white p-2 rounded-xl border border-slate-200 space-y-0.5">' +
+          itemsListHtml +
+        '</div>' +
+
+        // ប៊ូតុងខល & ផែនទីដេប៉ូ
+        (!isInternal ? 
+        ('<div class="flex items-center justify-end gap-1.5 pt-0.5">' +
+          (cleanPhone ? '<a href="tel:' + cleanPhone + '" class="px-2.5 py-1 bg-green-50 hover:bg-green-100 text-green-800 border border-green-200 rounded-lg font-bold text-[10px] flex items-center gap-1 active:scale-95 transition" style="text-decoration:none;"><i class="fas fa-phone text-green-600"></i> ខលដេប៉ូ</a>' : '') +
+          (d.mapUrl ? '<a href="' + d.mapUrl + '" target="_blank" class="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 rounded-lg font-bold text-[10px] flex items-center gap-1 active:scale-95 transition" style="text-decoration:none;"><i class="fas fa-map-location-dot text-blue-600"></i> ផែនទីដេប៉ូ</a>' : '') +
+        '</div>') : '') +
+      '</div>';
+
+      stepIndex++;
+    });
+
+    contentArea.innerHTML = html;
+
+    // ៧. សង្ខេបទឹកប្រាក់សរុប និងផលចំណេញ (Gross Margin) ខាងក្រោម
+    var revenue = parseFloat(order.total || 0);
+    var grossProfit = Math.max(0, revenue - totalCostAll);
+
+    if (footerArea) {
+      footerArea.innerHTML = '<div class="p-3 bg-slate-100 rounded-2xl border border-slate-200 space-y-1.5 text-xs font-bold">' +
+        (totalCashToPayDepots > 0 ? 
+        '<div class="flex justify-between text-rose-900"><span>💵 លុយសុទ្ធអ្នកដឹកត្រូវកាន់ទៅបើកអីវ៉ាន់៖</span><b class="font-black text-rose-700">៛ ' + totalCashToPayDepots.toLocaleString() + '</b></div>' : '') +
+        (totalCreditWithDepots > 0 ? 
+        '<div class="flex justify-between text-amber-900"><span>📝 កត់ជំពាក់ដេប៉ូដៃគូសរុប (Credit)៖</span><b class="font-black text-amber-700">៛ ' + totalCreditWithDepots.toLocaleString() + '</b></div>' : '') +
+        '<div class="flex justify-between text-emerald-950 border-t border-slate-300 pt-1.5"><span>💰 ប្រាក់ត្រូវប្រមូលពីភ្ញៀវ៖</span><b class="font-black text-emerald-700 text-sm">៛ ' + revenue.toLocaleString() + '</b></div>' +
+        '<div class="flex justify-between text-blue-950 pt-0.5"><span>✨ ផលចំណេញរោងចក្រ KC (Gross Profit)៖</span><b class="font-black text-blue-700 text-sm">+៛ ' + grossProfit.toLocaleString() + '</b></div>' +
+      '</div>';
+    }
+
+  } catch(err) {
+    var contentArea = document.getElementById('pickupManifestContentArea');
+    if (contentArea) {
+      contentArea.innerHTML = '<div class="p-4 text-center text-red-500 font-bold text-xs">កំហុសទាញទិន្នន័យ៖ ' + err.message + '</div>';
+    }
+  }
+}
+
+function closeOrderPickupManifestModal() {
+  var modal = document.getElementById('orderPickupManifestModal');
+  if (modal) modal.remove();
 }
