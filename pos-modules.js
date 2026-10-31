@@ -983,52 +983,6 @@ async function saveProductToSupabase() {
   }
 }
 
-  try {
-    // 🔄 ការពារកុំឱ្យស្ទួនលេខរៀង POS៖ បើមានទំនិញចាស់ផ្សេងទៀតជាប់លេខរៀងនេះ រំកិលវាចុះក្រោមអូតូ
-    var targetId = editingProductId || prodId;
-    var conflictingItems = allProducts.filter(function(item) {
-      return item.id !== targetId && parseInt(item.sort_order) === sortPosNum;
-    });
-
-    if (conflictingItems.length > 0) {
-      for (var c = 0; c < conflictingItems.length; c++) {
-        var shiftedSort = sortPosNum + c + 1;
-        await supabaseClient.from('products').update({ sort_order: shiftedSort }).eq('id', conflictingItems[c].id);
-        conflictingItems[c].sort_order = shiftedSort;
-      }
-    }
-
-    if (editingProductId) {
-      await supabaseClient.from('products').update(payload).eq('id', editingProductId);
-    } else {
-      payload.stock = 0;
-      await supabaseClient.from('products').insert([payload]);
-    }
-
-    // 🌐 រក្សាទុក Description, Badge, Category និងលេខរៀង Web ចូលតារាង Settings
-    var settingRows = [
-      { key: 'DESC_' + prodId, value: descVal },
-      { key: 'BADGE_' + prodId, value: badgeVal },
-      { key: 'CAT_' + prodId, value: catVal },
-      { key: 'ONLINE_SORT_' + prodId, value: String(sortOnlineNum) }
-    ];
-    await supabaseClient.from('settings').upsert(settingRows);
-
-    showToast(editingProductId ? "បានធ្វើបច្ចុប្បន្នភាពទំនិញជោគជ័យ!" : "បានបង្កើតទំនិញថ្មីជោគជ័យ!", "success");
-    cancelEditProduct();
-    await fetchInitialPOSData();
-    if (typeof syncOnlineSortsFromDatabase === 'function') {
-      await syncOnlineSortsFromDatabase();
-    }
-    renderStockTableRows();
-    initStockModuleDropdowns();
-  } catch(err) {
-    showToast("កំហុស៖ " + err.message, "error");
-  } finally {
-    btn.disabled = false;
-  }
-}
-
 // 💾 មុខងារបញ្ចូលស្តុកទំនិញថ្មី (គណនាបំប្លែងលុយថៃ ฿ និងដុល្លារ $ ចេញជាលុយខ្មែរ ៛ ក្នុងសារ Telegram)
 async function saveStockInToSupabase() {
   var id = document.getElementById('si_prod') ? document.getElementById('si_prod').value : '';
