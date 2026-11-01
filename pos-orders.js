@@ -1448,24 +1448,47 @@ async function loadOnlineHubOrdersTab() {
 }
 
 // ==========================================
-// 🔍 TAB ២៖ ប្រវត្តិលក់ & ដោះស្រាយវិវាទ (ពេលគិតលុយខុស)
+// 🔍 TAB ២៖ ប្រវត្តិលក់ & ដោះស្រាយវិវាទ (មាន Dropdown កំណត់ជួរដេក ២០ ដល់ ១,០០០ ជួរ)
 // ==========================================
+var currentAuditRowLimit = 50;
+var cachedAuditOrders = [];
+
 async function loadOnlineHubAuditTab() {
   var area = document.getElementById('hubTabContent_AUDIT');
   if (!area) return;
 
   area.innerHTML = '<div class="card border-t-4 border-blue-600 shadow-xl p-5 mb-0 space-y-3">' +
-    '<div class="flex justify-between items-center">' +
-      '<h3 class="font-black text-slate-900 text-sm sm:text-base flex items-center gap-2">' +
-        '<i class="fas fa-receipt text-blue-600"></i>ប្រវត្តិលក់ Online & ផ្ទៀងផ្ទាត់វិក្កយបត្រ' +
-      '</h3>' +
-      '<span class="text-[10px] text-blue-800 bg-blue-100 px-2.5 py-0.5 rounded-full font-bold">ដោះស្រាយវិវាទ / Refund</span>' +
+    '<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">' +
+      '<div>' +
+        '<h3 class="font-black text-slate-900 text-sm sm:text-base flex items-center gap-2">' +
+          '<i class="fas fa-receipt text-blue-600"></i>ប្រវត្តិលក់ Online & ផ្ទៀងផ្ទាត់វិក្កយបត្រ' +
+        '</h3>' +
+        '<p class="text-[10.5px] text-slate-500 font-bold mt-0.5">ស្វែងរកភស្តុតាង និងដោះស្រាយវិវាទ / Refund</p>' +
+      '</div>' +
+      '<span id="auditRowsCountBadge" class="text-[10px] text-blue-900 bg-blue-100 border border-blue-200 px-2.5 py-0.5 rounded-full font-black">កំពុងទាញទិន្នន័យ...</span>' +
     '</div>' +
-    // ប្រអប់ Search រកតាមលេខទូរស័ព្ទ ឬកូដកុម្ម៉ង់ភ្លាមៗ
-    '<div class="relative">' +
-      '<input type="text" id="inpOnlineAuditSearch" oninput="onOnlineAuditSearch(this.value)" placeholder="🔍 វាយលេខទូរស័ព្ទភ្ញៀវ, ឈ្មោះ ឬកូដកុម្ម៉ង់ (ORD-...) ដើម្បីឆែកមើលភស្តុតាង..." class="w-full border-2 border-blue-200 focus:border-blue-600 rounded-2xl p-3 pl-10 font-bold text-xs outline-none bg-slate-50 focus:bg-white">' +
-      '<i class="fas fa-search absolute left-3.5 top-3.5 text-slate-400 text-xs pointer-events-none"></i>' +
+
+    // 🔍 ប្រអប់ Search រកតាមលេខទូរស័ព្ទ & 🔢 Dropdown កំណត់ចំនួនជួរដេក
+    '<div class="flex flex-col sm:flex-row gap-2">' +
+      '<div class="relative flex-1">' +
+        '<input type="text" id="inpOnlineAuditSearch" oninput="onOnlineAuditSearch(this.value)" placeholder="🔍 វាយលេខទូរស័ព្ទភ្ញៀវ, ឈ្មោះ ឬកូដកុម្ម៉ង់ (ORD-...) ដើម្បីឆែកមើលភស្តុតាង..." class="w-full border-2 border-blue-200 focus:border-blue-600 rounded-2xl p-2.5 pl-9 font-bold text-xs outline-none bg-slate-50 focus:bg-white">' +
+        '<i class="fas fa-search absolute left-3 top-3.5 text-slate-400 text-xs pointer-events-none"></i>' +
+      '</div>' +
+      '<div class="flex items-center gap-1.5 shrink-0 bg-slate-50 p-1 rounded-2xl border border-slate-200">' +
+        '<label for="selAuditRowLimit" class="text-[10px] font-black text-slate-600 uppercase pl-1.5 whitespace-nowrap">' +
+          '<i class="fas fa-list-ol text-blue-600 mr-1"></i>កំណត់ជួរដេក៖' +
+        '</label>' +
+        '<select id="selAuditRowLimit" onchange="changeAuditRowLimit(this.value)" class="text-xs font-black bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 text-blue-950 outline-none focus:border-blue-500 cursor-pointer shadow-2xs">' +
+          '<option value="20"' + (currentAuditRowLimit === 20 ? ' selected' : '') + '>20 ជួរ</option>' +
+          '<option value="50"' + (currentAuditRowLimit === 50 ? ' selected' : '') + '>50 ជួរ</option>' +
+          '<option value="100"' + (currentAuditRowLimit === 100 ? ' selected' : '') + '>100 ជួរ</option>' +
+          '<option value="200"' + (currentAuditRowLimit === 200 ? ' selected' : '') + '>200 ជួរ</option>' +
+          '<option value="500"' + (currentAuditRowLimit === 500 ? ' selected' : '') + '>500 ជួរ</option>' +
+          '<option value="1000"' + (currentAuditRowLimit === 1000 ? ' selected' : '') + '>1,000 ជួរ</option>' +
+        '</select>' +
+      '</div>' +
     '</div>' +
+
     '<div id="onlineAuditResultsArea" class="space-y-3 pt-1">' +
       '<div class="text-center py-8 text-slate-400 italic text-xs"><i class="fas fa-spinner fa-spin mr-1"></i> កំពុងទាញប្រវត្តិលក់ Online...</div>' +
     '</div>' +
@@ -1474,22 +1497,33 @@ async function loadOnlineHubAuditTab() {
   fetchOnlineAuditOrders();
 }
 
-var cachedAuditOrders = [];
+function changeAuditRowLimit(val) {
+  currentAuditRowLimit = parseInt(val) || 50;
+  fetchOnlineAuditOrders();
+}
 
-// 🔍 មុខងារទាញប្រវត្តិលក់ Online (កែសម្រួលតម្រៀបតាម created_at ធានាដំណើរការ Search ឃើញ ១០០%)
+// 🔍 មុខងារទាញប្រវត្តិលក់ Online តាមចំនួនជួរដេកដែលបានកំណត់ (២០ ដល់ ១,០០០ ជួរ)
 async function fetchOnlineAuditOrders() {
   var resArea = document.getElementById('onlineAuditResultsArea');
+  var badge = document.getElementById('auditRowsCountBadge');
   if (!resArea) return;
+
+  var limitVal = parseInt(currentAuditRowLimit) || 50;
 
   try {
     const { data: list, error } = await supabaseClient
       .from('orders')
       .select('*')
-      .order('created_at', { ascending: false }) // ✅ ប្រើ created_at (គ្មាន Error ទៀតឡើយ)
-      .limit(80);
+      .order('created_at', { ascending: false })
+      .limit(limitVal);
 
     if (error) throw error;
     cachedAuditOrders = list || [];
+
+    if (badge) {
+      badge.innerText = 'បង្ហាញ ' + cachedAuditOrders.length + ' ជួរ (កំណត់ ' + limitVal + ')';
+    }
+
     renderOnlineAuditResultsList();
   } catch(e) {
     if (resArea) resArea.innerHTML = '<div class="text-center py-4 text-red-500 font-bold text-xs">កំហុសទាញទិន្នន័យ៖ ' + e.message + '</div>';
@@ -1666,7 +1700,7 @@ async function refundAndVoidOnlineOrder(orderId, custName, total, itemsText) {
 }
 
 // ==========================================
-// 🌐 TAB ៣៖ ទំនិញកំពុងបង្ហាញលើ WEB (ONLINE SHOWCASE)
+// 🌐 TAB ៣៖ ទំនិញកំពុងបង្ហាញលើ WEB (បង្ហាញតម្លៃ ៣ រូបិយប័ណ្ណ ៛, ฿, $)
 // ==========================================
 async function loadOnlineHubProductsTab() {
   var area = document.getElementById('hubTabContent_PRODUCTS');
@@ -1676,6 +1710,9 @@ async function loadOnlineHubProductsTab() {
     var ch = String(p.channel || 'ALL').toUpperCase();
     return ch === 'ALL' || ch === 'ONLINE';
   });
+
+  var rateUSD = (typeof exchangeRateUSD !== 'undefined') ? exchangeRateUSD : 4100;
+  var rateTHB = (typeof exchangeRateTHB !== 'undefined') ? exchangeRateTHB : 115;
 
   var html = '<div class="card border-t-4 border-emerald-600 shadow-xl p-5 mb-0 space-y-3">' +
     '<div class="flex justify-between items-center">' +
@@ -1690,14 +1727,42 @@ async function loadOnlineHubProductsTab() {
 
   onlineProds.forEach(function(p) {
     var imgUrl = p.img || "https://cdn-icons-png.flaticon.com/512/3100/3100566.png";
-    var onlinePr = Number(p.online_price || p.price || 0).toLocaleString() + ' ៛';
+    var rawCurr = (p.currency || 'KHR').toUpperCase();
+    var onlinePrice = parseFloat(p.online_price || p.price || 0);
+
+    // 🪙 គណនាបំប្លែងតម្លៃជា ៣ រូបិយប័ណ្ណ (៛, ฿, $)
+    var khrVal = 0, thbVal = 0, usdVal = 0;
+    if (rawCurr === 'USD') {
+      khrVal = Math.round(onlinePrice * rateUSD);
+      usdVal = onlinePrice;
+      thbVal = Math.round(khrVal / rateTHB);
+    } else if (rawCurr === 'THB') {
+      khrVal = Math.round(onlinePrice * rateTHB);
+      thbVal = onlinePrice;
+      usdVal = parseFloat((khrVal / rateUSD).toFixed(2));
+    } else {
+      khrVal = Math.round(onlinePrice);
+      thbVal = Math.round(onlinePrice / rateTHB);
+      usdVal = parseFloat((onlinePrice / rateUSD).toFixed(2));
+    }
+
+    var khrText = '៛ ' + Number(khrVal).toLocaleString();
+    var thbText = '฿ ' + Number(thbVal).toLocaleString();
+    var usdText = '$ ' + Number(usdVal).toFixed(2);
+
+    var priceDisplay = '<div class="space-y-0.5 text-center my-1 leading-tight">' +
+      '<div class="text-xs font-black text-emerald-700 leading-tight">' + khrText + '</div>' +
+      '<div class="text-[10px] font-black text-amber-700 leading-tight">' + thbText + '</div>' +
+      '<div class="text-[10px] font-black text-blue-700 leading-tight">' + usdText + '</div>' +
+    '</div>';
+
     var isOutOfStock = (p.type === 'ទិញគេ' && parseFloat(p.stock || 0) <= 0);
 
-    html += '<div class="bg-slate-50 p-3 rounded-2xl border border-slate-200 text-center space-y-1 relative shadow-2xs">' +
+    html += '<div class="bg-slate-50 p-3 rounded-2xl border border-slate-200 text-center space-y-1 relative shadow-2xs hover:shadow-md transition">' +
       (isOutOfStock ? '<span class="absolute top-2 left-2 bg-red-100 text-red-700 text-[9px] font-black px-1.5 py-0.2 rounded-full border border-red-300">អស់ស្តុក</span>' : '') +
       '<div class="w-16 h-16 mx-auto flex items-center justify-center p-1"><img src="' + imgUrl + '" class="max-w-full max-h-full object-contain"></div>' +
       '<b class="text-xs text-slate-800 line-clamp-1 block">' + p.name + '</b>' +
-      '<div class="text-xs font-black text-emerald-700">🌐 ' + onlinePr + '</div>' +
+      priceDisplay +
       '<span class="text-[10px] text-slate-400 font-bold block">' + (p.type === 'ផលិតឯង' ? 'ផលិតឯង' : ('សល់ ' + p.stock)) + '</span>' +
     '</div>';
   });
