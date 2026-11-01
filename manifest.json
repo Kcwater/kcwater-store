@@ -1,0 +1,25 @@
+{
+  "name": "KC MART - ទឹកពិសា & ទំនិញទូទៅ",
+  "short_name": "KC MART",
+  "description": "សេវាដឹកជញ្ជូនរហ័សដល់មុខផ្ទះ ៣០-៤៥ នាទី៖ ទឹកពិសាបរិសុទ្ធ ខេ ស៊ី ស្បៀងអាហារ និងគ្រឿងទេសប្រចាំថ្ងៃ។",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#047857",
+  "icons": [
+    {
+      "src": "https://i.postimg.cc/zX8k8Xqj/kc-logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://i.postimg.cc/zX8k8Xqj/kc-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
