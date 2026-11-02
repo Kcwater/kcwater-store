@@ -9,7 +9,6 @@ var adminOnlineOrdersCache = [];
 var activeAdminOnlineTab = 'ACTIVE';
 // 🖼️ ឃ្លាំងផ្ទុករូបថតផ្ទះភ្ញៀវសុវត្ថិភាព (ការពារកុំឱ្យ Crash ពេលភ្ញៀវភ្ជាប់រូបមុខផ្ទះ)
 var safeOrderPhotoStore = {};
-
 function storeOrderPhoto(orderId, photoUrl, custName) {
   if (!orderId || !photoUrl) return;
   safeOrderPhotoStore[orderId] = {
@@ -1080,14 +1079,14 @@ window.addEventListener('load', function() {
   initOrdersRealtimeListener();
 });
 
-// 📱 មុខងារបើក ABA QR ផ្ទាល់សម្រាប់អ្នកដឹក
+// 📱 មុខងារបើក ABA QR សម្រាប់អ្នកដឹក (តភ្ជាប់ទៅ openDriverAbaQrModal កុំឱ្យស្ទួនកូដ និងមាន z-index ត្រឹមត្រូវ)
 function openDriverDirectQr(amount, custName) {
-  var qrModal = document.getElementById('posKhqrModal');
-  var amtText = document.getElementById('posKhqrAmountText');
-  if (qrModal && amtText) {
-    amtText.innerText = "៛ " + Number(amount || 0).toLocaleString();
-    qrModal.classList.remove('hidden');
+  if (amount) {
+    if (!activeDeliveryTaskData) activeDeliveryTaskData = {};
+    activeDeliveryTaskData.total = amount;
+    activeDeliveryTaskData.custName = custName || '';
   }
+  openDriverAbaQrModal();
 }
 
 // 🚚 មុខងារបង្ហាញបេសកកម្មដឹកទឹករបស់អ្នកដឹកជញ្ជូនរោងចក្រ (មានប៊ូតុង "ចេញដំណើរ" ទំនើប)
