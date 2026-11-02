@@ -2118,23 +2118,25 @@ function filterCatalog(cat, btn) {
       document.getElementById('checkoutModal').classList.add('hidden');
     }
 
-   // 🛒 មុខងារគណនាកន្ត្រក Checkout បកប្រែ ៣ ភាសាពេញលេញ ១០០% (ខ្មែរ / EN / 中文)
+// 🛒 មុខងារគណនាកន្ត្រក Checkout & ទាញតម្លៃសំបកធុងពីស្តុកផ្ទាល់ ១០០%
 function updateCheckoutCalculation() {
   var listCont = document.getElementById('checkoutCartItemsList');
   var grandText = document.getElementById('coGrandTotalText');
   var khqrDue = document.getElementById('khqrDueAmountText');
-  var barrelHint = document.getElementById('barrelCountSummaryBadge');
+  var barrelBadge = document.getElementById('barrelCountSummaryBadge');
+  var swapSection = document.getElementById('coSectionSwap') ? document.getElementById('coSectionSwap').closest('.space-y-1\\.5') : null;
+  var optNoSpan = document.getElementById('optSwapNo');
+
   var d = DICT[currentLang] || DICT.km;
   var rateU = (typeof exchangeRateUSD !== 'undefined') ? exchangeRateUSD : 4100;
   var rateT = (typeof exchangeRateTHB !== 'undefined') ? exchangeRateTHB : 115;
 
-  // 📚 វចនានុក្រមពាក្យ Checkout តាម ៣ ភាសា
   var coDict = {
     km: {
       freeGiftTag: "🎁 [កាដូថែម Free]",
       freeTag: "Free (ឥតគិតថ្លៃ) 🎉",
-      blueBarrelDeposit: "សំបកធុងខៀវថ្មី",
-      whiteBarrelDeposit: "សំបកធុងសថ្មី",
+      blueBarrelDeposit: "ទិញសំបកធុងខៀវថ្មី",
+      whiteBarrelDeposit: "ទិញសំបកធុងសថ្មី",
       homeDelivery: "សេវាដឹកដល់ផ្ទះ",
       deliveryFeeLabel: "សេវាដឹកជញ្ជូន",
       freeByBarrel: "ទិញទឹកធុង ២០L ចំនួន {min} ធុង ដឹក Free",
@@ -2145,8 +2147,8 @@ function updateCheckoutCalculation() {
     en: {
       freeGiftTag: "🎁 [Free Gift]",
       freeTag: "Free Delivery 🎉",
-      blueBarrelDeposit: "New Blue Barrel Deposit",
-      whiteBarrelDeposit: "New White Barrel Deposit",
+      blueBarrelDeposit: "Buy New Blue Barrel",
+      whiteBarrelDeposit: "Buy New White Barrel",
       homeDelivery: "Home Delivery",
       deliveryFeeLabel: "Delivery Fee",
       freeByBarrel: "Free delivery for {min}+ barrels",
@@ -2157,8 +2159,8 @@ function updateCheckoutCalculation() {
     zh: {
       freeGiftTag: "🎁 [特惠赠品]",
       freeTag: "免费配送 🎉",
-      blueBarrelDeposit: "全新蓝桶押金",
-      whiteBarrelDeposit: "全新白桶押金",
+      blueBarrelDeposit: "购买全新蓝桶",
+      whiteBarrelDeposit: "购买全新白桶",
       homeDelivery: "送货上门",
       deliveryFeeLabel: "配送费",
       freeByBarrel: "满 {min} 桶 20L 免配送费",
@@ -2173,7 +2175,7 @@ function updateCheckoutCalculation() {
   var blueBarrelsQty = 0;
   var whiteBarrelsQty = 0;
 
-  // ១. បង្ហាញទំនិញក្នុងកន្ត្រក (បកប្រែឈ្មោះទំនិញតាមភាសាដែលរើស)
+  // ១. បង្ហាញទំនិញក្នុងកន្ត្រក & រាប់ចំនួនទឹកធុង ២០L
   for (var k in cartItems) {
     if (cartItems[k].qty > 0) {
       var itemPriceKhr = cartItems[k].price;
@@ -2221,7 +2223,7 @@ function updateCheckoutCalculation() {
     }
   }
 
-  // 🎁 ២. គណនាទំនិញថែម Free (បកប្រែឈ្មោះកាដូថែមជាភាសាដែលភ្ញៀវរើស)
+  // 🎁 ២. គណនាទំនិញថែម Free
   var freeGiftItems = [];
   if (activePromoConfig && activePromoConfig.rules && activePromoConfig.rules.length > 0) {
     activePromoConfig.rules.forEach(function(rule) {
@@ -2232,7 +2234,6 @@ function updateCheckoutCalculation() {
           if (freeMultiplier > 0) {
             var totalGiftCount = freeMultiplier * (rule.freeQty || 1);
             freeGiftItems.push({ name: rule.freeProduct, qty: totalGiftCount });
-
             var localizedGiftName = getLocalizedProductName({ name: rule.freeProduct }, currentLang);
 
             html += '<div class="flex justify-between items-center py-2 border-t-2 border-amber-300 text-amber-950 bg-amber-100/90 px-2.5 rounded-xl mt-1.5 animate-pulse">' +
@@ -2245,7 +2246,9 @@ function updateCheckoutCalculation() {
     });
   }
 
-  // 🛢️ ៣. គណនាសំបកធុង (បកប្រែឈ្មោះសំបកធុង)
+  // 🛢️ ៣. ទាញតម្លៃសំបកធុងផ្ទាល់ពី Database Stock (STORE_CATALOG)
+  var total20LBarrels = blueBarrelsQty + whiteBarrelsQty;
+
   var blueBarrelProd = STORE_CATALOG.find(function(p) {
     var n = (p.raw_name || '').toLowerCase();
     return (n.indexOf('សំបក') !== -1 || n.indexOf('empty') !== -1) && (n.indexOf('ខៀវ') !== -1 || n.indexOf('blue') !== -1);
@@ -2255,17 +2258,43 @@ function updateCheckoutCalculation() {
     return (n.indexOf('សំបក') !== -1 || n.indexOf('empty') !== -1) && (n.indexOf('ស') !== -1 || n.indexOf('white') !== -1);
   });
 
-  var blueBarrelPrice = blueBarrelProd ? parseFloat(blueBarrelProd.price || 0) : 10000;
-  var whiteBarrelPrice = whiteBarrelProd ? parseFloat(whiteBarrelProd.price || 0) : 12000;
+  // ទាញតម្លៃពីស្តុក (បើមិនឃើញក្នុងស្តុក យកតម្លៃលំនាំដើម)
+  var blueBarrelPrice = blueBarrelProd ? parseFloat(blueBarrelProd.priceKhr || blueBarrelProd.price || 10000) : 10000;
+  var whiteBarrelPrice = whiteBarrelProd ? parseFloat(whiteBarrelProd.priceKhr || whiteBarrelProd.price || 12000) : 12000;
+
+  // បង្ហាញ ឬលាក់ផ្នែកសំបកធុង (បើទិញតែគ្រឿងទេស គ្មានទឹកធុង ២០L គឺលាក់ចោលភ្លាម)
+  if (swapSection) {
+    if (total20LBarrels > 0) {
+      swapSection.classList.remove('hidden');
+      if (barrelBadge) {
+        barrelBadge.innerText = 'សរុប ' + total20LBarrels + ' ធុង';
+      }
+      if (optNoSpan) {
+        var representativePrice = (whiteBarrelsQty > 0) ? whiteBarrelPrice : blueBarrelPrice;
+        optNoSpan.innerText = '🛒 គ្មានសំបកធុងដូរទេ (ទិញសំបកថ្មី +' + representativePrice.toLocaleString() + '៛/ធុង)';
+      }
+    } else {
+      swapSection.classList.add('hidden');
+    }
+  }
 
   var swapChecked = document.querySelector('input[name="co_swapOption"]:checked');
-  var isNoSwap = swapChecked ? (swapChecked.value === 'NO') : false;
+  var isNoSwap = (total20LBarrels > 0) && swapChecked ? (swapChecked.value === 'NO') : false;
   var barrelFee = 0;
+  var emptyBarrelsToBuy = [];
 
   if (isNoSwap) {
-    if (blueBarrelsQty > 0 && blueBarrelPrice > 0) {
+    // ធុងខៀវ
+    if (blueBarrelsQty > 0) {
       var bTotal = blueBarrelsQty * blueBarrelPrice;
       barrelFee += bTotal;
+      emptyBarrelsToBuy.push({
+        id: blueBarrelProd ? blueBarrelProd.id : '',
+        name: blueBarrelProd ? blueBarrelProd.raw_name : 'សំបកធុង ២០L ពណ៌ខៀវ',
+        qty: blueBarrelsQty,
+        price: blueBarrelPrice
+      });
+
       var bTotalThb = Math.round(bTotal / rateT).toLocaleString();
       var bTotalUsd = (bTotal / rateU).toFixed(2);
       html += '<div class="flex justify-between items-center py-1.5 border-t border-blue-200 text-blue-950 bg-blue-50 px-2 rounded-lg mt-1">' +
@@ -2277,9 +2306,17 @@ function updateCheckoutCalculation() {
       '</div>';
     }
 
-    if (whiteBarrelsQty > 0 && whiteBarrelPrice > 0) {
+    // ធុងស
+    if (whiteBarrelsQty > 0) {
       var wTotal = whiteBarrelsQty * whiteBarrelPrice;
       barrelFee += wTotal;
+      emptyBarrelsToBuy.push({
+        id: whiteBarrelProd ? whiteBarrelProd.id : '',
+        name: whiteBarrelProd ? whiteBarrelProd.raw_name : 'សំបកធុង ២០L ពណ៌ស',
+        qty: whiteBarrelsQty,
+        price: whiteBarrelPrice
+      });
+
       var wTotalThb = Math.round(wTotal / rateT).toLocaleString();
       var wTotalUsd = (wTotal / rateU).toFixed(2);
       html += '<div class="flex justify-between items-center py-1.5 border-t border-amber-200 text-amber-950 bg-amber-50 px-2 rounded-lg mt-1">' +
@@ -2292,12 +2329,11 @@ function updateCheckoutCalculation() {
     }
   }
 
-  // 🛵 ៤. គណនាថ្លៃដឹកជញ្ជូន (បកប្រែពាក្យដឹកជញ្ជូន & ដំណឹង Free ៣ ភាសា)
+  // 🛵 ៤. គណនាថ្លៃដឹកជញ្ជូន
   var deliveryFee = 0;
   var stdFee = parseFloat((storeDeliveryConfig && storeDeliveryConfig.standardFee) || 0);
   var minFreeBarrels = parseInt((storeDeliveryConfig && storeDeliveryConfig.freeMinQty) || 2);
   var minFreeAmount = parseFloat((storeDeliveryConfig && storeDeliveryConfig.freeMinAmount) || 50000);
-  var total20LBarrels = blueBarrelsQty + whiteBarrelsQty;
 
   if (totalUnits > 0) {
     var isFreeByBarrels = (total20LBarrels >= minFreeBarrels);
@@ -2358,7 +2394,8 @@ function updateCheckoutCalculation() {
     grandTotalUsd: grandTotalUsd,
     deliveryFee: deliveryFee,
     barrelFee: barrelFee,
-    freeGifts: freeGiftItems
+    freeGifts: freeGiftItems,
+    emptyBarrels: emptyBarrelsToBuy // 👈 ផ្ញើបញ្ជីសំបកធុងពិតប្រាកដទៅមុខងារ Submit
   };
 }
     
@@ -2468,10 +2505,17 @@ function updateCheckoutCalculation() {
         return item.raw_name + " x " + item.qty;
       }).join(", ");
 
-      // បន្ថែមទំនិញថែម Free ចូលក្នុងបញ្ជីកុម្ម៉ង់
+      // 🎁 បន្ថែមទំនិញថែម Free ចូលក្នុងបញ្ជីកុម្ម៉ង់
       if (calcResult.freeGifts && calcResult.freeGifts.length > 0) {
         calcResult.freeGifts.forEach(function(g) {
           itemsSummaryText += ", 🎁 [Free] " + g.name + " x " + g.qty;
+        });
+      }
+
+      // 🛢️ បន្ថែមមុខទំនិញសំបកធុងទិញថ្មីដាច់ចូលក្នុងបញ្ជីកុម្ម៉ង់ (ដើម្បីឱ្យ POS ស្គាល់ និងកាត់ស្តុកអូតូ)
+      if (calcResult.emptyBarrels && calcResult.emptyBarrels.length > 0) {
+        calcResult.emptyBarrels.forEach(function(b) {
+          itemsSummaryText += ", 🛢️ " + b.name + " x " + b.qty;
         });
       }
 
