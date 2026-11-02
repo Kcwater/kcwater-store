@@ -1,6 +1,24 @@
 <!DOCTYPE html>
 <html lang="km">
 <head>
+  <!-- 🚀 កូដបង្ខំឱ្យលោតទៅ Google Chrome ភ្លាមៗក្នុង 0.001 វិនាទី ពេលបើកក្នុង Messenger លើ Android -->
+  <script>
+    (function() {
+      var ua = (navigator.userAgent || navigator.vendor || window.opera || '').toLowerCase();
+      var isAndroid = ua.includes('android');
+      var isFBorMessenger = ua.includes('fban') || ua.includes('fbios') || ua.includes('messenger') || ua.includes('fb_iab');
+
+      // បើជា Android កំពុងបើកក្នុង Messenger -> បញ្ជាឱ្យលោតចូល Google Chrome ភ្លាមៗតែម្តង
+      if (isAndroid && isFBorMessenger) {
+        var currentUrl = window.location.href;
+        if (!currentUrl.includes('no_auto_chrome=1')) {
+          var cleanUrl = currentUrl.replace(/^https?:\/\//, '');
+          var intentUrl = "intent://" + cleanUrl + "#Intent;scheme=https;package=com.android.chrome;end";
+          window.location.replace(intentUrl);
+        }
+      }
+    })();
+  </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>KC WATER - ទឹកពិសាបរិសុទ្ធ ខេ ស៊ី (ប៉ោយប៉ែត)</title>
