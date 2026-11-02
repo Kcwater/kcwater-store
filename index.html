@@ -2569,81 +2569,132 @@ function updateCheckoutCalculation() {
       }
     }
 
-    // 📍 មុខងារចាប់ GPS ផ្ទះ (កូដពេញលេញ ត្រឹមត្រូវ ១០០% គ្មានកូដសេសសល់)
-    function detectGPSLocation() {
-      var hint = document.getElementById('gpsStatusHint');
-      var inpUrl = document.getElementById('inp_custMapUrl');
-      var btnLabel = document.getElementById('btnGpsLabel');
-      var btn = document.getElementById('btnDetectGPSAction');
+    // 📍 មុខងារចាប់ GPS ផ្ទះ (គាំទ្រប៊ូតុង ១ ឃ្លីក លោតទៅ Google Chrome សម្រាប់ Messenger លើ Android)
+function detectGPSLocation() {
+  var hint = document.getElementById('gpsStatusHint');
+  var inpUrl = document.getElementById('inp_custMapUrl');
+  var btnLabel = document.getElementById('btnGpsLabel');
+  var btn = document.getElementById('btnDetectGPSAction');
 
-      var ua = navigator.userAgent || navigator.vendor || window.opera;
-      var isInAppBrowser = (ua.indexOf('FBAN') > -1) || (ua.indexOf('FBIOS') > -1) || (ua.indexOf('Messenger') > -1) || (ua.indexOf('Line') > -1);
+  var ua = (navigator.userAgent || navigator.vendor || window.opera || '').toLowerCase();
+  var isMessengerOrFB = ua.includes('fban') || ua.includes('fbios') || ua.includes('messenger') || ua.includes('fb_iab');
+  var isLine = ua.includes('line');
+  var isAndroid = ua.includes('android');
 
-      if (isInAppBrowser) {
-        if (hint) {
-          hint.innerHTML = '<div class="p-2.5 bg-amber-50 border-2 border-amber-300 rounded-xl text-amber-950 font-bold text-xs space-y-1.5 text-left mt-1">' +
-            '<div class="flex items-center gap-1.5 text-amber-900 font-black"><i class="fas fa-triangle-exclamation text-amber-600"></i> លោកអ្នកកំពុងបើកក្នុង Messenger / LINE!</div>' +
-            '<div class="text-[11px] leading-relaxed text-amber-800">Facebook/LINE បានបិទសិទ្ធិចាប់ GPS។ ដើម្បីចាប់ទីតាំងបាន សូមចុចសញ្ញាចុច ៣ <b>`...`</b> នៅខាងលើស្តាំ ហើយរើស <b>«បើកក្នុង Chrome/Safari»</b></div>' +
-            '<div class="text-[10px] text-slate-500 italic">*ឬលោកអ្នកអាចវាយភូមិ/សង្កាត់/ចំណាំផ្ទះក្នុងប្រអប់ខាងក្រោមដោយផ្ទាល់បាន។</div>' +
-          '</div>';
-        }
-      }
-
-      if (!navigator.geolocation) {
-        if (hint) hint.innerHTML = '<span class="text-red-500 font-bold">⚠️ កម្មវិធីនេះមិនគាំទ្រ GPS ទេ (សូមវាយចំណាំទីតាំងផ្ទះដោយដៃ)</span>';
-        return;
-      }
-
-      if (btn) btn.disabled = true;
-      if (btnLabel) btnLabel.innerText = "កំពុងចាប់ទីតាំង GPS...";
-      if (hint && !isInAppBrowser) hint.innerHTML = '<span class="text-blue-600 font-bold"><i class="fas fa-spinner fa-spin mr-1"></i> កំពុងចាប់ទីតាំង GPS...</span>';
-
-      function onGpsSuccess(pos) {
-        var lat = pos.coords.latitude.toFixed(6);
-        var lng = pos.coords.longitude.toFixed(6);
-        var googleMapUrl = "https://www.google.com/maps?q=" + lat + "," + lng;
-
-        if (inpUrl) inpUrl.value = googleMapUrl;
-        if (btn) {
-          btn.disabled = false;
-          btn.className = "w-full py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-xs flex items-center justify-center gap-2 active:scale-95 transition";
-        }
-        if (btnLabel) btnLabel.innerText = "✅ ចាប់បានទីតាំងផ្ទះជោគជ័យ!";
-        if (hint) {
-          hint.innerHTML = '<span class="text-emerald-700 font-bold">✅ ចាប់បានទីតាំងជោគជ័យ!</span> <a href="' + googleMapUrl + '" target="_blank" class="text-blue-600 underline font-bold ml-1">(មើលផែនទី)</a>';
-        }
-      }
-
-      function onGpsError(err) {
-        if (btn) btn.disabled = false;
-        if (btnLabel) btnLabel.innerText = "📍 ចុចចាប់ GPS ផ្ទះខ្ញុំ";
-
-        var errorMsg = "⚠️ មិនអាចចាប់ GPS បានទេ (សូមវាយទីតាំងផ្ទះដោយដៃ)";
-        if (err.code === 1) {
-          if (isInAppBrowser) {
-            errorMsg = "⚠️ Messenger/Facebook បានបិទសិទ្ធិចាប់ GPS! សូមចុចសញ្ញាចុច ៣ `...` នៅខាងលើស្តាំ ហើយរើស «Open in Chrome / Safari» ឬវាយទីតាំងដោយដៃខាងក្រោម។";
-          } else {
-            errorMsg = "⚠️ លោកអ្នកបានបដិសេធសិទ្ធិ (សូមចុច Allow Location លើ Browser របស់អ្នក ឬវាយទីតាំងដោយដៃ)!";
-          }
-        } else if (err.code === 2) {
-          errorMsg = "⚠️ មិនមានសញ្ញា GPS ទេ (សូមបើក Location លើទូរស័ព្ទដៃ ឬវាយទីតាំងដោយដៃ)!";
-        } else if (err.code === 3) {
-          errorMsg = "⚠️ ការចាប់ទីតាំងយឺតពេក (សូមចុចសាកល្បងម្តងទៀត ឬវាយទីតាំងដោយដៃ)!";
-        }
-
-        if (hint) {
-          hint.innerHTML = '<span class="text-amber-800 font-bold text-[11px] block text-left">' + errorMsg + '</span>';
-        }
-      }
-
-      navigator.geolocation.getCurrentPosition(onGpsSuccess, onGpsError, {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 30000
-      });
+  // 🚀 បើភ្ញៀវកំពុងបើកក្នុង Messenger លើ Android -> បង្ហាញប៊ូតុងធំ ១ ឃ្លីកលោតទៅ Chrome ភ្លាម!
+  if (isMessengerOrFB && isAndroid) {
+    if (hint) {
+      hint.innerHTML = '<div class="p-3 bg-amber-50 border-2 border-amber-400 rounded-2xl text-amber-950 font-bold text-xs space-y-2 text-center mt-2 animate-in zoom-in-95 duration-200">' +
+        '<div class="flex items-center justify-center gap-1.5 text-amber-900 font-black">' +
+          '<i class="fas fa-triangle-exclamation text-amber-600 text-sm"></i> Messenger បានបិទសិទ្ធិចាប់ GPS!' +
+        '</div>' +
+        '<p class="text-[11px] leading-relaxed text-amber-800 font-medium">ដើម្បីឱ្យទូរស័ព្ទអាចចាប់ទីតាំងផ្ទះរបស់អ្នកបានត្រឹមត្រូវ សូមចុចប៊ូតុងបៃតងខាងក្រោម៖</p>' +
+        '<button type="button" onclick="launchAndroidChromeBreakout()" class="w-full py-3 px-3 bg-gradient-to-r from-emerald-600 to-green-700 hover:from-emerald-700 text-white rounded-xl font-black text-xs shadow-md flex items-center justify-center gap-2 active:scale-95 transition">' +
+          '<i class="fab fa-chrome text-yellow-300 text-base"></i> 🚀 ចុចទីនេះ ១ ឃ្លីក ដើម្បីចាប់ GPS ក្នុង Chrome' +
+        '</button>' +
+        '<span class="text-[9.5px] text-slate-500 font-normal block">*ទំនិញក្នុងកន្ត្រករបស់អ្នកនឹងមិនបាត់បង់ឡើយ</span>' +
+      '</div>';
     }
+    return;
+  }
+
+  // 🍎 បើភ្ញៀវប្រើ iPhone ក្នុង Messenger (Apple មិនឱ្យលោតអូតូ) -> បង្ហាញការណែនាំខ្លីច្បាស់ៗ
+  if (isMessengerOrFB && !isAndroid) {
+    if (hint) {
+      hint.innerHTML = '<div class="p-3 bg-blue-50 border-2 border-blue-300 rounded-2xl text-blue-950 font-bold text-xs space-y-1.5 text-left mt-2">' +
+        '<div class="flex items-center gap-1.5 text-blue-900 font-black">' +
+          '<i class="fab fa-apple text-sm"></i> សម្រាប់ទូរស័ព្ទ iPhone ក្នុង Messenger៖' +
+        '</div>' +
+        '<p class="text-[11px] text-blue-800 leading-relaxed font-medium">សូមចុចសញ្ញាចុច ៣ <b>`...`</b> នៅខាងលើស្តាំអេក្រង់ ហើយរើស <b>«Open in Safari / បើកក្នុង Safari»</b> ដើម្បីចាប់ GPS បានភ្លាម!</p>' +
+        '<span class="text-[10px] text-slate-500 italic block">*ឬលោកអ្នកអាចវាយភូមិ/សង្កាត់/ចំណាំផ្ទះក្នុងប្រអប់ខាងក្រោមដោយផ្ទាល់បាន។</span>' +
+      '</div>';
+    }
+    return;
+  }
+
+  if (!navigator.geolocation) {
+    if (hint) hint.innerHTML = '<span class="text-red-500 font-bold">⚠️ កម្មវិធី Browser នេះមិនគាំទ្រ GPS ទេ (សូមវាយទីតាំងផ្ទះដោយដៃ)</span>';
+    return;
+  }
+
+  if (btn) btn.disabled = true;
+  if (btnLabel) btnLabel.innerText = "កំពុងចាប់ទីតាំង GPS...";
+  if (hint) hint.innerHTML = '<span class="text-blue-600 font-bold"><i class="fas fa-spinner fa-spin mr-1"></i> កំពុងចាប់ទីតាំង GPS...</span>';
+
+  function onGpsSuccess(pos) {
+    var lat = pos.coords.latitude.toFixed(6);
+    var lng = pos.coords.longitude.toFixed(6);
+    var googleMapUrl = "https://www.google.com/maps?q=" + lat + "," + lng;
+
+    if (inpUrl) inpUrl.value = googleMapUrl;
+    if (btn) {
+      btn.disabled = false;
+      btn.className = "w-full py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-xs flex items-center justify-center gap-2 active:scale-95 transition";
+    }
+    if (btnLabel) btnLabel.innerText = "✅ ចាប់បានទីតាំងផ្ទះជោគជ័យ!";
+    if (hint) {
+      hint.innerHTML = '<span class="text-emerald-700 font-bold">✅ ចាប់បានទីតាំងជោគជ័យ!</span> <a href="' + googleMapUrl + '" target="_blank" class="text-blue-600 underline font-bold ml-1">(មើលផែនទី)</a>';
+    }
+  }
+
+  function onGpsError(err) {
+    if (btn) btn.disabled = false;
+    if (btnLabel) btnLabel.innerText = "📍 ចុចចាប់ GPS ផ្ទះខ្ញុំ";
+    var errorMsg = "⚠️ មិនអាចចាប់ GPS បានទេ (សូមវាយភូមិ/សង្កាត់ ឬចំណាំផ្ទះដោយដៃ)";
+    if (err.code === 1) {
+      errorMsg = "⚠️ លោកអ្នកបានបដិសេធសិទ្ធិ (សូមចុច Allow Location លើ Browser របស់អ្នក ឬវាយទីតាំងដោយដៃ)!";
+    }
+    if (hint) {
+      hint.innerHTML = '<span class="text-amber-800 font-bold text-[11px] block text-left">' + errorMsg + '</span>';
+    }
+  }
+
+  navigator.geolocation.getCurrentPosition(onGpsSuccess, onGpsError, {
+    enableHighAccuracy: true,
+    timeout: 10000,
+    maximumAge: 30000
+  });
+}
   
-   function showInAppError(msg) {
+   // 🚀 មុខងារ ១ ឃ្លីក បង្ខំទូរស័ព្ទ Android ឱ្យលោតចេញពី Messenger ទៅបើកក្នុង Google Chrome ភ្លាមៗ
+function launchAndroidChromeBreakout() {
+  try {
+    // រក្សាទុកកន្ត្រកទំនិញ និងទិន្នន័យភ្ញៀវចូលក្នុង URL Parameter ដើម្បីកុំឱ្យបាត់ទំនិញ
+    var cartParam = encodeURIComponent(JSON.stringify(cartItems || {}));
+    var targetUrl = window.location.origin + window.location.pathname + '?open_chrome=1&cart=' + cartParam;
+    
+    // បាញ់កូដ Android Chrome Intent ទៅកាន់ប្រព័ន្ធប្រតិបត្តិការ Android
+    var cleanUrl = targetUrl.replace(/^https?:\/\//, '');
+    var intentUrl = "intent://" + cleanUrl + "#Intent;scheme=https;package=com.android.chrome;end";
+    
+    window.location.href = intentUrl;
+  } catch(e) {
+    window.open(window.location.href, '_system');
+  }
+}
+
+// 📥 មុខងារស្រង់កន្ត្រកទំនិញមកវិញស្វ័យប្រវត្តិពេលលោតមកដល់ Google Chrome
+function restoreCartFromUrlIfRedirected() {
+  try {
+    var urlParams = new URLSearchParams(window.location.search);
+    var cartData = urlParams.get('cart');
+    if (cartData) {
+      var parsedCart = JSON.parse(decodeURIComponent(cartData));
+      if (parsedCart && Object.keys(parsedCart).length > 0) {
+        cartItems = parsedCart;
+        if (typeof recalcCartDock === 'function') recalcCartDock();
+        if (typeof renderCatalogGrid === 'function') renderCatalogGrid();
+        
+        // បើកផ្ទាំង Checkout ជូនភ្ញៀវភ្លាម ដើម្បីឱ្យគាត់គ្រាន់តែចុចចាប់ GPS ជាការស្រេច
+        setTimeout(function() {
+          if (typeof openCheckoutModal === 'function') openCheckoutModal();
+        }, 500);
+      }
+    }
+  } catch(e) {}
+}
+    
+    function showInAppError(msg) {
       var alertBox = document.getElementById('checkoutErrorAlert');
       var msgSpan = document.getElementById('checkoutErrorMsg');
       if (alertBox && msgSpan) {
@@ -3283,6 +3334,7 @@ function applyCustomSlidesFromSettings(sMap) {
 
    // 🔄 បើកទំព័រដំបូង៖ ស្តារកន្ត្រកទំនិញ & ព័ត៌មានភ្ញៀវជាមុនសិនបង្អស់ (Refresh មិនបាត់ទំនិញឡើយ ១០០%)
     window.addEventListener('DOMContentLoaded', async function() {
+      restoreCartFromUrlIfRedirected();
       restoreSavedCartOnLoad();   // 👈 ១. ស្រង់កន្ត្រកទំនិញចាស់មកវិញមុនគេបង្អស់
       loadSavedCustomerProfile(); // 👈 ២. ស្រង់ឈ្មោះ លេខទូរស័ព្ទ និងទីតាំងផ្ទះមកវិញភ្លាមៗ
       
@@ -3712,6 +3764,7 @@ function openShareStoreModal() {
   }
 
   if (btnLine) {
+    var lineUrl = s.webUrl + (s.webUrl.includes('?') ? '&' : '?') + 'openExternalBrowser=1';
     var lineText = s.title + "\n" + s.desc + "\n" + s.tgAppUrl;
     btnLine.href = "https://line.me/R/msg/text/?" + encodeURIComponent(lineText);
   }
