@@ -2984,9 +2984,6 @@ async function loadSettingsForm() {
   } catch(e) {}
 }
 
-// 🔔 អថេរការពារប្រព័ន្ធ Promotion & Telegram កុំឱ្យ Error (ប្រកាសសុវត្ថិភាព)
-var currentPromoRules = currentPromoRules || [];
-var currentTelegramAlertStatus = currentTelegramAlertStatus || 'ON';
 
 // 💾 មុខងាររក្សាទុកការកំណត់ឆ្លាតវៃ (រក្សាទុកតែប្រអប់ណាដែលមានលើអេក្រង់ មិនលុបទិន្នន័យចាស់ឡើយ)
 async function saveSettingsToSupabase() {
