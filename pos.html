@@ -50,7 +50,7 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body class="bg-gray-100 overflow-x-hidden">
-  <!-- 🚀 ផ្ទាំង Pop-up សួរឱ្យចុចបន្តទៅ Google Chrome ពេលបើក POS ក្នុង Telegram ឬ Messenger -->
+  <!-- 🚀 ផ្ទាំង Pop-up សួរឱ្យបុគ្គលិកបើក POS ក្នុង Google Chrome ដើម្បីដំឡើង App ប្រើ -->
   <div id="telegramBreakoutModalPos" class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm hidden select-none">
     <div class="bg-white rounded-3xl p-5 max-w-sm w-full text-center space-y-3.5 shadow-2xl border-2 border-green-600 animate-in zoom-in-95 duration-200">
       
@@ -61,17 +61,17 @@
       <div>
         <h3 class="font-black text-slate-900 text-base">សូមបើក POS ក្នុង Google Chrome</h3>
         <p class="text-xs text-slate-500 font-bold mt-1 leading-relaxed">
-          ដើម្បីអាចដំឡើង App POS ពេញអេក្រង់លើទូរស័ព្ទដៃ និងប្រើប្រាស់បានលឿន សូមចុចប៊ូតុងបៃតងខាងក្រោម៖
+          ដើម្បីអាចដំឡើង App POS ពេញអេក្រង់លើទូរស័ព្ទដៃ និងងាយស្រួលប្រើប្រាស់ សូមចុចប៊ូតុងបៃតងខាងក្រោម៖
         </p>
       </div>
 
-      <!-- ប៊ូតុងចុចលោតទៅ Chrome ភ្លាមៗ -->
+      <!-- ប៊ូតុងចុច ១ ឃ្លីក លោតទៅ Chrome -->
       <a id="btnDirectChromeIntentPos" href="#" class="w-full py-3.5 bg-gradient-to-r from-green-600 to-emerald-700 hover:from-green-700 text-white rounded-2xl font-black text-xs shadow-lg flex items-center justify-center gap-2 active:scale-95 transition" style="text-decoration:none;">
         <i class="fab fa-chrome text-yellow-300 text-base"></i> 🚀 ចុចបើក POS ក្នុង Google Chrome ឥឡូវនេះ
       </a>
 
       <div class="p-2.5 bg-slate-50 rounded-2xl border border-slate-200 text-left space-y-1 text-[11px] text-slate-600 font-medium">
-        <div class="font-bold text-slate-800">ឬធ្វើតាមវិធីនេះ៖</div>
+        <div class="font-bold text-slate-800">ឬបើកតាមវិធីនេះ៖</div>
         <div>1. ចុចសញ្ញាចុច ៣ <b class="text-slate-900 text-xs">`⋮`</b> នៅជ្រុងខាងលើស្តាំក្នុង Telegram</div>
         <div>2. រើសយកពាក្យ <b class="text-blue-600">«Open in Chrome»</b> (ឬ Safari លើ iPhone)</div>
       </div>
@@ -87,17 +87,21 @@
     (function() {
       var ua = (navigator.userAgent || navigator.vendor || window.opera || '').toLowerCase();
       var isAndroid = ua.includes('android');
-      var isTg = ua.includes('telegram') || typeof window.TelegramWebview !== 'undefined' || ua.includes('messenger') || ua.includes('fb') || ua.includes('line');
+      var isTg = ua.includes('telegram') || typeof window.TelegramWebview !== 'undefined';
+      var isMeta = ua.includes('fban') || ua.includes('fbios') || ua.includes('messenger') || ua.includes('fb_iab');
 
-      if (isTg) {
+      // បង្ហាញ Pop-up តែពេលបុគ្គលិកបើកក្នុង Telegram ឬ Messenger
+      if (isTg || isMeta) {
         window.addEventListener('DOMContentLoaded', function() {
           var modal = document.getElementById('telegramBreakoutModalPos');
           var btn = document.getElementById('btnDirectChromeIntentPos');
           if (modal) modal.classList.remove('hidden');
 
           if (btn && isAndroid) {
-            var cleanUrl = window.location.href.replace(/^https?:\/\//, '');
-            btn.href = "intent://" + cleanUrl + "#Intent;scheme=https;package=com.android.chrome;end";
+            var targetUrl = window.location.href;
+            var cleanUrl = targetUrl.replace(/^https?:\/\//, '');
+            var fallbackUrl = encodeURIComponent(targetUrl);
+            btn.href = "intent://" + cleanUrl + "#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=" + fallbackUrl + ";end";
           } else if (btn) {
             btn.href = window.location.href;
             btn.innerText = "👉 ចុចសញ្ញាចុច ៣ (⋮) ខាងលើស្តាំ ដើម្បីបើកក្នុង Safari";
@@ -106,7 +110,6 @@
       }
     })();
   </script>
-
   
   <!-- ១. ផ្ទាំង LOGIN -->
   <div id="loginPage" class="flex items-center justify-center min-h-screen p-4">
