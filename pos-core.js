@@ -86,6 +86,13 @@ async function login() {
       await loadSettingsAndTelegram();
       await fetchInitialPOSData();
 
+      // 🔒 រារាំងអតិថិជនប្រចាំខែ (Monthly) មិនឱ្យ Login ចូលប្រព័ន្ធដាច់ខាត
+      if (currentUser.type === 'Monthly') {
+        showToast("អតិថិជនប្រចាំខែ មិនមានសិទ្ធិចូលប្រើប្រព័ន្ធឡើយ! Admin ជាអ្នកដកទំនិញជំនួស។", "error");
+        logout();
+        return;
+      }
+
       // 🎯 បែងចែកទំព័រដើមតាមតួនាទី (Role Routing)
       if (currentUser.role === 'Admin') {
         loadModule('Dashboard');
@@ -128,7 +135,7 @@ function renderSidebarMenu() {
   var isAdmin = (currentUser && currentUser.role === 'Admin');
   var isCompanyDriver = (currentUser && currentUser.type === 'CompanyDriver');
   var isDriver = (currentUser && currentUser.role === 'Driver' && currentUser.type !== 'CompanyDriver');
-  var isReseller = (currentUser && (currentUser.role === 'Customer' || currentUser.type === 'Regular'));
+  var isReseller = (currentUser && (currentUser.role === 'Customer' || currentUser.type === 'Regular') && currentUser.type !== 'Monthly' && currentUser.type !== 'CompanyDriver');
 
   // ១. សម្រាប់ ADMIN (មានសិទ្ធិពេញលេញ & មានប៊ូតុងប្តូរ TEST vs PROD តែម្នាក់គត់)
   if (isAdmin) {
@@ -198,18 +205,13 @@ function loadModule(name) {
     return;
   }
 
-  // 🛡️ រារាំងតួនាទីផ្សេងទៀតពីផ្ទាំង Admin
-  var isRestricted = (currentUser.role !== 'Admin' && currentUser.role !== 'Seller');
-  if (isRestricted && (name === 'Dashboard' || name === 'Settlement' || name === 'OnlineHub' || name === 'Stock' || name === 'StockRep' || name === 'Expenses' || name === 'Customers' || name === 'MonthlyRep' || name === 'Reports' || name === 'Settings')) {
-    showToast("អ្នកមិនមានសិទ្ធិចូលផ្ទាំងនេះឡើយ!", "error");
-    if (currentUser.role === 'Customer' || currentUser.type === 'Regular' || currentUser.type === 'Monthly') {
-      loadModule('CustPortal');
-    } else {
-      loadModule('POS');
-    }
+  // 🛡️ រារាំងអតិថិជនប្រចាំខែ (Monthly) មិនឱ្យចូលផ្ទាំងណាមួយឡើយ
+  if (currentUser && currentUser.type === 'Monthly') {
+    showToast("អតិថិជនប្រចាំខែ មិនអនុញ្ញាតឱ្យប្រើប្រាស់ប្រព័ន្ធឡើយ!", "error");
+    logout();
     return;
   }
-
+  
   if (name === 'Dashboard') renderDashboardModule();
   else if (name === 'POS') renderPOSModule();
   else if (name === 'Settlement' && typeof renderSettlementModule === 'function') renderSettlementModule();
@@ -1560,7 +1562,11 @@ function openPOSKHQR() {
 }
 
 function closePOSKHQR() { 
-  document.getElementById('posKhqrModal').classList.add('hidden'); 
+  var qrModal = document.getElementById('posKhqrModal');
+  if (qrModal) {
+    qrModal.classList.add('hidden'); 
+    qrModal.style.zIndex = ''; // 👈 Reset z-index មកធម្មតាវិញ
+  }
 }
 
 // 💾 ៤. រក្សាទុកការលក់ (SUBMIT SALE & ADMIN PROXY WITHDRAWAL)
