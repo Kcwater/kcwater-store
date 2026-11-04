@@ -1,14 +1,20 @@
 <!DOCTYPE html>
 <html lang="km">
 <head>
-  <!-- 🚀 កូដបង្ខំឱ្យ POS លោតទៅ Google Chrome ភ្លាមៗក្នុង 0.001 វិនាទី ពេលបើកក្នុង Messenger លើ Android -->
+  <!-- 🚀 កូដបង្ខំឱ្យ POS លោតចេញពី Telegram, Messenger, Facebook ទៅបើកក្នុង Google Chrome ភ្លាមៗលើ Android -->
   <script>
     (function() {
       var ua = (navigator.userAgent || navigator.vendor || window.opera || '').toLowerCase();
       var isAndroid = ua.includes('android');
-      var isFBorMessenger = ua.includes('fban') || ua.includes('fbios') || ua.includes('messenger') || ua.includes('fb_iab');
+      
+      // 🔍 ពិនិត្យស្គាល់ Telegram, Messenger, Facebook, Instagram & LINE
+      var isTelegram = ua.includes('telegram') || ua.includes('telegram-android') || typeof window.TelegramWebview !== 'undefined';
+      var isFBorMessenger = ua.includes('fban') || ua.includes('fbios') || ua.includes('messenger') || ua.includes('fb_iab') || ua.includes('instagram');
+      var isLine = ua.includes('line');
+      var isInAppBrowser = isTelegram || isFBorMessenger || isLine;
 
-      if (isAndroid && isFBorMessenger) {
+      // ⚡ បើជា Android កំពុងបើកក្នុង Telegram ឬ Messenger -> បញ្ជាឱ្យលោតចូល Google Chrome ភ្លាមៗតែម្តង
+      if (isAndroid && isInAppBrowser) {
         var currentUrl = window.location.href;
         if (!currentUrl.includes('no_auto_chrome=1')) {
           var cleanUrl = currentUrl.replace(/^https?:\/\//, '');
@@ -49,6 +55,39 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body class="bg-gray-100 overflow-x-hidden">
+  <!-- 🚀 បដាជំរុញឱ្យបើកក្នុង Chrome ពេលបើក POS ក្នុង Telegram ឬ Messenger -->
+  <div id="posInAppBrowserWarningBar" class="hidden bg-gradient-to-r from-green-800 via-emerald-700 to-green-800 text-white p-2.5 px-3 text-xs font-bold text-center shadow-lg sticky top-0 z-[9999] flex items-center justify-between gap-2 select-none border-b-2 border-green-400">
+    <div class="flex items-center gap-1.5 min-w-0 text-left">
+      <i class="fab fa-chrome text-yellow-300 text-base shrink-0 animate-bounce"></i>
+      <span class="truncate text-[11px]">សូមបើកក្នុង Google Chrome ដើម្បីអាចដំឡើង App POS ពេញអេក្រង់បាន!</span>
+    </div>
+    <button type="button" onclick="launchAndroidChromeBreakoutPos()" class="px-2.5 py-1 bg-white text-green-900 font-black rounded-lg text-[10px] shadow-md shrink-0 active:scale-95 transition">
+      🚀 បើកក្នុង Chrome
+    </button>
+  </div>
+  <script>
+    // បង្ហាញបដាភ្លាមបើសិនជាបើក POS ជាប់ក្នុង Telegram / In-App
+    (function() {
+      var ua = (navigator.userAgent || navigator.vendor || window.opera || '').toLowerCase();
+      var isTg = ua.includes('telegram') || typeof window.TelegramWebview !== 'undefined' || ua.includes('messenger') || ua.includes('fban') || ua.includes('fb_iab');
+      if (isTg) {
+        window.addEventListener('DOMContentLoaded', function() {
+          var bar = document.getElementById('posInAppBrowserWarningBar');
+          if (bar) bar.classList.remove('hidden');
+        });
+      }
+    })();
+
+    function launchAndroidChromeBreakoutPos() {
+      try {
+        var cleanUrl = window.location.href.replace(/^https?:\/\//, '');
+        var intentUrl = "intent://" + cleanUrl + "#Intent;scheme=https;package=com.android.chrome;end";
+        window.location.href = intentUrl;
+      } catch(e) {
+        window.open(window.location.href, '_system');
+      }
+    }
+  </script>
 
   <!-- ១. ផ្ទាំង LOGIN -->
   <div id="loginPage" class="flex items-center justify-center min-h-screen p-4">
