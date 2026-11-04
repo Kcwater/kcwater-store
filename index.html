@@ -1,24 +1,70 @@
 <!DOCTYPE html>
 <html lang="km">
 <head>
-  <!-- 🚀 កូដស្គាល់ Telegram, Messenger, Facebook ជំរុញឱ្យលោតទៅ Google Chrome លើ Android -->
+  <!-- 🚀 ផ្ទាំង Pop-up សួរឱ្យចុចបន្តទៅ Google Chrome ពេលបើកក្នុង Telegram ឬ Messenger -->
+  <div id="telegramBreakoutModal" class="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md hidden select-none">
+    <div class="bg-white rounded-3xl p-5 max-w-sm w-full text-center space-y-3.5 shadow-2xl border-2 border-emerald-500 animate-in zoom-in-95 duration-200">
+      
+      <div class="w-14 h-14 mx-auto rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-2xl shadow-inner">
+        <i class="fab fa-chrome text-emerald-600 animate-bounce"></i>
+      </div>
+
+      <div>
+        <h3 class="font-black text-slate-900 text-base">សូមបើកក្នុង Google Chrome</h3>
+        <p class="text-xs text-slate-500 font-bold mt-1 leading-relaxed">
+          កម្មវិធី Telegram/Messenger បានបិទសិទ្ធិដំឡើង App! សូមចុចប៊ូតុងបៃតងខាងក្រោម ដើម្បីបើកក្នុង Chrome និងដំឡើង App លើទូរស័ព្ទ៖
+        </p>
+      </div>
+
+      <!-- ប៊ូតុងចុចលោតទៅ Chrome ភ្លាមៗ (Android Intent) -->
+      <a id="btnDirectChromeIntent" href="#" class="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-green-700 hover:from-emerald-700 text-white rounded-2xl font-black text-xs shadow-lg flex items-center justify-center gap-2 active:scale-95 transition" style="text-decoration:none;">
+        <i class="fab fa-chrome text-yellow-300 text-base"></i> 🚀 ចុចបើកក្នុង Google Chrome ឥឡូវនេះ
+      </a>
+
+      <div class="p-2.5 bg-slate-50 rounded-2xl border border-slate-200 text-left space-y-1 text-[11px] text-slate-600 font-medium">
+        <div class="font-bold text-slate-800">ឬលោកអ្នកអាចធ្វើតាមវិធីនេះ៖</div>
+        <div>1. ចុចសញ្ញាចុច ៣ <b class="text-slate-900 text-xs">`⋮`</b> នៅជ្រុងខាងលើស្តាំ</div>
+        <div>2. រើសយកពាក្យ <b class="text-blue-600">«Open in Chrome»</b> (ឬ Safari លើ iPhone)</div>
+      </div>
+
+      <button type="button" onclick="document.getElementById('telegramBreakoutModal').classList.add('hidden')" class="w-full py-1 text-slate-400 hover:text-slate-600 font-bold text-xs">
+        បន្តមើលក្នុងកម្មវិធីនេះ
+      </button>
+
+    </div>
+  </div>
+
   <script>
     (function() {
       var ua = (navigator.userAgent || navigator.vendor || window.opera || '').toLowerCase();
       var isAndroid = ua.includes('android');
-      var isTg = ua.includes('telegram') || typeof window.TelegramWebview !== 'undefined';
-      var isFB = ua.includes('fban') || ua.includes('fbios') || ua.includes('messenger') || ua.includes('fb_iab') || ua.includes('line');
+      var isIos = /iphone|ipad|ipod/.test(ua);
+      
+      // 🔍 កូដសម្ងាត់ស្គាល់ In-App Browser លើ Android (ស្គាល់ Telegram តាមរយៈ '; wv' និង 'version/4.0')
+      var isAndroidWebView = isAndroid && (ua.includes('; wv') || ua.includes('version/4.0') || ua.includes('webview') || ua.includes('telegram'));
+      var isSocialApp = ua.includes('fban') || ua.includes('fbios') || ua.includes('messenger') || ua.includes('fb_iab') || ua.includes('instagram') || ua.includes('line') || typeof window.TelegramWebview !== 'undefined';
+      
+      var isInApp = isAndroidWebView || isSocialApp;
 
-      if (isAndroid && (isTg || isFB)) {
-        var currentUrl = window.location.href;
-        if (!currentUrl.includes('no_auto_chrome=1')) {
-          var cleanUrl = currentUrl.replace(/^https?:\/\//, '');
-          var intentUrl = "intent://" + cleanUrl + "#Intent;scheme=https;package=com.android.chrome;end";
-          window.location.replace(intentUrl);
+      if (isInApp) {
+        var modal = document.getElementById('telegramBreakoutModal');
+        var btn = document.getElementById('btnDirectChromeIntent');
+        
+        // បង្ហាញផ្ទាំង Pop-up ភ្លាមៗតែម្តង
+        if (modal) modal.classList.remove('hidden');
+
+        if (btn && isAndroid) {
+          // បាញ់ Intent ទៅបើកក្នុង Google Chrome ពេលភ្ញៀវចុចម្រាមដៃលើប៊ូតុង
+          var cleanUrl = window.location.href.replace(/^https?:\/\//, '');
+          btn.href = "intent://" + cleanUrl + "#Intent;scheme=https;package=com.android.chrome;end";
+        } else if (btn && isIos) {
+          btn.href = window.location.href;
+          btn.innerText = "👉 ចុចសញ្ញាចុច ៣ (⋮) ខាងលើស្តាំ រួចរើស Open in Safari";
         }
       }
     })();
   </script>
+  
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>KC WATER - ទឹកពិសាបរិសុទ្ធ ខេ ស៊ី (ប៉ោយប៉ែត)</title>
