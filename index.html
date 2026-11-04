@@ -4054,16 +4054,13 @@ function shareViaNativeSheet() {
   </div>
   <script>
   </script>
-  <!-- ==========================================================================
-       📲 ផ្ទាំងដាស់តឿនដំឡើង APP លើទូរស័ព្ទ (PWA STANDALONE INSTALL PROMPT)
-       ========================================================================== -->
-  <!-- ១. បដាដំឡើង App លើទូរស័ព្ទ Android -->
-  <div id="pwaInstallBanner" class="fixed bottom-20 left-3 right-3 z-50 max-w-sm mx-auto bg-slate-900/95 backdrop-blur-md text-white p-3 rounded-2xl shadow-2xl border border-white/20 hidden animate-in slide-in-from-bottom duration-300 select-none">
+  <!-- 📲 បដាដំឡើង App KC MART លើ Android & កុំព្យូទ័រ PC -->
+  <div id="pwaInstallBanner" class="fixed bottom-20 left-3 right-3 z-[9990] max-w-sm mx-auto bg-slate-950/95 backdrop-blur-md text-white p-3 rounded-2xl shadow-2xl border border-emerald-500/40 hidden animate-in slide-in-from-bottom duration-300 select-none">
     <div class="flex items-center justify-between gap-2.5">
       <div class="flex items-center gap-2.5 min-w-0 flex-1">
-        <div class="w-10 h-10 rounded-xl bg-emerald-700 text-white flex items-center justify-center text-lg shadow-sm shrink-0">
-  <i class="fas fa-droplet text-emerald-200"></i>
-</div>
+        <div class="w-10 h-10 rounded-xl bg-emerald-700 text-white flex items-center justify-center text-lg shadow-inner shrink-0 border border-emerald-400/40">
+          <i class="fas fa-droplet text-emerald-200"></i>
+        </div>
         <div class="min-w-0 flex-1">
           <b class="text-xs font-black text-white block truncate">ដំឡើង App KC MART</b>
           <span class="text-[9.5px] text-emerald-300 font-bold block truncate mt-0.5">ស្រួលកុម្ម៉ង់លើកក្រោយ គ្មាន Tab Browser</span>
@@ -4071,9 +4068,9 @@ function shareViaNativeSheet() {
       </div>
       <div class="flex items-center gap-1.5 shrink-0">
         <button type="button" onclick="triggerPwaInstallAction()" class="px-3 py-1.5 bg-gradient-to-r from-emerald-500 to-green-600 hover:opacity-90 text-slate-950 font-black text-xs rounded-xl shadow-md active:scale-95 transition flex items-center gap-1">
-          <i class="fas fa-download text-[10px]"></i> ដំឡើង App
+          <i class="fas fa-download text-[10px]"></i> ដំឡើង
         </button>
-        <button type="button" onclick="dismissPwaBanner()" class="w-6 h-6 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-xs font-bold transition">&times;</button>
+        <button type="button" onclick="dismissPwaBanner()" class="w-6 h-6 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center text-xs font-bold transition">&times;</button>
       </div>
     </div>
   </div>
@@ -4112,29 +4109,28 @@ function shareViaNativeSheet() {
   </div>
 
   <script>
+   <script>
     // 🧠 LOGIC គ្រប់គ្រងការដំឡើង APP (PWA ENGINE)
     var deferredPwaPrompt = null;
     var isAppInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-
-    // ១. ស្វែងរកប្រព័ន្ធប្រតិបត្តិការ (Android vs iOS)
     var uaStr = (navigator.userAgent || navigator.vendor || window.opera || '').toLowerCase();
     var isIosDevice = /iphone|ipad|ipod/.test(uaStr);
 
-    // 📲 ចុះឈ្មោះ Service Worker ដើម្បីដោះសោរឱ្យ Google Chrome បង្ហាញផ្ទាំងដំឡើង App KC MART
+    // 📲 ១. ចុះឈ្មោះ Service Worker ភ្លាមៗដើម្បីឱ្យ Chrome បើកសិទ្ធិដំឡើង App
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('./sw.js').catch(function() {});
     }
 
-    // ២. ចាប់យក Event ដំឡើងលើ Android / Chrome
+    // 📲 ២. ចាប់យក Event ដំឡើងលើ Android & PC
     window.addEventListener('beforeinstallprompt', function(e) {
       e.preventDefault();
       deferredPwaPrompt = e;
-      if (!isAppInStandaloneMode && !sessionStorage.getItem('kc_pwa_dismissed')) {
-        setTimeout(showPwaInstallBanner, 2000); // បង្ហាញក្រោយបើក Web បាន ២ វិនាទី
+      if (!isAppInStandaloneMode) {
+        setTimeout(showPwaInstallBanner, 1500); // បង្ហាញក្រោយ ១.៥ វិនាទី
       }
     });
 
-    // ៣. បង្ហាញបដាលើ Android
+    // 📲 ៣. មុខងារបង្ហាញបដា
     function showPwaInstallBanner() {
       if (isAppInStandaloneMode) return;
       var banner = document.getElementById('pwaInstallBanner');
@@ -4142,7 +4138,7 @@ function shareViaNativeSheet() {
         banner.classList.remove('hidden');
       }
     }
-
+    
     // ៤. ពេលភ្ញៀវចុចប៊ូតុង «ដំឡើង App»
     function triggerPwaInstallAction() {
       if (isIosDevice) {
