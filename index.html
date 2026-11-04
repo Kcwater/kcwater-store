@@ -1,20 +1,15 @@
 <!DOCTYPE html>
 <html lang="km">
 <head>
-  <!-- 🚀 កូដបង្ខំឱ្យលោតចេញពី Telegram, Messenger, Facebook ទៅបើកក្នុង Google Chrome ភ្លាមៗលើ Android -->
+  <!-- 🚀 កូដស្គាល់ Telegram, Messenger, Facebook ជំរុញឱ្យលោតទៅ Google Chrome លើ Android -->
   <script>
     (function() {
       var ua = (navigator.userAgent || navigator.vendor || window.opera || '').toLowerCase();
       var isAndroid = ua.includes('android');
-      
-      // 🔍 ពិនិត្យស្គាល់ Telegram, Messenger, Facebook, Instagram & LINE
-      var isTelegram = ua.includes('telegram') || ua.includes('telegram-android') || typeof window.TelegramWebview !== 'undefined';
-      var isFBorMessenger = ua.includes('fban') || ua.includes('fbios') || ua.includes('messenger') || ua.includes('fb_iab') || ua.includes('instagram');
-      var isLine = ua.includes('line');
-      var isInAppBrowser = isTelegram || isFBorMessenger || isLine;
+      var isTg = ua.includes('telegram') || typeof window.TelegramWebview !== 'undefined';
+      var isFB = ua.includes('fban') || ua.includes('fbios') || ua.includes('messenger') || ua.includes('fb_iab') || ua.includes('line');
 
-      // ⚡ បើជា Android កំពុងបើកក្នុង Telegram ឬ Messenger -> បញ្ជាឱ្យលោតចូល Google Chrome ភ្លាមៗតែម្តង
-      if (isAndroid && isInAppBrowser) {
+      if (isAndroid && (isTg || isFB)) {
         var currentUrl = window.location.href;
         if (!currentUrl.includes('no_auto_chrome=1')) {
           var cleanUrl = currentUrl.replace(/^https?:\/\//, '');
@@ -123,25 +118,58 @@
   </style>
 </head>
 <body class="pb-36 antialiased select-none">
-  <!-- 🚀 បដាជំរុញឱ្យបើកក្នុង Chrome ពេលភ្ញៀវបើកក្នុង Telegram ឬ Messenger -->
-  <div id="inAppBrowserWarningBar" class="hidden bg-gradient-to-r from-amber-500 via-orange-600 to-amber-600 text-white p-2.5 px-3 text-xs font-bold text-center shadow-lg sticky top-0 z-[9999] flex items-center justify-between gap-2 select-none">
-    <div class="flex items-center gap-1.5 min-w-0 text-left">
-      <i class="fab fa-chrome text-yellow-200 text-base shrink-0 animate-bounce"></i>
-      <span class="truncate text-[11px]">សូមបើកក្នុង Google Chrome ដើម្បីអាចដំឡើង App និងចាប់ GPS បាន!</span>
+  <!-- 🚀 ផ្ទាំង Pop-up សួរឱ្យចុចបន្តទៅ Google Chrome ពេលបើកក្នុង Telegram ឬ Messenger -->
+  <div id="telegramBreakoutModal" class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm hidden select-none">
+    <div class="bg-white rounded-3xl p-5 max-w-sm w-full text-center space-y-3.5 shadow-2xl border-2 border-emerald-500 animate-in zoom-in-95 duration-200">
+      
+      <div class="w-14 h-14 mx-auto rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-2xl shadow-inner">
+        <i class="fab fa-chrome text-emerald-600 animate-bounce"></i>
+      </div>
+
+      <div>
+        <h3 class="font-black text-slate-900 text-base">សូមបើកក្នុង Google Chrome</h3>
+        <p class="text-xs text-slate-500 font-bold mt-1 leading-relaxed">
+          ដើម្បីអាចដំឡើង App លើទូរស័ព្ទ និងចាប់ GPS ផ្ទះបានត្រឹមត្រូវ សូមចុចប៊ូតុងបៃតងខាងក្រោម៖
+        </p>
+      </div>
+
+      <!-- ប៊ូតុងចុចលោតទៅ Chrome ភ្លាមៗ -->
+      <a id="btnDirectChromeIntent" href="#" class="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-green-700 hover:from-emerald-700 text-white rounded-2xl font-black text-xs shadow-lg flex items-center justify-center gap-2 active:scale-95 transition" style="text-decoration:none;">
+        <i class="fab fa-chrome text-yellow-300 text-base"></i> 🚀 ចុចបើកក្នុង Google Chrome ឥឡូវនេះ
+      </a>
+
+      <div class="p-2.5 bg-slate-50 rounded-2xl border border-slate-200 text-left space-y-1 text-[11px] text-slate-600 font-medium">
+        <div class="font-bold text-slate-800">ឬធ្វើតាមវិធីនេះ៖</div>
+        <div>1. ចុចសញ្ញាចុច ៣ <b class="text-slate-900 text-xs">`⋮`</b> នៅជ្រុងខាងលើស្តាំក្នុង Telegram</div>
+        <div>2. រើសយកពាក្យ <b class="text-blue-600">«Open in Chrome»</b> (ឬ Safari លើ iPhone)</div>
+      </div>
+
+      <button type="button" onclick="document.getElementById('telegramBreakoutModal').classList.add('hidden')" class="w-full py-1.5 text-slate-400 hover:text-slate-600 font-bold text-xs">
+        បន្តមើលក្នុង Telegram
+      </button>
+
     </div>
-    <button type="button" onclick="launchAndroidChromeBreakout()" class="px-2.5 py-1 bg-white text-amber-950 font-black rounded-lg text-[10px] shadow-md shrink-0 active:scale-95 transition">
-      🚀 បើកក្នុង Chrome
-    </button>
   </div>
+
   <script>
-    // បង្ហាញបដាភ្លាមបើសិនជាទំព័រនៅតែជាប់ក្នុង Telegram / In-App
     (function() {
       var ua = (navigator.userAgent || navigator.vendor || window.opera || '').toLowerCase();
-      var isTg = ua.includes('telegram') || typeof window.TelegramWebview !== 'undefined' || ua.includes('messenger') || ua.includes('fban') || ua.includes('fb_iab');
+      var isAndroid = ua.includes('android');
+      var isTg = ua.includes('telegram') || typeof window.TelegramWebview !== 'undefined' || ua.includes('messenger') || ua.includes('fb') || ua.includes('line');
+
       if (isTg) {
         window.addEventListener('DOMContentLoaded', function() {
-          var bar = document.getElementById('inAppBrowserWarningBar');
-          if (bar) bar.classList.remove('hidden');
+          var modal = document.getElementById('telegramBreakoutModal');
+          var btn = document.getElementById('btnDirectChromeIntent');
+          if (modal) modal.classList.remove('hidden');
+
+          if (btn && isAndroid) {
+            var cleanUrl = window.location.href.replace(/^https?:\/\//, '');
+            btn.href = "intent://" + cleanUrl + "#Intent;scheme=https;package=com.android.chrome;end";
+          } else if (btn) {
+            btn.href = window.location.href;
+            btn.innerText = "👉 ចុចសញ្ញាចុច ៣ (⋮) ខាងលើស្តាំ ដើម្បីបើកក្នុង Safari";
+          }
         });
       }
     })();
@@ -4095,6 +4123,11 @@ function shareViaNativeSheet() {
     // ១. ស្វែងរកប្រព័ន្ធប្រតិបត្តិការ (Android vs iOS)
     var uaStr = (navigator.userAgent || navigator.vendor || window.opera || '').toLowerCase();
     var isIosDevice = /iphone|ipad|ipod/.test(uaStr);
+    
+    // 📲 ចុះឈ្មោះ Service Worker ដើម្បីដោះសោរប៊ូតុងដំឡើង App លើ Google Chrome
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js').catch(function() {});
+    }
 
     // ២. ចាប់យក Event ដំឡើងលើ Android / Chrome
     window.addEventListener('beforeinstallprompt', function(e) {
