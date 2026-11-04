@@ -1084,11 +1084,6 @@ window.addEventListener('load', function() {
   initOrdersRealtimeListener();
 });
 
-// 🔗 Alias កាត់បន្ថយកូដស្ទួន (បង្វែរការហៅទៅ openDriverAbaQrModal វិញ)
-function openDriverDirectQr(amount, custName) {
-  openDriverAbaQrModal(amount, custName);
-}
-
 // 🚚 មុខងារបង្ហាញបេសកកម្មដឹកទឹករបស់អ្នកដឹកជញ្ជូនរោងចក្រ (មានប៊ូតុង "ចេញដំណើរ" ទំនើប)
 async function renderCompanyDeliveriesModule(isSilentRefresh) {
   var area = document.getElementById('contentArea');
