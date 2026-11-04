@@ -1573,15 +1573,46 @@ function closePOSKHQR() {
 var isSubmittingSaleLock = false;
 
 async function confirmSale() {
-  // 🛡️ រារាំងអ្នកដឹកជញ្ជូនរោងចក្រ (Company Driver)
+  // 🛡️ ១. រារាំងអ្នកដឹកជញ្ជូនរោងចក្រ (Company Driver) ដាច់ខាត
   if (currentUser && currentUser.type === 'CompanyDriver') {
-    showToast("អ្នកដឹកជញ្ជូនរោងចក្រ គ្មានសិទ្ធិដក ឬលក់ទំនិញក្នុង POS ឡើយ!", "error");
+    if (typeof kcAlert === 'function') {
+      await kcAlert({
+        title: "គ្មានសិទ្ធិដកទំនិញ!",
+        message: "អ្នកដឹកជញ្ជូនរោងចក្រ គ្មានសិទ្ធិដក ឬលក់ទំនិញក្នុង POS ឡើយ! មានតែសិទ្ធិដឹកទំនិញដែល Admin ចាត់ចែងប៉ុណ្ណោះ។",
+        type: "danger"
+      });
+    } else {
+      showToast("អ្នកដឹកជញ្ជូនរោងចក្រ គ្មានសិទ្ធិដក ឬលក់ទំនិញក្នុង POS ឡើយ!", "error");
+    }
     return;
   }
+
   if (isSubmittingSaleLock) return;
-  // 🔒 រនាំងការពារសុវត្ថិភាពចុងក្រោយសម្រាប់ម៉ូយប្រចាំខែ (Monthly Security Guard)
+
+  // 🛡️ ២. ពិនិត្យកន្ត្រកទំនិញ
+  if (!cart || cart.length === 0) { 
+    showToast("កន្ត្រកទទេ! សូមរើសទំនិញជាមុនសិន", "error"); 
+    return; 
+  }
+
+  // 🛡️ ៣. កំណត់ឈ្មោះអតិថិជនឱ្យបានត្រឹមត្រូវជាមុនសិន (ដោះស្រាយបញ្ហា Hoisting Bug)
+  var custNameEl = document.getElementById('posCustSelect');
+  var custName = custNameEl ? custNameEl.value.trim() : (currentUser.fullName || '');
+
+  // 🛵 ករណីកូនចៅដកជំនួសមេ៖ បង្ខំយកឈ្មោះមេជា customer_name ដាច់ខាត ១០០%
+  var isDriverWithdraw = (currentUser && (currentUser.role === 'Driver' || (currentUser.linkedBoss && currentUser.linkedBoss.trim() !== '')) && currentUser.type !== 'CompanyDriver');
+  if (isDriverWithdraw) {
+    var bossNameFromProfile = (currentUser.linkedBoss || '').trim();
+    if (bossNameFromProfile) {
+      custName = bossNameFromProfile;
+    }
+  }
+
+  // 🔒 ៤. រនាំងការពារសុវត្ថិភាពចុងក្រោយសម្រាប់ម៉ូយប្រចាំខែ (Monthly Customer Guard)
   var custObjCheck = allCustomers.find(c => c.full_name === custName);
-  if (custObjCheck && custObjCheck.type === 'Monthly') {
+  var isMonthlyCustomer = (custObjCheck && custObjCheck.type === 'Monthly');
+
+  if (isMonthlyCustomer) {
     var invalidItems = [];
     cart.forEach(function(item) {
       var hasContract = specialPrices.some(s => s.customer_name === custName && s.product_name === item.name);
@@ -1589,25 +1620,16 @@ async function confirmSale() {
     });
 
     if (invalidItems.length > 0) {
-      await kcAlert({
-        title: "មិនអាចកត់ត្រាបានទេ!",
-        message: "រកឃើញទំនិញក្រៅកុងត្រាក្នុងកន្ត្រក៖ [" + invalidItems.join(", ") + "] មិនអាចលក់ឱ្យម៉ូយប្រចាំខែ [" + custName + "] បានឡើយ!",
-        type: "danger"
-      });
+      if (typeof kcAlert === 'function') {
+        await kcAlert({
+          title: "មិនអាចកត់ត្រាបានទេ!",
+          message: "រកឃើញទំនិញក្រៅកុងត្រាក្នុងកន្ត្រក៖ [" + invalidItems.join(", ") + "] មិនអាចលក់ឱ្យម៉ូយប្រចាំខែ [" + custName + "] បានឡើយ! បង្ហាញ និងលក់បានតែទំនិញក្នុងកុងត្រាប៉ុណ្ណោះ។",
+          type: "danger"
+        });
+      } else {
+        showToast("មានទំនិញក្រៅកុងត្រារបស់ម៉ូយប្រចាំខែ!", "error");
+      }
       return;
-    }
-  }
-  if (cart.length === 0) { showToast("កន្ត្រកទទេ! សូមរើសទំនិញជាមុនសិន", "error"); return; }
-
-  var custNameEl = document.getElementById('posCustSelect');
-  var custName = custNameEl ? custNameEl.value.trim() : (currentUser.fullName || '');
-
-  // 🛵 ត្រួតពិនិត្យករណីកូនចៅដកជំនួសមេ៖ បង្ខំយកឈ្មោះមេជា customer_name ដាច់ខាត ១០០%!
-  var isDriverWithdraw = (currentUser && (currentUser.role === 'Driver' || (currentUser.linkedBoss && currentUser.linkedBoss.trim() !== '')) && currentUser.type !== 'CompanyDriver');
-  if (isDriverWithdraw) {
-    var bossNameFromProfile = (currentUser.linkedBoss || '').trim();
-    if (bossNameFromProfile) {
-      custName = bossNameFromProfile; // 👈 បង្ខំកត់ចូលឈ្មោះមេ មិនឱ្យធ្លាក់ទៅឈ្មោះកូនចៅឡើយ
     }
   }
 
@@ -1621,8 +1643,10 @@ async function confirmSale() {
 
   var tid = "TR-" + new Date().getTime();
   var btn = document.getElementById('sBtn');
-  btn.disabled = true;
-  btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i> កំពុងកត់ត្រា...';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i> កំពុងកត់ត្រា...';
+  }
   isSubmittingSaleLock = true;
 
   try {
@@ -1640,7 +1664,7 @@ async function confirmSale() {
 
       rowsToInsert.push({
         transaction_id: tid,
-        customer_name: custName, // 👈 ឈ្មោះមេពិតប្រាកដ (Boss)
+        customer_name: custName,
         product_name: item.name,
         qty: item.qty,
         price: item.price,
@@ -1672,7 +1696,7 @@ async function confirmSale() {
     const { error: insErr } = await supabaseClient.from('transactions').insert(rowsToInsert);
     if (insErr) throw insErr;
 
-    // 📦 កាត់ស្តុកទំនិញទិញគេចេញពីឃ្លាំងដោយស្វ័យប្រវត្តិ
+    // 📦 ៥. កាត់ស្តុកទំនិញទិញគេចេញពីឃ្លាំងដោយស្វ័យប្រវត្តិ
     for (var sIdx = 0; sIdx < cart.length; sIdx++) {
       var cartItm = cart[sIdx];
       var prodObj = allProducts.find(p => p.id === cartItm.id);
@@ -1683,21 +1707,22 @@ async function confirmSale() {
       }
     }
 
-    // 🔔 ផ្ញើ Telegram Alert
+    // 🔔 ៦. ផ្ញើ Telegram Alert
     try {
       var itemSummary = cart.map(function(item) {
         return "  • <b>" + item.name + "</b> x " + item.qty + " = ៛ " + (item.qty * item.price).toLocaleString();
       }).join("\n");
 
       var tgHeader = isDriverWithdraw ? "🛵 <b>[KC WATER - កូនចៅមកដកទឹកជំនួសមេ]</b>" : 
+                    (isMonthlyCustomer ? "🏢 <b>[KC WATER - ដកទំនិញម៉ូយប្រចាំខែ (កុងត្រា)]</b>" :
                     (isDebtWithdrawal && isAdmin ? "🏢 <b>[KC WATER - Admin ដកទំនិញជំនួសម៉ូយ]</b>" : 
-                    (isDebtWithdrawal ? "🚚 <b>[KC WATER - ម៉ូយដកទំនិញ (Login)]</b>" : "🛒 <b>[KC WATER - លក់នៅកន្លែង (Walk-in)]</b>"));
+                    (isDebtWithdrawal ? "🚚 <b>[KC WATER - ម៉ូយដកទំនិញ (Login)]</b>" : "🛒 <b>[KC WATER - លក់នៅកន្លែង (Walk-in)]</b>")));
 
       var withdrawPersonInfo = isDriverWithdraw ? 
         ("🚚 <b>អ្នកមកដកផ្ទាល់៖</b> <b>" + currentUser.fullName + " (កូនចៅ)</b>\n" +
          "🏢 <b>ដកជំនួសមេ៖</b> <b>" + custName + "</b>\n") :
         (isDebtWithdrawal && isAdmin ? 
-        ("👤 <b>អតិថិជន / ម៉ូយ៖</b> <b>" + custName + "</b>\n" +
+        ("👤 <b>អតិថិជន / ម៉ូយ៖</b> <b>" + custName + (isMonthlyCustomer ? " [ប្រចាំខែ]" : "") + "</b>\n" +
          "✍️ <b>អ្នកកត់ត្រា៖</b> <b>Admin (" + (currentUser.fullName || "Admin") + ")</b>\n") :
         ("👤 <b>អតិថិជន៖</b> " + custName + "\n"));
 
@@ -1714,10 +1739,23 @@ async function confirmSale() {
                   "📌 <b>ស្ថានភាពទូទាត់៖</b> " + statusText + "\n" +
                   "🕒 <b>កាលបរិច្ឆេទ៖</b> " + timeKhNow;
 
-      sendTelegramAlert(tgMsg);
+      if (typeof sendTelegramAlert === 'function') {
+        sendTelegramAlert(tgMsg);
+      }
     } catch(e) {}
 
-    generateReceiptImage(tid, custName, calc.finalTotal, (isDebtWithdrawal ? 0 : paid), cart, isDebtWithdrawal ? "ប័ណ្ណដកទំនិញ (WITHDRAWAL VOUCHER)" : "វិក្កយបត្រលក់ទំនិញ (RECEIPT)", calc.discountK);
+    // 🧾 ៧. បង្កើតរូបភាពវិក្កយបត្រ
+    if (typeof generateReceiptImage === 'function') {
+      generateReceiptImage(
+        tid, 
+        custName, 
+        calc.finalTotal, 
+        (isDebtWithdrawal ? 0 : paid), 
+        cart, 
+        isDebtWithdrawal ? "ប័ណ្ណដកទំនិញ (WITHDRAWAL VOUCHER)" : "វិក្កយបត្រលក់ទំនិញ (RECEIPT)", 
+        calc.discountK
+      );
+    }
 
     cart = [];
     currentPosDiscount = { type: 'NONE', value: 0 };
@@ -1725,22 +1763,26 @@ async function confirmSale() {
     if (document.getElementById('pK')) document.getElementById('pK').value = "";
     calcPOSChange();
 
-    showToast(isDriverWithdraw ? ("បានកត់ត្រាការដកទឹកចូលគណនីមេ [" + custName + "] ជោគជ័យ!") : (isDebtWithdrawal ? ("បានកត់ត្រាការដកទំនិញចូលបញ្ជីជំពាក់របស់ [" + custName + "] ជោគជ័យ!") : "បានកត់ត្រាការលក់ជោគជ័យ!"), "success");
-    confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+    var successMsg = isDriverWithdraw ? ("បានកត់ត្រាការដកទឹកចូលគណនីមេ [" + custName + "] ជោគជ័យ!") : 
+                     (isMonthlyCustomer ? ("បានកត់ត្រាការដកទឹកចូលកុងត្រាម៉ូយប្រចាំខែ [" + custName + "] ជោគជ័យ!") :
+                     (isDebtWithdrawal ? ("បានកត់ត្រាការដកទំនិញចូលបញ្ជីជំពាក់របស់ [" + custName + "] ជោគជ័យ!") : "បានកត់ត្រាការលក់ជោគជ័យ!"));
+    showToast(successMsg, "success");
+    if (typeof confetti === 'function') confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
 
   } catch(err) {
     showToast("កំហុសកត់ត្រា៖ " + err.message, "error");
   } finally {
     isSubmittingSaleLock = false;
-    btn.disabled = false;
-    if (isDebtWithdrawal) {
-      btn.innerHTML = '<i class="fas fa-clipboard-check mr-2 text-lg"></i>កត់ត្រាការដកទំនិញ (កត់ចូលបញ្ជីជំពាក់)';
-    } else {
-      btn.innerHTML = 'រក្សាទុកការលក់ (Save Sale)';
+    if (btn) {
+      btn.disabled = false;
+      if (isDebtWithdrawal) {
+        btn.innerHTML = '<i class="fas fa-clipboard-check mr-2 text-lg"></i>កត់ត្រាការដកទំនិញ (កត់ចូលបញ្ជីជំពាក់)';
+      } else {
+        btn.innerHTML = 'រក្សាទុកការលក់ (Save Sale)';
+      }
     }
   }
 }
-
   
 // ==========================================
 // 🧾 បង្កើតរូបវិក្កយបត្រ (RECEIPT GENERATOR)
