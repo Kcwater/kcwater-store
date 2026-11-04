@@ -4099,6 +4099,11 @@ function shareViaNativeSheet() {
     var uaStr = (navigator.userAgent || navigator.vendor || window.opera || '').toLowerCase();
     var isIosDevice = /iphone|ipad|ipod/.test(uaStr);
 
+    // 📲 ចុះឈ្មោះ Service Worker ដើម្បីដោះសោរឱ្យ Google Chrome បង្ហាញផ្ទាំងដំឡើង App KC MART
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js').catch(function() {});
+    }
+
     // ២. ចាប់យក Event ដំឡើងលើ Android / Chrome
     window.addEventListener('beforeinstallprompt', function(e) {
       e.preventDefault();
