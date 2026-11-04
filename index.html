@@ -4054,7 +4054,8 @@ function shareViaNativeSheet() {
   </div>
   <script>
   </script>
-  <!-- 📲 បដាដំឡើង App KC MART លើ Android & កុំព្យូទ័រ PC -->
+  
+ <!-- 📲 បដាដំឡើង App KC MART លើ Android & កុំព្យូទ័រ PC -->
   <div id="pwaInstallBanner" class="fixed bottom-20 left-3 right-3 z-[9990] max-w-sm mx-auto bg-slate-950/95 backdrop-blur-md text-white p-3 rounded-2xl shadow-2xl border border-emerald-500/40 hidden animate-in slide-in-from-bottom duration-300 select-none">
     <div class="flex items-center justify-between gap-2.5">
       <div class="flex items-center gap-2.5 min-w-0 flex-1">
@@ -4075,48 +4076,14 @@ function shareViaNativeSheet() {
     </div>
   </div>
 
-  <!-- ២. ផ្ទាំងណែនាំដំឡើង App លើទូរស័ព្ទ iPhone (iOS Guide Modal) -->
-  <div id="pwaIosGuideModal" class="fixed inset-0 z-[6000] flex items-end sm:items-center justify-center p-3 sm:p-4 hidden overflow-y-auto">
-    <div class="fixed inset-0 bg-slate-950/70 backdrop-blur-xs" onclick="closePwaIosModal()"></div>
-    <div class="bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl z-10 w-full max-w-sm p-5 space-y-3.5 text-center relative border border-slate-100 animate-in slide-in-from-bottom duration-300 my-auto text-xs">
-      <div class="w-12 h-12 mx-auto rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-xl shadow-inner">
-        <i class="fab fa-apple"></i>
-      </div>
-      <div>
-        <h3 class="font-black text-slate-900 text-base">ដំឡើង App KC MART លើ iPhone</h3>
-        <p class="text-[11px] text-slate-500 font-bold mt-0.5">ដើម្បីប្រើប្រាស់ពេញអេក្រង់ទូរស័ព្ទ គ្មានរបារ Browser</p>
-      </div>
-      
-      <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200 text-left space-y-2 text-slate-700 font-bold">
-        <div class="flex items-center gap-2.5">
-          <span class="w-6 h-6 rounded-lg bg-emerald-600 text-white flex items-center justify-center text-xs font-black shrink-0">1</span>
-          <span>ចុចសញ្ញា Share <b class="text-blue-600 font-black">⬆️ (នៅបាតក្រោម Safari)</b></span>
-        </div>
-        <div class="flex items-center gap-2.5">
-          <span class="w-6 h-6 rounded-lg bg-emerald-600 text-white flex items-center justify-center text-xs font-black shrink-0">2</span>
-          <span>រំកិលចុះក្រោម រើសយក <b class="text-slate-900">«Add to Home Screen ➕»</b></span>
-        </div>
-        <div class="flex items-center gap-2.5">
-          <span class="w-6 h-6 rounded-lg bg-emerald-600 text-white flex items-center justify-center text-xs font-black shrink-0">3</span>
-          <span>ចុចពាក្យ <b class="text-emerald-700">«Add (បន្ថែម)»</b> នៅខាងលើស្តាំ ជាការស្រេច!</span>
-        </div>
-      </div>
-
-      <button type="button" onclick="closePwaIosModal()" class="w-full py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-black rounded-xl text-xs shadow-md active:scale-95 transition">
-        យល់ព្រម (រួចរាល់)
-      </button>
-    </div>
-  </div>
-
   <script>
-   <script>
     // 🧠 LOGIC គ្រប់គ្រងការដំឡើង APP (PWA ENGINE)
     var deferredPwaPrompt = null;
     var isAppInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
     var uaStr = (navigator.userAgent || navigator.vendor || window.opera || '').toLowerCase();
     var isIosDevice = /iphone|ipad|ipod/.test(uaStr);
 
-    // 📲 ១. ចុះឈ្មោះ Service Worker ភ្លាមៗដើម្បីឱ្យ Chrome បើកសិទ្ធិដំឡើង App
+    // 📲 ១. ចុះឈ្មោះ Service Worker ភ្លាមៗ
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('./sw.js').catch(function() {});
     }
@@ -4138,11 +4105,11 @@ function shareViaNativeSheet() {
         banner.classList.remove('hidden');
       }
     }
-    
-    // ៤. ពេលភ្ញៀវចុចប៊ូតុង «ដំឡើង App»
+
+    // 📲 ៤. ពេលភ្ញៀវចុចប៊ូតុង «ដំឡើង»
     function triggerPwaInstallAction() {
       if (isIosDevice) {
-        openPwaIosModal();
+        if (typeof openPwaIosModal === 'function') openPwaIosModal();
         return;
       }
       if (deferredPwaPrompt) {
@@ -4154,7 +4121,7 @@ function shareViaNativeSheet() {
           deferredPwaPrompt = null;
         });
       } else {
-        openPwaIosModal();
+        if (typeof openPwaIosModal === 'function') openPwaIosModal();
       }
     }
 
@@ -4163,7 +4130,7 @@ function shareViaNativeSheet() {
       if (banner) banner.classList.add('hidden');
       sessionStorage.setItem('kc_pwa_dismissed', 'true');
     }
-
+    
     function openPwaIosModal() {
       var modal = document.getElementById('pwaIosGuideModal');
       if (modal) modal.classList.remove('hidden');
