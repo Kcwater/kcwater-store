@@ -1868,13 +1868,6 @@ function toggleFavoriteProduct(prodId, event) {
     localStorage.setItem('kc_customer_favorites', JSON.stringify(favs));
   } catch(e) {}
 
-  // 🔢 តម្រៀបលេខរៀងឱ្យម៉ត់ចត់
-          STORE_CATALOG.sort(function(a, b) {
-            var orderA = (a.sort_order !== null && a.sort_order !== undefined && a.sort_order !== '') ? parseInt(a.sort_order) : 999;
-            var orderB = (b.sort_order !== null && b.sort_order !== undefined && b.sort_order !== '') ? parseInt(b.sort_order) : 999;
-            return orderA - orderB;
-          });
-
   // បង្ហាញ UI ឡើងវិញភ្លាមៗ
   renderCategoryChips();
   renderCatalogGrid(activeCatalogCategoryFilter);
