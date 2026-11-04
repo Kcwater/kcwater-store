@@ -1,15 +1,20 @@
 <!DOCTYPE html>
 <html lang="km">
 <head>
-  <!-- 🚀 កូដបង្ខំឱ្យលោតទៅ Google Chrome ភ្លាមៗក្នុង 0.001 វិនាទី ពេលបើកក្នុង Messenger លើ Android -->
+  <!-- 🚀 កូដបង្ខំឱ្យលោតចេញពី Telegram, Messenger, Facebook ទៅបើកក្នុង Google Chrome ភ្លាមៗលើ Android -->
   <script>
     (function() {
       var ua = (navigator.userAgent || navigator.vendor || window.opera || '').toLowerCase();
       var isAndroid = ua.includes('android');
-      var isFBorMessenger = ua.includes('fban') || ua.includes('fbios') || ua.includes('messenger') || ua.includes('fb_iab');
+      
+      // 🔍 ពិនិត្យស្គាល់ Telegram, Messenger, Facebook, Instagram & LINE
+      var isTelegram = ua.includes('telegram') || ua.includes('telegram-android') || typeof window.TelegramWebview !== 'undefined';
+      var isFBorMessenger = ua.includes('fban') || ua.includes('fbios') || ua.includes('messenger') || ua.includes('fb_iab') || ua.includes('instagram');
+      var isLine = ua.includes('line');
+      var isInAppBrowser = isTelegram || isFBorMessenger || isLine;
 
-      // បើជា Android កំពុងបើកក្នុង Messenger -> បញ្ជាឱ្យលោតចូល Google Chrome ភ្លាមៗតែម្តង
-      if (isAndroid && isFBorMessenger) {
+      // ⚡ បើជា Android កំពុងបើកក្នុង Telegram ឬ Messenger -> បញ្ជាឱ្យលោតចូល Google Chrome ភ្លាមៗតែម្តង
+      if (isAndroid && isInAppBrowser) {
         var currentUrl = window.location.href;
         if (!currentUrl.includes('no_auto_chrome=1')) {
           var cleanUrl = currentUrl.replace(/^https?:\/\//, '');
@@ -118,6 +123,29 @@
   </style>
 </head>
 <body class="pb-36 antialiased select-none">
+  <!-- 🚀 បដាជំរុញឱ្យបើកក្នុង Chrome ពេលភ្ញៀវបើកក្នុង Telegram ឬ Messenger -->
+  <div id="inAppBrowserWarningBar" class="hidden bg-gradient-to-r from-amber-500 via-orange-600 to-amber-600 text-white p-2.5 px-3 text-xs font-bold text-center shadow-lg sticky top-0 z-[9999] flex items-center justify-between gap-2 select-none">
+    <div class="flex items-center gap-1.5 min-w-0 text-left">
+      <i class="fab fa-chrome text-yellow-200 text-base shrink-0 animate-bounce"></i>
+      <span class="truncate text-[11px]">សូមបើកក្នុង Google Chrome ដើម្បីអាចដំឡើង App និងចាប់ GPS បាន!</span>
+    </div>
+    <button type="button" onclick="launchAndroidChromeBreakout()" class="px-2.5 py-1 bg-white text-amber-950 font-black rounded-lg text-[10px] shadow-md shrink-0 active:scale-95 transition">
+      🚀 បើកក្នុង Chrome
+    </button>
+  </div>
+  <script>
+    // បង្ហាញបដាភ្លាមបើសិនជាទំព័រនៅតែជាប់ក្នុង Telegram / In-App
+    (function() {
+      var ua = (navigator.userAgent || navigator.vendor || window.opera || '').toLowerCase();
+      var isTg = ua.includes('telegram') || typeof window.TelegramWebview !== 'undefined' || ua.includes('messenger') || ua.includes('fban') || ua.includes('fb_iab');
+      if (isTg) {
+        window.addEventListener('DOMContentLoaded', function() {
+          var bar = document.getElementById('inAppBrowserWarningBar');
+          if (bar) bar.classList.remove('hidden');
+        });
+      }
+    })();
+  </script>
 
   <!-- ១. NAVBAR (KC MART - ទំនើប ស្រាលភ្នែក និងមិនធ្លាក់អក្សរលើអេក្រង់តូច ១០០%) -->
   <header class="sticky top-0 z-40 kc-glass-nav">
