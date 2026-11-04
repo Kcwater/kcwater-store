@@ -1,27 +1,17 @@
 <!DOCTYPE html>
 <html lang="km">
 <head>
-  <!-- 🚀 កូដបង្ខំឱ្យលោតចេញពី Telegram, Messenger, Facebook ទៅបើកក្នុង Google Chrome ភ្លាមៗលើ Android -->
+  <!-- 🚀 កូដត្រួតពិនិត្យសុវត្ថិភាព In-App Browser (គាំទ្រ Telegram Mini App ១០០% មិនកន្ត្រាក់) -->
   <script>
     (function() {
       var ua = (navigator.userAgent || navigator.vendor || window.opera || '').toLowerCase();
       var isAndroid = ua.includes('android');
       
-      // 🔍 ពិនិត្យស្គាល់ Telegram, Messenger, Facebook, Instagram & LINE
-      var isTelegram = ua.includes('telegram') || ua.includes('telegram-android') || typeof window.TelegramWebview !== 'undefined';
-      var isFBorMessenger = ua.includes('fban') || ua.includes('fbios') || ua.includes('messenger') || ua.includes('fb_iab') || ua.includes('instagram');
-      var isLine = ua.includes('line');
-      var isInAppBrowser = isTelegram || isFBorMessenger || isLine;
+      // 🔍 ពិនិត្យដឹង Messenger / Facebook (ដែលតែងតែបិទសិទ្ធិចាប់ GPS)
+      var isMetaInApp = ua.includes('fban') || ua.includes('fbios') || ua.includes('messenger') || ua.includes('fb_iab') || ua.includes('instagram');
 
-      // ⚡ បើជា Android កំពុងបើកក្នុង Telegram ឬ Messenger -> បញ្ជាឱ្យលោតចូល Google Chrome ភ្លាមៗតែម្តង
-      if (isAndroid && isInAppBrowser) {
-        var currentUrl = window.location.href;
-        if (!currentUrl.includes('no_auto_chrome=1')) {
-          var cleanUrl = currentUrl.replace(/^https?:\/\//, '');
-          var intentUrl = "intent://" + cleanUrl + "#Intent;scheme=https;package=com.android.chrome;end";
-          window.location.replace(intentUrl);
-        }
-      }
+      // 🛡️ បើជា Telegram Mini App គឺអនុញ្ញាតឱ្យដំណើរការក្នុង Telegram ពេញលេញ ១០០% មិនទាត់ចេញឡើយ
+      window.__isMetaInApp = isMetaInApp;
     })();
   </script>
   <meta charset="UTF-8">
@@ -2739,20 +2729,40 @@ function detectGPSLocation() {
   });
 }
   
-   // 🚀 មុខងារ ១ ឃ្លីក បង្ខំទូរស័ព្ទ Android ឱ្យលោតចេញពី Messenger ទៅបើកក្នុង Google Chrome ភ្លាមៗ
+   // 🚀 មុខងារ ១ ឃ្លីក បើកក្នុង Google Chrome (រក្សាទុកកន្ត្រកទំនិញ & មិនបាត់ TEST/PROD)
 function launchAndroidChromeBreakout() {
   try {
-    // រក្សាទុកកន្ត្រកទំនិញ និងទិន្នន័យភ្ញៀវចូលក្នុង URL Parameter ដើម្បីកុំឱ្យបាត់ទំនិញ
-    var cartParam = encodeURIComponent(JSON.stringify(cartItems || {}));
-    var targetUrl = window.location.origin + window.location.pathname + '?open_chrome=1&cart=' + cartParam;
-    
-    // បាញ់កូដ Android Chrome Intent ទៅកាន់ប្រព័ន្ធប្រតិបត្តិការ Android
-    var cleanUrl = targetUrl.replace(/^https?:\/\//, '');
-    var intentUrl = "intent://" + cleanUrl + "#Intent;scheme=https;package=com.android.chrome;end";
-    
-    window.location.href = intentUrl;
+    // ១. រក្សាទុក URL និង Parameters ទាំងអស់ (រួមទាំង ?env=TEST បើមាន)
+    var url = new URL(window.location.href);
+    url.searchParams.set('open_chrome', '1');
+
+    // ២. រក្សាទុកកន្ត្រកទំនិញកុំឱ្យបាត់
+    if (typeof cartItems !== 'undefined' && Object.keys(cartItems).length > 0) {
+      url.searchParams.set('cart', encodeURIComponent(JSON.stringify(cartItems)));
+    }
+
+    var targetUrl = url.toString();
+
+    // 📱 ៣. ប្រសិនបើកំពុងស្ថិតក្នុង Telegram Mini App -> ប្រើ API ផ្លូវការរបស់ Telegram ដើម្បីបើក
+    if (window.Telegram && window.Telegram.WebApp && typeof window.Telegram.WebApp.openLink === 'function') {
+      window.Telegram.WebApp.openLink(targetUrl);
+      return;
+    }
+
+    // 🤖 ៤. សម្រាប់ Android ក្នុង Messenger/Facebook -> បាញ់ Chrome Intent ដោយមាន Fallback សុវត្ថិភាព
+    var ua = (navigator.userAgent || '').toLowerCase();
+    if (ua.includes('android')) {
+      var cleanUrl = targetUrl.replace(/^https?:\/\//, '');
+      var fallbackUrl = encodeURIComponent(targetUrl);
+      // មានភ្ជាប់ S.browser_fallback_url ការពារកុំឱ្យ Error បើទូរស័ព្ទប្រើ Samsung Internet
+      var intentUrl = "intent://" + cleanUrl + "#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=" + fallbackUrl + ";end";
+      window.location.href = intentUrl;
+    } else {
+      // 🍎 សម្រាប់ iPhone / Browser ផ្សេងៗ
+      window.open(targetUrl, '_blank');
+    }
   } catch(e) {
-    window.open(window.location.href, '_system');
+    window.location.href = window.location.href;
   }
 }
 
