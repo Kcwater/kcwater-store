@@ -1054,7 +1054,7 @@ function renderProductGrid() {
 // ==========================================
 var currentModalCurrency = 'KHR';
 
-// 🔄 ១. មុខងារចុចប្តូររូបិយប័ណ្ណ & ប្តូរពណ៌ (ខៀវ / ទឹកក្រូច / បៃតង)
+// 🔄 ១. មុខងារចុចប្តូររូបិយប័ណ្ណ & គណនាតម្លៃតាមអត្រាប្តូរប្រាក់អូតូ (៦០០៛ ➔ ៥฿ ➔ 0.15$)
 function setModalCurrency(curr) {
   currentModalCurrency = curr;
 
@@ -1064,28 +1064,58 @@ function setModalCurrency(curr) {
   var suffixEl = document.getElementById('modalCurrencySymbolSuffix');
   var priceBox = document.getElementById('modalPriceInput');
 
-  // Reset ពណ៌ប៊ូតុងអត់ជ្រើសរើស
+  // Reset ពណ៌ប៊ូតុង
   ['KHR', 'THB', 'USD'].forEach(function(c) {
     var btn = document.getElementById('btnModalCurr_' + c);
     if (btn) btn.className = "py-2 rounded-xl text-xs font-black text-slate-600 hover:bg-white transition flex items-center justify-center gap-1";
   });
 
-  // 🎨 ប្តូរពណ៌តាមប្រភេទលុយនីមួយៗ
+  // 🪙 ទាញយកតម្លៃដើមជាលុយខ្មែរ (៛) របស់ទំនិញនេះ
+  var custNameEl = document.getElementById('posCustSelect');
+  var custName = custNameEl ? custNameEl.value.trim() : (currentUser.fullName || '');
+  var sp = (selectedModalProduct && specialPrices) ? specialPrices.find(s => s.customer_name === custName && s.product_name === selectedModalProduct.name) : null;
+  
+  var basePrice = sp ? parseFloat(sp.price) : (selectedModalProduct ? parseFloat(selectedModalProduct.price || 0) : 0);
+  var baseCurr = sp ? (sp.currency || 'KHR').toUpperCase() : (selectedModalProduct ? (selectedModalProduct.currency || 'KHR').toUpperCase() : 'KHR');
+
+  var rateU = (typeof exchangeRateUSD !== 'undefined' && exchangeRateUSD > 0) ? exchangeRateUSD : 4100;
+  var rateT = (typeof exchangeRateTHB !== 'undefined' && exchangeRateTHB > 0) ? exchangeRateTHB : 115;
+
+  // បំប្លែងតម្លៃគោលជាប្រាក់រៀល (KHR) ជាមុនសិន
+  var baseKhr = basePrice;
+  if (baseCurr === 'USD') baseKhr = Math.round(basePrice * rateU);
+  else if (baseCurr === 'THB') baseKhr = Math.round(basePrice * rateT);
+
+  // 🎨 ប្តូរពណ៌ និងគណនាតម្លៃបំប្លែងតាមអត្រាប្តូរប្រាក់
   if (curr === 'THB') {
-    // 🟠 លុយថៃ ពណ៌ទឹកក្រូច
+    // 🟠 លុយថៃ (៦០០៛ / ១១៥ = ៥฿)
+    var valThb = Math.round(baseKhr / rateT);
     if (btnThb) btnThb.className = "py-2 rounded-xl text-xs font-black shadow-xs bg-amber-600 text-white transition flex items-center justify-center gap-1";
     if (suffixEl) { suffixEl.innerText = '฿'; suffixEl.className = "absolute right-3 top-3 font-black text-amber-600 text-sm"; }
-    if (priceBox) priceBox.className = "w-full text-center text-xl font-black bg-white py-2.5 rounded-xl border-2 border-amber-300 focus:border-amber-600 text-amber-950 outline-none pr-8";
+    if (priceBox) {
+      priceBox.className = "w-full text-center text-xl font-black bg-white py-2.5 rounded-xl border-2 border-amber-300 focus:border-amber-600 text-amber-950 outline-none pr-8";
+      priceBox.value = valThb > 0 ? valThb : "";
+      priceBox.placeholder = "0";
+    }
   } else if (curr === 'USD') {
-    // 🟢 លុយដុល្លារ ពណ៌បៃតង
+    // 🟢 លុយដុល្លារ (៦០០៛ / ៤១០០ = 0.15$)
+    var valUsd = parseFloat((baseKhr / rateU).toFixed(2));
     if (btnUsd) btnUsd.className = "py-2 rounded-xl text-xs font-black shadow-xs bg-emerald-600 text-white transition flex items-center justify-center gap-1";
     if (suffixEl) { suffixEl.innerText = '$'; suffixEl.className = "absolute right-3 top-3 font-black text-emerald-600 text-sm"; }
-    if (priceBox) priceBox.className = "w-full text-center text-xl font-black bg-white py-2.5 rounded-xl border-2 border-emerald-300 focus:border-emerald-600 text-emerald-950 outline-none pr-8";
+    if (priceBox) {
+      priceBox.className = "w-full text-center text-xl font-black bg-white py-2.5 rounded-xl border-2 border-emerald-300 focus:border-emerald-600 text-emerald-950 outline-none pr-8";
+      priceBox.value = valUsd > 0 ? valUsd : "";
+      priceBox.placeholder = "0.00";
+    }
   } else {
-    // 🔵 លុយខ្មែរ ពណ៌ខៀវ
+    // 🔵 លុយខ្មែរ (៦០០៛)
     if (btnKhr) btnKhr.className = "py-2 rounded-xl text-xs font-black shadow-xs bg-blue-600 text-white transition flex items-center justify-center gap-1";
     if (suffixEl) { suffixEl.innerText = '៛'; suffixEl.className = "absolute right-3 top-3 font-black text-blue-600 text-sm"; }
-    if (priceBox) priceBox.className = "w-full text-center text-xl font-black bg-white py-2.5 rounded-xl border-2 border-blue-300 focus:border-blue-600 text-blue-950 outline-none pr-8";
+    if (priceBox) {
+      priceBox.className = "w-full text-center text-xl font-black bg-white py-2.5 rounded-xl border-2 border-blue-300 focus:border-blue-600 text-blue-950 outline-none pr-8";
+      priceBox.value = baseKhr > 0 ? baseKhr : "";
+      priceBox.placeholder = "0";
+    }
   }
 
   // បង្ហាញជួរប៊ូតុងជំនួយ +00 តែលើលុយខ្មែរ (KHR) ប៉ុណ្ណោះ
@@ -1104,8 +1134,9 @@ function setModalCurrency(curr) {
   updateModalSubtotal();
 }
 
+
 // ==========================================
-// 🪙 មុខងារជំនួយតម្លៃលើផ្ទាំង MODAL (+00, +000, តម្លៃរហ័ស 500/1000/2000)
+// 🪙 មុខងារជំនួយតម្លៃលើផ្ទាំង MODAL (ស្វ័យប្រវត្តិ 00 លើ KHR & ស្គាល់ , ឬ . លើ USD)
 // ==========================================
 
 // ១. មុខងារវាយតម្លៃផ្ទាល់ក្នុងប្រអប់
@@ -1113,34 +1144,35 @@ function onModalPriceInput(val) {
   updateModalSubtotal();
 }
 
-// ២. មុខងារថែមសូន្យរហ័ស (+00 ឬ +000) លើលុយខ្មែរ
-function appendModalZeros(zeros) {
+// 🔄 ២. មុខងារសម្រួលតម្លៃស្វ័យប្រវត្តពេលវាយរួច (On Blur)
+function onModalPriceBlur() {
   var inp = document.getElementById('modalPriceInput');
   if (!inp || inp.readOnly) return;
-  
-  var curVal = String(inp.value || '').trim();
-  // បើប្រអប់ទទេ ឬលេខ 0 ពេលចុច +00 ឱ្យចេញ 100 ភ្លាម
-  if (!curVal || curVal === '0') {
-    inp.value = (zeros === '00') ? '100' : '1000';
-  } else {
-    inp.value = curVal + zeros;
+
+  var rawVal = String(inp.value || '').trim();
+  if (!rawVal) return;
+
+  // 🇰🇭 ក. លុយខ្មែរ (KHR)៖ បើវាយចន្លោះពី 1 ដល់ 99 ➔ ថែម 00 លើប្រអប់ភ្លាម (ឧ. 6 -> 600, 15 -> 1500)
+  if (currentModalCurrency === 'KHR') {
+    var clean = rawVal.replace(/[^0-9]/g, '');
+    var num = parseInt(clean);
+    if (!isNaN(num) && num > 0 && num < 100) {
+      inp.value = num * 100;
+    }
+  } 
+  // 💵 ខ. លុយដុល្លារ (USD)៖ បើវាយសញ្ញាក្បៀស (,) ➔ ប្តូរមកសញ្ញាចុច (.) ឱ្យស្អាត (ឧ. 1,5 -> 1.5)
+  else if (currentModalCurrency === 'USD') {
+    if (rawVal.includes(',')) {
+      inp.value = rawVal.replace(',', '.');
+    }
   }
   updateModalSubtotal();
 }
 
-// ៣. មុខងារកំណត់តម្លៃរហ័ស (500, 1000, 2000៛)
-function setModalExactPrice(price) {
-  var inp = document.getElementById('modalPriceInput');
-  if (!inp || inp.readOnly) return;
-  inp.value = price;
-  updateModalSubtotal();
-}
-
-// 🧮 ២. មុខងារបំប្លែង និងទាញយកតម្លៃលក់ (ស្គាល់តម្លៃកុងត្រាអតិថិជន Monthly ជានិច្ច)
+// 🧮 ៣. មុខងារបំប្លែង និងទាញយកតម្លៃលក់ជាក់ស្តែង
 function getModalParsedPrice() {
   var inp = document.getElementById('modalPriceInput');
   
-  // ទាញតម្លៃកុងត្រាពិសេសបើមាន ឬតម្លៃដើមទំនិញ
   var custNameEl = document.getElementById('posCustSelect');
   var custName = custNameEl ? custNameEl.value.trim() : (currentUser.fullName || '');
   var sp = (selectedModalProduct && specialPrices) ? specialPrices.find(s => s.customer_name === custName && s.product_name === selectedModalProduct.name) : null;
@@ -1153,14 +1185,30 @@ function getModalParsedPrice() {
     return defaultPrice;
   }
 
+  // 💵 ករណីទី ១៖ លុយដុល្លារ (USD) -> ស្គាល់ទាំងសញ្ញាក្បៀស (,) និងសញ្ញាចុច (.) គ្មានថែម 00 ឡើយ
   if (currentModalCurrency === 'USD') {
-    rawVal = rawVal.replace(',', '.');
-    var num = parseFloat(rawVal);
-    return isNaN(num) ? defaultPrice : num;
-  } else {
-    var clean = rawVal.replace(/[^0-9.]/g, '');
-    var num = parseFloat(clean);
-    return isNaN(num) ? defaultPrice : num;
+    var cleanUsd = rawVal.replace(',', '.').replace(/[^0-9.]/g, '');
+    var numUsd = parseFloat(cleanUsd);
+    return isNaN(numUsd) ? defaultPrice : numUsd;
+  } 
+  // 🪙 ករណីទី ២៖ លុយថៃ (THB) -> គិតតម្លៃធម្មតា គ្មានថែម 00 ឡើយ
+  else if (currentModalCurrency === 'THB') {
+    var cleanThb = rawVal.replace(/[^0-9.]/g, '');
+    var numThb = parseFloat(cleanThb);
+    return isNaN(numThb) ? defaultPrice : numThb;
+  } 
+  // 🇰🇭 ករណីទី ៣៖ លុយខ្មែរ (KHR) -> ថែម 00 ស្វ័យប្រវត្តិបើវាយលេខចន្លោះពី 1 ដល់ 99
+  else {
+    var cleanKhr = rawVal.replace(/[^0-9]/g, '');
+    var numKhr = parseFloat(cleanKhr);
+    if (isNaN(numKhr)) return defaultPrice;
+
+    // បើវាយលេខ 1 ដល់ 99 ➔ ថែម 00 (ឧ. 1->100, 6->600, 15->1500)
+    if (numKhr > 0 && numKhr < 100) {
+      return numKhr * 100;
+    }
+    // បើវាយចាប់ពី 100 ឡើង (ឧ. 600, 2500) ➔ ទុកតម្លៃនោះដដែល
+    return numKhr;
   }
 }
 
@@ -1214,6 +1262,7 @@ function openProductModal(id) {
   setModalCurrency(isMonthly ? 'KHR' : (p.currency || 'KHR'));
 
   var priceInp = document.getElementById('modalPriceInput');
+  if (priceInp) priceInp.onblur = onModalPriceBlur;
   var quickPayBtn = document.getElementById('btnModalQuickPay');
   var addToCartBtn = document.getElementById('btnModalAddToCart');
   var khrQuickRow = document.getElementById('modalKhrQuickButtonsRow');
@@ -1786,10 +1835,9 @@ async function confirmSale() {
   
 // ==========================================
 // 🧾 បង្កើតរូបវិក្កយបត្រ (RECEIPT GENERATOR)
-// មានសរុបបរិមាណតាមមុខទំនិញ, អក្ខរាវិរុទ្ធត្រឹមត្រូវ & មិនបាក់ជើងអក្សរខ្មែរ
+// បូកសរុបបញ្ចូលគ្នាតាមមុខទំនិញស្វ័យប្រវត្ត & គាំទ្រទាញយកលើទូរស័ព្ទ ១០០%
 // ==========================================
 function generateReceiptImage(tid, cust, total, paid, items, titleText, discountAmount) {
-  // 🇰🇭 ម៉ោងកម្ពុជាត្រឹមត្រូវច្បាស់លាស់
   var dateStr = new Date().toLocaleString('km-KH', {
     timeZone: 'Asia/Phnom_Penh',
     year: 'numeric',
@@ -1802,40 +1850,70 @@ function generateReceiptImage(tid, cust, total, paid, items, titleText, discount
   var change = Math.max(0, paid - total);
   discountAmount = parseFloat(discountAmount || 0);
 
-  // 🛡️ ជួសជុលកំហុសអ្នកដឹក៖ បើបង់លុយគ្រប់ចំនួន គឺចេញ «ទូទាត់រួចរាល់» ជានិច្ច (មិនថា Admin ឬអ្នកដឹកឡើយ)
   var isPaidComplete = (paid >= total && total > 0);
   var statusBadgeText = isPaidComplete ? 
     '<span style="color:#15803d; font-weight:bold;">ទូទាត់រួចរាល់ (បង់ប្រាក់គ្រប់ចំនួន)</span>' : 
     (total === 0 ? '<span style="color:#15803d; font-weight:bold;">ឥតគិតថ្លៃ (Free)</span>' : '<span style="color:#c2410c; font-weight:bold;">កត់ត្រាជំពាក់ (Unpaid)</span>');
 
-  // 📦 ១. គណនាសរុបបរិមាណតាមមុខទំនិញនីមួយៗ (Product Quantity Summary)
+  // 📦 ១. បូកសរុបបញ្ចូលគ្នាតាមមុខទំនិញនីមួយៗ (Group & Sum by Product)
+  var groupedMap = {};
+  var specialRows = [];
   var prodQtyMap = {};
-  var itemsHtml = '';
 
-  (items || []).forEach(function(i, idx) {
-    var pName = i.name || i.product_name || "ទំនិញ";
+  (items || []).forEach(function(i) {
+    var pName = (i.name || i.product_name || "ទំនិញ").trim();
     var pPrice = parseFloat(i.price || 0);
     var pQty = parseFloat(i.qty || 1);
-    var tot = (pQty * pPrice);
-    var currSymbol = (i.currency === 'USD') ? '$ ' : ((i.currency === 'THB') ? '฿ ' : '៛ ');
+    var pCurr = i.currency || 'KHR';
+    var isSpecial = pName.includes("Discount") || pName.includes("បញ្ចុះតម្លៃ") || 
+                    pName.includes("Old Debt") || pName.includes("បំណុលចាស់") || 
+                    pName.includes("សេវាដឹក") || pPrice < 0;
 
-    // បូកសរុបបរិមាណតាមមុខទំនិញ (មិនរាប់ជួរបញ្ចុះតម្លៃ ឬថ្លៃដឹកជញ្ជូនចូលក្នុងចំនួនទំនិញឡើយ)
-    if (pName.indexOf("Discount") === -1 && pName.indexOf("បញ្ចុះតម្លៃ") === -1 && pName.indexOf("សេវាដឹក") === -1 && pPrice >= 0) {
-      // សម្អាតស្លាក [Free] ចេញ ដើម្បីបូកសរុបឱ្យត្រូវមុខទំនិញ
+    if (isSpecial) {
+      specialRows.push({
+        name: pName,
+        price: pPrice,
+        qty: pQty,
+        total: pQty * pPrice,
+        currency: pCurr
+      });
+    } else {
+      // បូកបញ្ចូលគ្នាតាមឈ្មោះទំនិញ និងតម្លៃរាយ
+      var groupKey = pName + '___' + pPrice;
+      if (!groupedMap[groupKey]) {
+        groupedMap[groupKey] = {
+          name: pName,
+          price: pPrice,
+          qty: 0,
+          total: 0,
+          currency: pCurr
+        };
+      }
+      groupedMap[groupKey].qty += pQty;
+      groupedMap[groupKey].total += (pQty * pPrice);
+
       var cleanSummaryName = pName.replace(/🎁\s*\[Free\]/gi, '').replace(/\[Free\]/gi, '').trim();
       prodQtyMap[cleanSummaryName] = (prodQtyMap[cleanSummaryName] || 0) + pQty;
     }
+  });
+
+  // រួមបញ្ចូលទំនិញដែលបានបូកសរុប + ជួរពិសេស
+  var finalDisplayItems = Object.values(groupedMap).concat(specialRows);
+
+  var itemsHtml = '';
+  finalDisplayItems.forEach(function(i, idx) {
+    var currSymbol = (i.currency === 'USD') ? '$ ' : ((i.currency === 'THB') ? '฿ ' : '៛ ');
 
     itemsHtml += '<tr style="border-bottom:1px dashed #cbd5e1; font-size:11px; line-height:1.7;">' +
       '<td align="center" style="padding:7px 2px; color:#64748b;">' + (idx + 1) + '</td>' +
-      '<td style="padding:7px 4px; font-weight:bold; color:#0f172a;">' + pName + '</td>' +
-      '<td align="center" style="padding:7px 4px; font-weight:bold; color:#1d4ed8;">' + pQty + '</td>' +
-      '<td align="right" style="padding:7px 4px; color:#475569;">' + Number(pPrice).toLocaleString() + '</td>' +
-      '<td align="right" style="padding:7px 4px; font-weight:bold; color:#15803d;">' + currSymbol + Number(tot).toLocaleString() + '</td>' +
+      '<td style="padding:7px 4px; font-weight:bold; color:#0f172a;">' + i.name + '</td>' +
+      '<td align="center" style="padding:7px 4px; font-weight:bold; color:#1d4ed8;">' + i.qty + '</td>' +
+      '<td align="right" style="padding:7px 4px; color:#475569;">' + Number(i.price).toLocaleString() + '</td>' +
+      '<td align="right" style="padding:7px 4px; font-weight:bold; color:#15803d;">' + currSymbol + Number(i.total).toLocaleString() + '</td>' +
     '</tr>';
   });
 
-  // 📊 ២. បង្កើតប្រអប់បង្ហាញ «សរុបបរិមាណតាមមុខទំនិញ»
+  // 📊 ២. ប្រអប់សង្ខេបបរិមាណតាមមុខទំនិញ
   var prodSummaryBoxHtml = '';
   var summaryKeys = Object.keys(prodQtyMap);
   if (summaryKeys.length > 0) {
@@ -1848,12 +1926,11 @@ function generateReceiptImage(tid, cust, total, paid, items, titleText, discount
     prodSummaryBoxHtml += '</div>';
   }
 
-  // 🚚 ៣. បង្ហាញព័ត៌មានអ្នកមកដកផ្ទាល់ (ករណីកូនចៅដកជំនួសមេ)
+  // 🚚 ៣. ព័ត៌មានអ្នកមកដកផ្ទាល់
   var isDriverWithdraw = (currentUser && (currentUser.role === 'Driver' || (currentUser.linkedBoss && currentUser.linkedBoss.trim() !== '')) && currentUser.type !== 'CompanyDriver');
   var driverWithdrawLine = isDriverWithdraw ? 
     ('អ្នកមកដកផ្ទាល់៖ <b style="color:#b45309;">' + currentUser.fullName + ' (កូនចៅ/អ្នកដឹក)</b><br>') : '';
 
-  // 📋 ៤. ព័ត៌មានអតិថិជន (ប្រើពាក្យ «អតិថិជន៖» ផ្លូវការថ្លៃថ្នូរ)
   var custInfoHtml = '<div style="font-size:11px; line-height:1.7; margin-bottom:10px; color:#334155; background:#f8fafc; padding:8px 10px; border-radius:8px; border:1px solid #e2e8f0;">' +
     'លេខកូដវិក្កយបត្រ៖ <b style="color:#0f172a; font-family:monospace;">' + tid + '</b><br>' +
     'អតិថិជន៖ <b style="color:#0f172a;">' + cust + '</b><br>' +
@@ -1862,9 +1939,7 @@ function generateReceiptImage(tid, cust, total, paid, items, titleText, discount
     'អ្នកកត់ត្រា៖ <b style="color:#0f172a;">' + (currentUser.fullName || "Admin") + '</b>' +
   '</div>';
 
-  // 🧾 ៥. តួខ្លួនវិក្កយបត្រ (line-height:1.7 ការពារដាច់ខាតមិនឱ្យបាក់ជើងអក្សរខ្មែរ)
   var h = '<div id="pos-canvas-box" style="width:360px; padding:22px 18px; background:#ffffff; color:#0f172a; font-family:\'Battambang\', sans-serif; border-radius:16px; line-height:1.7;">' +
-    // ក្បាលវិក្កយបត្រ
     '<div style="text-align:center; border-bottom:2px dashed #16a34a; padding-bottom:10px; margin-bottom:10px;">' +
       '<b style="font-size:17px; color:#15803d; letter-spacing:0.5px;">រោងចក្រទឹកបរិសុទ្ធ ខេ ស៊ី (KC WATER)</b><br>' +
       '<span style="font-size:10.5px; color:#64748b; font-weight:bold;">ទីតាំង៖ ក្រុងប៉ោយប៉ែត | ទូរស័ព្ទ៖ 077 934 748, 066 934 748</span><br>' +
@@ -1875,7 +1950,6 @@ function generateReceiptImage(tid, cust, total, paid, items, titleText, discount
 
     custInfoHtml +
 
-    // តារាងមុខទំនិញលម្អិត
     '<table style="width:100%; border-collapse:collapse; margin-bottom:8px;">' +
       '<thead>' +
         '<tr style="background:#f1f5f9; color:#475569; font-size:10.5px; border-bottom:1px solid #cbd5e1; line-height:1.6;">' +
@@ -1889,10 +1963,8 @@ function generateReceiptImage(tid, cust, total, paid, items, titleText, discount
       '<tbody>' + itemsHtml + '</tbody>' +
     '</table>' +
 
-    // 📦 ប្រអប់សរុបបរិមាណតាមមុខទំនិញ (នៅពីក្រោមតារាងទំនិញ)
     prodSummaryBoxHtml +
 
-    // ប្រអប់សរុបទឹកប្រាក់ & ស្ថានភាពទូទាត់
     '<div style="background:#f0fdf4; padding:10px 12px; border-radius:10px; font-size:11px; line-height:1.8; border:1px solid #bbf7d0;">' +
       (discountAmount > 0 ? '<div style="display:flex; justify-content:space-between; color:#c2410c;"><span>បញ្ចុះតម្លៃ (Discount)៖</span><b>-៛ ' + discountAmount.toLocaleString() + '</b></div>' : '') +
       '<div style="display:flex; justify-content:space-between; font-weight:bold; font-size:12.5px; color:#0f172a; border-bottom:1px solid #bbf7d0; padding-bottom:4px; margin-bottom:4px;">' +
@@ -1905,7 +1977,6 @@ function generateReceiptImage(tid, cust, total, paid, items, titleText, discount
         '') +
     '</div>' +
 
-    // ពាក្យជូនពរខាងក្រោម
     '<div style="text-align:center; margin-top:12px; border-top:1px dashed #cbd5e1; padding-top:8px;">' +
       '<b style="font-size:10.5px; color:#166534;">សូមអរគុណចំពោះការគាំទ្រទឹកបរិសុទ្ធ ខេ ស៊ី!</b><br>' +
       '<span style="font-size:9.5px; color:#64748b;">សូមអញ្ជើញមកម្តងទៀត 🙏</span>' +
@@ -1918,15 +1989,53 @@ function generateReceiptImage(tid, cust, total, paid, items, titleText, discount
 
   html2canvas(document.getElementById('pos-canvas-box'), { scale: 3 }).then(function(canvas) {
     var imgUrl = canvas.toDataURL("image/png");
-    document.getElementById('posModalReceiptImg').src = imgUrl;
-    document.getElementById('posModalReceiptDownloadBtn').href = imgUrl;
-    document.getElementById('posSaleReceiptModal').classList.remove('hidden');
+    var receiptImg = document.getElementById('posModalReceiptImg');
+    if (receiptImg) receiptImg.src = imgUrl;
+    var modal = document.getElementById('posSaleReceiptModal');
+    if (modal) modal.classList.remove('hidden');
   });
 }
 
-
 function closePOSReceiptModal() { 
-  document.getElementById('posSaleReceiptModal').classList.add('hidden'); 
+  var modal = document.getElementById('posSaleReceiptModal');
+  if (modal) modal.classList.add('hidden'); 
+}
+
+// 📥 មុខងារទាញយករូបវិក្កយបត្រ (គាំទ្រទូរស័ព្ទ Android, iPhone & PC ១០០%)
+function downloadPOSReceiptImage() {
+  var img = document.getElementById('posModalReceiptImg');
+  if (!img || !img.src) {
+    showToast("មិនមានរូបភាពវិក្កយបត្រឡើយ!", "error");
+    return;
+  }
+
+  showToast("កំពុងទាញយករូបវិក្កយបត្រ...", "info");
+
+  try {
+    fetch(img.src)
+      .then(res => res.blob())
+      .then(blob => {
+        var blobUrl = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = 'KC-Receipt-' + Date.now() + '.png';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
+        showToast("បានទាញយកវិក្កយបត្រជោគជ័យ!", "success");
+      })
+      .catch(err => {
+        var a = document.createElement('a');
+        a.href = img.src;
+        a.download = 'KC-Receipt.png';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      });
+  } catch(e) {
+    window.open(img.src, '_blank');
+  }
 }
 
 function sharePOSReceiptImage() {
@@ -1934,9 +2043,11 @@ function sharePOSReceiptImage() {
   if (img && navigator.share) {
     fetch(img.src).then(r => r.blob()).then(blob => {
       navigator.share({ files: [new File([blob], 'Receipt.png', { type: 'image/png' })], title: 'វិក្កយបត្រ KC WATER' });
+    }).catch(function() {
+      downloadPOSReceiptImage();
     });
   } else {
-    document.getElementById('posModalReceiptDownloadBtn').click();
+    downloadPOSReceiptImage();
   }
 }
 
