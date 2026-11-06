@@ -8,207 +8,238 @@ var editingProductId = null;
 var custPortalDataCache = null;
 var currentCustPayMode = "ABA";
 
-// 📦 ១. គ្រប់គ្រងស្តុក & បង្កើតទំនិញ (មានភ្ជាប់ប្រអប់រើសដេប៉ូដៃគូផ្គត់ផ្គង់)
+// ==========================================================================
+// 📦 ១. គ្រប់គ្រងស្តុក & បង្កើតទំនិញ (ពេញអេក្រង់ PC + ២ ជួរលើ Desktop + សមមាត្រលើទូរស័ព្ទ)
+// ==========================================================================
 function renderStockModule() {
   var area = document.getElementById('contentArea');
   if (!area) return;
   var aid = "P-" + Math.floor(Math.random() * 9000 + 1000);
   editingProductId = null;
 
-  area.innerHTML = '<div class="max-w-3xl mx-auto space-y-4">' +
-    '<div class="card border-t-4 border-green-700 shadow-xl">' +
-      '<div class="flex justify-between items-center mb-4 border-b pb-2">' +
-        '<h2 id="prodFormTitle" class="font-extrabold text-green-900 text-base sm:text-lg flex items-center gap-2">' +
-          '<i class="fas fa-boxes-stacked text-green-600"></i>គ្រប់គ្រងទំនិញ (KC MART Products)' +
-        '</h2>' +
-        '<button type="button" id="btnCancelEditProd" onclick="cancelEditProduct()" class="text-xs font-bold text-gray-500 hover:text-red-600 hidden">' +
-          '<i class="fas fa-times mr-1"></i>បោះបង់ការកែប្រែ' +
-        '</button>' +
-      '</div>' +
-      '<div class="grid gap-3">' +
-        '<div class="grid grid-cols-2 gap-2">' +
-          '<input type="text" id="pI" value="' + aid + '" readonly class="bg-gray-100 font-bold text-blue-600 text-xs border p-2.5 rounded-xl">' +
-          '<input type="text" id="pN" placeholder="*ឈ្មោះទំនិញ (ឧ៖ ក្រដាស ត្រាដំរី ឬ អង្ករផ្កាម្លិះ)" class="font-bold border p-2.5 rounded-xl text-xs outline-none focus:border-green-600">' +
+  // 🖥️ ប្រើ w-full max-w-[1600px] ដើម្បីឱ្យពេញអេក្រង់កុំព្យូទ័រស្មើស្អាត
+  area.innerHTML = '<div class="w-full max-w-[1600px] mx-auto space-y-3.5 px-1 sm:px-2">' +
+    
+    // ជួរខាងលើ៖ បង្កើតទំនិញ (ឆ្វេង ៧ ភាគ) + បញ្ចូលស្តុក (ស្តាំ ៥ ភាគ) លើ PC ធំ
+    '<div class="grid grid-cols-1 lg:grid-cols-12 gap-3.5 items-start">' +
+      
+      // កាតទី ១៖ ទម្រង់បង្កើត & កែប្រែទំនិញ (lg:col-span-7)
+      '<div class="lg:col-span-7 card border-t-4 border-green-700 shadow-xl p-4 sm:p-5 mb-0 bg-white">' +
+        '<div class="flex justify-between items-center mb-3 border-b pb-2">' +
+          '<h2 id="prodFormTitle" class="font-extrabold text-green-900 text-xs sm:text-base flex items-center gap-1.5">' +
+            '<i class="fas fa-boxes-stacked text-green-600"></i>គ្រប់គ្រងទំនិញ (KC MART Products)' +
+          '</h2>' +
+          '<button type="button" id="btnCancelEditProd" onclick="cancelEditProduct()" class="text-xs font-bold text-gray-500 hover:text-red-600 hidden">' +
+            '<i class="fas fa-times mr-1"></i>បោះបង់ការកែប្រែ' +
+          '</button>' +
         '</div>' +
-
-        '<div class="grid grid-cols-2 gap-2">' +
-          '<select id="pTy" onchange="tCF()" class="border p-2.5 rounded-xl font-bold text-xs bg-white">' +
-            '<option value="ផលិតឯង">ផលិតខ្លួនឯង (ទឹកធុង)</option>' +
-            '<option value="ទិញគេ" selected>ទិញគេមកលក់បន្ត (គ្រឿងទេស/ក្រដាស/អង្ករ/បរិក្ខារ)</option>' +
-          '</select>' +
-          '<select id="pCu" onchange="updateProductCostPreviewLive()" class="border-2 border-blue-300 p-2.5 rounded-xl font-black text-xs bg-blue-50/50 text-blue-950">' +
-            '<option value="KHR">KHR (៛) - លុយខ្មែរ</option>' +
-            '<option value="THB">THB (฿) - លុយថៃ</option>' +
-            '<option value="USD">USD ($) - ដុល្លារ</option>' +
-          '</select>' +
-        '</div>' +
-
-        '<div id="cSec" style="display:block" class="space-y-2">' +
+        '<div class="grid gap-2.5">' +
           '<div class="grid grid-cols-2 gap-2">' +
-            '<div>' +
-              '<div class="flex justify-between items-center mb-1">' +
-                '<label class="text-[10px] font-bold text-gray-500 uppercase">ថ្លៃដើមទិញចូល (Cost)</label>' +
-                '<span id="pCoPreviewHint" class="text-[10px] font-black text-emerald-700"></span>' +
+            '<input type="text" id="pI" value="' + aid + '" readonly class="bg-gray-100 font-bold text-blue-600 text-xs border p-2 rounded-xl">' +
+            '<input type="text" id="pN" placeholder="*ឈ្មោះទំនិញ (ឧ៖ ក្រដាស ត្រាដំរី ឬ អង្ករផ្កាម្លិះ)" class="font-bold border p-2 rounded-xl text-xs outline-none focus:border-green-600">' +
+          '</div>' +
+
+          '<div class="grid grid-cols-2 gap-2">' +
+            '<select id="pTy" onchange="tCF()" class="border p-2 rounded-xl font-bold text-xs bg-white">' +
+              '<option value="ផលិតឯង">ផលិតខ្លួនឯង (ទឹកធុង)</option>' +
+              '<option value="ទិញគេ" selected>ទិញគេមកលក់បន្ត (គ្រឿងទេស/ក្រដាស/បរិក្ខារ)</option>' +
+            '</select>' +
+            '<select id="pCu" onchange="updateProductCostPreviewLive()" class="border-2 border-blue-300 p-2 rounded-xl font-black text-xs bg-blue-50/50 text-blue-950">' +
+              '<option value="KHR">KHR (៛) - លុយខ្មែរ</option>' +
+              '<option value="THB">THB (฿) - លុយថៃ</option>' +
+              '<option value="USD">USD ($) - ដុល្លារ</option>' +
+            '</select>' +
+          '</div>' +
+
+          '<div id="cSec" style="display:block" class="space-y-2">' +
+            '<div class="grid grid-cols-2 gap-2">' +
+              '<div>' +
+                '<div class="flex justify-between items-center mb-0.5">' +
+                  '<label class="text-[9.5px] font-bold text-gray-500 uppercase">ថ្លៃដើមទិញចូល (Cost)</label>' +
+                  '<span id="pCoPreviewHint" class="text-[9.5px] font-black text-emerald-700"></span>' +
+                '</div>' +
+                '<input type="number" id="pCo" oninput="updateProductCostPreviewLive()" placeholder="ថ្លៃដើម (ឧ៖ ៤,០០០)" class="border p-2 rounded-xl font-bold w-full text-xs outline-none focus:border-green-600">' +
               '</div>' +
-              '<input type="number" id="pCo" oninput="updateProductCostPreviewLive()" placeholder="ថ្លៃដើម (ឧ៖ ៤,០០០)" class="border p-2.5 rounded-xl font-bold w-full text-xs outline-none focus:border-green-600">' +
+              '<div>' +
+                '<div class="flex justify-between items-center mb-0.5">' +
+                  '<label class="text-[9.5px] font-black text-blue-900 uppercase">📦 ស្តុកដំបូង *</label>' +
+                  '<span class="text-[9px] text-slate-400 font-bold">*លើ Web</span>' +
+                '</div>' +
+                '<input type="number" id="pInitialStock" placeholder="ឧ៖ 50" value="50" class="border-2 border-blue-300 focus:border-blue-600 p-2 rounded-xl font-black text-blue-900 w-full text-xs outline-none bg-blue-50/30">' +
+              '</div>' +
+            '</div>' +
+
+            // ដេប៉ូដៃគូផ្គត់ផ្គង់
+            '<div class="p-2 bg-rose-50/70 rounded-xl border border-rose-200 space-y-1">' +
+              '<div class="flex justify-between items-center">' +
+                '<label class="text-[9.5px] font-black text-rose-950 uppercase flex items-center gap-1">' +
+                  '<i class="fas fa-shop-lock text-rose-600"></i> ដេប៉ូដៃគូផ្គត់ផ្គង់ (Supplier Depot) *' +
+                '</label>' +
+                '<span id="pDepotTermsBadge"></span>' +
+              '</div>' +
+              '<select id="pSupplierDepot" onchange="onProductDepotChange()" class="border-2 border-rose-300 focus:border-rose-600 p-1.5 rounded-xl font-black w-full text-xs bg-white text-rose-950 outline-none"></select>' +
+            '</div>' +
+          '</div>' +
+
+          // ប៉ុស្តិ៍លក់, ប្រភេទទំនិញ, និង ផ្លាកសម្គាល់
+          '<div class="grid grid-cols-1 sm:grid-cols-3 gap-2">' +
+            '<div>' +
+              '<label class="text-[9.5px] font-bold text-gray-500 uppercase block mb-0.5">ប៉ុស្តិ៍លក់ *</label>' +
+              '<select id="pChannel" onchange="toggleChannelPrices()" class="border-2 border-emerald-400 p-2 rounded-xl font-bold w-full text-xs bg-white">' +
+                '<option value="ALL">🔄 ទាំងពីរ (POS + Web)</option>' +
+                '<option value="POS">🚚 លក់តែលើ POS</option>' +
+                '<option value="ONLINE">🌐 លក់តែលើ Web</option>' +
+              '</select>' +
+            '</div>' +
+
+            '<div>' +
+              '<label class="text-[9.5px] font-black text-blue-900 uppercase block mb-0.5">📂 ប្រភេទ *</label>' +
+              '<select id="pCategory" class="border-2 border-blue-400 p-2 rounded-xl font-black w-full text-xs bg-blue-50/50 text-blue-950 outline-none">' +
+                '<option value="GROCERY">🍚 ស្បៀង & គ្រឿងទេស</option>' +
+                '<option value="HOUSEHOLD">🧻 របស់ប្រើប្រាស់</option>' +
+                '<option value="BARREL">💧 ទឹកធុង ២០L</option>' +
+                '<option value="PACK">📦 ទឹកយួរ / ដប</option>' +
+                '<option value="EQUIP">🛢️ បរិក្ខារ & ជើងទម្រ</option>' +
+              '</select>' +
+            '</div>' +
+
+            '<div>' +
+              '<label class="text-[9.5px] font-bold text-gray-500 uppercase block mb-0.5">🏷️ ផ្លាក Web</label>' +
+              '<select id="pBadge" class="border p-2 rounded-xl font-bold w-full text-xs bg-white">' +
+                '<option value="គុណភាពខ្ពស់">🏆 គុណភាពខ្ពស់</option>' +
+                '<option value="ពេញនិយម">⭐ ពេញនិយម</option>' +
+                '<option value="លក់ដាច់">🔥 លក់ដាច់</option>' +
+                '<option value="ទំនិញថ្មី">✨ ទំនិញថ្មី</option>' +
+                '<option value="NONE">❌ គ្មានផ្លាក</option>' +
+              '</select>' +
+            '</div>' +
+          '</div>' +
+
+          // ប្រអប់តម្លៃ (POS vs Online)
+          '<div id="priceInputsContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-emerald-50/60 p-2.5 rounded-2xl border border-emerald-200">' +
+            '<div id="secPosPrice">' +
+              '<div class="flex justify-between items-center mb-0.5">' +
+                '<label class="text-[9.5px] font-extrabold text-amber-900 uppercase">🚚 តម្លៃបោះដុំ (POS) *</label>' +
+                '<span id="pPrPreviewHint" class="text-[9.5px] font-black text-amber-700"></span>' +
+              '</div>' +
+              '<input type="number" id="pPr" oninput="updateProductCostPreviewLive()" placeholder="ឧ៖ ៦០០" class="font-black text-amber-900 bg-white border border-amber-300 rounded-xl p-2 w-full outline-none text-xs sm:text-sm">' +
+            '</div>' +
+            '<div id="secOnlinePrice">' +
+              '<div class="flex justify-between items-center mb-0.5">' +
+                '<label class="text-[9.5px] font-extrabold text-emerald-900 uppercase">🌐 តម្លៃលក់លើ Web *</label>' +
+                '<span id="pOnlinePrPreviewHint" class="text-[9.5px] font-black text-emerald-700"></span>' +
+              '</div>' +
+              '<input type="number" id="pOnlinePr" oninput="updateProductCostPreviewLive()" placeholder="ឧ៖ ១៥០០" class="font-black text-emerald-800 bg-white border border-emerald-300 rounded-xl p-2 w-full outline-none text-xs sm:text-sm">' +
+            '</div>' +
+          '</div>' +
+
+          // ការពិពណ៌នា
+          '<div>' +
+            '<label class="text-[9.5px] font-bold text-emerald-900 uppercase block mb-0.5"><i class="fas fa-file-lines text-emerald-600 mr-1"></i> ការរៀបរាប់ទំនិញ (Description លើ Web)</label>' +
+            '<textarea id="pDesc" rows="2" placeholder="ឧទាហរណ៍៖ អង្ករផ្កាម្លិះគុណភាពលេខ១ ក្រអូប ស្រទន់ ឆ្ងាញ់..." class="border-2 border-emerald-200 focus:border-emerald-600 p-2 rounded-xl font-bold w-full text-xs outline-none bg-white"></textarea>' +
+          '</div>' +
+
+          '<div class="grid grid-cols-3 gap-2">' +
+            '<div>' +
+              '<label class="text-[9.5px] font-black text-blue-900 uppercase block mb-0.5">🔢 លេខ POS</label>' +
+              '<input type="number" id="pSortPos" placeholder="1" value="1" class="border-2 border-blue-300 focus:border-blue-600 p-1.5 rounded-xl font-black w-full text-xs text-center text-blue-900 bg-blue-50/50 outline-none">' +
             '</div>' +
             '<div>' +
-              '<div class="flex justify-between items-center mb-1">' +
-                '<label class="text-[10px] font-black text-blue-900 uppercase">📦 ចំនួនស្តុកដំបូង (Stock) *</label>' +
-                '<span class="text-[9px] text-slate-400 font-bold">*សម្រាប់លក់លើ Web</span>' +
+              '<label class="text-[9.5px] font-black text-emerald-900 uppercase block mb-0.5">🌐 លេខ Web</label>' +
+              '<input type="number" id="pSortOnline" placeholder="1" value="1" class="border-2 border-emerald-300 focus:border-emerald-600 p-1.5 rounded-xl font-black w-full text-xs text-center text-emerald-900 bg-emerald-50/50 outline-none">' +
+            '</div>' +
+            '<div>' +
+              '<label class="text-[9.5px] font-bold text-gray-500 uppercase block mb-0.5">ដំណឹងស្តុកទាប</label>' +
+              '<input type="number" id="pMin" placeholder="5" value="5" class="border p-1.5 rounded-xl font-bold w-full text-xs text-center outline-none">' +
+            '</div>' +
+          '</div>' +
+
+          // រូបភាព
+          '<div class="p-2.5 bg-gray-50 border-2 border-dashed border-green-300 rounded-2xl flex items-center justify-between gap-2">' +
+            '<div class="flex items-center gap-2">' +
+              '<div class="w-12 h-12 rounded-xl bg-white border flex items-center justify-center overflow-hidden shadow-inner shrink-0">' +
+                '<img id="pImgPreview" src="https://cdn-icons-png.flaticon.com/512/3100/3100566.png" class="max-w-full max-h-full object-contain">' +
               '</div>' +
-              '<input type="number" id="pInitialStock" placeholder="ឧ៖ 50 ឬ 10" value="50" class="border-2 border-blue-300 focus:border-blue-600 p-2.5 rounded-xl font-black text-blue-900 w-full text-xs outline-none bg-blue-50/30">' +
+              '<div>' +
+                '<span class="text-[10px] font-bold text-gray-600 block">រូបភាពទំនិញ</span>' +
+                '<p id="pImgNote" class="text-[9px] text-gray-400">ថតរូប ឬរើសពីទូរស័ព្ទ</p>' +
+              '</div>' +
             '</div>' +
-          '</div>' +
-
-          // 🏬 ប្រអប់ជ្រើសរើសដេប៉ូដៃគូផ្គត់ផ្គង់ (Supplier Depot)
-          '<div class="p-2.5 bg-rose-50/70 rounded-2xl border-2 border-rose-200 space-y-1">' +
-            '<div class="flex justify-between items-center">' +
-              '<label class="text-[10px] font-black text-rose-950 uppercase flex items-center gap-1">' +
-                '<i class="fas fa-shop-lock text-rose-600"></i> ដេប៉ូដៃគូផ្គត់ផ្គង់ (Supplier Depot) *' +
-              '</label>' +
-              '<span id="pDepotTermsBadge"></span>' +
-            '</div>' +
-            '<select id="pSupplierDepot" onchange="onProductDepotChange()" class="border-2 border-rose-300 focus:border-rose-600 p-2 rounded-xl font-black w-full text-xs bg-white text-rose-950 outline-none"></select>' +
-          '</div>' +
-        '</div>' +
-  
-        // 🏷️ ប៉ុស្តិ៍លក់, ប្រភេទទំនិញ, និង ផ្លាកសម្គាល់
-        '<div class="grid grid-cols-1 sm:grid-cols-3 gap-2">' +
-          '<div>' +
-            '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">ប៉ុស្តិ៍លក់ (Channel) *</label>' +
-            '<select id="pChannel" onchange="toggleChannelPrices()" class="border-2 border-emerald-400 p-2.5 rounded-xl font-bold w-full text-xs bg-white">' +
-              '<option value="ALL">🔄 ទាំងពីរ (POS + Web)</option>' +
-              '<option value="POS">🚚 លក់តែលើ POS ដេប៉ូ</option>' +
-              '<option value="ONLINE">🌐 លក់តែលើ Web</option>' +
-            '</select>' +
-          '</div>' +
-
-          '<div>' +
-            '<label class="text-[10px] font-black text-blue-900 uppercase block mb-1">📂 ប្រភេទទំនិញ (Category) *</label>' +
-            '<select id="pCategory" class="border-2 border-blue-400 p-2.5 rounded-xl font-black w-full text-xs bg-blue-50/50 text-blue-950 outline-none">' +
-              '<option value="GROCERY">🍚 ស្បៀង & គ្រឿងទេស</option>' +
-              '<option value="HOUSEHOLD">🧻 របស់ប្រើប្រាស់ & អនាម័យ</option>' +
-              '<option value="BARREL">💧 ទឹកធុង ២០L</option>' +
-              '<option value="PACK">📦 ទឹកយួរ / ដប</option>' +
-              '<option value="EQUIP">🛢️ បរិក្ខារ & ជើងទម្រ</option>' +
-            '</select>' +
-          '</div>' +
-
-          '<div>' +
-            '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">🏷️ ផ្លាកលើ Web (Badge)</label>' +
-            '<select id="pBadge" class="border p-2.5 rounded-xl font-bold w-full text-xs bg-white">' +
-              '<option value="គុណភាពខ្ពស់">🏆 គុណភាពខ្ពស់</option>' +
-              '<option value="ពេញនិយម">⭐ ពេញនិយម (Popular)</option>' +
-              '<option value="លក់ដាច់">🔥 លក់ដាច់ (Best Seller)</option>' +
-              '<option value="ទំនិញថ្មី">✨ ទំនិញថ្មី (New Arrival)</option>' +
-              '<option value="NONE">❌ គ្មានផ្លាក</option>' +
-            '</select>' +
-          '</div>' +
-        '</div>' +
-
-        // 💵 ប្រអប់តម្លៃ (POS vs Online)
-        '<div id="priceInputsContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 bg-emerald-50/60 p-3 rounded-2xl border border-emerald-200">' +
-          '<div id="secPosPrice">' +
-            '<div class="flex justify-between items-center mb-1">' +
-              '<label class="text-[10px] font-extrabold text-amber-900 uppercase">🚚 តម្លៃបោះដុំដេប៉ូ (POS) *</label>' +
-              '<span id="pPrPreviewHint" class="text-[10px] font-black text-amber-700"></span>' +
-            '</div>' +
-            '<input type="number" id="pPr" oninput="updateProductCostPreviewLive()" placeholder="ឧ៖ ៦០០" class="font-black text-amber-900 bg-white border border-amber-300 rounded-xl p-2.5 w-full outline-none text-sm">' +
-          '</div>' +
-          '<div id="secOnlinePrice">' +
-            '<div class="flex justify-between items-center mb-1">' +
-              '<label class="text-[10px] font-extrabold text-emerald-900 uppercase">🌐 តម្លៃលក់លើ Web តាមផ្ទះ *</label>' +
-              '<span id="pOnlinePrPreviewHint" class="text-[10px] font-black text-emerald-700"></span>' +
-            '</div>' +
-            '<input type="number" id="pOnlinePr" oninput="updateProductCostPreviewLive()" placeholder="ឧ៖ ១៥០០" class="font-black text-emerald-800 bg-white border border-emerald-300 rounded-xl p-2.5 w-full outline-none text-sm">' +
-          '</div>' +
-        '</div>' +
-
-        // ការពិពណ៌នា
-        '<div>' +
-          '<label class="text-[10px] font-bold text-emerald-900 uppercase block mb-1"><i class="fas fa-file-lines text-emerald-600 mr-1"></i> ការរៀបរាប់ពីមុខទំនិញ (Description បង្ហាញលើ Web)</label>' +
-          '<textarea id="pDesc" rows="2" placeholder="ឧទាហរណ៍៖ អង្ករផ្កាម្លិះគុណភាពលេខ១ ក្រអូប ស្រទន់ ឆ្ងាញ់..." class="border-2 border-emerald-200 focus:border-emerald-600 p-2.5 rounded-xl font-bold w-full text-xs outline-none bg-white"></textarea>' +
-        '</div>' +
-
-        '<div class="grid grid-cols-1 sm:grid-cols-3 gap-2">' +
-          '<div>' +
-            '<label class="text-[10px] font-black text-blue-900 uppercase block mb-1">🔢 លេខ POS</label>' +
-            '<input type="number" id="pSortPos" placeholder="ឧ៖ 1" value="1" class="border-2 border-blue-300 focus:border-blue-600 p-2.5 rounded-xl font-black w-full text-xs text-center text-blue-900 bg-blue-50/50 outline-none">' +
-          '</div>' +
-          '<div>' +
-            '<label class="text-[10px] font-black text-emerald-900 uppercase block mb-1">🌐 លេខ Web</label>' +
-            '<input type="number" id="pSortOnline" placeholder="ឧ៖ 1" value="1" class="border-2 border-emerald-300 focus:border-emerald-600 p-2.5 rounded-xl font-black w-full text-xs text-center text-emerald-900 bg-emerald-50/50 outline-none">' +
-          '</div>' +
-          '<div>' +
-            '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">កម្រិតដំណឹងស្តុកទាប</label>' +
-            '<input type="number" id="pMin" placeholder="ឧ៖ 5" value="5" class="border p-2.5 rounded-xl font-bold w-full text-xs text-center outline-none">' +
-          '</div>' +
-        '</div>' +
-
-        // រូបភាព
-        '<div class="p-3 bg-gray-50 border-2 border-dashed border-green-300 rounded-2xl text-center space-y-2">' +
-          '<div class="w-20 h-20 mx-auto rounded-xl bg-white border flex items-center justify-center overflow-hidden shadow-inner">' +
-            '<img id="pImgPreview" src="https://cdn-icons-png.flaticon.com/512/3100/3100566.png" class="max-w-full max-h-full object-contain">' +
-          '</div>' +
-          '<div>' +
-            '<label class="cursor-pointer px-4 py-2 bg-green-700 hover:bg-green-800 text-white font-bold rounded-xl text-xs shadow-md inline-flex items-center gap-1.5 active:scale-95 transition">' +
-              '<i class="fas fa-camera"></i> 📷 ជ្រើសរើសរូបភាព / ថតរូប' +
+            '<label class="cursor-pointer px-3 py-1.5 bg-green-700 hover:bg-green-800 text-white font-bold rounded-xl text-xs shadow-md inline-flex items-center gap-1 active:scale-95 transition whitespace-nowrap">' +
+              '<i class="fas fa-camera"></i> 📷 រើសរូប' +
               '<input type="file" id="pImgFileInput" accept="image/*" onchange="previewProductImageFile(this)" class="hidden">' +
             '</label>' +
             '<input type="hidden" id="pImgBase64" value="">' +
-            '<p id="pImgNote" class="text-[10px] text-gray-400 mt-1">អាចថតរូប ឬជ្រើសរូបភាពពីទូរស័ព្ទ</p>' +
           '</div>' +
-        '</div>' +
-        '<button onclick="saveProductToSupabase()" id="btnSaveProdAction" class="btn-green py-3 text-sm font-bold shadow-md">' +
-          'រក្សាទុកទំនិញ (Save Product)' +
-        '</button>' +
-      '</div>' +
-    '</div>' +
 
-    '<div class="card border-t-4 border-blue-500 shadow-lg">' +
-      '<h3 class="font-bold text-blue-900 mb-3 text-sm flex items-center gap-1.5"><i class="fas fa-plus-square text-blue-600"></i>បញ្ចូលស្តុកថ្មី (Restock In)</h3>' +
-      '<div class="grid grid-cols-2 gap-3">' +
-        '<div>' +
-          '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">ជ្រើសរើសទំនិញទិញចូល</label>' +
-          '<select id="si_prod" onchange="onStockInProductSelected()" class="text-xs font-bold border p-2.5 rounded-xl w-full bg-white"><option value="">-- រើសទំនិញ --</option></select>' +
-        '</div>' +
-        '<div>' +
-          '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">ចំនួនទិញចូលបន្ថែម (*)</label>' +
-          '<input type="number" id="si_qty" placeholder="ឧ៖ 50" class="border p-2.5 rounded-xl font-bold text-center w-full text-sm">' +
+          '<button onclick="saveProductToSupabase()" id="btnSaveProdAction" class="btn-green py-2.5 text-xs sm:text-sm font-bold shadow-md">' +
+            'រក្សាទុកទំនិញ (Save Product)' +
+          '</button>' +
         '</div>' +
       '</div>' +
-      '<div class="mt-2.5">' +
-        '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">ថ្លៃដើមទិញចូលលើកនេះ (បើតម្លៃប្រែប្រួល)</label>' +
-        '<input type="number" id="si_cost" placeholder="ថ្លៃដើមថ្មី" class="border p-2.5 rounded-xl font-bold w-full text-xs bg-white">' +
-        '<p id="si_cost_hint" class="text-[10px] text-blue-600 font-bold mt-1"></p>' +
-      '</div>' +
-      '<button onclick="saveStockInToSupabase()" id="btnSaveStockInAction" class="btn-green bg-blue-600 hover:bg-blue-700 mt-3 font-bold py-3 text-xs">យល់ព្រមបញ្ចូលស្តុក</button>' +
-    '</div>' +
 
-    '<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-2 px-1">' +
+      // កាតទី ២៖ ទម្រង់បញ្ចូលស្តុកថ្មី Restock In (lg:col-span-5)
+      '<div class="lg:col-span-5 card border-t-4 border-blue-500 shadow-xl p-4 sm:p-5 mb-0 bg-white">' +
+        '<h3 class="font-bold text-blue-900 mb-2.5 text-xs sm:text-sm flex items-center gap-1.5">' +
+          '<i class="fas fa-plus-square text-blue-600"></i>បញ្ចូលស្តុកថ្មី (Restock In)' +
+        '</h3>' +
+        '<div class="space-y-2.5">' +
+          '<div>' +
+            '<label class="text-[9.5px] font-bold text-gray-500 uppercase block mb-0.5">ជ្រើសរើសទំនិញទិញចូល (*)</label>' +
+            '<select id="si_prod" onchange="onStockInProductSelected()" class="text-xs font-bold border p-2 rounded-xl w-full bg-white outline-none"><option value="">-- រើសទំនិញ --</option></select>' +
+          '</div>' +
+          '<div>' +
+            '<label class="text-[9.5px] font-bold text-gray-500 uppercase block mb-0.5">ចំនួនទិញចូលបន្ថែម (*)</label>' +
+            '<input type="number" id="si_qty" placeholder="ឧ៖ 50" class="border p-2 rounded-xl font-bold text-center w-full text-xs sm:text-sm outline-none">' +
+          '</div>' +
+          '<div>' +
+            '<label class="text-[9.5px] font-bold text-gray-500 uppercase block mb-0.5">ថ្លៃដើមទិញចូលលើកនេះ (បើតម្លៃប្រែប្រួល)</label>' +
+            '<input type="number" id="si_cost" placeholder="ថ្លៃដើមថ្មី" class="border p-2 rounded-xl font-bold w-full text-xs bg-white outline-none">' +
+            '<p id="si_cost_hint" class="text-[9.5px] text-blue-600 font-bold mt-0.5"></p>' +
+          '</div>' +
+          '<button onclick="saveStockInToSupabase()" id="btnSaveStockInAction" class="btn-green bg-blue-600 hover:bg-blue-700 mt-2 font-bold py-2.5 text-xs shadow-md">' +
+            'យល់ព្រមបញ្ចូលស្តុក' +
+          '</button>' +
+        '</div>' +
+      '</div>' +
+
+    '</div>' + // បិទ grid ខាងលើ
+
+    // ជួរកណ្តាល៖ ប៊ូតុង Filter View & Auto-Fix
+    '<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pt-1 px-1">' +
       '<div class="flex items-center gap-1 bg-gray-100 p-1 rounded-xl text-xs">' +
         '<button type="button" onclick="switchStockSortView(\'WEB\')" id="btnSortViewWEB" class="px-3 py-1.5 rounded-lg transition bg-white text-emerald-800 shadow-xs font-black">🌐 មើលតាមលំដាប់ Web</button>' +
         '<button type="button" onclick="switchStockSortView(\'POS\')" id="btnSortViewPOS" class="px-3 py-1.5 rounded-lg transition text-gray-500 hover:text-gray-800 font-bold">🚚 មើលតាមលំដាប់ POS</button>' +
       '</div>' +
-      '<button type="button" onclick="autoFixAllSortDuplicates()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-xs active:scale-95 transition flex items-center gap-1.5">' +
-        '<i class="fas fa-wand-magic-sparkles text-yellow-300"></i> ⚡ រៀបលេខរៀងឡើងវិញកុំឱ្យស្ទួន (Auto-Fix)' +
+      '<button type="button" onclick="autoFixAllSortDuplicates()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-xs active:scale-95 transition flex items-center gap-1.5 self-end sm:self-auto">' +
+        '<i class="fas fa-wand-magic-sparkles text-yellow-300"></i> ⚡ រៀបលេខរៀងឡើងវិញកុំឱ្យស្ទួន' +
       '</button>' +
     '</div>' +
 
-    '<div class="card p-0 overflow-x-auto max-h-[500px] overflow-y-auto shadow-lg rounded-2xl border border-gray-200">' +
+    // ជួរក្រោម៖ តារាងទំនិញពេញទទឹងអេក្រង់ PC (Full Width Table)
+    '<div class="card p-0 overflow-x-auto max-h-[550px] overflow-y-auto shadow-xl rounded-2xl border border-gray-200 bg-white">' +
       '<table class="w-full text-left text-xs border-collapse">' +
-        '<thead class="sticky top-0 bg-gray-100 text-gray-700 font-bold border-b z-10 shadow-xs"><tr><th class="p-3 text-center w-16">🔢 លេខរៀង</th><th class="p-3">រូប</th><th class="p-3">ឈ្មោះទំនិញ</th><th class="p-3 text-center">ប៉ុស្តិ៍ / ប្រភេទ</th><th class="p-3 text-center">តម្លៃដេប៉ូ / Web</th><th class="p-3 text-center">ស្តុក</th><th class="p-3 text-center">សកម្មភាព</th></tr></thead>' +
+        '<thead class="sticky top-0 bg-gray-100 text-gray-700 font-bold border-b z-10 shadow-xs">' +
+          '<tr>' +
+            '<th class="p-2.5 sm:p-3 text-center w-16">🔢 លេខរៀង</th>' +
+            '<th class="p-2.5 sm:p-3 text-center w-14">រូប</th>' +
+            '<th class="p-2.5 sm:p-3">ឈ្មោះទំនិញ</th>' +
+            '<th class="p-2.5 sm:p-3 text-center">ប៉ុស្តិ៍ / ប្រភេទ</th>' +
+            '<th class="p-2.5 sm:p-3 text-center">តម្លៃដេប៉ូ / Web</th>' +
+            '<th class="p-2.5 sm:p-3 text-center">ស្តុក</th>' +
+            '<th class="p-2.5 sm:p-3 text-center w-20">សកម្មភាព</th>' +
+          '</tr>' +
+        '</thead>' +
         '<tbody id="stockModuleTableBody"></tbody>' +
       '</table>' +
     '</div>' +
+
   '</div>';
 
   tCF();
   toggleChannelPrices();
   initStockModuleDropdowns();
 
-  // 📂 ផ្ទុក Category & ដេប៉ូដៃគូ មកដាក់ក្នុង Dropdown ស្វ័យប្រវត្តិ
   loadCategoriesFromSupabase().then(function() {
     populateProductCategoryDropdown();
   });
@@ -233,7 +264,6 @@ function renderStockModule() {
     }
   }
 }
-
 
 // 🪙 មុខងារជំនួយគណនាបំប្លែងលុយថៃ ฿ និងដុល្លារ $ ចេញជាលុយខ្មែរ ៛ ភ្លាមៗ (Live Preview)
 function updateProductCostPreviewLive() {
