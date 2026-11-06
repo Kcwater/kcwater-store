@@ -1139,6 +1139,29 @@ function setModalCurrency(curr) {
 // 🪙 មុខងារជំនួយតម្លៃលើផ្ទាំង MODAL (ស្វ័យប្រវត្តិ 00 លើ KHR & ស្គាល់ , ឬ . លើ USD)
 // ==========================================
 
+// ➕ មុខងារថែមលេខសូន្យ (+00 ឬ +000) លើប្រអប់តម្លៃ Modal
+function appendModalZeros(zeros) {
+  var inp = document.getElementById('modalPriceInput');
+  if (!inp || inp.readOnly) return; // ការពារមិនឱ្យកែបើជាម៉ូយ Monthly
+
+  var cur = String(inp.value || '').trim().replace(/[^0-9]/g, '');
+  if (!cur || cur === '0') {
+    inp.value = '1' + zeros; // បើប្រអប់ទទេ ចុច +00 ចេញ 100
+  } else {
+    inp.value = cur + zeros; // បើមានលេខ 5 រួច ចុច +00 ចេញ 500
+  }
+  updateModalSubtotal();
+}
+
+// 💵 មុខងារកំណត់តម្លៃជាក់លាក់ (500, 1000, 2000) លើប្រអប់តម្លៃ Modal
+function setModalExactPrice(amt) {
+  var inp = document.getElementById('modalPriceInput');
+  if (!inp || inp.readOnly) return; // ការពារមិនឱ្យកែបើជាម៉ូយ Monthly
+
+  inp.value = amt;
+  updateModalSubtotal();
+}
+
 // ១. មុខងារវាយតម្លៃផ្ទាល់ក្នុងប្រអប់
 function onModalPriceInput(val) {
   updateModalSubtotal();
