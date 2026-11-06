@@ -1408,34 +1408,85 @@ async function quickReturnBottleLoan(loanId, remaining, returned, borrowed, cust
   }
 }
 
-// ==========================================
-// 💸 ៣. កត់ត្រាការចំណាយ (EXPENSES)
+// ==========================================================================
+// 💸 ៣. កត់ត្រាការចំណាយ (ពេញអេក្រង់ PC + ២ ជួរលើ Desktop + សារដំណឹង kcAlert, kcConfirm)
 // ==========================================
 function renderExpensesModule() {
   var area = document.getElementById('contentArea');
-  area.innerHTML = '<div class="max-w-3xl mx-auto space-y-4">' +
-    '<div class="card border-t-4 border-red-500 shadow-xl p-5 mb-0">' +
-      '<h2 class="font-extrabold text-red-900 text-base mb-3 flex items-center gap-2"><i class="fas fa-money-bill-wave text-red-600"></i>កត់ត្រាការចំណាយប្រចាំថ្ងៃ</h2>' +
-      '<div class="space-y-3">' +
-        '<select id="exp_cat" class="font-bold border p-2.5 rounded-xl w-full">' +
-          '<option value="ថ្លៃប្រេងសាំង (ឡាន/ម៉ូតូ)">⛽ ថ្លៃប្រេងសាំង (ឡាន/ម៉ូតូដឹកទឹក)</option>' +
-          '<option value="ថ្លៃអគ្គិសនី & ទឹក">⚡ ថ្លៃអគ្គិសនី & ទឹក</option>' +
-          '<option value="ថ្លៃជួសជុលម៉ាស៊ីន">🔧 ថ្លៃជួសជុលម៉ាស៊ីនចម្រោះ / បរិក្ខារ</option>' +
-          '<option value="ថ្លៃគម្របធុង & ផ្លាកសញ្ញា">🏷️ ថ្លៃគម្របធុង, ផ្លាកសញ្ញា, ថង់</option>' +
-          '<option value="ថ្លៃបាយទឹកបុគ្គលិក">🍚 ថ្លៃម្ហូបអាហារ / បាយទឹកបុគ្គលិក</option>' +
-          '<option value="ចំណាយផ្សេងៗ">📦 ចំណាយផ្សេងៗ...</option>' +
-        '</select>' +
-        '<div class="grid grid-cols-2 gap-2">' +
-          '<input type="number" id="exp_amt" placeholder="ចំនួនទឹកប្រាក់ (*)" class="font-black text-red-700 border p-2.5 rounded-xl">' +
-          '<select id="exp_curr" class="font-bold border p-2.5 rounded-xl"><option value="KHR">KHR (៛)</option><option value="THB">THB (฿)</option><option value="USD">USD ($)</option></select>' +
+  if (!area) return;
+
+  // 🖥️ ប្រើ w-full max-w-[1600px] ដើម្បីឱ្យពេញអេក្រង់កុំព្យូទ័រស្មើស្អាត
+  area.innerHTML = '<div class="w-full max-w-[1600px] mx-auto space-y-3.5 px-1 sm:px-2">' +
+    // ជួរខាងលើ៖ កត់ត្រាចំណាយ (ឆ្វេង ៥ ភាគ) + ប្រវត្តិចំណាយ (ស្តាំ ៧ ភាគ) លើ PC ធំ
+    '<div class="grid grid-cols-1 lg:grid-cols-12 gap-3.5 items-start">' +
+      
+      // កាតទី ១៖ ទម្រង់កត់ត្រាការចំណាយ (lg:col-span-5)
+      '<div class="lg:col-span-5 card border-t-4 border-red-500 shadow-xl p-4 sm:p-5 mb-0 bg-white">' +
+        '<h2 class="font-extrabold text-red-900 text-xs sm:text-base mb-3 flex items-center gap-2">' +
+          '<i class="fas fa-money-bill-wave text-red-600"></i>កត់ត្រាការចំណាយប្រចាំថ្ងៃ' +
+        '</h2>' +
+        '<div class="space-y-2.5">' +
+          '<div>' +
+            '<label class="text-[9.5px] font-bold text-gray-500 uppercase block mb-0.5">ប្រភេទការចំណាយ (*)</label>' +
+            '<select id="exp_cat" class="font-bold border p-2 rounded-xl w-full text-xs sm:text-sm bg-white outline-none focus:border-red-500">' +
+              '<option value="ថ្លៃប្រេងសាំង (ឡាន/ម៉ូតូ)">⛽ ថ្លៃប្រេងសាំង (ឡាន/ម៉ូតូដឹកទឹក)</option>' +
+              '<option value="ថ្លៃអគ្គិសនី & ទឹក">⚡ ថ្លៃអគ្គិសនី & ទឹក</option>' +
+              '<option value="ថ្លៃជួសជុលម៉ាស៊ីន">🔧 ថ្លៃជួសជុលម៉ាស៊ីនចម្រោះ / បរិក្ខារ</option>' +
+              '<option value="ថ្លៃគម្របធុង & ផ្លាកសញ្ញា">🏷️ ថ្លៃគម្របធុង, ផ្លាកសញ្ញា, ថង់</option>' +
+              '<option value="ថ្លៃបាយទឹកបុគ្គលិក">🍚 ថ្លៃម្ហូបអាហារ / បាយទឹកបុគ្គលិក</option>' +
+              '<option value="ទូទាត់ថ្លៃដើមដេប៉ូដៃគូ">🏬 ទូទាត់ថ្លៃដើមដេប៉ូដៃគូ</option>' +
+              '<option value="ចំណាយផ្សេងៗ">📦 ចំណាយផ្សេងៗ...</option>' +
+            '</select>' +
+          '</div>' +
+          '<div class="grid grid-cols-2 gap-2">' +
+            '<div>' +
+              '<label class="text-[9.5px] font-black text-red-700 uppercase block mb-0.5">ចំនួនទឹកប្រាក់ (*)</label>' +
+              '<input type="number" id="exp_amt" placeholder="ឧ៖ 20000" class="font-black text-red-700 border-2 border-red-200 focus:border-red-500 p-2 rounded-xl w-full text-xs sm:text-sm text-center outline-none">' +
+            '</div>' +
+            '<div>' +
+              '<label class="text-[9.5px] font-bold text-gray-500 uppercase block mb-0.5">រូបិយប័ណ្ណ</label>' +
+              '<select id="exp_curr" class="font-bold border p-2 rounded-xl w-full text-xs sm:text-sm bg-white outline-none">' +
+                '<option value="KHR">KHR (៛) - រៀល</option>' +
+                '<option value="THB">THB (฿) - បាត</option>' +
+                '<option value="USD">USD ($) - ដុល្លារ</option>' +
+              '</select>' +
+            '</div>' +
+          '</div>' +
+          '<div>' +
+            '<label class="text-[9.5px] font-bold text-gray-500 uppercase block mb-0.5">ចំណាំលម្អិតបន្ថែម (បើមាន)</label>' +
+            '<input type="text" id="exp_note" placeholder="ឧ៖ ចាក់សាំងម៉ូតូដឹកជញ្ជូន ឬ ទិញម្ហូប..." class="border p-2 rounded-xl w-full text-xs outline-none focus:border-red-500 bg-slate-50 focus:bg-white">' +
+          '</div>' +
+          '<button onclick="submitExpenseToSupabase()" id="btnSaveExpenseAction" class="btn-green bg-red-600 hover:bg-red-700 py-2.5 sm:py-3 text-xs sm:text-sm font-bold shadow-md">' +
+            'រក្សាទុកការចំណាយ (Save Expense)' +
+          '</button>' +
         '</div>' +
-        '<input type="text" id="exp_note" placeholder="ចំណាំលម្អិត (បើមាន)..." class="border p-2.5 rounded-xl w-full text-xs">' +
-        '<button onclick="submitExpenseToSupabase()" class="btn-green bg-red-600 hover:bg-red-700 py-3 text-sm font-bold">រក្សាទុកការចំណាយ</button>' +
       '</div>' +
-    '</div>' +
-    '<div class="card border-t-4 border-gray-700 shadow-xl p-5 mb-0">' +
-      '<h3 class="font-bold text-gray-800 text-sm mb-3 flex items-center gap-2"><i class="fas fa-history"></i>ប្រវត្តិការចំណាយ</h3>' +
-      '<div class="overflow-x-auto rounded-xl border"><table class="w-full text-left text-xs border-collapse"><thead><tr class="bg-gray-100 text-gray-700 font-bold border-b"><th class="p-2.5">កាលបរិច្ឆេទ</th><th class="p-2.5">ប្រភេទចំណាយ</th><th class="p-2.5 text-right">ចំនួនទឹកប្រាក់</th><th class="p-2.5 text-center">លុប</th></tr></thead><tbody id="expTableBody"></tbody></table></div>' +
+
+      // កាតទី ២៖ ប្រវត្តិការចំណាយ (lg:col-span-7)
+      '<div class="lg:col-span-7 card border-t-4 border-gray-700 shadow-xl p-4 sm:p-5 mb-0 bg-white">' +
+        '<div class="flex justify-between items-center mb-2.5">' +
+          '<h3 class="font-bold text-gray-800 text-xs sm:text-sm flex items-center gap-1.5">' +
+            '<i class="fas fa-history text-blue-600"></i>ប្រវត្តិការចំណាយថ្មីៗ' +
+          '</h3>' +
+          '<button onclick="fetchExpensesHistory()" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition flex items-center gap-1 shadow-2xs">' +
+            '<i class="fas fa-sync-alt text-[10px]"></i> Refresh' +
+          '</button>' +
+        '</div>' +
+        '<div class="overflow-x-auto max-h-96 overflow-y-auto rounded-xl border border-gray-200 shadow-inner">' +
+          '<table class="w-full text-left text-xs border-collapse">' +
+            '<thead class="sticky top-0 bg-gray-100 text-gray-700 font-bold border-b z-10 shadow-xs">' +
+              '<tr>' +
+                '<th class="p-2 sm:p-2.5 text-center w-24">កាលបរិច្ឆេទ</th>' +
+                '<th class="p-2 sm:p-2.5">ប្រភេទចំណាយ / ចំណាំ</th>' +
+                '<th class="p-2 sm:p-2.5 text-right w-28">ចំនួនទឹកប្រាក់</th>' +
+                '<th class="p-2 sm:p-2.5 text-center w-14">លុប</th>' +
+              '</tr>' +
+            '</thead>' +
+            '<tbody id="expTableBody"></tbody>' +
+          '</table>' +
+        '</div>' +
+      '</div>' +
+
     '</div>' +
   '</div>';
 
@@ -1446,37 +1497,88 @@ async function fetchExpensesHistory() {
   var tbody = document.getElementById('expTableBody');
   if (!tbody) return;
 
+  var tableEl = tbody.closest('table');
+  if (tableEl) {
+    tableEl.style.minWidth = "550px"; // ការពារកុំឱ្យធ្លាក់ជួរលើទូរស័ព្ទ
+  }
+
+  tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-400 italic"><i class="fas fa-spinner fa-spin mr-1 text-red-600"></i> កំពុងទាញទិន្នន័យ...</td></tr>';
+
   try {
-    const { data: list } = await supabaseClient.from('expenses').select('*').order('created_at', { ascending: false }).limit(20);
+    const { data: list, error } = await supabaseClient
+      .from('expenses')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(30);
+
+    if (error) throw error;
+
     if (!list || list.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-400 italic">គ្មានទិន្នន័យចំណាយ</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="4" class="p-6 text-center text-gray-400 italic">មិនទាន់មានទិន្នន័យចំណាយនៅឡើយ</td></tr>';
       return;
     }
 
     var html = '';
     list.forEach(function(item) {
       var dateStr = new Date(item.created_at).toLocaleString('km-KH', { dateStyle: 'short', timeStyle: 'short' });
-      html += '<tr class="border-b hover:bg-gray-50">' +
-        '<td class="p-2.5 text-gray-500 text-[10px]">' + dateStr + '</td>' +
-        '<td class="p-2.5 font-bold text-gray-800">' + item.category + (item.note ? '<br><small class="text-gray-400 font-normal">' + item.note + '</small>' : '') + '</td>' +
-        '<td class="p-2.5 text-right font-black text-red-700">' + Number(item.amount).toLocaleString() + ' ' + item.currency + '</td>' +
-        '<td class="p-2.5 text-center"><button onclick="delExpenseFromSupabase(\'' + item.expense_id + '\')" class="text-red-400 hover:text-red-600"><i class="fas fa-trash-can"></i></button></td>' +
+      var currSymbol = item.currency === 'USD' ? '$' : (item.currency === 'THB' ? '฿' : '៛');
+
+      html += '<tr class="border-b hover:bg-gray-50 transition">' +
+        '<td class="p-2 sm:p-2.5 text-gray-500 text-[10px] text-center whitespace-nowrap">' + dateStr + '</td>' +
+        '<td class="p-2 sm:p-2.5 font-bold text-gray-800">' +
+          item.category + 
+          (item.note ? '<br><small class="text-gray-400 font-normal text-[10px]">' + item.note + '</small>' : '') + 
+        '</td>' +
+        '<td class="p-2 sm:p-2.5 text-right font-black text-red-700 whitespace-nowrap">' + 
+          currSymbol + ' ' + Number(item.amount).toLocaleString() + 
+        '</td>' +
+        '<td class="p-2 sm:p-2.5 text-center whitespace-nowrap">' +
+          '<button onclick="delExpenseFromSupabase(\'' + item.expense_id + '\', ' + item.amount + ', \'' + item.category.replace(/'/g, "\\'") + '\')" class="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg text-xs active:scale-90 transition" title="លុបចំណាយនេះ">' +
+            '<i class="fas fa-trash-can"></i>' +
+          '</button>' +
+        '</td>' +
       '</tr>';
     });
     tbody.innerHTML = html;
-  } catch(e) {}
+  } catch(e) {
+    tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-red-500 font-bold">កំហុសទាញទិន្នន័យ៖ ' + e.message + '</td></tr>';
+  }
 }
 
 async function submitExpenseToSupabase() {
-  var cat = document.getElementById('exp_cat').value;
-  var amt = parseFloat(document.getElementById('exp_amt').value || 0);
-  var curr = document.getElementById('exp_curr').value;
-  var note = document.getElementById('exp_note').value.trim();
+  var catInp = document.getElementById('exp_cat');
+  var amtInp = document.getElementById('exp_amt');
+  var currInp = document.getElementById('exp_curr');
+  var noteInp = document.getElementById('exp_note');
 
-  if (amt <= 0) { showToast("សូមបញ្ចូលចំនួនទឹកប្រាក់ធំជាង ០!", "error"); return; }
+  var cat = catInp ? catInp.value : 'ចំណាយផ្សេងៗ';
+  var amt = parseFloat(amtInp ? amtInp.value || 0 : 0);
+  var curr = currInp ? currInp.value : 'KHR';
+  var note = noteInp ? noteInp.value.trim() : '';
+
+  // ⚠️ ប្រើ kcAlert បញ្ជាក់ពេលខ្វះចំនួនទឹកប្រាក់
+  if (amt <= 0) {
+    if (typeof kcAlert === 'function') {
+      await kcAlert({
+        title: "ខ្វះទឹកប្រាក់",
+        message: "សូមបញ្ចូលចំនួនទឹកប្រាក់ចំណាយធំជាង ០!",
+        type: "warning"
+      });
+    } else {
+      showToast("សូមបញ្ចូលចំនួនទឹកប្រាក់ធំជាង ០!", "error");
+    }
+    if (amtInp) amtInp.focus();
+    return;
+  }
+
+  var btn = document.getElementById('btnSaveExpenseAction');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> កំពុងរក្សាទុក...';
+  }
 
   try {
-    await supabaseClient.from('expenses').insert([{
+    const { error } = await supabaseClient.from('expenses').insert([{
       expense_id: "EXP-" + new Date().getTime(),
       category: cat,
       amount: amt,
@@ -1485,33 +1587,79 @@ async function submitExpenseToSupabase() {
       admin_name: currentUser.fullName || "Admin"
     }]);
 
-    showToast("បានកត់ត្រាការចំណាយជោគជ័យ!", "success");
-    document.getElementById('exp_amt').value = "";
-    document.getElementById('exp_note').value = "";
+    if (error) throw error;
+
+    if (amtInp) amtInp.value = "";
+    if (noteInp) noteInp.value = "";
+
+    // 🎉 ប្រើ kcAlert ជូនដំណឹងជោគជ័យ
+    if (typeof kcAlert === 'function') {
+      await kcAlert({
+        title: "កត់ត្រាជោគជ័យ! 🎉",
+        message: "បានកត់ត្រាការចំណាយ [" + cat + "] ចំនួន " + Number(amt).toLocaleString() + " " + curr + " រួចរាល់!",
+        type: "success"
+      });
+    } else {
+      showToast("បានកត់ត្រាការចំណាយជោគជ័យ!", "success");
+    }
+
     fetchExpensesHistory();
+
   } catch(err) {
-    showToast("កំហុស៖ " + err.message, "error");
+    if (typeof kcAlert === 'function') {
+      await kcAlert({ title: "កំហុស", message: err.message, type: "danger" });
+    } else {
+      showToast("កំហុស៖ " + err.message, "error");
+    }
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerText = "រក្សាទុកការចំណាយ (Save Expense)";
+    }
   }
 }
 
-async function delExpenseFromSupabase(id) {
-  // 🌟 ប្រើ Pop-up បញ្ជាក់ការលុបបែប Danger ពណ៌ក្រហមរបស់ KC POS
+async function delExpenseFromSupabase(id, amt, cat) {
+  // 🌟 ប្រើប្រអប់ kcConfirm ប្រភេទ Danger ពណ៌ក្រហម ការពារកុំឱ្យច្រឡំដៃលុប
   var ok = await kcConfirm({
     title: "បញ្ជាក់ការលុបចំណាយ",
-    message: "តើអ្នកពិតជាចង់លុបកំណត់ត្រាចំណាយនេះមែនទេ? សកម្មភាពនេះមិនអាចត្រឡប់វិញបានឡើយ។",
+    message: "តើអ្នកពិតជាចង់លុបកំណត់ត្រាចំណាយ [" + (cat || "ចំណាយ") + "] ចំនួន " + Number(amt || 0).toLocaleString() + " នេះមែនទេ? សកម្មភាពនេះមិនអាចត្រឡប់វិញបានឡើយ។",
     type: "danger",
     confirmText: "យល់ព្រមលុប"
   });
+
   if (!ok) return;
 
   try {
-    await supabaseClient.from('expenses').delete().eq('expense_id', id);
-    showToast("បានលុបការចំណាយជោគជ័យ!", "success");
+    const { error } = await supabaseClient
+      .from('expenses')
+      .delete()
+      .eq('expense_id', id);
+
+    if (error) throw error;
+
+    // 🎉 ជូនដំណឹងតាម kcAlert ជោគជ័យ
+    if (typeof kcAlert === 'function') {
+      await kcAlert({
+        title: "បានលុបជោគជ័យ!",
+        message: "កំណត់ត្រាចំណាយត្រូវបានលុបចេញពីប្រព័ន្ធរួចរាល់។",
+        type: "success"
+      });
+    } else {
+      showToast("បានលុបការចំណាយជោគជ័យ!", "success");
+    }
+
     fetchExpensesHistory();
+
   } catch(err) {
-    showToast("កំហុស៖ " + err.message, "error");
+    if (typeof kcAlert === 'function') {
+      await kcAlert({ title: "កំហុស", message: err.message, type: "danger" });
+    } else {
+      showToast("កំហុស៖ " + err.message, "error");
+    }
   }
 }
+
 // ==========================================
 // 👥 ៤. គ្រប់គ្រងគណនី & តម្លៃពិសេស (ពេញលេញ ១០០%)
 // ==========================================
