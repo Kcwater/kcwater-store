@@ -743,23 +743,27 @@ async function confirmQuickRestockSubmit() {
 }
 
 // ==========================================
-// 🛒 ៣. ផ្ទាំងលក់ POS (មានប្រអប់ SEARCH & ប្រភេទ «ទំនិញទូទៅ/គ្រឿងទេស»)
+// 🛒 ៣. ផ្ទាំងលក់ POS (ពេញអេក្រង់ PC + ៥-៦ ជួរទំនិញ + សមមាត្រលើទូរស័ព្ទ)
 // ==========================================
-var currentPosSearchKeyword = '';
-
 function renderPOSModule() {
   // 🛡️ រារាំងអ្នកដឹកជញ្ជូនរោងចក្រ (Company Driver) ដាច់ខាត ១០០%
   if (currentUser && currentUser.type === 'CompanyDriver') {
-    kcAlert({
-      title: "គ្មានសិទ្ធិប្រើប្រាស់!",
-      message: "អ្នកដឹកជញ្ជូនរោងចក្រ គ្មានសិទ្ធិដក ឬលក់ទំនិញក្នុងផ្ទាំង POS ឡើយ! លោកអ្នកត្រូវបានបញ្ជូនទៅផ្ទាំងដឹកទឹកវិញ។",
-      type: "danger"
-    });
+    if (typeof kcAlert === 'function') {
+      kcAlert({
+        title: "គ្មានសិទ្ធិប្រើប្រាស់!",
+        message: "អ្នកដឹកជញ្ជូនរោងចក្រ គ្មានសិទ្ធិដក ឬលក់ទំនិញក្នុង POS ឡើយ! លោកអ្នកត្រូវបានបញ្ជូនទៅផ្ទាំងដឹកទឹកវិញ។",
+        type: "danger"
+      });
+    } else {
+      showToast("អ្នកដឹកជញ្ជូនរោងចក្រ គ្មានសិទ្ធិដកទំនិញឡើយ!", "error");
+    }
     loadModule('CompanyDeliveries');
     return;
   }
-  var area = document.getElementById('contentArea');
   
+  var area = document.getElementById('contentArea');
+  if (!area) return;
+
   var isAdmin = (currentUser && currentUser.role === 'Admin');
   var isSeller = (currentUser && (currentUser.role === 'Seller' || currentUser.role === 'Cashier'));
   var isDriver = (currentUser && currentUser.role === 'Driver' && currentUser.type === 'Driver');
@@ -770,62 +774,58 @@ function renderPOSModule() {
   if (isAdmin) {
     var custOptions = '<option value="Walk-in">🛒 -- លក់នៅកន្លែង (Walk-in) --</option>';
     allCustomers.forEach(function(c) {
-      // 🚫 ដកអ្នកដឹកជញ្ជូនរោងចក្រ (CompanyDriver) និងកូនចៅដកជំនួសមេ (Driver) ចេញពី Dropdown មិនឱ្យបង្ហាញឡើយ
-      var isDriver = (c.role === 'Driver' || c.type === 'Driver' || c.type === 'CompanyDriver');
-      
-      // ✅ បង្ហាញតែអតិថិជនពិតប្រាកដ (ម៉ូយប្រចាំខែ Monthly និងអ្នកលក់បន្ត Reseller)
-      if (c.role !== 'Admin' && c.full_name !== 'Walk-in' && !isDriver) {
+      var isDriverMember = (c.role === 'Driver' || c.type === 'Driver' || c.type === 'CompanyDriver');
+      if (c.role !== 'Admin' && c.full_name !== 'Walk-in' && !isDriverMember) {
         custOptions += '<option value="' + c.full_name + '">' + c.full_name + ' (' + (c.type === 'Monthly' ? 'ប្រចាំខែ' : 'អ្នកលក់បន្ត') + ')</option>';
       }
     });
 
-    customerHeaderHTML = '<div class="card border-l-4 border-blue-500 py-3 shadow-sm mb-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">' +
+    customerHeaderHTML = '<div class="card border-l-4 border-blue-500 p-3 sm:p-3.5 shadow-sm mb-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 bg-white">' +
       '<div class="flex-1 w-full sm:w-auto">' +
-        '<label class="text-xs font-bold text-gray-500 block mb-1"><i class="fas fa-user-tag text-blue-600 mr-1.5"></i>ជ្រើសរើសអតិថិជន / ម៉ូយ (ឬលក់នៅកន្លែង Walk-in)</label>' +
-        '<select id="posCustSelect" onchange="onAdminPosCustomerChange(this.value)" class="w-full font-bold text-gray-800 border-2 border-blue-200 focus:border-blue-600 rounded-xl p-2.5 bg-white outline-none">' + custOptions + '</select>' +
+        '<label class="text-[11px] font-bold text-gray-500 block mb-1"><i class="fas fa-user-tag text-blue-600 mr-1.5"></i>ជ្រើសរើសអតិថិជន / ម៉ូយ (ឬលក់នៅកន្លែង Walk-in)</label>' +
+        '<select id="posCustSelect" onchange="onAdminPosCustomerChange(this.value)" class="w-full font-bold text-gray-800 border-2 border-blue-200 focus:border-blue-600 rounded-xl p-2 bg-white outline-none text-xs sm:text-sm">' + custOptions + '</select>' +
       '</div>' +
       '<button onclick="fetchInitialPOSData().then(rPG)" class="px-3 py-2 bg-green-50 text-green-700 rounded-xl text-xs font-bold border border-green-200 active:scale-95 transition flex items-center gap-1 shadow-2xs self-end sm:self-auto"><i class="fas fa-sync-alt"></i> Refresh ស្តុក</button>' +
     '</div>' +
-    // 🚚 បដាសម្គាល់របៀបដកទំនិញជំនួសម៉ូយ
-    '<div id="adminProxyModeNotice" class="hidden p-3 bg-blue-50 border-2 border-blue-400 rounded-2xl mb-3 text-xs font-bold text-blue-950 flex items-center justify-between shadow-2xs animate-in zoom-in duration-200">' +
-      '<span class="flex items-center gap-2"><i class="fas fa-truck-ramp-box text-blue-600 text-base"></i> របៀបដកទំនិញជំនួស៖ <b id="adminProxyCustName" class="text-blue-900 text-sm"></b> (កត់ត្រាចូលបញ្ជីជំពាក់អូតូ)</span>' +
+    '<div id="adminProxyModeNotice" class="hidden p-2.5 bg-blue-50 border-2 border-blue-400 rounded-2xl mb-3 text-xs font-bold text-blue-950 flex items-center justify-between shadow-2xs animate-in zoom-in duration-200">' +
+      '<span class="flex items-center gap-2"><i class="fas fa-truck-ramp-box text-blue-600 text-base"></i> របៀបដកទំនិញជំនួស៖ <b id="adminProxyCustName" class="text-blue-900 text-sm"></b></span>' +
       '<span class="px-2.5 py-0.5 rounded-full bg-blue-200 text-blue-900 text-[10px] font-black">ជំពាក់ (Unpaid)</span>' +
     '</div>';
 
   } else if (isReseller) {
-    customerHeaderHTML = '<div class="card border-l-4 border-green-600 bg-green-50 p-3.5 mb-4 flex justify-between items-center">' +
+    customerHeaderHTML = '<div class="card border-l-4 border-green-600 bg-green-50 p-3 sm:p-3.5 mb-3 flex justify-between items-center">' +
       '<div>' +
         '<span class="text-[10px] text-green-700 font-bold uppercase tracking-wider block">គណនីអ្នកដកទំនិញ (Reseller)</span>' +
-        '<b class="text-green-900 text-sm sm:text-base"><i class="fas fa-user mr-2"></i>អ្នកដកទំនិញ៖ ' + currentUser.fullName + '</b>' +
+        '<b class="text-green-900 text-xs sm:text-base"><i class="fas fa-user mr-1.5"></i>អ្នកដកទំនិញ៖ ' + currentUser.fullName + '</b>' +
         '<input type="hidden" id="posCustSelect" value="' + currentUser.fullName + '">' +
       '</div>' +
       '<button onclick="fetchInitialPOSData().then(rPG)" class="px-2.5 py-1.5 bg-white hover:bg-green-100 text-green-700 rounded-xl text-xs font-bold border border-green-200 active:scale-95 transition flex items-center gap-1 shadow-2xs"><i class="fas fa-sync-alt"></i> Refresh ស្តុក</button>' +
     '</div>';
 
   } else if (isDriver) {
-    customerHeaderHTML = '<div class="card border-l-4 border-amber-500 bg-amber-50 p-3.5 mb-4 flex justify-between items-center">' +
+    customerHeaderHTML = '<div class="card border-l-4 border-amber-500 bg-amber-50 p-3 sm:p-3.5 mb-3 flex justify-between items-center">' +
       '<div>' +
-        '<span class="text-[10px] text-amber-700 font-bold uppercase tracking-wider block">កូនចៅដកទឹកជំនួសមេ៖ ' + currentUser.linkedBoss + '</span>' +
-        '<b class="text-amber-950 text-sm sm:text-base"><i class="fas fa-truck mr-2"></i>អ្នកមកដកផ្ទាល់៖ ' + currentUser.fullName + '</b>' +
-        '<input type="hidden" id="posCustSelect" value="' + currentUser.linkedBoss + '">' +
+        '<span class="text-[10px] text-amber-700 font-bold uppercase tracking-wider block">កូនចៅដកទឹកជំនួសមេ៖ ' + (currentUser.linkedBoss || '') + '</span>' +
+        '<b class="text-amber-950 text-xs sm:text-base"><i class="fas fa-truck mr-1.5"></i>អ្នកមកដកផ្ទាល់៖ ' + currentUser.fullName + '</b>' +
+        '<input type="hidden" id="posCustSelect" value="' + (currentUser.linkedBoss || '') + '">' +
       '</div>' +
       '<button onclick="fetchInitialPOSData().then(rPG)" class="px-2.5 py-1.5 bg-white hover:bg-amber-100 text-amber-800 rounded-xl text-xs font-bold border border-amber-200 active:scale-95 transition flex items-center gap-1 shadow-2xs"><i class="fas fa-sync-alt"></i> Refresh</button>' +
     '</div>';
 
   } else {
-    customerHeaderHTML = '<div class="card border-l-4 border-blue-600 bg-blue-50 p-3 mb-4 flex justify-between items-center">' +
-      '<b class="text-blue-900 text-sm"><i class="fas fa-store mr-2"></i>លក់នៅកន្លែង (Walk-in)</b>' +
+    customerHeaderHTML = '<div class="card border-l-4 border-blue-600 bg-blue-50 p-3 mb-3 flex justify-between items-center">' +
+      '<b class="text-blue-900 text-xs sm:text-sm"><i class="fas fa-store mr-1.5"></i>លក់នៅកន្លែង (Walk-in)</b>' +
       '<input type="hidden" id="posCustSelect" value="Walk-in">' +
       '<button onclick="fetchInitialPOSData().then(rPG)" class="px-2.5 py-1 bg-white text-blue-700 rounded-lg text-xs font-bold border"><i class="fas fa-sync-alt"></i> Refresh</button>' +
     '</div>';
   }
 
-  // ផ្នែក Discount (បង្ហាញសម្រាប់ Admin)
+  // ផ្នែក Discount
   var discountSectionHTML = '';
   if (isAdmin) {
-    discountSectionHTML = '<div class="bg-yellow-50/70 p-3 rounded-xl border border-yellow-200 mb-3 space-y-2">' +
+    discountSectionHTML = '<div class="bg-yellow-50/70 p-2.5 sm:p-3 rounded-xl border border-yellow-200 mb-3 space-y-1.5">' +
       '<div class="flex justify-between items-center">' +
-        '<span class="text-xs font-bold text-yellow-900 flex items-center gap-1"><i class="fas fa-tags text-yellow-600"></i> បញ្ចុះតម្លៃលើវិក្កយបត្រ (Discount)</span>' +
+        '<span class="text-xs font-bold text-yellow-900 flex items-center gap-1"><i class="fas fa-tags text-yellow-600"></i> បញ្ចុះតម្លៃ (Discount)</span>' +
         '<div class="flex gap-1 text-[10px]">' +
           '<button type="button" onclick="setDiscountType(\'NONE\')" id="btnDiscNone" class="px-2 py-0.5 rounded-md font-bold bg-yellow-600 text-white">គ្មាន</button>' +
           '<button type="button" onclick="setDiscountType(\'CASH\')" id="btnDiscCash" class="px-2 py-0.5 rounded-md font-bold bg-white text-gray-700 border">សាច់ប្រាក់</button>' +
@@ -842,14 +842,14 @@ function renderPOSModule() {
   // ផ្នែកបង់លុយ
   var paymentSectionHTML = '';
   if (isAdmin || isSeller) {
-    paymentSectionHTML = '<div id="posPaymentSectionWrapper"><div class="bg-blue-50/60 p-4 rounded-2xl border border-blue-200 space-y-3 mt-3">' +
+    paymentSectionHTML = '<div id="posPaymentSectionWrapper"><div class="bg-blue-50/60 p-3 sm:p-4 rounded-2xl border border-blue-200 space-y-2.5 mt-3">' +
       '<div class="flex justify-between items-center"><span class="text-xs font-bold text-blue-900 uppercase tracking-wider"><i class="fas fa-coins text-blue-600 mr-1.5"></i>ទូទាត់ប្រាក់នៅកន្លែង</span><button onclick="fillExactPOSPay()" class="px-3 py-1 bg-white hover:bg-blue-100 text-blue-700 text-xs font-extrabold rounded-lg border border-blue-300 shadow-2xs active:scale-95 transition">លុយគ្រប់</button></div>' +
       '<div class="grid grid-cols-2 gap-2 p-1 bg-white rounded-xl border">' +
         '<button type="button" id="btnPosPayCash" onclick="setPosPaymentMethod(\'Cash\')" class="py-2 rounded-lg text-xs font-bold bg-green-700 text-white shadow"><i class="fas fa-money-bill-wave"></i> 💵 លុយសុទ្ធ</button>' +
         '<button type="button" id="btnPosPayAba" onclick="setPosPaymentMethod(\'ABA\')" class="py-2 rounded-lg text-xs font-bold bg-gray-100 text-gray-600 hover:bg-gray-200"><i class="fas fa-qrcode"></i> 📱 ស្កេន ABA</button>' +
       '</div>' +
       '<div class="space-y-1"><label class="text-[10px] font-bold text-gray-500 uppercase">ប្រាក់រៀលទទួល (៛)</label><input type="number" id="pK" oninput="calcPOSChange()" placeholder="0" class="text-center font-black text-xl text-blue-900 bg-white border-2 border-blue-200 rounded-xl focus:border-blue-600 p-2.5 w-full outline-none"></div>' +
-      '<div class="flex gap-2 pt-1 text-xs">' +
+      '<div class="flex gap-1.5 pt-0.5 text-xs">' +
         '<button onclick="setPOSQuickCash(10000)" class="flex-1 py-1.5 bg-white hover:bg-green-50 text-gray-700 font-bold rounded-xl border shadow-2xs active:scale-95 transition">10,000</button>' +
         '<button onclick="setPOSQuickCash(20000)" class="flex-1 py-1.5 bg-white hover:bg-green-50 text-gray-700 font-bold rounded-xl border shadow-2xs active:scale-95 transition">20,000</button>' +
         '<button onclick="setPOSQuickCash(50000)" class="flex-1 py-1.5 bg-white hover:bg-green-50 text-gray-700 font-bold rounded-xl border shadow-2xs active:scale-95 transition">50,000</button>' +
@@ -861,39 +861,50 @@ function renderPOSModule() {
 
   var submitBtnHTML = '';
   if (isReseller || isDriver) {
-    submitBtnHTML = '<button onclick="confirmSale()" id="sBtn" class="btn-green shadow-xl active:scale-95 transition mt-4 py-4 text-base flex items-center justify-center w-full font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-2xl"><i class="fas fa-clipboard-check mr-2 text-lg"></i>កត់ត្រាការដកទំនិញ (កត់ចូលបញ្ជីជំពាក់)</button>';
+    submitBtnHTML = '<button onclick="confirmSale()" id="sBtn" class="btn-green shadow-xl active:scale-95 transition mt-3 py-3.5 sm:py-4 text-sm sm:text-base flex items-center justify-center w-full font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-2xl"><i class="fas fa-clipboard-check mr-2 text-lg"></i>កត់ត្រាការដកទំនិញ (កត់ចូលបញ្ជីជំពាក់)</button>';
   } else if (isSeller) {
-    submitBtnHTML = '<button onclick="confirmSale()" id="sBtn" class="btn-green shadow-xl active:scale-95 transition mt-4 py-3.5 text-base flex items-center justify-center w-full font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-2xl"><i class="fas fa-file-pen mr-2 text-lg"></i>កត់ត្រាការលក់ (រង់ចាំ Admin ពិនិត្យ)</button>';
+    submitBtnHTML = '<button onclick="confirmSale()" id="sBtn" class="btn-green shadow-xl active:scale-95 transition mt-3 py-3.5 text-sm sm:text-base flex items-center justify-center w-full font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-2xl"><i class="fas fa-file-pen mr-2 text-lg"></i>កត់ត្រាការលក់</button>';
   } else {
-    submitBtnHTML = '<button onclick="confirmSale()" id="sBtn" class="btn-green shadow-xl active:scale-95 transition mt-4 py-3.5 text-base flex items-center justify-center w-full font-bold">រក្សាទុកការលក់ (Save Sale)</button>';
+    submitBtnHTML = '<button onclick="confirmSale()" id="sBtn" class="btn-green shadow-xl active:scale-95 transition mt-3 py-3.5 text-sm sm:text-base flex items-center justify-center w-full font-bold">រក្សាទុកការលក់ (Save Sale)</button>';
   }
 
-  area.innerHTML = '<div class="max-w-4xl mx-auto space-y-4">' +
+  // 🖥️ ពេញផ្ទៃអេក្រង់កុំព្យូទ័រ w-full max-w-[1600px] + ក្រឡាចត្រង្គទំនិញ ៥-៦ ជួរលើ PC
+  area.innerHTML = '<div class="w-full max-w-[1600px] mx-auto space-y-3.5 px-1 sm:px-2">' +
     customerHeaderHTML +
 
-    // 🏷️ ប៊ូតុងប្រភេទ ៤ (ទាំងអស់ / ទឹកធុង ២០L / ទឹកយួរ/ដប / ទំនិញទូទៅ/គ្រឿងទេស)
-    '<div class="flex flex-wrap gap-2 pb-1">' +
-      '<button onclick="setPosCategoryFilter(\'ALL\')" id="catTab_ALL" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-green-700 text-white shadow-md active:scale-95 transition"><i class="fas fa-border-all mr-1"></i> ទាំងអស់</button>' +
-      '<button onclick="setPosCategoryFilter(\'BARREL\')" id="catTab_BARREL" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-white text-gray-700 border hover:bg-gray-50 active:scale-95 transition"><i class="fas fa-wine-bottle text-blue-600 mr-1"></i> ទឹកធុង ២០L</button>' +
-      '<button onclick="setPosCategoryFilter(\'PACK\')" id="catTab_PACK" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-white text-gray-700 border hover:bg-gray-50 active:scale-95 transition"><i class="fas fa-box-open text-amber-600 mr-1"></i> ទឹកយួរ/ដប</button>' +
-      '<button onclick="setPosCategoryFilter(\'GENERAL\')" id="catTab_GENERAL" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-white text-slate-700 border hover:bg-gray-50 active:scale-95 transition"><i class="fas fa-boxes-stacked text-emerald-600 mr-1"></i> ទំនិញទូទៅ/គ្រឿងទេស</button>' +
+    // 🏷️ ប៊ូតុងប្រភេទ ៤
+    '<div class="flex flex-wrap gap-1.5 pb-0.5">' +
+      '<button onclick="setPosCategoryFilter(\'ALL\')" id="catTab_ALL" class="px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold bg-green-700 text-white shadow-md active:scale-95 transition"><i class="fas fa-border-all mr-1"></i> ទាំងអស់</button>' +
+      '<button onclick="setPosCategoryFilter(\'BARREL\')" id="catTab_BARREL" class="px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold bg-white text-gray-700 border hover:bg-gray-50 active:scale-95 transition"><i class="fas fa-wine-bottle text-blue-600 mr-1"></i> ទឹកធុង ២០L</button>' +
+      '<button onclick="setPosCategoryFilter(\'PACK\')" id="catTab_PACK" class="px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold bg-white text-gray-700 border hover:bg-gray-50 active:scale-95 transition"><i class="fas fa-box-open text-amber-600 mr-1"></i> ទឹកយួរ/ដប</button>' +
+      '<button onclick="setPosCategoryFilter(\'GENERAL\')" id="catTab_GENERAL" class="px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold bg-white text-slate-700 border hover:bg-gray-50 active:scale-95 transition"><i class="fas fa-boxes-stacked text-emerald-600 mr-1"></i> ទំនិញទូទៅ/គ្រឿងទេស</button>' +
     '</div>' +
 
-    // 🔍 ប្រអប់ Search រកទំនិញរហ័សលើ POS
+    // 🔍 ប្រអប់ស្វែងរក
     '<div class="relative">' +
       '<input type="text" id="posProductSearchInp" oninput="onPosSearchInput(this.value)" placeholder="🔍 វាយឈ្មោះទំនិញដើម្បីស្វែងរក (ឧ៖ ក្រដាស, អង្ករ, 500ml, ធុងស)..." class="w-full border-2 border-gray-200 focus:border-green-600 rounded-2xl p-2.5 pl-9 font-bold text-xs outline-none bg-white shadow-2xs">' +
       '<i class="fas fa-search absolute left-3 top-3.5 text-gray-400 text-xs pointer-events-none"></i>' +
     '</div>' +
 
-    // ក្រឡាចត្រង្គទំនិញ
-    '<div id="pGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5 pt-1"></div>' +
+    // 🖼️ ក្រឡាចត្រង្គទំនិញ (៦ ជួរលើ PC ធំ, ៤-៥ ជួរលើ Laptop, ២-៣ ជួរលើទូរស័ព្ទ)
+    '<div id="pGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2.5 sm:gap-3.5 pt-0.5"></div>' +
 
-    // កន្ត្រកទំនិញ
-    '<div class="card border-t-4 border-green-600 shadow-xl p-4 sm:p-5">' +
-      '<div class="flex justify-between items-center mb-3"><h3 class="font-extrabold text-gray-800 text-sm sm:text-base flex items-center"><i class="fas fa-shopping-cart mr-2 text-green-600"></i>បញ្ជីទំនិញក្នុងកន្ត្រក</h3><span id="cartCountBadge" class="bg-green-100 text-green-800 text-xs px-2.5 py-0.5 rounded-full font-bold">0 មុខ</span></div>' +
-      '<div class="overflow-x-auto rounded-xl border border-gray-100 mb-3"><table class="w-full text-left text-xs border-collapse"><thead><tr class="bg-gray-100 text-gray-700 font-bold border-b"><th class="p-2.5">ទំនិញ</th><th class="p-2.5 text-center">ចំនួន</th><th class="p-2.5 text-right">តម្លៃរាយ</th><th class="p-2.5 text-right">សរុប</th><th class="p-2.5 text-center">លុប</th></tr></thead><tbody id="cItemsTableBody"><tr><td colspan="5" class="p-4 text-center text-gray-400 italic">កន្ត្រកទទេ</td></tr></tbody></table></div>' +
+    // 🛒 កន្ត្រកទំនិញខាងក្រោម
+    '<div class="card border-t-4 border-green-600 shadow-xl p-3.5 sm:p-5 bg-white">' +
+      '<div class="flex justify-between items-center mb-2.5">' +
+        '<h3 class="font-extrabold text-gray-800 text-xs sm:text-base flex items-center"><i class="fas fa-shopping-cart mr-1.5 text-green-600"></i>បញ្ជីទំនិញក្នុងកន្ត្រក</h3>' +
+        '<span id="cartCountBadge" class="bg-green-100 text-green-800 text-xs px-2.5 py-0.5 rounded-full font-bold">0 មុខ</span>' +
+      '</div>' +
+      '<div class="overflow-x-auto rounded-xl border border-gray-100 mb-2.5">' +
+        '<table class="w-full text-left text-xs border-collapse">' +
+          '<thead><tr class="bg-gray-100 text-gray-700 font-bold border-b"><th class="p-2.5">ទំនិញ</th><th class="p-2.5 text-center">ចំនួន</th><th class="p-2.5 text-right">តម្លៃរាយ</th><th class="p-2.5 text-right">សរុប</th><th class="p-2.5 text-center">លុប</th></tr></thead>' +
+          '<tbody id="cItemsTableBody"><tr><td colspan="5" class="p-4 text-center text-gray-400 italic">កន្ត្រកទទេ</td></tr></tbody>' +
+        '</table>' +
+      '</div>' +
       discountSectionHTML +
-      '<div class="bg-green-50 p-3.5 rounded-2xl border border-green-200 flex justify-between items-center text-green-900 mb-3 font-extrabold text-sm sm:text-base"><span>សរុបទឹកប្រាក់៖</span><span id="cTotalVal" class="text-green-700 text-base sm:text-lg">0 ៛</span></div>' +
+      '<div class="bg-green-50 p-3 rounded-2xl border border-green-200 flex justify-between items-center text-green-900 mb-2.5 font-extrabold text-xs sm:text-base">' +
+        '<span>សរុបទឹកប្រាក់៖</span><span id="cTotalVal" class="text-green-700 text-base sm:text-lg">0 ៛</span>' +
+      '</div>' +
       paymentSectionHTML +
       submitBtnHTML +
     '</div>' +
