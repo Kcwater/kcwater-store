@@ -745,6 +745,7 @@ async function confirmQuickRestockSubmit() {
 // ==========================================
 // 🛒 ៣. ផ្ទាំងលក់ POS (ពេញអេក្រង់ PC + ៥-៦ ជួរទំនិញ + សមមាត្រលើទូរស័ព្ទ)
 // ==========================================
+var currentPosSearchKeyword = '';
 function renderPOSModule() {
   // 🛡️ រារាំងអ្នកដឹកជញ្ជូនរោងចក្រ (Company Driver) ដាច់ខាត ១០០%
   if (currentUser && currentUser.type === 'CompanyDriver') {
