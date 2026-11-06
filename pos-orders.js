@@ -1342,6 +1342,32 @@ function renderOnlineHubModule() {
   loadOnlineHubOrdersTab();
 }
 
+// ==========================================
+// 🔄 មុខងារប្តូរផ្ទាំង Tabs ក្នុង Online Hub (Orders / Audit / Products)
+// ==========================================
+function switchOnlineHubTab(tab) {
+  activeOnlineHubTab = tab;
+
+  // Reset ពណ៌ប៊ូតុង Tabs
+  ['ORDERS', 'AUDIT', 'PRODUCTS'].forEach(function(t) {
+    var btn = document.getElementById('hubTabBtn_' + t);
+    var content = document.getElementById('hubTabContent_' + t);
+    if (btn && content) {
+      if (t === tab) {
+        btn.className = "flex-1 py-2 rounded-xl transition flex items-center justify-center gap-1.5 bg-emerald-700 text-white shadow font-bold text-xs";
+        content.classList.remove('hidden');
+      } else {
+        btn.className = "flex-1 py-2 rounded-xl transition flex items-center justify-center gap-1.5 bg-slate-100 text-slate-600 hover:bg-slate-200 font-bold text-xs";
+        content.classList.add('hidden');
+      }
+    }
+  });
+
+  if (tab === 'ORDERS') loadOnlineHubOrdersTab();
+  else if (tab === 'AUDIT') loadOnlineHubAuditTab();
+  else if (tab === 'PRODUCTS') loadOnlineHubProductsTab();
+}
+
 // 🌐 TAB ៣៖ ទំនិញកំពុងបង្ហាញលើ WEB (ពង្រីក ៥-៦ ជួរលើ PC ធំ)
 async function loadOnlineHubProductsTab() {
   var area = document.getElementById('hubTabContent_PRODUCTS');
