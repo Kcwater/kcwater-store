@@ -145,26 +145,15 @@
 
   <script>
     (function() {
-      var ua = (navigator.userAgent || navigator.vendor || window.opera || '').toLowerCase();
-      var isAndroid = ua.includes('android');
-      
-      // ១. ពិនិត្យដឹង Messenger / Facebook
-      var isMeta = ua.includes('fban') || ua.includes('fbios') || ua.includes('messenger') || ua.includes('fb_iab');
+      // 🤖 ១. ភ្ជាប់ទំនាក់ទំនងជាមួយ Telegram Mini App ឱ្យដំណើរការពេញអេក្រង់ទូរស័ព្ទ
+      if (window.Telegram && window.Telegram.WebApp) {
+        try {
+          window.Telegram.WebApp.ready();  // ប្រាប់ Telegram ឱ្យបើកបង្ហាញទំព័រភ្លាម
+          window.Telegram.WebApp.expand(); // ពង្រីកពេញអេក្រង់ទូរស័ព្ទ
+        } catch(e) {}
+      }
 
-      // ២. ពិនិត្យដឹង Telegram Browser ធម្មតា (ដែលមិនទាន់ចូលដល់ Mini App)
-      var isTelegram = ua.includes('telegram') || typeof window.TelegramWebview !== 'undefined';
-      var isAlreadyMiniApp = !!(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData);
-
-    // 🤖 ១. ភ្ជាប់ទំនាក់ទំនងជាមួយ Telegram Mini App ឱ្យដំណើរការពេញអេក្រង់ទូរស័ព្ទ
-    if (window.Telegram && window.Telegram.WebApp) {
-      try {
-        window.Telegram.WebApp.ready();  // ប្រាប់ Telegram ឱ្យបើកបង្ហាញទំព័រភ្លាម
-        window.Telegram.WebApp.expand(); // ពង្រីកពេញអេក្រង់ទូរស័ព្ទ
-      } catch(e) {}
-    }
-
-    // 💬 ២. ពិនិត្យបង្ហាញ Pop-up សួរទៅ Chrome តែពេលភ្ញៀវបើកតាម Messenger / Facebook លើ Android ប៉ុណ្ណោះ
-    (function() {
+      // 💬 ២. ពិនិត្យបង្ហាញ Pop-up សួរទៅ Chrome តែពេលភ្ញៀវបើកតាម Messenger / Facebook លើ Android ប៉ុណ្ណោះ
       var ua = (navigator.userAgent || navigator.vendor || window.opera || '').toLowerCase();
       var isAndroid = ua.includes('android');
       var isMeta = ua.includes('fban') || ua.includes('fbios') || ua.includes('messenger') || ua.includes('fb_iab');
