@@ -1687,11 +1687,11 @@ function renderOnlineAuditResultsList() {
 
   resArea.innerHTML = html;
 }
-// ⚠️ មុខងារដោះស្រាយវិវាទ៖ បង្វិលសងលុយ & កាត់ស្តុកត្រឡប់មកវិញ (Refund / Dispute Handler)
+// ⚠️ មុខងារដោះស្រាយវិវាទ៖ បង្វិលសងលុយ & កាត់ស្តុកត្រឡប់មកវិញ (ស្គាល់ទាំងសំបកធុង 🛢️ និងកាដូថែម 🎁)
 async function refundAndVoidOnlineOrder(orderId, custName, total, itemsText) {
   var ok = await kcConfirm({
     title: "ដោះស្រាយវិវាទ (Refund / Void Order)",
-    message: "តើអ្នកពិតជាចង់បោះបង់ ឬបង្វិលសងប្រាក់ចំនួន ៛ " + Number(total).toLocaleString() + " ទៅកាន់ភ្ញៀវ [" + custName + "] វិញមែនទេ? ស្តុកទំនិញនឹងត្រូវបង្វិលសងចូលឃ្លាំងវិញដោយស្វ័យប្រវត្តិ។",
+    message: "តើអ្នកពិតជាចង់បោះបង់ ឬបង្វិលសងប្រាក់ចំនួន ៛ " + Number(total).toLocaleString() + " ទៅកាន់ភ្ញៀវ [" + custName + "] វិញមែនទេ? ស្តុកទំនិញ (រួមទាំងសំបកធុង និងកាដូថែម) នឹងត្រូវបង្វិលសងចូលឃ្លាំងវិញដោយស្វ័យប្រវត្តិ។",
     type: "danger",
     confirmText: "យល់ព្រមសងលុយ & បោះបង់"
   });
@@ -1707,24 +1707,40 @@ async function refundAndVoidOnlineOrder(orderId, custName, total, itemsText) {
 
     if (ordErr) throw ordErr;
 
-    // ២. បង្វិលស្តុកទំនិញសងចូលឃ្លាំងវិញ (បើជាទំនិញទិញគេ)
+    // ធានាថាមានបញ្ជីទំនិញស្រស់ៗពី Database
+    if (!allProducts || allProducts.length === 0) {
+      const { data: pList } = await supabaseClient.from('products').select('*');
+      if (pList) allProducts = pList;
+    }
+
+    // ២. បង្វិលស្តុកទំនិញសងចូលឃ្លាំងវិញ (ស្គាល់ទាំងទំនិញទូទៅ សំបកធុង 🛢️ និងកាដូថែម 🎁)
     try {
       var itemParts = String(itemsText).split(',');
       for (var i = 0; i < itemParts.length; i++) {
         var seg = itemParts[i].split('x');
-        if (seg.length === 2) {
-          var pName = seg[0].trim();
+        if (seg.length >= 2) {
+          var rawName = seg[0].trim();
           var pQty = parseFloat(seg[1].trim() || 0);
 
-          var prodObj = allProducts.find(p => p.name.trim().toLowerCase() === pName.toLowerCase());
+          // 🧹 ជម្រះ Emoji និងស្លាក Free ដើម្បីស្វែងរកឈ្មោះទំនិញពិតប្រាកដក្នុងស្តុក
+          var cleanName = rawName
+            .replace(/🎁\s*\[Free\]/gi, '')
+            .replace(/\[Free\]/gi, '')
+            .replace(/\[កាដូថែម Free\]/gi, '')
+            .replace(/🛢️/gi, '')
+            .trim();
+
+          var prodObj = allProducts.find(p => p.name.trim().toLowerCase() === cleanName.toLowerCase());
           if (prodObj && prodObj.type === 'ទិញគេ' && pQty > 0) {
             var restoredStock = parseFloat(prodObj.stock || 0) + pQty;
             await supabaseClient.from('products').update({ stock: restoredStock }).eq('id', prodObj.id);
-            prodObj.stock = restoredStock;
+            prodObj.stock = restoredStock; // ធ្វើបច្ចុប្បន្នភាពក្នុង Memory ភ្លាមៗ
           }
         }
       }
-    } catch(stkErr) {}
+    } catch(stkErr) {
+      console.warn("Restoring stock error on refund:", stkErr);
+    }
 
     // ៣. កត់ត្រាប្រតិបត្តិការដកប្រាក់ចេញ (Negative Transaction / Refund Log)
     var tid = "REFUND-" + new Date().getTime();
@@ -1742,13 +1758,23 @@ async function refundAndVoidOnlineOrder(orderId, custName, total, itemsText) {
       payment_method: "Cash"
     }]);
 
-    showToast("បានបោះបង់ការកុម្ម៉ង់ និងកត់ត្រាសងប្រាក់ជូនភ្ញៀវជោគជ័យ!", "success");
+    // 🎉 ប្រើ kcAlert ជូនដំណឹងជោគជ័យ
+    if (typeof kcAlert === 'function') {
+      await kcAlert({
+        title: "សងប្រាក់ជោគជ័យ! 🎉",
+        message: "បានបោះបង់ការកុម្ម៉ង់ [" + orderId + "] និងបង្វិលស្តុកទំនិញ/សំបកធុងសងចូលឃ្លាំងវិញជោគជ័យ!",
+        type: "success"
+      });
+    } else {
+      showToast("បានបោះបង់ការកុម្ម៉ង់ និងកត់ត្រាសងប្រាក់ជូនភ្ញៀវជោគជ័យ!", "success");
+    }
 
     // ៤. ផ្ញើ Telegram Alert ទៅថៅកែភ្លាមៗ
     try {
       var tgMsg = "⚠️ <b>[KC WATER - ដោះស្រាយវិវាទ & សងប្រាក់ភ្ញៀវ (Refund Online)]</b>\n\n" +
                   "🆔 <b>កូដកុម្ម៉ង់៖</b> <code>" + orderId + "</code>\n" +
                   "👤 <b>អតិថិជន៖</b> " + custName + "\n" +
+                  "📦 <b>ទំនិញបង្វិលចូលស្តុកវិញ៖</b> " + itemsText + "\n" +
                   "💰 <b>ទឹកប្រាក់សងវិញ៖</b> <b>-៛ " + Number(total).toLocaleString() + "</b>\n" +
                   "✍️ <b>អ្នកដោះស្រាយ៖</b> " + (currentUser.fullName || "Admin") + "\n" +
                   "🕒 <b>ម៉ោង៖</b> " + new Date().toLocaleTimeString('km-KH');
@@ -1759,7 +1785,11 @@ async function refundAndVoidOnlineOrder(orderId, custName, total, itemsText) {
     fetchOnlineAuditOrders();
 
   } catch(err) {
-    showToast("កំហុសដោះស្រាយវិវាទ៖ " + err.message, "error");
+    if (typeof kcAlert === 'function') {
+      await kcAlert({ title: "កំហុស", message: err.message, type: "danger" });
+    } else {
+      showToast("កំហុសដោះស្រាយវិវាទ៖ " + err.message, "error");
+    }
   }
 }
 
