@@ -2111,9 +2111,8 @@ async function delUserFromSupabase(id) {
 }
 
 // ==========================================================================
-// ⚙️ ផ្ទាំង SETTINGS ស្តង់ដារ (មានបន្ថែម ៧. ដេប៉ូដៃគូផ្គត់ផ្គង់ PARTNER DEPOTS)
+// ⚙️ ផ្ទាំង SETTINGS ស្តង់ដារ (ពេញអេក្រង់ PC + មានមុខងារកំណត់ទំហំអក្សរ FONT SIZE)
 // ==========================================================================
-
 function renderSettingsModule() {
   var area = document.getElementById('contentArea');
   if (!area) return;
@@ -2121,118 +2120,134 @@ function renderSettingsModule() {
   var curUsd = (typeof exchangeRateUSD !== 'undefined') ? exchangeRateUSD : 4100;
   var curThb = (typeof exchangeRateTHB !== 'undefined') ? exchangeRateTHB : 115;
   var tgStatus = (telegramConfig && telegramConfig.status) ? telegramConfig.status : 'ON';
+  var curScale = parseInt(localStorage.getItem('kc_font_scale')) || 100;
 
-  area.innerHTML = '<div class="max-w-3xl mx-auto space-y-4">' +
+  // 🖥️ ប្រើ w-full max-w-[1600px] ដើម្បីឱ្យពេញអេក្រង់កុំព្យូទ័រស្មើស្អាត
+  area.innerHTML = '<div class="w-full max-w-[1600px] mx-auto space-y-3.5 px-1 sm:px-2">' +
     // ក្បាលទំព័រ
-    '<div class="flex justify-between items-center bg-white p-4 rounded-3xl border shadow-sm">' +
+    '<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-3.5 sm:p-4 rounded-3xl border shadow-sm gap-2">' +
       '<div>' +
         '<h2 class="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">' +
           '<i class="fas fa-gear text-emerald-600"></i>' +
           '<span>ការកំណត់ប្រព័ន្ធ (System Settings)</span>' +
         '</h2>' +
-        '<p class="text-xs text-slate-500 mt-0.5">ចុចលើកាតមុខងារនីមួយៗដើម្បីបើកផ្ទាំង Pop-up កំណត់ទិន្នន័យ</p>' +
+        '<p class="text-[11px] text-slate-500 mt-0.5">ចុចលើកាតមុខងារនីមួយៗដើម្បីបើកផ្ទាំង Pop-up កំណត់ទិន្នន័យ</p>' +
       '</div>' +
-      '<button onclick="renderSettingsModule()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold shadow-2xs active:scale-95 transition flex items-center gap-1.5">' +
+      '<button onclick="renderSettingsModule()" class="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold shadow-2xs active:scale-95 transition flex items-center gap-1.5 self-end sm:self-auto">' +
         '<i class="fas fa-sync-alt"></i> Refresh' +
       '</button>' +
     '</div>' +
 
-    // 📱 ក្រឡាចត្រង្គកាតមុខងារទាំង ៧ (រួមបញ្ចូលដេប៉ូដៃគូផ្គត់ផ្គង់)
-    '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">' +
+    // 📱 ក្រឡាចត្រង្គកាតមុខងារទាំង ៨ (រៀបរយ ៤ ជួរលើ PC ធំ, ២ ជួរលើ Laptop/Tablet)
+    '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">' +
       
       // កាត ១៖ ប្រភេទទំនិញ
-      '<div onclick="openCategoryManagerModal()" class="card border-l-4 border-emerald-600 p-4 bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-emerald-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
-        '<div class="flex items-center gap-3">' +
-          '<div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-xl shadow-inner group-hover:scale-110 transition">' +
+      '<div onclick="openCategoryManagerModal()" class="card border-l-4 border-emerald-600 p-3.5 bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-emerald-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
+        '<div class="flex items-center gap-2.5">' +
+          '<div class="w-11 h-11 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-lg shadow-inner group-hover:scale-105 transition">' +
             '<i class="fas fa-layer-group"></i>' +
           '</div>' +
           '<div>' +
-            '<b class="text-sm font-black text-slate-900 block group-hover:text-emerald-700 transition">ប្រភេទទំនិញ (Categories)</b>' +
-            '<span class="text-[11px] text-slate-500 font-bold block mt-0.5">បង្កើត ប្តូរឈ្មោះ & Emoji រហ័ស</span>' +
+            '<b class="text-xs sm:text-sm font-black text-slate-900 block group-hover:text-emerald-700 transition">ប្រភេទទំនិញ (Categories)</b>' +
+            '<span class="text-[10px] text-slate-500 font-bold block mt-0.5">បង្កើត ប្តូរឈ្មោះ & Emoji</span>' +
           '</div>' +
         '</div>' +
         '<i class="fas fa-chevron-right text-slate-300 group-hover:text-emerald-600 group-hover:translate-x-1 transition text-xs"></i>' +
       '</div>' +
 
       // កាត ២៖ អត្រាប្តូរប្រាក់
-      '<div onclick="openExchangeRatesModal()" class="card border-l-4 border-blue-600 p-4 bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-blue-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
-        '<div class="flex items-center gap-3">' +
-          '<div class="w-12 h-12 rounded-2xl bg-blue-100 text-blue-700 flex items-center justify-center text-xl shadow-inner group-hover:scale-110 transition">' +
+      '<div onclick="openExchangeRatesModal()" class="card border-l-4 border-blue-600 p-3.5 bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-blue-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
+        '<div class="flex items-center gap-2.5">' +
+          '<div class="w-11 h-11 rounded-2xl bg-blue-100 text-blue-700 flex items-center justify-center text-lg shadow-inner group-hover:scale-105 transition">' +
             '<i class="fas fa-money-bill-transfer"></i>' +
           '</div>' +
           '<div>' +
-            '<b class="text-sm font-black text-slate-900 block group-hover:text-blue-700 transition">អត្រាប្តូរប្រាក់ (Exchange Rates)</b>' +
-            '<span class="text-[11px] text-blue-700 font-bold block mt-0.5">$1=' + curUsd.toLocaleString() + '៛ | 1฿=' + curThb.toLocaleString() + '៛</span>' +
+            '<b class="text-xs sm:text-sm font-black text-slate-900 block group-hover:text-blue-700 transition">អត្រាប្តូរប្រាក់ (Rates)</b>' +
+            '<span class="text-[10px] text-blue-700 font-bold block mt-0.5">$1=' + curUsd.toLocaleString() + '៛ | 1฿=' + curThb.toLocaleString() + '៛</span>' +
           '</div>' +
         '</div>' +
         '<i class="fas fa-chevron-right text-slate-300 group-hover:text-blue-600 group-hover:translate-x-1 transition text-xs"></i>' +
       '</div>' +
 
-      // 🌟 កាត ៣ (ថ្មី)៖ ដេប៉ូដៃគូផ្គត់ផ្គង់ (PARTNER DEPOTS)
-      '<div onclick="openDepotManagerModal()" class="card border-l-4 border-rose-600 p-4 bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-rose-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
-        '<div class="flex items-center gap-3">' +
-          '<div class="w-12 h-12 rounded-2xl bg-rose-100 text-rose-700 flex items-center justify-center text-xl shadow-inner group-hover:scale-110 transition">' +
+      // កាត ៣៖ ដេប៉ូដៃគូផ្គត់ផ្គង់
+      '<div onclick="openDepotManagerModal()" class="card border-l-4 border-rose-600 p-3.5 bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-rose-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
+        '<div class="flex items-center gap-2.5">' +
+          '<div class="w-11 h-11 rounded-2xl bg-rose-100 text-rose-700 flex items-center justify-center text-lg shadow-inner group-hover:scale-105 transition">' +
             '<i class="fas fa-shop-lock"></i>' +
           '</div>' +
           '<div>' +
-            '<b class="text-sm font-black text-slate-900 block group-hover:text-rose-700 transition">ដេប៉ូដៃគូផ្គត់ផ្គង់ (Depots)</b>' +
-            '<span class="text-[11px] text-rose-700 font-bold block mt-0.5">ដេប៉ូអង្ករ, គ្រឿងទេស, ទីតាំង & វិធីទូទាត់</span>' +
+            '<b class="text-xs sm:text-sm font-black text-slate-900 block group-hover:text-rose-700 transition">ដេប៉ូផ្គត់ផ្គង់ (Depots)</b>' +
+            '<span class="text-[10px] text-rose-700 font-bold block mt-0.5">ដេប៉ូអង្ករ, គ្រឿងទេស & ទីតាំង</span>' +
           '</div>' +
         '</div>' +
         '<i class="fas fa-chevron-right text-slate-300 group-hover:text-rose-600 group-hover:translate-x-1 transition text-xs"></i>' +
       '</div>' +
 
-      // កាត ៤៖ សេវាដឹកជញ្ជូន & ម៉ោងធ្វើការ
-      '<div onclick="openDeliverySettingsModal()" class="card border-l-4 border-indigo-600 p-4 bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-indigo-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
-        '<div class="flex items-center gap-3">' +
-          '<div class="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-700 flex items-center justify-center text-xl shadow-inner group-hover:scale-110 transition">' +
+      // 🌟 កាត ៤ (មុខងារថ្មី)៖ កម្រិតទំហំអក្សរ (Font Size)
+      '<div onclick="openFontSizeModal()" class="card border-l-4 border-purple-600 p-3.5 bg-purple-50/40 rounded-2xl shadow-sm hover:shadow-xl hover:border-purple-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
+        '<div class="flex items-center gap-2.5">' +
+          '<div class="w-11 h-11 rounded-2xl bg-purple-100 text-purple-700 flex items-center justify-center text-lg shadow-inner group-hover:scale-105 transition">' +
+            '<i class="fas fa-glasses"></i>' +
+          '</div>' +
+          '<div>' +
+            '<b class="text-xs sm:text-sm font-black text-slate-900 block group-hover:text-purple-700 transition">ទំហំអក្សរ (Font Size)</b>' +
+            '<span class="text-[10px] text-purple-700 font-bold block mt-0.5">បច្ចុប្បន្ន៖ ' + curScale + '% (ចុចប្តូរ 👓)</span>' +
+          '</div>' +
+        '</div>' +
+        '<i class="fas fa-chevron-right text-slate-300 group-hover:text-purple-600 group-hover:translate-x-1 transition text-xs"></i>' +
+      '</div>' +
+
+      // កាត ៥៖ សេវាដឹកជញ្ជូន & ម៉ោងធ្វើការ
+      '<div onclick="openDeliverySettingsModal()" class="card border-l-4 border-indigo-600 p-3.5 bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-indigo-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
+        '<div class="flex items-center gap-2.5">' +
+          '<div class="w-11 h-11 rounded-2xl bg-indigo-100 text-indigo-700 flex items-center justify-center text-lg shadow-inner group-hover:scale-105 transition">' +
             '<i class="fas fa-truck-fast"></i>' +
           '</div>' +
           '<div>' +
-            '<b class="text-sm font-black text-slate-900 block group-hover:text-indigo-700 transition">សេវាដឹកជញ្ជូន & ម៉ោងធ្វើការ</b>' +
-            '<span class="text-[11px] text-slate-500 font-bold block mt-0.5">កំណត់ថ្លៃដឹក & ម៉ោងបើក/បិទហាង</span>' +
+            '<b class="text-xs sm:text-sm font-black text-slate-900 block group-hover:text-indigo-700 transition">សេវាដឹក & ម៉ោងធ្វើការ</b>' +
+            '<span class="text-[10px] text-slate-500 font-bold block mt-0.5">ថ្លៃដឹក & ម៉ោងបើក/បិទហាង</span>' +
           '</div>' +
         '</div>' +
         '<i class="fas fa-chevron-right text-slate-300 group-hover:text-indigo-600 group-hover:translate-x-1 transition text-xs"></i>' +
       '</div>' +
 
-      // កាត ៥៖ ប្រព័ន្ធ Promotion
-      '<div onclick="openPromoSettingsModal()" class="card border-l-4 border-amber-500 p-4 bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-amber-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
-        '<div class="flex items-center gap-3">' +
-          '<div class="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center text-xl shadow-inner group-hover:scale-110 transition">' +
+      // កាត ៦៖ ប្រព័ន្ធ Promotion
+      '<div onclick="openPromoSettingsModal()" class="card border-l-4 border-amber-500 p-3.5 bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-amber-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
+        '<div class="flex items-center gap-2.5">' +
+          '<div class="w-11 h-11 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center text-lg shadow-inner group-hover:scale-105 transition">' +
             '<i class="fas fa-gift"></i>' +
           '</div>' +
           '<div>' +
-            '<b class="text-sm font-black text-slate-900 block group-hover:text-amber-700 transition">ប្រូម៉ូសិនលើ Web (Promotions)</b>' +
-            '<span class="text-[11px] text-amber-700 font-bold block mt-0.5">កាដូថែមទំនិញ & Banner ផ្សាយ</span>' +
+            '<b class="text-xs sm:text-sm font-black text-slate-900 block group-hover:text-amber-700 transition">ប្រូម៉ូសិនលើ Web</b>' +
+            '<span class="text-[10px] text-amber-700 font-bold block mt-0.5">កាដូថែមទំនិញ & Banner ផ្សាយ</span>' +
           '</div>' +
         '</div>' +
         '<i class="fas fa-chevron-right text-slate-300 group-hover:text-amber-600 group-hover:translate-x-1 transition text-xs"></i>' +
       '</div>' +
 
-      // កាត ៦៖ ផ្ទាំងស្លាយ Web
-      '<div onclick="openSlidesSettingsModal()" class="card border-l-4 border-teal-600 p-4 bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-teal-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
-        '<div class="flex items-center gap-3">' +
-          '<div class="w-12 h-12 rounded-2xl bg-teal-100 text-teal-700 flex items-center justify-center text-xl shadow-inner group-hover:scale-110 transition">' +
+      // កាត ៧៖ ផ្ទាំងស្លាយ Web
+      '<div onclick="openSlidesSettingsModal()" class="card border-l-4 border-teal-600 p-3.5 bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-teal-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
+        '<div class="flex items-center gap-2.5">' +
+          '<div class="w-11 h-11 rounded-2xl bg-teal-100 text-teal-700 flex items-center justify-center text-lg shadow-inner group-hover:scale-105 transition">' +
             '<i class="fas fa-images"></i>' +
           '</div>' +
           '<div>' +
-            '<b class="text-sm font-black text-slate-900 block group-hover:text-teal-700 transition">ផ្ទាំងស្លាយលើ Web (Slides)</b>' +
-            '<span class="text-[11px] text-slate-500 font-bold block mt-0.5">ដាក់រូបភាព & អក្សរស្លាយទាំង ៤</span>' +
+            '<b class="text-xs sm:text-sm font-black text-slate-900 block group-hover:text-teal-700 transition">ស្លាយលើ Web (Slides)</b>' +
+            '<span class="text-[10px] text-slate-500 font-bold block mt-0.5">រូបភាព & អក្សរស្លាយទាំង ៤</span>' +
           '</div>' +
         '</div>' +
         '<i class="fas fa-chevron-right text-slate-300 group-hover:text-teal-600 group-hover:translate-x-1 transition text-xs"></i>' +
       '</div>' +
 
-      // កាត ៧៖ Telegram Bot Alert
-      '<div onclick="openTelegramSettingsModal()" class="card border-l-4 border-green-600 p-4 bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-green-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0 sm:col-span-2">' +
-        '<div class="flex items-center gap-3">' +
-          '<div class="w-12 h-12 rounded-2xl bg-green-100 text-green-700 flex items-center justify-center text-xl shadow-inner group-hover:scale-110 transition">' +
+      // កាត ៨៖ Telegram Bot Alert
+      '<div onclick="openTelegramSettingsModal()" class="card border-l-4 border-green-600 p-3.5 bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-green-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
+        '<div class="flex items-center gap-2.5">' +
+          '<div class="w-11 h-11 rounded-2xl bg-green-100 text-green-700 flex items-center justify-center text-lg shadow-inner group-hover:scale-105 transition">' +
             '<i class="fab fa-telegram text-blue-500"></i>' +
           '</div>' +
           '<div>' +
-            '<b class="text-sm font-black text-slate-900 block group-hover:text-green-700 transition">Telegram Bot Alerts</b>' +
-            '<span class="text-[11px] font-bold block mt-0.5 ' + (tgStatus === 'ON' ? 'text-green-700' : 'text-slate-400') + '">ស្ថានភាព៖ ' + (tgStatus === 'ON' ? '🔔 បើក (ON)' : '🔕 បិទ (OFF)') + '</span>' +
+            '<b class="text-xs sm:text-sm font-black text-slate-900 block group-hover:text-green-700 transition">Telegram Alerts</b>' +
+            '<span class="text-[10px] font-bold block mt-0.5 ' + (tgStatus === 'ON' ? 'text-green-700' : 'text-slate-400') + '">ស្ថានភាព៖ ' + (tgStatus === 'ON' ? '🔔 បើក' : '🔕 បិទ') + '</span>' +
           '</div>' +
         '</div>' +
         '<i class="fas fa-chevron-right text-slate-300 group-hover:text-green-600 group-hover:translate-x-1 transition text-xs"></i>' +
@@ -2240,6 +2255,98 @@ function renderSettingsModule() {
 
     '</div>' +
   '</div>';
+}
+
+// ==========================================================================
+// 👓 មុខងារ POP-UP MODAL ជ្រើសរើសទំហំអក្សរ (FONT SIZE DIALOG)
+// ==========================================================================
+function openFontSizeModal() {
+  var existing = document.getElementById('fontSizeManagerModal');
+  if (existing) existing.remove();
+
+  var curScale = parseInt(localStorage.getItem('kc_font_scale')) || 100;
+
+  var html = '<div id="fontSizeManagerModal" class="fixed inset-0 z-[7000] flex items-center justify-center p-3 sm:p-4 overflow-y-auto">' +
+    '<div class="fixed inset-0 bg-slate-950/65 backdrop-blur-xs" onclick="closeFontSizeModal()"></div>' +
+    '<div class="bg-white rounded-3xl shadow-2xl z-10 w-full max-w-sm p-5 space-y-3.5 text-center relative border border-slate-100 animate-in zoom-in-95 duration-200 my-auto">' +
+      '<div class="flex justify-between items-center border-b pb-2">' +
+        '<div class="text-left">' +
+          '<h3 class="font-black text-slate-900 text-sm sm:text-base flex items-center gap-2">' +
+            '<i class="fas fa-glasses text-purple-600"></i> កម្រិតទំហំអក្សរ (Font Size)' +
+          '</h3>' +
+          '<p class="text-[10px] text-slate-500 font-bold mt-0.5">ចុចជ្រើសរើសដើម្បីរីកធំទូទាំងប្រព័ន្ធភ្លាមៗ</p>' +
+        '</div>' +
+        '<button type="button" onclick="closeFontSizeModal()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-400 hover:text-slate-700 text-lg font-bold flex items-center justify-center">&times;</button>' +
+      '</div>' +
+
+      // ៤ កម្រិតទំហំអក្សរ
+      '<div class="grid grid-cols-2 gap-2 text-xs font-bold">' +
+        '<button type="button" onclick="selectAppFontSize(90)" id="btnFont_90" class="p-2.5 rounded-2xl border-2 transition active:scale-95 text-center ' + (curScale === 90 ? 'border-purple-600 bg-purple-50 text-purple-900 font-black shadow-xs' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50') + '">' +
+          '<div class="text-xs">តូចល្មម (90%)</div>' +
+          '<span class="text-[9.5px] text-slate-400 font-normal">សម្រាប់អេក្រង់ធំ</span>' +
+        '</button>' +
+        '<button type="button" onclick="selectAppFontSize(100)" id="btnFont_100" class="p-2.5 rounded-2xl border-2 transition active:scale-95 text-center ' + (curScale === 100 ? 'border-purple-600 bg-purple-50 text-purple-900 font-black shadow-xs' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50') + '">' +
+          '<div class="text-sm">ធម្មតា (100%)</div>' +
+          '<span class="text-[9.5px] text-slate-400 font-normal">ទំហំស្តង់ដារ</span>' +
+        '</button>' +
+        '<button type="button" onclick="selectAppFontSize(115)" id="btnFont_115" class="p-2.5 rounded-2xl border-2 transition active:scale-95 text-center ' + (curScale === 115 ? 'border-purple-600 bg-purple-50 text-purple-900 font-black shadow-xs' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50') + '">' +
+          '<div class="text-base text-purple-700">ធំ (115%)</div>' +
+          '<span class="text-[9.5px] text-slate-400 font-normal">ងាយស្រួលអាន</span>' +
+        '</button>' +
+        '<button type="button" onclick="selectAppFontSize(130)" id="btnFont_130" class="p-2.5 rounded-2xl border-2 transition active:scale-95 text-center ' + (curScale === 130 ? 'border-purple-600 bg-purple-50 text-purple-900 font-black shadow-xs' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50') + '">' +
+          '<div class="text-lg text-purple-800">ធំបំផុត (130%)</div>' +
+          '<span class="text-[9.5px] text-slate-400 font-normal">សម្រាប់ភ្នែកខ្សោយ</span>' +
+        '</button>' +
+      '</div>' +
+
+      // គំរូអក្សរផ្ទាល់ភ្នែក (Live Preview)
+      '<div class="p-3 bg-purple-50/70 rounded-2xl border border-purple-200 text-left space-y-1">' +
+        '<div class="text-[10px] font-black text-purple-950 uppercase">គំរូអក្សរពេលនេះ (Live Preview)៖</div>' +
+        '<div class="text-sm font-black text-slate-900">រោងចក្រទឹក ខេ ស៊ី វ៉ត់ធ័រ (KC WATER)</div>' +
+        '<div class="text-xs text-slate-600 font-bold">លក់បានថ្ងៃនេះ៖ ៛ 572,000 | បង់គ្រប់ចំនួន</div>' +
+      '</div>' +
+
+      '<button type="button" onclick="confirmFontSizeSave()" class="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-black rounded-xl text-xs shadow-md active:scale-95 transition">' +
+        'យល់ព្រមរក្សាទុក' +
+      '</button>' +
+    '</div>' +
+  '</div>';
+
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+function selectAppFontSize(scale) {
+  if (typeof setAppFontSize === 'function') {
+    setAppFontSize(scale);
+  }
+  [90, 100, 115, 130].forEach(function(s) {
+    var btn = document.getElementById('btnFont_' + s);
+    if (!btn) return;
+    if (s === scale) {
+      btn.className = "p-2.5 rounded-2xl border-2 transition active:scale-95 text-center border-purple-600 bg-purple-50 text-purple-900 font-black shadow-xs";
+    } else {
+      btn.className = "p-2.5 rounded-2xl border-2 transition active:scale-95 text-center border-slate-200 bg-white text-slate-700 hover:bg-slate-50";
+    }
+  });
+}
+
+function confirmFontSizeSave() {
+  closeFontSizeModal();
+  renderSettingsModule();
+  if (typeof kcAlert === 'function') {
+    kcAlert({
+      title: "កំណត់ទំហំអក្សរជោគជ័យ! 🎉",
+      message: "កម្រិតទំហំអក្សរថ្មីត្រូវបានកំណត់ និងរក្សាទុកក្នុងប្រព័ន្ធរួចរាល់!",
+      type: "success"
+    });
+  } else {
+    showToast("បានប្តូរទំហំអក្សរជោគជ័យ!", "success");
+  }
+}
+
+function closeFontSizeModal() {
+  var modal = document.getElementById('fontSizeManagerModal');
+  if (modal) modal.remove();
 }
 
 // ==========================================================================
