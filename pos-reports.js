@@ -8,7 +8,7 @@ var stmtCurrentFilter = 'ALL';
 var allDebtorsCache = [];
 
 // ==========================================
-// 📊 ១. របាយការណ៍ប្រចាំខែ & កាតគ្រី (MONTHLY & STATEMENT)
+// 📊 ១. របាយការណ៍ប្រចាំខែ & កាតគ្រី (ពេញអេក្រង់ PC + សមមាត្រលើទូរស័ព្ទ)
 // ==========================================
 function renderMonthlyRepModule() {
   var area = document.getElementById('contentArea');
@@ -18,48 +18,84 @@ function renderMonthlyRepModule() {
   var firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
   var today = now.toISOString().split('T')[0];
 
-  area.innerHTML = '<div class="max-w-4xl mx-auto space-y-4">' +
-    '<div class="flex bg-white p-1.5 rounded-2xl border shadow-sm gap-1.5">' +
-      '<button id="tabBtnCompany" onclick="switchRepTab(\'company\')" class="flex-1 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all bg-green-700 text-white shadow-md flex items-center justify-center gap-2"><i class="fas fa-chart-line"></i> របាយការណ៍អាជីវកម្មសរុប</button>' +
-      '<button id="tabBtnCustomer" onclick="switchRepTab(\'customer\')" class="flex-1 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all bg-gray-100 text-gray-600 hover:bg-gray-200 flex items-center justify-center gap-2"><i class="fas fa-user-tag"></i> កាតគ្រីអតិថិជនម្នាក់ៗ</button>' +
+  // 🖥️ ប្រើ w-full max-w-[1600px] ដើម្បីឱ្យពេញអេក្រង់កុំព្យូទ័រស្មើស្អាត
+  area.innerHTML = '<div class="w-full max-w-[1600px] mx-auto space-y-3.5 px-1 sm:px-2">' +
+    // របារប្តូរផ្ទាំង ២ (របាយការណ៍សរុប vs កាតគ្រីម៉ូយ)
+    '<div class="flex bg-white p-1 rounded-2xl border shadow-xs gap-1.5 text-xs font-bold">' +
+      '<button id="tabBtnCompany" onclick="switchRepTab(\'company\')" class="flex-1 py-2 sm:py-2.5 rounded-xl transition-all bg-green-700 text-white shadow-md flex items-center justify-center gap-1.5">' +
+        '<i class="fas fa-chart-line"></i> របាយការណ៍អាជីវកម្មសរុប' +
+      '</button>' +
+      '<button id="tabBtnCustomer" onclick="switchRepTab(\'customer\')" class="flex-1 py-2 sm:py-2.5 rounded-xl transition-all bg-slate-100 text-slate-600 hover:bg-slate-200 flex items-center justify-center gap-1.5">' +
+        '<i class="fas fa-user-tag"></i> កាតគ្រីអតិថិជនម្នាក់ៗ' +
+      '</button>' +
     '</div>' +
     
     // 🏢 កាតរបាយការណ៍រោងចក្រសរុប
-    '<div id="secCompanyRep" class="space-y-4">' +
-      '<div class="card border-t-4 border-green-700 shadow-xl p-5 mb-0">' +
-        '<h3 class="font-extrabold text-green-900 text-base mb-3 flex items-center gap-2"><i class="fas fa-building text-green-600"></i>របាយការណ៍សរុបទូទាំងសហគ្រាស KC WATER</h3>' +
-        '<div class="grid grid-cols-2 gap-3 mb-3">' +
-          '<div><label class="text-[10px] font-bold text-gray-500 uppercase">ចាប់ពីថ្ងៃ</label><input type="date" id="compStartDate" value="' + firstDay + '" class="font-bold border p-2 rounded-xl w-full"></div>' +
-          '<div><label class="text-[10px] font-bold text-gray-500 uppercase">ដល់ថ្ងៃ</label><input type="date" id="compEndDate" value="' + today + '" class="font-bold border p-2 rounded-xl w-full"></div>' +
+    '<div id="secCompanyRep" class="space-y-3.5">' +
+      '<div class="card border-t-4 border-green-700 shadow-xl p-4 sm:p-5 mb-0 bg-white">' +
+        '<h3 class="font-extrabold text-green-900 text-xs sm:text-base mb-2.5 flex items-center gap-1.5">' +
+          '<i class="fas fa-building text-green-600"></i>របាយការណ៍សរុបទូទាំងសហគ្រាស KC WATER' +
+        '</h3>' +
+        '<div class="grid grid-cols-2 gap-2 sm:gap-3 mb-2.5">' +
+          '<div><label class="text-[9.5px] font-bold text-gray-500 uppercase block mb-0.5">ចាប់ពីថ្ងៃ</label><input type="date" id="compStartDate" value="' + firstDay + '" class="font-bold border p-2 rounded-xl w-full text-xs outline-none focus:border-green-600"></div>' +
+          '<div><label class="text-[9.5px] font-bold text-gray-500 uppercase block mb-0.5">ដល់ថ្ងៃ</label><input type="date" id="compEndDate" value="' + today + '" class="font-bold border p-2 rounded-xl w-full text-xs outline-none focus:border-green-600"></div>' +
         '</div>' +
-        '<button onclick="fetchCompanySummaryFromSupabase()" class="btn-green shadow-lg flex items-center justify-center gap-2 py-3 text-sm font-bold"><i class="fas fa-filter"></i> គណនារបាយការណ៍អាជីវកម្ម</button>' +
+        '<button onclick="fetchCompanySummaryFromSupabase()" class="btn-green shadow-lg flex items-center justify-center gap-1.5 py-2.5 text-xs sm:text-sm font-bold">' +
+          '<i class="fas fa-filter"></i> គណនារបាយការណ៍អាជីវកម្ម' +
+        '</button>' +
       '</div>' +
-      '<div class="grid grid-cols-1 sm:grid-cols-3 gap-3" id="compCardsArea">' +
-        '<div class="dash-card border-l-4 border-blue-600 p-4 bg-white rounded-2xl"><div class="text-xs font-bold text-gray-500 uppercase">ចំណូលលក់សរុប</div><div id="compSalesTotal" class="mt-2 text-base sm:text-lg font-black text-blue-900">0 ៛</div></div>' +
-        '<div class="dash-card border-l-4 border-green-600 p-4 bg-white rounded-2xl"><div class="text-xs font-bold text-gray-500 uppercase">សាច់ប្រាក់ប្រមូលបាន</div><div id="compCashTotal" class="mt-2 text-base sm:text-lg font-black text-green-900">0 ៛</div></div>' +
-        '<div class="dash-card border-l-4 border-red-500 p-4 bg-white rounded-2xl"><div class="text-xs font-bold text-gray-500 uppercase">បំណុលជំពាក់ថ្មី</div><div id="compDebtTotal" class="mt-2 text-base sm:text-lg font-black text-red-700">0 ៛</div></div>' +
+
+      // កាតសង្ខេប ៣
+      '<div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3" id="compCardsArea">' +
+        '<div class="dash-card border-l-4 border-blue-600 p-3.5 bg-white rounded-2xl">' +
+          '<div class="text-gray-500 text-[10px] sm:text-xs font-bold uppercase truncate">ចំណូលលក់សរុប</div>' +
+          '<div id="compSalesTotal" class="mt-1 text-base sm:text-lg font-black text-blue-900">0 ៛</div>' +
+        '</div>' +
+        '<div class="dash-card border-l-4 border-green-600 p-3.5 bg-white rounded-2xl">' +
+          '<div class="text-gray-500 text-[10px] sm:text-xs font-bold uppercase truncate">សាច់ប្រាក់ប្រមូលបាន</div>' +
+          '<div id="compCashTotal" class="mt-1 text-base sm:text-lg font-black text-green-900">0 ៛</div>' +
+        '</div>' +
+        '<div class="dash-card border-l-4 border-red-500 p-3.5 bg-white rounded-2xl">' +
+          '<div class="text-gray-500 text-[10px] sm:text-xs font-bold uppercase truncate">បំណុលជំពាក់ថ្មី</div>' +
+          '<div id="compDebtTotal" class="mt-1 text-base sm:text-lg font-black text-red-700">0 ៛</div>' +
+        '</div>' +
       '</div>' +
-      '<div class="card border-t-4 border-blue-600 shadow-lg p-5 mb-0">' +
-        '<h4 class="font-bold text-gray-800 text-sm mb-3 flex items-center gap-2"><i class="fas fa-boxes-stacked text-blue-600"></i>បរិមាណទឹក និងទំនិញលក់បានសរុប</h4>' +
-        '<div class="overflow-x-auto rounded-xl border"><table class="w-full text-left text-xs border-collapse"><thead><tr class="bg-gray-100 text-gray-700 font-bold border-b"><th class="p-3">មុខទំនិញ</th><th class="p-3 text-center">ចំនួនលក់បាន</th></tr></thead><tbody id="compQtyTableBody"></tbody></table></div>' +
+
+      // តារាងបរិមាណលក់សរុប (Full Width Table)
+      '<div class="card border-t-4 border-blue-600 shadow-lg p-4 sm:p-5 mb-0 bg-white">' +
+        '<h4 class="font-bold text-gray-800 text-xs sm:text-sm mb-2.5 flex items-center gap-1.5">' +
+          '<i class="fas fa-boxes-stacked text-blue-600"></i>បរិមាណទឹក និងទំនិញលក់បានសរុប' +
+        '</h4>' +
+        '<div class="overflow-x-auto max-h-80 overflow-y-auto rounded-xl border border-gray-200">' +
+          '<table class="w-full text-left text-xs border-collapse">' +
+            '<thead class="sticky top-0 bg-gray-100 text-gray-700 font-bold border-b z-10 shadow-xs">' +
+              '<tr><th class="p-2.5 sm:p-3">មុខទំនិញ</th><th class="p-2.5 sm:p-3 text-center w-36">ចំនួនលក់បាន</th></tr>' +
+            '</thead>' +
+            '<tbody id="compQtyTableBody"></tbody>' +
+          '</table>' +
+        '</div>' +
       '</div>' +
     '</div>' +
 
     // 👤 កាតកាតគ្រីអតិថិជន
-    '<div id="secCustomerRep" class="space-y-4 hidden">' +
-      '<div class="card border-t-4 border-green-700 shadow-xl p-5 mb-0">' +
-        '<h3 class="font-extrabold text-green-900 text-base mb-3 flex items-center gap-2"><i class="fas fa-file-invoice text-green-600"></i>ស្វែងរកកាតគ្រីអតិថិជន</h3>' +
-        '<div class="space-y-3">' +
+    '<div id="secCustomerRep" class="space-y-3.5 hidden">' +
+      '<div class="card border-t-4 border-green-700 shadow-xl p-4 sm:p-5 mb-0 bg-white">' +
+        '<h3 class="font-extrabold text-green-900 text-xs sm:text-base mb-2.5 flex items-center gap-1.5">' +
+          '<i class="fas fa-file-invoice text-green-600"></i>ស្វែងរកកាតគ្រីអតិថិជន' +
+        '</h3>' +
+        '<div class="space-y-2.5">' +
           '<div>' +
-            '<label class="text-[10px] font-bold text-gray-600 uppercase block mb-1">ជ្រើសរើសឈ្មោះអតិថិជន</label>' +
-            '<select id="custSelectDropdown" onchange="document.getElementById(\'custSearchInp\').value=this.value" class="font-bold text-blue-900 text-sm border-2 border-blue-200 rounded-xl p-2.5 w-full bg-white"></select>' +
+            '<label class="text-[9.5px] font-bold text-gray-600 uppercase block mb-0.5">ជ្រើសរើសឈ្មោះអតិថិជន</label>' +
+            '<select id="custSelectDropdown" onchange="document.getElementById(\'custSearchInp\').value=this.value" class="font-bold text-blue-900 text-xs sm:text-sm border-2 border-blue-200 rounded-xl p-2 w-full bg-white outline-none focus:border-blue-500"></select>' +
           '</div>' +
-          '<input type="text" id="custSearchInp" placeholder="🔍 ឬវាយឈ្មោះម៉ូយ..." class="font-bold border p-2.5 rounded-xl w-full text-xs">' +
-          '<div class="grid grid-cols-2 gap-3">' +
-            '<div><label class="text-[10px] font-bold text-gray-500 uppercase">ចាប់ពីថ្ងៃ</label><input type="date" id="custStartDate" value="' + firstDay + '" class="font-bold border p-2 rounded-xl w-full"></div>' +
-            '<div><label class="text-[10px] font-bold text-gray-500 uppercase">ដល់ថ្ងៃ</label><input type="date" id="custEndDate" value="' + today + '" class="font-bold border p-2 rounded-xl w-full"></div>' +
+          '<input type="text" id="custSearchInp" placeholder="🔍 ឬវាយឈ្មោះម៉ូយ..." class="font-bold border p-2 rounded-xl w-full text-xs outline-none focus:border-green-600">' +
+          '<div class="grid grid-cols-2 gap-2">' +
+            '<div><label class="text-[9.5px] font-bold text-gray-500 uppercase block mb-0.5">ចាប់ពីថ្ងៃ</label><input type="date" id="custStartDate" value="' + firstDay + '" class="font-bold border p-2 rounded-xl w-full text-xs outline-none"></div>' +
+            '<div><label class="text-[9.5px] font-bold text-gray-500 uppercase block mb-0.5">ដល់ថ្ងៃ</label><input type="date" id="custEndDate" value="' + today + '" class="font-bold border p-2 rounded-xl w-full text-xs outline-none"></div>' +
           '</div>' +
-          '<button onclick="fetchFullStatementFromSupabase()" class="btn-green shadow-lg flex items-center justify-center gap-2 py-3 text-sm font-bold"><i class="fas fa-file-invoice"></i> បង្ហាញកាតគ្រី</button>' +
+          '<button onclick="fetchFullStatementFromSupabase()" class="btn-green shadow-lg flex items-center justify-center gap-1.5 py-2.5 text-xs sm:text-sm font-bold">' +
+            '<i class="fas fa-file-invoice"></i> បង្ហាញកាតគ្រី' +
+          '</button>' +
         '</div>' +
       '</div>' +
       '<div id="statementReportContainer"></div>' +
