@@ -1410,7 +1410,81 @@ async function loadOnlineHubProductsTab() {
   html += '</div></div>';
     area.innerHTML = html;
 }
+// ==========================================
+// 📦 TAB ១៖ បញ្ជីកុម្ម៉ង់បច្ចុប្បន្ន (ស្រង់មកវិញពេញលេញ)
+// ==========================================
+async function loadOnlineHubOrdersTab() {
+  var area = document.getElementById('hubTabContent_ORDERS');
+  if (!area) return;
 
+  area.innerHTML = '<div class="card p-4 text-center text-slate-400 italic text-xs bg-white">' +
+    '<i class="fas fa-spinner fa-spin mr-1 text-amber-600 text-base"></i> កំពុងទាញទិន្នន័យការកុម្ម៉ង់...' +
+  '</div>';
+
+  try {
+    const { data: activeList, error: actErr } = await supabaseClient
+      .from('orders')
+      .select('*')
+      .in('status', ['Pending', 'Assigned', 'Departed'])
+      .order('created_at', { ascending: false });
+
+    if (actErr) throw actErr;
+
+    var list = activeList || [];
+
+    if (list.length === 0) {
+      area.innerHTML = '<div class="card p-8 border-t-4 border-emerald-500 shadow-md mb-0 text-center space-y-2 bg-white rounded-2xl">' +
+        '<div class="w-12 h-12 mx-auto rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xl shadow-inner"><i class="fas fa-check"></i></div>' +
+        '<b class="text-slate-800 text-sm block">បច្ចុប្បន្នគ្មានការកុម្ម៉ង់ដែលរង់ចាំដឹកជញ្ជូនឡើយ!</b>' +
+        '<p class="text-xs text-slate-400">រាល់ពេលភ្ញៀវកុម្ម៉ង់លើ Web វានឹងលោតមកទីនេះភ្លាមៗ។</p>' +
+      '</div>';
+      return;
+    }
+
+    var html = '<div class="space-y-3">';
+    list.forEach(function(o) {
+      var isPending = (o.status === 'Pending');
+      var isDeparted = (o.status === 'Departed');
+
+      var statusBadge = isPending ? 
+        '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300 whitespace-nowrap">⏳ រង់ចាំចាត់ចែង</span>' : 
+        (isDeparted ? 
+          '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-blue-100 text-blue-900 border border-blue-300 animate-pulse whitespace-nowrap">🛵💨 កំពុងធ្វើដំណើរ (' + (o.driver_name || 'អ្នកដឹក') + ')</span>' : 
+          '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300 whitespace-nowrap">📦 បានចាត់ចែង (' + (o.driver_name || 'អ្នកដឹក') + ')</span>');
+
+      var rawLoc = (o.location_url || o.address || '').trim();
+      var dateStr = new Date(o.created_at).toLocaleString('km-KH', { dateStyle: 'short', timeStyle: 'short' });
+
+      html += '<div class="card p-4 border-l-4 ' + (isPending ? 'border-amber-500' : 'border-blue-500') + ' shadow-md mb-0 space-y-2.5 hover:shadow-lg transition bg-white rounded-2xl">' +
+        '<div class="flex justify-between items-start border-b pb-2">' +
+          '<div>' +
+            '<b class="text-sm font-black text-slate-900">' + o.customer_name + '</b>' +
+            '<div class="text-[10px] text-slate-400 mt-0.5 font-mono">កូដ៖ <code>' + o.order_id + '</code> | ម៉ោង៖ ' + dateStr + '</div>' +
+          '</div>' +
+          '<div class="text-right">' +
+            '<b class="text-emerald-700 text-sm font-black">៛ ' + Number(o.total || 0).toLocaleString() + '</b>' +
+            '<div class="mt-0.5">' + statusBadge + '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="text-xs text-slate-700 space-y-1 bg-slate-50 p-2.5 rounded-xl border border-slate-100">' +
+          '<div><b>📞 ទូរស័ព្ទ៖</b> <span class="text-emerald-700 font-bold">' + (o.phone || '-') + '</span></div>' +
+          '<div><b>📦 ទំនិញ៖</b> ' + o.items + '</div>' +
+          (typeof formatOrderLocationBadgeHTML === 'function' ? formatOrderLocationBadgeHTML(rawLoc) : (rawLoc ? '<div><b>📍 ទីតាំង៖</b> ' + rawLoc + '</div>' : '')) +
+        '</div>' +
+        '<div class="flex justify-end pt-1">' +
+          '<button type="button" onclick="openOnlineOrdersModal()" class="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-black shadow-xs active:scale-95 transition flex items-center gap-1.5">' +
+            '<i class="fas fa-sliders text-[10px]"></i> បើកផ្ទាំងចាត់ចែងអ្នកដឹក' +
+          '</button>' +
+        '</div>' +
+      '</div>';
+    });
+    html += '</div>';
+    area.innerHTML = html;
+
+  } catch(e) {
+    area.innerHTML = '<div class="card p-4 text-center text-red-500 font-bold text-xs bg-white">កំហុស៖ ' + e.message + '</div>';
+  }
+}
 // ==========================================
 // 🔍 TAB ២៖ ប្រវត្តិលក់ & ដោះស្រាយវិវាទ (មាន Dropdown កំណត់ជួរដេក ២០ ដល់ ១,០០០ ជួរ)
 // ==========================================
