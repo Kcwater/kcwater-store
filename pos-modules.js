@@ -1175,32 +1175,73 @@ async function delProductFromSupabase(id) {
     showToast("កំហុស៖ " + err.message, "error");
   }
 }
-// ==========================================
-// 🛢️ ២. ភ្ញៀវខ្ចីធុង / បរិក្ខារ (BOTTLE LOANS)
-// ==========================================
+// ==========================================================================
+// 🛢️ ២. ភ្ញៀវខ្ចីធុង / បរិក្ខារ (ពេញអេក្រង់ PC + សារដំណឹង kcAlert, kcPrompt)
+// ==========================================================================
 function renderBottleLoanModule() {
   var area = document.getElementById('contentArea');
-  area.innerHTML = '<div class="max-w-3xl mx-auto space-y-4">' +
-    '<div class="card border-t-4 border-blue-600 shadow-xl p-5 mb-0">' +
+  if (!area) return;
+
+  // 🖥️ ប្រើ w-full max-w-[1600px] ដើម្បីឱ្យពេញអេក្រង់កុំព្យូទ័រស្មើស្អាត
+  area.innerHTML = '<div class="w-full max-w-[1600px] mx-auto space-y-3.5 px-1 sm:px-2">' +
+    // កាតទី ១៖ ទម្រង់កត់ត្រាការខ្ចី
+    '<div class="card border-t-4 border-blue-600 shadow-xl p-4 sm:p-5 mb-0 bg-white">' +
       '<div class="flex justify-between items-center mb-3">' +
-        '<h2 class="font-extrabold text-blue-900 text-base sm:text-lg flex items-center gap-2"><i class="fas fa-boxes-packing text-blue-600"></i>កត់ត្រាភ្ញៀវខ្ចីធុង / បរិក្ខារ</h2>' +
-        '<button onclick="fetchBottleLoansData()" class="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-xl text-xs font-bold border active:scale-95 transition flex items-center gap-1"><i class="fas fa-sync-alt"></i> Refresh</button>' +
+        '<h2 class="font-extrabold text-blue-900 text-xs sm:text-base flex items-center gap-1.5">' +
+          '<i class="fas fa-boxes-packing text-blue-600"></i>កត់ត្រាភ្ញៀវខ្ចីធុង / បរិក្ខារ' +
+        '</h2>' +
+        '<button onclick="fetchBottleLoansData()" class="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-xs font-bold border border-blue-200 active:scale-95 transition flex items-center gap-1 shadow-2xs">' +
+          '<i class="fas fa-sync-alt"></i> Refresh' +
+        '</button>' +
       '</div>' +
-      '<div class="space-y-3">' +
+      '<div class="space-y-2.5">' +
         '<div class="grid grid-cols-1 sm:grid-cols-2 gap-2">' +
-          '<input type="text" id="bl_cust_name" placeholder="*ឈ្មោះអ្នកខ្ចី (ឧ៖ មីង សុខា)" class="font-bold border p-2.5 rounded-xl">' +
-          '<input type="text" id="bl_item_name" placeholder="*មុខអីវ៉ាន់ (ឧ៖ ធុង ២០L ពណ៌ស)" value="ធុង ២០L ពណ៌ស" class="font-bold border p-2.5 rounded-xl">' +
+          '<div>' +
+            '<label class="text-[9.5px] font-bold text-gray-500 uppercase block mb-0.5">ឈ្មោះអ្នកខ្ចី (*)</label>' +
+            '<input type="text" id="bl_cust_name" placeholder="ឧ៖ មីង សុខា ឬ ហាង A" class="font-bold border p-2 rounded-xl text-xs sm:text-sm w-full outline-none focus:border-blue-500">' +
+          '</div>' +
+          '<div>' +
+            '<label class="text-[9.5px] font-bold text-gray-500 uppercase block mb-0.5">មុខអីវ៉ាន់ខ្ចី (*)</label>' +
+            '<input type="text" id="bl_item_name" placeholder="ឧ៖ ធុង ២០L ពណ៌ស" value="ធុង ២០L ពណ៌ស" class="font-bold border p-2 rounded-xl text-xs sm:text-sm w-full outline-none focus:border-blue-500">' +
+          '</div>' +
         '</div>' +
         '<div class="grid grid-cols-2 gap-2">' +
-          '<input type="number" id="bl_qty" placeholder="ចំនួនខ្ចី (*)" class="font-black text-blue-900 border p-2.5 rounded-xl">' +
-          '<input type="number" id="bl_deposit" placeholder="ប្រាក់កក់ (៛ បើមាន)" class="font-black text-green-700 border p-2.5 rounded-xl">' +
+          '<div>' +
+            '<label class="text-[9.5px] font-black text-blue-900 uppercase block mb-0.5">ចំនួនខ្ចី (*)</label>' +
+            '<input type="number" id="bl_qty" placeholder="ឧ៖ 10" class="font-black text-blue-900 border-2 border-blue-300 focus:border-blue-600 p-2 rounded-xl text-center text-xs sm:text-sm w-full outline-none">' +
+          '</div>' +
+          '<div>' +
+            '<label class="text-[9.5px] font-bold text-emerald-900 uppercase block mb-0.5">ប្រាក់កក់ (៛ បើមាន)</label>' +
+            '<input type="number" id="bl_deposit" placeholder="ឧ៖ 0" class="font-black text-emerald-700 border p-2 rounded-xl text-center text-xs sm:text-sm w-full outline-none focus:border-emerald-500">' +
+          '</div>' +
         '</div>' +
-        '<button onclick="submitBottleLoanToSupabase()" class="btn-green bg-blue-600 hover:bg-blue-700 py-3 text-sm font-bold">កត់ត្រាការខ្ចី (Save Loan)</button>' +
+        '<button onclick="submitBottleLoanToSupabase()" class="btn-green bg-blue-600 hover:bg-blue-700 py-2.5 sm:py-3 text-xs sm:text-sm font-bold shadow-md">' +
+          'កត់ត្រាការខ្ចី (Save Loan)' +
+        '</button>' +
       '</div>' +
     '</div>' +
-    '<div class="card border-t-4 border-orange-500 shadow-xl p-5 mb-0">' +
-      '<h3 class="font-bold text-gray-800 text-sm mb-3 flex items-center gap-2"><i class="fas fa-clock-rotate-left text-orange-600"></i>បញ្ជីអ្នកកំពុងខ្ចីសំបកធុង</h3>' +
-      '<div class="overflow-x-auto rounded-xl border"><table class="w-full text-left text-xs border-collapse"><thead><tr class="bg-gray-100 text-gray-700 font-bold border-b"><th class="p-2.5">ថ្ងៃខ្ចី</th><th class="p-2.5">អ្នកខ្ចី</th><th class="p-2.5">អីវ៉ាន់ខ្ចី</th><th class="p-2.5 text-center">ខ្ចី</th><th class="p-2.5 text-center">បានសង</th><th class="p-2.5 text-center">នៅខ្វះ</th><th class="p-2.5 text-center">សង</th></tr></thead><tbody id="blTableBody"></tbody></table></div>' +
+
+    // កាតទី ២៖ បញ្ជីអ្នកកំពុងខ្ចីសំបកធុង (Full Width Table)
+    '<div class="card border-t-4 border-orange-500 shadow-xl p-4 sm:p-5 mb-0 bg-white">' +
+      '<h3 class="font-bold text-gray-800 text-xs sm:text-sm mb-2.5 flex items-center gap-1.5">' +
+        '<i class="fas fa-clock-rotate-left text-orange-600"></i>បញ្ជីអ្នកកំពុងខ្ចីសំបកធុង / បរិក្ខារ' +
+      '</h3>' +
+      '<div class="overflow-x-auto max-h-96 overflow-y-auto rounded-xl border border-gray-200">' +
+        '<table class="w-full text-left text-xs border-collapse">' +
+          '<thead class="sticky top-0 bg-gray-100 text-gray-700 font-bold border-b z-10 shadow-xs">' +
+            '<tr>' +
+              '<th class="p-2 sm:p-2.5 text-center w-24">ថ្ងៃខ្ចី</th>' +
+              '<th class="p-2 sm:p-2.5">អ្នកខ្ចី</th>' +
+              '<th class="p-2 sm:p-2.5">អីវ៉ាន់ខ្ចី</th>' +
+              '<th class="p-2 sm:p-2.5 text-center">ខ្ចី</th>' +
+              '<th class="p-2 sm:p-2.5 text-center">បានសង</th>' +
+              '<th class="p-2 sm:p-2.5 text-center">នៅខ្វះ</th>' +
+              '<th class="p-2 sm:p-2.5 text-center w-20">សកម្មភាព</th>' +
+            '</tr>' +
+          '</thead>' +
+          '<tbody id="blTableBody"></tbody>' +
+        '</table>' +
+      '</div>' +
     '</div>' +
   '</div>';
 
@@ -1210,12 +1251,23 @@ function renderBottleLoanModule() {
 async function fetchBottleLoansData() {
   var tbody = document.getElementById('blTableBody');
   if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-gray-400 italic">កំពុងទាញទិន្នន័យ...</td></tr>';
+
+  var tableEl = tbody.closest('table');
+  if (tableEl) {
+    tableEl.style.minWidth = "650px"; // ការពារកុំឱ្យធ្លាក់ជួរលើទូរស័ព្ទ
+  }
+
+  tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-gray-400 italic"><i class="fas fa-spinner fa-spin mr-1 text-blue-600"></i> កំពុងទាញទិន្នន័យ...</td></tr>';
 
   try {
-    const { data: list } = await supabaseClient.from('bottle_loans').select('*').eq('status', 'Borrowing').order('created_at', { ascending: false });
+    const { data: list } = await supabaseClient
+      .from('bottle_loans')
+      .select('*')
+      .eq('status', 'Borrowing')
+      .order('created_at', { ascending: false });
+
     if (!list || list.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-green-600 font-bold"><i class="fas fa-check-circle mr-1"></i> គ្មានអ្នកជំពាក់សំបកធុងឡើយ</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7" class="p-6 text-center text-emerald-700 font-bold bg-emerald-50/50"><i class="fas fa-check-circle mr-1 text-base text-emerald-600"></i> អបអរសាទរ! គ្មានអ្នកជំពាក់សំបកធុងឡើយ</td></tr>';
       return;
     }
 
@@ -1224,30 +1276,53 @@ async function fetchBottleLoansData() {
       var remaining = Math.max(0, parseFloat(item.borrowed_qty || 0) - parseFloat(item.returned_qty || 0));
       var dateStr = new Date(item.created_at).toLocaleDateString('km-KH');
 
-      html += '<tr class="border-b hover:bg-gray-50">' +
-        '<td class="p-2.5 text-gray-500 text-[10px]">' + dateStr + '</td>' +
-        '<td class="p-2.5 font-bold text-gray-800">' + item.customer_name + '</td>' +
-        '<td class="p-2.5">' + item.item_name + '</td>' +
-        '<td class="p-2.5 text-center font-bold text-blue-700">' + item.borrowed_qty + '</td>' +
-        '<td class="p-2.5 text-center font-bold text-green-700">' + item.returned_qty + '</td>' +
-        '<td class="p-2.5 text-center font-black text-orange-700">' + remaining + '</td>' +
-        '<td class="p-2.5 text-center"><button onclick="quickReturnBottleLoan(\'' + item.loan_id + '\', ' + remaining + ', ' + item.returned_qty + ', ' + item.borrowed_qty + ')" class="px-2.5 py-1 bg-green-600 text-white rounded-lg font-bold text-xs active:scale-95 transition">សង</button></td>' +
+      html += '<tr class="border-b hover:bg-gray-50 transition">' +
+        '<td class="p-2 sm:p-2.5 text-gray-500 text-[10px] text-center whitespace-nowrap">' + dateStr + '</td>' +
+        '<td class="p-2 sm:p-2.5 font-bold text-gray-800 whitespace-nowrap">' + item.customer_name + '</td>' +
+        '<td class="p-2 sm:p-2.5 whitespace-nowrap">' + item.item_name + '</td>' +
+        '<td class="p-2 sm:p-2.5 text-center font-bold text-blue-700 whitespace-nowrap">' + item.borrowed_qty + '</td>' +
+        '<td class="p-2 sm:p-2.5 text-center font-bold text-emerald-700 whitespace-nowrap">' + item.returned_qty + '</td>' +
+        '<td class="p-2 sm:p-2.5 text-center font-black text-orange-700 whitespace-nowrap">' + remaining + '</td>' +
+        '<td class="p-2 sm:p-2.5 text-center whitespace-nowrap">' +
+          '<button onclick="quickReturnBottleLoan(\'' + item.loan_id + '\', ' + remaining + ', ' + item.returned_qty + ', ' + item.borrowed_qty + ', \'' + item.customer_name.replace(/'/g, "\\'") + '\', \'' + item.item_name.replace(/'/g, "\\'") + '\')" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-black text-xs active:scale-95 transition shadow-2xs flex items-center gap-1 mx-auto">' +
+            '<i class="fas fa-rotate-left text-[10px]"></i> សង' +
+          '</button>' +
+        '</td>' +
       '</tr>';
     });
     tbody.innerHTML = html;
-  } catch(e) {}
+  } catch(e) {
+    tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-red-500 font-bold">កំហុសទាញទិន្នន័យ៖ ' + e.message + '</td></tr>';
+  }
 }
 
 async function submitBottleLoanToSupabase() {
-  var name = document.getElementById('bl_cust_name').value.trim();
-  var item = document.getElementById('bl_item_name').value.trim();
-  var qty = parseFloat(document.getElementById('bl_qty').value || 0);
-  var deposit = parseFloat(document.getElementById('bl_deposit').value || 0);
+  var nameInp = document.getElementById('bl_cust_name');
+  var itemInp = document.getElementById('bl_item_name');
+  var qtyInp = document.getElementById('bl_qty');
+  var depositInp = document.getElementById('bl_deposit');
 
-  if (!name || !item || qty <= 0) { showToast("សូមបំពេញឈ្មោះ អីវ៉ាន់ និងចំនួនខ្ចី!", "error"); return; }
+  var name = nameInp ? nameInp.value.trim() : '';
+  var item = itemInp ? itemInp.value.trim() : '';
+  var qty = parseFloat(qtyInp ? qtyInp.value || 0 : 0);
+  var deposit = parseFloat(depositInp ? depositInp.value || 0 : 0);
+
+  // ⚠️ ប្រើ kcAlert បញ្ជាក់ពេលខ្វះទិន្នន័យ
+  if (!name || !item || qty <= 0) {
+    if (typeof kcAlert === 'function') {
+      await kcAlert({
+        title: "ខ្វះព័ត៌មាន",
+        message: "សូមបំពេញឈ្មោះអ្នកខ្ចី មុខអីវ៉ាន់ និងចំនួនខ្ចីធំជាង ០!",
+        type: "warning"
+      });
+    } else {
+      showToast("សូមបំពេញឈ្មោះ អីវ៉ាន់ និងចំនួនខ្ចី!", "error");
+    }
+    return;
+  }
 
   try {
-    await supabaseClient.from('bottle_loans').insert([{
+    const { error } = await supabaseClient.from('bottle_loans').insert([{
       loan_id: "BL-" + new Date().getTime(),
       customer_name: name,
       item_name: item,
@@ -1258,21 +1333,39 @@ async function submitBottleLoanToSupabase() {
       admin_name: currentUser.fullName || "Admin"
     }]);
 
-    showToast("បានកត់ត្រាការខ្ចីជោគជ័យ!", "success");
-    document.getElementById('bl_cust_name').value = "";
-    document.getElementById('bl_qty').value = "";
-    document.getElementById('bl_deposit').value = "";
+    if (error) throw error;
+
+    if (nameInp) nameInp.value = "";
+    if (qtyInp) qtyInp.value = "";
+    if (depositInp) depositInp.value = "";
+
+    // 🎉 ប្រើ kcAlert ជូនដំណឹងជោគជ័យ
+    if (typeof kcAlert === 'function') {
+      await kcAlert({
+        title: "កត់ត្រាជោគជ័យ! 🎉",
+        message: "បានកត់ត្រាការខ្ចី [" + item + " x " + qty + "] សម្រាប់ [" + name + "] រួចរាល់!",
+        type: "success"
+      });
+    } else {
+      showToast("បានកត់ត្រាការខ្ចីជោគជ័យ!", "success");
+    }
+
     fetchBottleLoansData();
+
   } catch(err) {
-    showToast("កំហុស៖ " + err.message, "error");
+    if (typeof kcAlert === 'function') {
+      await kcAlert({ title: "កំហុស", message: err.message, type: "danger" });
+    } else {
+      showToast("កំហុស៖ " + err.message, "error");
+    }
   }
 }
 
-async function quickReturnBottleLoan(loanId, remaining, returned, borrowed) {
-  // 🌟 ប្រើ Pop-up ថ្មីរបស់ KC POS មានប្រអប់វាយលេខធំៗ ស្រួលចុចលើទូរស័ព្ទ
+async function quickReturnBottleLoan(loanId, remaining, returned, borrowed, custName, itemName) {
+  // 🌟 ប្រើប្រអប់ kcPrompt វាយលេខធំៗស្រួលចុច
   var val = await kcPrompt({
-    title: "សងសំបកធុងទឹក",
-    message: "អតិថិជននៅជំពាក់ " + remaining + " ធុង។ សូមវាយចំនួនសងខាងក្រោម៖",
+    title: "សងសំបកធុង៖ " + (custName || "អតិថិជន"),
+    message: "កំពុងជំពាក់ " + remaining + " ធុង (" + (itemName || "អីវ៉ាន់") + ")\nសូមបញ្ចូលចំនួនសងខាងក្រោម៖",
     defaultValue: remaining,
     confirmText: "យល់ព្រមសង",
     inputType: "number"
@@ -1286,17 +1379,35 @@ async function quickReturnBottleLoan(loanId, remaining, returned, borrowed) {
   var newStatus = (newReturned >= borrowed) ? 'Returned' : 'Borrowing';
 
   try {
-    await supabaseClient.from('bottle_loans').update({
+    const { error } = await supabaseClient.from('bottle_loans').update({
       returned_qty: newReturned,
       status: newStatus
     }).eq('loan_id', loanId);
 
-    showToast("បានកត់ត្រាការសងសំបកធុងជោគជ័យ!", "success");
+    if (error) throw error;
+
+    // 🎉 ប្រើ kcAlert ជូនដំណឹងជោគជ័យ
+    if (typeof kcAlert === 'function') {
+      await kcAlert({
+        title: "សងរួចរាល់! 🎉",
+        message: "បានកត់ត្រាការសងចំនួន " + returnQty + " ធុងជោគជ័យ! " + (newStatus === 'Returned' ? "✅ (សងគ្រប់ចំនួន)" : "⚠️ (នៅខ្វះ " + (borrowed - newReturned) + " ធុង)"),
+        type: "success"
+      });
+    } else {
+      showToast("បានកត់ត្រាការសងសំបកធុងជោគជ័យ!", "success");
+    }
+
     fetchBottleLoansData();
+
   } catch(err) {
-    showToast("កំហុស៖ " + err.message, "error");
+    if (typeof kcAlert === 'function') {
+      await kcAlert({ title: "កំហុស", message: err.message, type: "danger" });
+    } else {
+      showToast("កំហុស៖ " + err.message, "error");
+    }
   }
 }
+
 // ==========================================
 // 💸 ៣. កត់ត្រាការចំណាយ (EXPENSES)
 // ==========================================
