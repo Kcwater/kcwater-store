@@ -1420,7 +1420,7 @@ function renderCustomersModule() {
     prodOptions += '<option value="' + p.name + '">' + p.name + '</option>';
   });
 
-  // ៣. បញ្ជីឈ្មោះមេ (បង្ហាញតែអ្នកលក់បន្ត Reseller សម្រាប់កូនចៅដកទឹកជំនួសមេ)
+  // ៣. បញ្ជីឈ្មោះមេ (សម្រាប់កូនចៅដកទឹកជំនួសមេ)
   var bossOptions = '<option value="">-- ជ្រើសរើសពីបញ្ជីអ្នកលក់បន្ត (Reseller) ឬវាយខាងក្រោម --</option>';
   (allCustomers || []).forEach(function(c) {
     var isReseller = (c.type === 'Regular' || c.role === 'Customer') && c.type !== 'Monthly' && c.type !== 'Retail' && c.role !== 'Admin' && c.full_name !== 'Walk-in';
@@ -1429,7 +1429,7 @@ function renderCustomersModule() {
     }
   });
 
-  // ៤. បញ្ជីអតិថិជនប្រចាំខែ Monthly (សម្រាប់កំណត់តម្លៃកុងត្រាពិសេស)
+  // ៤. បញ្ជីអតិថិជនប្រចាំខែ Monthly
   var monthlyCustOptions = '<option value="">-- រើសអតិថិជនប្រចាំខែ (Monthly) --</option>';
   var monthlyCount = 0;
   (allCustomers || []).forEach(function(c) {
@@ -1442,98 +1442,120 @@ function renderCustomersModule() {
     monthlyCustOptions = '<option value="">-- មិនទាន់មានអតិថិជន Monthly ទេ (សូមបង្កើតខាងលើ) --</option>';
   }
 
-  area.innerHTML = '<div class="max-w-3xl mx-auto space-y-4">' +
-    // កាត ១៖ បង្កើត/កែប្រែគណនី
-    '<div class="card border-t-4 border-blue-600 shadow-xl p-5 mb-0">' +
-      '<div class="flex justify-between items-center mb-3">' +
-        '<h2 id="custFormTitle" class="font-extrabold text-blue-900 text-base flex items-center gap-2">' +
-          '<i class="fas fa-user-plus text-blue-600"></i>បង្កើតគណនី Admin / អ្នកដឹក / អតិថិជន' +
-        '</h2>' +
-        '<button type="button" id="btnCancelEditCust" onclick="cancelEditCustomer()" class="text-xs font-bold text-gray-500 hover:text-red-600 hidden">' +
-          '<i class="fas fa-times mr-1"></i>បោះបង់ការកែប្រែ' +
-        '</button>' +
+  // 🖥️ ប្រើ w-full max-w-[1600px] ដើម្បីឱ្យពេញអេក្រង់កុំព្យូទ័រស្មើស្អាត
+  area.innerHTML = '<div class="w-full max-w-[1600px] mx-auto space-y-3.5 px-1 sm:px-2">' +
+    
+    // ជួរខាងលើ៖ បង្កើតគណនី (ឆ្វេង ៦ ភាគ) + កំណត់តម្លៃកុងត្រា (ស្តាំ ៦ ភាគ) លើ PC ធំ
+    '<div class="grid grid-cols-1 lg:grid-cols-2 gap-3.5 items-start">' +
+      
+      // កាត ១៖ បង្កើត/កែប្រែគណនី
+      '<div class="card border-t-4 border-blue-600 shadow-xl p-4 sm:p-5 mb-0 bg-white">' +
+        '<div class="flex justify-between items-center mb-3">' +
+          '<h2 id="custFormTitle" class="font-extrabold text-blue-900 text-xs sm:text-base flex items-center gap-1.5">' +
+            '<i class="fas fa-user-plus text-blue-600"></i>បង្កើតគណនី Admin / អ្នកដឹក / អតិថិជន' +
+          '</h2>' +
+          '<button type="button" id="btnCancelEditCust" onclick="cancelEditCustomer()" class="text-xs font-bold text-gray-500 hover:text-red-600 hidden">' +
+            '<i class="fas fa-times mr-1"></i>បោះបង់ការកែប្រែ' +
+          '</button>' +
+        '</div>' +
+        '<div class="space-y-2.5">' +
+          '<div>' +
+            '<label class="text-[9.5px] font-bold text-gray-500 uppercase block mb-0.5">ប្រភេទគណនីដែលត្រូវបង្កើត</label>' +
+            '<select id="mem_role_type" onchange="toggleCustTypeFields()" class="font-bold border-2 border-blue-200 p-2 rounded-xl w-full bg-white text-xs sm:text-sm outline-none">' +
+              '<option value="MONTHLY">🏢 អតិថិជនប្រចាំខែ (Monthly - គ្មាន Login, Admin បញ្ចូលឱ្យ)</option>' +
+              '<option value="RESELLER">🚚 អតិថិជនប្រចាំ - អ្នកលក់បន្ត (Reseller - មាន Login)</option>' +
+              '<option value="DRIVER">🛵 កូនចៅ/អ្នកដឹក (Driver - ដកទឹកជំនួសមេ)</option>' +
+              '<option value="COMPANY_DRIVER">🚚 អ្នកដឹកជញ្ជូនរោងចក្រ (Company Driver)</option>' +
+              '<option value="SELLER">🛒 បុគ្គលិកលក់នៅកន្លែង (Seller / Cashier)</option>' +
+              '<option value="ADMIN">👑 Admin អ្នកគ្រប់គ្រង (Admin)</option>' +
+            '</select>' +
+          '</div>' +
+          '<div class="grid grid-cols-2 gap-2">' +
+            '<input type="text" id="mem_name" placeholder="*ឈ្មោះពេញ (ឧ៖ ក្រុមហ៊ុន A ឬ តារា)" class="font-bold border p-2 rounded-xl text-xs sm:text-sm outline-none focus:border-blue-500">' +
+            '<input type="text" id="mem_phone" placeholder="លេខទូរស័ព្ទ (បើមាន)" class="border p-2 rounded-xl text-xs sm:text-sm outline-none focus:border-blue-500 font-mono">' +
+          '</div>' +
+          '<div id="driverBossContainer" class="p-2.5 bg-amber-50 rounded-2xl border border-amber-300 space-y-1 hidden">' +
+            '<label class="text-[9.5px] font-black text-amber-950 uppercase block">ឈ្មោះមេ (អ្នកលក់បន្តដែលកូនចៅនេះមកដកទឹកជំនួស) *</label>' +
+            '<select id="mem_boss_select" onchange="document.getElementById(\'mem_boss_custom\').value=this.value" class="font-bold text-amber-950 border border-amber-300 bg-white rounded-xl p-1.5 w-full text-xs">' +
+              bossOptions +
+            '</select>' +
+            '<input type="text" id="mem_boss_custom" placeholder="ឬវាយឈ្មោះមេនៅទីនេះ (បើមិនទាន់មានក្នុងបញ្ជី)..." class="font-bold border border-amber-300 bg-white rounded-xl p-1.5 w-full text-xs">' +
+          '</div>' +
+          '<div id="loginCredsContainer" class="grid grid-cols-2 gap-2 p-2.5 bg-blue-50/60 rounded-2xl border border-blue-200 hidden">' +
+            '<div>' +
+              '<label class="text-[9px] font-bold text-blue-900 uppercase block mb-0.5">Username ចូលប្រើ *</label>' +
+              '<input type="text" id="mem_user" placeholder="ឧ៖ user123" class="font-bold border p-1.5 rounded-xl w-full bg-white text-xs">' +
+            '</div>' +
+            '<div>' +
+              '<label class="text-[9px] font-bold text-blue-900 uppercase block mb-0.5">Password លេខសម្ងាត់ *</label>' +
+              '<input type="text" id="mem_pass" placeholder="លេខសម្ងាត់" class="font-bold border p-1.5 rounded-xl w-full bg-white text-xs">' +
+            '</div>' +
+          '</div>' +
+          '<button onclick="saveUserToSupabase()" id="btnSaveUserAction" class="btn-green shadow-lg py-2.5 text-xs sm:text-sm font-bold">' +
+            'រក្សាទុកគណនី (Save Account)' +
+          '</button>' +
+        '</div>' +
       '</div>' +
-      '<div class="space-y-3">' +
-        '<div>' +
-          '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">ប្រភេទគណនីដែលត្រូវបង្កើត</label>' +
-          '<select id="mem_role_type" onchange="toggleCustTypeFields()" class="font-bold border-2 border-blue-200 p-2.5 rounded-xl w-full bg-white">' +
-            '<option value="MONTHLY">🏢 អតិថិជនប្រចាំខែ (Monthly - គ្មាន Login, Admin បញ្ចូលឱ្យ)</option>' +
-            '<option value="RESELLER">🚚 អតិថិជនប្រចាំ - អ្នកលក់បន្ត (Reseller - មាន Login)</option>' +
-            '<option value="DRIVER">🛵 កូនចៅ/អ្នកដឹក (Driver - ដកទឹកជំនួសមេ)</option>' +
-            '<option value="COMPANY_DRIVER">🚚 អ្នកដឹកជញ្ជូនរោងចក្រ (Company Driver)</option>' +
-            '<option value="SELLER">🛒 បុគ្គលិកលក់នៅកន្លែង (Seller / Cashier)</option>' +
-            '<option value="ADMIN">👑 Admin អ្នកគ្រប់គ្រង (Admin)</option>' +
-          '</select>' +
-        '</div>' +
-        '<div class="grid grid-cols-2 gap-2">' +
-          '<input type="text" id="mem_name" placeholder="*ឈ្មោះពេញ (ឧ៖ ក្រុមហ៊ុន A ឬ តារា)" class="font-bold border p-2.5 rounded-xl">' +
-          '<input type="text" id="mem_phone" placeholder="លេខទូរស័ព្ទ (បើមាន)" class="border p-2.5 rounded-xl">' +
-        '</div>' +
-        '<div id="driverBossContainer" class="p-3 bg-amber-50 rounded-2xl border border-amber-300 space-y-1.5 hidden">' +
-          '<label class="text-[10px] font-black text-amber-950 uppercase block">ឈ្មោះមេ (អ្នកលក់បន្តដែលកូនចៅនេះមកដកទឹកជំនួស) *</label>' +
-          '<select id="mem_boss_select" onchange="document.getElementById(\'mem_boss_custom\').value=this.value" class="font-bold text-amber-950 border border-amber-300 bg-white rounded-xl p-2 w-full text-xs">' +
-            bossOptions +
-          '</select>' +
-          '<input type="text" id="mem_boss_custom" placeholder="ឬវាយឈ្មោះមេនៅទីនេះ (បើមិនទាន់មានក្នុងបញ្ជី)..." class="font-bold border border-amber-300 bg-white rounded-xl p-2 w-full text-xs">' +
-        '</div>' +
-        '<div id="loginCredsContainer" class="grid grid-cols-2 gap-2 p-3 bg-blue-50/60 rounded-2xl border border-blue-200 hidden">' +
+
+      // កាត ២៖ កំណត់តម្លៃពិសេសសម្រាប់អតិថិជន Monthly
+      '<div class="card border-t-4 border-orange-500 shadow-xl p-4 sm:p-5 mb-0 bg-white">' +
+        '<h3 class="font-extrabold text-orange-900 text-xs sm:text-base mb-1 flex items-center gap-1.5">' +
+          '<i class="fas fa-tags text-orange-600"></i>កំណត់តម្លៃកុងត្រាសម្រាប់ម៉ូយប្រចាំខែ (Contract Prices)' +
+        '</h3>' +
+        '<p class="text-[10px] text-gray-500 mb-2.5 leading-relaxed">' +
+          '💡 <b>ចំណាំ៖</b> កំណត់មុខទំនិញ និងតម្លៃនៅទីនេះ ដើម្បីឱ្យទំនិញនោះបង្ហាញ និងចាក់សោរតម្លៃពេលលក់ឱ្យគាត់។' +
+        '</p>' +
+        '<div class="space-y-2.5">' +
           '<div>' +
-            '<label class="text-[9.5px] font-bold text-blue-900 uppercase block mb-1">Username ចូលប្រើ *</label>' +
-            '<input type="text" id="mem_user" placeholder="ឧ៖ user123" class="font-bold border p-2 rounded-xl w-full bg-white text-xs">' +
+            '<label class="text-[9.5px] font-bold text-gray-500 uppercase block mb-0.5">១. ជ្រើសរើសម៉ូយប្រចាំខែ (Monthly)</label>' +
+            '<select id="spCustSelect" class="w-full font-bold border p-2 rounded-xl bg-white text-blue-950 text-xs sm:text-sm outline-none">' + monthlyCustOptions + '</select>' +
           '</div>' +
-          '<div>' +
-            '<label class="text-[9.5px] font-bold text-blue-900 uppercase block mb-1">Password លេខសម្ងាត់ *</label>' +
-            '<input type="text" id="mem_pass" placeholder="លេខសម្ងាត់" class="font-bold border p-2 rounded-xl w-full bg-white text-xs">' +
+          '<div class="grid grid-cols-2 gap-2">' +
+            '<div>' +
+              '<label class="text-[9.5px] font-bold text-gray-500 uppercase block mb-0.5">២. ជ្រើសរើសទំនិញ</label>' +
+              '<select id="spProdSelect" class="font-bold border p-2 rounded-xl bg-white w-full text-xs sm:text-sm outline-none">' + prodOptions + '</select>' +
+            '</div>' +
+            '<div>' +
+              '<label class="text-[9.5px] font-bold text-gray-500 uppercase block mb-0.5">៣. តម្លៃពិសេស (៛)</label>' +
+              '<input type="number" id="spPriceInput" placeholder="ឧ៖ ៥០០" class="font-black text-orange-700 border p-2 rounded-xl text-center w-full text-xs sm:text-sm outline-none">' +
+            '</div>' +
           '</div>' +
+          '<button onclick="saveSpecialPriceToSupabase()" class="btn-green bg-orange-600 hover:bg-orange-700 py-2.5 text-xs sm:text-sm font-bold shadow-md">' +
+            'រក្សាទុកតម្លៃពិសេស (Save Price)' +
+          '</button>' +
         '</div>' +
-        '<button onclick="saveUserToSupabase()" id="btnSaveUserAction" class="btn-green shadow-lg py-3 text-sm font-bold">រក្សាទុកគណនី (Save Account)</button>' +
+      '</div>' +
+
+    '</div>' + // បិទ grid ខាងលើ
+
+    // កាត ៣៖ តារាងតម្លៃពិសេសដែលបានកំណត់
+    '<div class="card border-t-4 border-orange-400 shadow-lg p-4 sm:p-5 mb-0 bg-white">' +
+      '<h4 class="font-bold text-gray-800 text-xs sm:text-sm mb-2 flex items-center gap-1.5">' +
+        '<i class="fas fa-list-check text-orange-600"></i>បញ្ជីតម្លៃកុងត្រាដែលបានកំណត់' +
+      '</h4>' +
+      '<div class="overflow-x-auto max-h-56 overflow-y-auto rounded-xl border border-gray-100">' +
+        '<table class="w-full text-left text-xs border-collapse">' +
+          '<thead class="sticky top-0 bg-gray-100 text-gray-700 font-bold border-b z-10">' +
+            '<tr><th class="p-2 sm:p-2.5">អតិថិជន</th><th class="p-2 sm:p-2.5">មុខទំនិញ</th><th class="p-2 sm:p-2.5 text-right">តម្លៃពិសេស</th><th class="p-2 sm:p-2.5 text-center w-14">លុប</th></tr>' +
+          '</thead>' +
+          '<tbody id="specialPricesTableBody"></tbody>' +
+        '</table>' +
       '</div>' +
     '</div>' +
 
-    // កាត ២៖ កំណត់តម្លៃពិសេស (សម្រាប់តែអតិថិជន Monthly)
-    '<div class="card border-t-4 border-orange-500 shadow-xl p-5 mb-0">' +
-      '<h3 class="font-extrabold text-orange-900 text-base mb-1 flex items-center gap-2">' +
-        '<i class="fas fa-tags text-orange-600"></i>កំណត់តម្លៃពិសេសសម្រាប់អតិថិជនប្រចាំខែ (Contract Prices)' +
-      '</h3>' +
-      '<p class="text-[11px] text-gray-500 mb-3 leading-relaxed">' +
-        '💡 <b>ចំណាំ៖</b> កំណត់មុខទំនិញ និងតម្លៃនៅទីនេះ ដើម្បីឱ្យទំនិញនោះបង្ហាញ និងចាក់សោរតម្លៃពេលលក់ឱ្យគាត់។' +
-      '</p>' +
-      '<div class="space-y-3">' +
-        '<div>' +
-          '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">១. ជ្រើសរើសម៉ូយប្រចាំខែ (Monthly)</label>' +
-          '<select id="spCustSelect" class="w-full font-bold border p-2.5 rounded-xl bg-white text-blue-950">' + monthlyCustOptions + '</select>' +
-        '</div>' +
-        '<div class="grid grid-cols-2 gap-2">' +
-          '<div>' +
-            '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">២. ជ្រើសរើសទំនិញ</label>' +
-            '<select id="spProdSelect" class="font-bold border p-2.5 rounded-xl bg-white w-full">' + prodOptions + '</select>' +
-          '</div>' +
-          '<div>' +
-            '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">៣. តម្លៃពិសេស (៛)</label>' +
-            '<input type="number" id="spPriceInput" placeholder="ឧ៖ ៥០០" class="font-black text-orange-700 border p-2.5 rounded-xl text-center w-full">' +
-          '</div>' +
-        '</div>' +
-        '<button onclick="saveSpecialPriceToSupabase()" class="btn-green bg-orange-600 hover:bg-orange-700 py-3 text-sm font-bold">រក្សាទុកតម្លៃពិសេស (Save Price)</button>' +
-      '</div>' +
-    '</div>' +
-
-    // កាត ៣៖ តារាងតម្លៃពិសេស
-    '<div class="card border-t-4 border-orange-400 shadow-lg p-5 mb-0">' +
-      '<h4 class="font-bold text-gray-800 text-sm mb-2"><i class="fas fa-list-check text-orange-600 mr-1.5"></i>បញ្ជីតម្លៃពិសេសដែលបានកំណត់</h4>' +
-      '<div class="overflow-x-auto rounded-xl border"><table class="w-full text-left text-xs border-collapse"><thead><tr class="bg-gray-100 text-gray-700 font-bold border-b"><th class="p-2.5">អតិថិជន</th><th class="p-2.5">មុខទំនិញ</th><th class="p-2.5 text-right">តម្លៃពិសេស</th><th class="p-2.5 text-center">លុប</th></tr></thead><tbody id="specialPricesTableBody"></tbody></table></div>' +
-    '</div>' +
-
-    // កាត ៤៖ 🔍 បញ្ជីគណនីទាំងអស់ (តារាងធំខាងក្រោមបង្អស់)
-    '<div class="card border-t-4 border-gray-700 shadow-xl p-5 mb-0 space-y-3">' +
+    // កាត ៤៖ បញ្ជីគណនីទាំងអស់ (Full Width Table)
+    '<div class="card border-t-4 border-gray-700 shadow-xl p-4 sm:p-5 mb-0 space-y-3 bg-white">' +
       '<div class="flex justify-between items-center">' +
-        '<h3 class="font-bold text-gray-800 text-sm flex items-center gap-2"><i class="fas fa-users text-blue-600"></i>បញ្ជីគណនីទាំងអស់</h3>' +
+        '<h3 class="font-bold text-gray-800 text-xs sm:text-sm flex items-center gap-1.5">' +
+          '<i class="fas fa-users text-blue-600"></i>បញ្ជីគណនីទាំងអស់' +
+        '</h3>' +
         '<span id="userTotalCountBadge" class="text-xs font-black bg-blue-100 text-blue-900 px-2.5 py-0.5 rounded-full">0 នាក់</span>' +
       '</div>' +
       '<div class="relative">' +
         '<input type="text" id="custModuleSearchInp" oninput="filterUsersModuleTable()" placeholder="🔍 វាយឈ្មោះ, លេខទូរស័ព្ទ ឬ Username ដើម្បីស្វែងរកភ្លាមៗ..." class="w-full border-2 border-gray-200 rounded-xl p-2.5 pl-9 outline-none focus:border-blue-500 font-bold text-xs bg-slate-50 focus:bg-white">' +
         '<i class="fas fa-search absolute left-3 top-3.5 text-gray-400 text-xs pointer-events-none"></i>' +
       '</div>' +
-      '<div class="flex flex-wrap gap-1.5 text-xs">' +
+      '<div class="flex flex-wrap gap-1 text-xs">' +
         '<button type="button" onclick="switchUserTab(\'ALL\')" id="uTab_ALL" class="px-2.5 py-1.5 rounded-xl font-bold bg-blue-700 text-white shadow-2xs active:scale-95 transition">ទាំងអស់</button>' +
         '<button type="button" onclick="switchUserTab(\'RESELLER\')" id="uTab_RESELLER" class="px-2.5 py-1.5 rounded-xl font-bold bg-white text-gray-700 border hover:bg-gray-50 active:scale-95 transition">🚚 អ្នកលក់បន្ត</button>' +
         '<button type="button" onclick="switchUserTab(\'MONTHLY\')" id="uTab_MONTHLY" class="px-2.5 py-1.5 rounded-xl font-bold bg-white text-gray-700 border hover:bg-gray-50 active:scale-95 transition">🏢 ប្រចាំខែ</button>' +
@@ -1541,15 +1563,21 @@ function renderCustomersModule() {
         '<button type="button" onclick="switchUserTab(\'DRIVER\')" id="uTab_DRIVER" class="px-2.5 py-1.5 rounded-xl font-bold bg-white text-gray-700 border hover:bg-gray-50 active:scale-95 transition">🛵 អ្នកដឹក</button>' +
         '<button type="button" onclick="switchUserTab(\'STAFF\')" id="uTab_STAFF" class="px-2.5 py-1.5 rounded-xl font-bold bg-white text-gray-700 border hover:bg-gray-50 active:scale-95 transition">👑 Staff/Admin</button>' +
       '</div>' +
-      '<div class="overflow-x-auto max-h-96 overflow-y-auto rounded-xl border border-gray-200 shadow-inner">' +
+      '<div class="overflow-x-auto max-h-[450px] overflow-y-auto rounded-xl border border-gray-200 shadow-inner">' +
         '<table class="w-full text-left text-xs border-collapse">' +
           '<thead class="sticky top-0 bg-gray-100 text-gray-700 font-bold border-b z-10 shadow-2xs">' +
-            '<tr><th class="p-2.5">ឈ្មោះ / ទូរស័ព្ទ</th><th class="p-2.5">ព័ត៌មានគណនី (Login)</th><th class="p-2.5 text-center">តួនាទី / ប្រភេទ</th><th class="p-2.5 text-center">សកម្មភាព</th></tr>' +
+            '<tr>' +
+              '<th class="p-2 sm:p-2.5">ឈ្មោះ / ទូរស័ព្ទ</th>' +
+              '<th class="p-2 sm:p-2.5">ព័ត៌មានគណនី (Login)</th>' +
+              '<th class="p-2 sm:p-2.5 text-center">តួនាទី / ប្រភេទ</th>' +
+              '<th class="p-2 sm:p-2.5 text-center w-28">សកម្មភាព</th>' +
+            '</tr>' +
           '</thead>' +
           '<tbody id="usersModuleTableBody"></tbody>' +
         '</table>' +
       '</div>' +
     '</div>' +
+
   '</div>';
 
   toggleCustTypeFields();
