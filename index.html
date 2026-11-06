@@ -2091,14 +2091,28 @@ function filterCatalog(cat, btn) {
       activeModalProduct = null;
     }
 
-    function adjustDetailQty(delta) {
-      var display = document.getElementById('modalQtyDisplay');
-      if (!display || !activeModalProduct) return;
-      var val = (parseInt(display.innerText) || 1) + delta;
-      if (val < 1) val = 1;
-      display.innerText = val;
-      updateModalButtonText(val);
+    // ➕➖ ១. មុខងារទប់ស្កាត់កុំឱ្យចុចលើសស្តុកពេលរើសទំនិញ (Max Stock Limiter)
+function adjustDetailQty(delta) {
+  var display = document.getElementById('modalQtyDisplay');
+  if (!display || !activeModalProduct) return;
+  var val = (parseInt(display.innerText) || 1) + delta;
+  if (val < 1) val = 1;
+
+  // 🛡️ ពិនិត្យកុំឱ្យលើសស្តុកជាក់ស្តែងចំពោះទំនិញទិញគេ
+  if (activeModalProduct.type === 'ទិញគេ') {
+    var maxStock = parseFloat(activeModalProduct.stock || 0);
+    if (delta > 0 && val > maxStock) {
+      val = maxStock;
+      var alertMsg = (currentLang === 'en') ? ("Sorry, only " + maxStock + " available in stock!") :
+                     ((currentLang === 'zh') ? ("抱歉，该商品库存仅剩 " + maxStock + " 件！") :
+                     ("អភ័យទោស ទំនិញនេះនៅសល់ត្រឹមតែ " + maxStock + " ក្នុងស្តុកប៉ុណ្ណោះ!"));
+      alert(alertMsg);
     }
+  }
+
+  display.innerText = val;
+  updateModalButtonText(val);
+}
 
     // 🔘 មុខងារប៊ូតុង "បញ្ចូលកន្ត្រក" (ខ្លី ស្អាត គ្មានតម្លៃរញ៉េរញ៉ៃ)
     function updateModalButtonText(qty) {
@@ -2109,21 +2123,35 @@ function filterCatalog(cat, btn) {
       }
     }
 
-    function confirmAddToCart() {
-      if (!activeModalProduct) return;
-      var q = parseInt(document.getElementById('modalQtyDisplay').innerText) || 1;
+    // 🛒 ២. ផ្ទៀងផ្ទាត់ស្តុកមុនពេលបញ្ចូលទៅក្នុងកន្ត្រក
+function confirmAddToCart() {
+  if (!activeModalProduct) return;
+  var q = parseInt(document.getElementById('modalQtyDisplay').innerText) || 1;
 
-      cartItems[activeModalProduct.id] = {
-        raw_name: activeModalProduct.raw_name,
-        price: activeModalProduct.price,
-        qty: q,
-        isBarrel20L: activeModalProduct.isBarrel20L || false
-      };
-
-      closeProductDetailModal();
-      renderCatalogGrid();
-      recalcCartDock();
+  // 🛡️ ពិនិត្យស្តុកចុងក្រោយ
+  if (activeModalProduct.type === 'ទិញគេ') {
+    var maxStock = parseFloat(activeModalProduct.stock || 0);
+    if (q > maxStock) {
+      q = maxStock;
+      var alertMsg = (currentLang === 'en') ? ("Sorry, only " + maxStock + " available in stock!") :
+                     ((currentLang === 'zh') ? ("抱歉，该商品库存仅剩 " + maxStock + " 件！") :
+                     ("អភ័យទោស ទំនិញនេះនៅសល់ត្រឹមតែ " + maxStock + " ក្នុងស្តុកប៉ុណ្ណោះ!"));
+      alert(alertMsg);
     }
+    if (q <= 0) return;
+  }
+
+  cartItems[activeModalProduct.id] = {
+    raw_name: activeModalProduct.raw_name,
+    price: activeModalProduct.price,
+    qty: q,
+    isBarrel20L: activeModalProduct.isBarrel20L || false
+  };
+
+  closeProductDetailModal();
+  renderCatalogGrid();
+  recalcCartDock();
+}
 
     // 🛒 មុខងារគណនាកន្ត្រកអណ្តែត ជា ៣ រូបិយប័ណ្ណ (៛, ฿, $)
     function recalcCartDock() {
@@ -2459,23 +2487,36 @@ function updateCheckoutCalculation() {
   };
 }
     
-        // ➕➖ មុខងារបន្ថែម ឬបន្ថយចំនួនទំនិញផ្ទាល់ពីលើផ្ទាំង Checkout
-    function adjustCheckoutItemQty(id, delta) {
-      if (cartItems[id]) {
-        cartItems[id].qty += delta;
-        if (cartItems[id].qty <= 0) {
-          delete cartItems[id];
-        }
-      }
-      updateCheckoutCalculation();
-      recalcCartDock();
-      renderCatalogGrid();
-
-      // បើលុបទំនិញអស់ពីកន្ត្រក ឱ្យបិទផ្ទាំង Checkout អូតូ
-      if (Object.keys(cartItems).length === 0) {
-        closeCheckoutModal();
+        // ➕➖ ៣. ពិនិត្យស្តុកពេលភ្ញៀវចុច (+) ក្នុងផ្ទាំងគិតលុយ (Checkout Modal)
+function adjustCheckoutItemQty(id, delta) {
+  if (cartItems[id]) {
+    var prodObj = STORE_CATALOG.find(function(p) { return p.id === id; });
+    
+    // 🛡️ បើចុចថែម (+) ត្រូវឆែកមើលថាតើលើសស្តុកឬអត់
+    if (delta > 0 && prodObj && prodObj.type === 'ទិញគេ') {
+      var maxStock = parseFloat(prodObj.stock || 0);
+      if (cartItems[id].qty + delta > maxStock) {
+        var alertMsg = (currentLang === 'en') ? ("Sorry, [" + prodObj.raw_name + "] only has " + maxStock + " in stock!") :
+                       ((currentLang === 'zh') ? ("抱歉，[" + prodObj.raw_name + "] 库存仅剩 " + maxStock + " 件！") :
+                       ("អភ័យទោស ទំនិញ [" + prodObj.raw_name + "] នៅសល់ត្រឹមតែ " + maxStock + " ក្នុងស្តុកប៉ុណ្ណោះ!"));
+        alert(alertMsg);
+        return;
       }
     }
+
+    cartItems[id].qty += delta;
+    if (cartItems[id].qty <= 0) {
+      delete cartItems[id];
+    }
+  }
+  updateCheckoutCalculation();
+  recalcCartDock();
+  renderCatalogGrid();
+
+  if (Object.keys(cartItems).length === 0) {
+    closeCheckoutModal();
+  }
+}
 
     // 🗑️ មុខងារលុបទំនិញចោលចេញពីកន្ត្រក
     function removeCheckoutItem(id) {
