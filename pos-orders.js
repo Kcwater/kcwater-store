@@ -1409,7 +1409,6 @@ async function loadOnlineHubProductsTab() {
 
   html += '</div></div>';
   area.innerHTML = html;
-}
   } catch(e) {
     area.innerHTML = '<div class="card p-4 text-center text-red-500 font-bold text-xs">កំហុស៖ ' + e.message + '</div>';
   }
