@@ -1915,12 +1915,18 @@ function switchUserTab(tab) {
   filterUsersModuleTable();
 }
 
-// 📋 បង្ហាញតារាងបញ្ជីគណនី (មានប៊ូតុង [✏️ កែប្រែ] ច្បាស់ៗ & [🗑️ លុប])
+// 📋 បង្ហាញតារាងបញ្ជីគណនី (ការពារកុំឱ្យធ្លាក់ប្រអប់ និងមិនឱ្យដាច់អក្សរលើអេក្រង់តូច ១០០%)
 function filterUsersModuleTable() {
   var tbody = document.getElementById('usersModuleTableBody');
   var searchInp = document.getElementById('custModuleSearchInp');
   var badgeCount = document.getElementById('userTotalCountBadge');
   if (!tbody) return;
+
+  // 🛡️ កំណត់ទទឹងអប្បបរមាកុំឱ្យតារាងច្របាច់ទាញធ្លាក់អក្សរលើទូរស័ព្ទ
+  var tableEl = tbody.closest('table');
+  if (tableEl) {
+    tableEl.style.minWidth = "580px";
+  }
 
   var q = searchInp ? searchInp.value.toLowerCase().trim() : '';
 
@@ -1953,60 +1959,60 @@ function filterUsersModuleTable() {
 
   var html = '';
   filtered.forEach(function(u) {
-    // 🛡️ ធានាថា Seller និង Admin មិនច្រឡំជាមួយភ្ញៀវ Online ឡើយ
     var isSeller = (u.role === 'Seller');
     var isOnlineRetail = !isSeller && u.role !== 'Admin' && (u.type === 'Retail' || u.role === 'Retail' || String(u.username || '').startsWith('online_'));
     var badgeHtml = '';
 
+    // 🏷️ ប្រើ whitespace-nowrap និង inline-flex ដាច់ខាតមិនឱ្យធ្លាក់ជួរ ឬដាច់អក្សរឡើយ
     if (u.type === 'Monthly') {
-      badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-orange-100 text-orange-800 border border-orange-300">🏢 ប្រចាំខែ</span>';
+      badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-orange-100 text-orange-800 border border-orange-300 whitespace-nowrap inline-flex items-center gap-1">🏢 ប្រចាំខែ</span>';
     } else if (isSeller) {
-      badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-blue-100 text-blue-900 border border-blue-300">🛒 បុគ្គលិកលក់</span>';
+      badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-blue-100 text-blue-900 border border-blue-300 whitespace-nowrap inline-flex items-center gap-1">🛒 អ្នកលក់</span>';
     } else if (isOnlineRetail) {
-      badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-black text-[10px] bg-emerald-100 text-emerald-900 border border-emerald-300">🌐 ភ្ញៀវ Online</span>';
+      badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-black text-[10px] bg-emerald-100 text-emerald-900 border border-emerald-300 whitespace-nowrap inline-flex items-center gap-1">🌐 ភ្ញៀវ Online</span>';
     } else if (u.type === 'CompanyDriver') {
-      badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-emerald-100 text-emerald-900 border border-emerald-300">🚚 អ្នកដឹក KC WATER</span>';
+      badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-emerald-100 text-emerald-900 border border-emerald-300 whitespace-nowrap inline-flex items-center gap-1">🚚 អ្នកដឹក KC</span>';
     } else if (u.type === 'Driver' || u.role === 'Driver') {
-      badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-amber-100 text-amber-900 border border-amber-300">🛵 កូនចៅដកទឹក (មេ: ' + (u.linked_boss || '-') + ')</span>';
+      var bossClean = u.linked_boss ? u.linked_boss.replace(/\s*\(.*?\)/g, '') : '-';
+      badgeHtml = '<span class="px-2 py-0.5 rounded-lg font-bold text-[9.5px] bg-amber-100 text-amber-900 border border-amber-300 whitespace-nowrap inline-block leading-tight text-center">🛵 អ្នកដឹក<br><small class="text-[9px] text-amber-700 font-normal">(' + bossClean + ')</small></span>';
     } else if (u.role === 'Admin') {
-      badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-purple-100 text-purple-900">👑 Admin</span>';
+      badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-purple-100 text-purple-900 whitespace-nowrap inline-flex items-center gap-1">👑 Admin</span>';
     } else {
-      badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-green-100 text-green-800">🚚 អ្នកលក់បន្ត</span>';
+      badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-green-100 text-green-800 whitespace-nowrap inline-flex items-center gap-1">🚚 អ្នកលក់បន្ត</span>';
     }
 
     var credsText = '';
     if (isSeller) {
-      credsText = '<span class="font-mono text-xs"><b>' + (u.username || '-') + '</b> / ' + (u.password || '-') + '</span>';
+      credsText = '<span class="font-mono text-xs whitespace-nowrap"><b>' + (u.username || '-') + '</b> / ' + (u.password || '-') + '</span>';
     } else if (isOnlineRetail) {
       var locInfo = u.linked_boss ? String(u.linked_boss).trim() : '';
       var mapDisplay = '';
       if (locInfo.indexOf('http') !== -1) {
-        mapDisplay = '<a href="' + locInfo + '" target="_blank" class="text-blue-600 hover:underline font-bold text-[10px] flex items-center gap-1"><i class="fas fa-map-location-dot text-emerald-600"></i> បើកផែនទី Google Maps</a>';
+        mapDisplay = '<a href="' + locInfo + '" target="_blank" class="text-blue-600 hover:underline font-bold text-[10px] flex items-center gap-1 whitespace-nowrap"><i class="fas fa-map-location-dot text-emerald-600"></i> បើកផែនទី Maps</a>';
       } else if (locInfo) {
-        mapDisplay = '<span class="text-gray-700 font-bold text-[10px] flex items-center gap-1"><i class="fas fa-location-dot text-red-500"></i> ' + locInfo + '</span>';
+        mapDisplay = '<span class="text-gray-700 font-bold text-[10px] flex items-center gap-1 truncate max-w-[160px]"><i class="fas fa-location-dot text-red-500"></i> ' + locInfo + '</span>';
       } else {
         mapDisplay = '<span class="text-gray-400 text-[10px] italic">មិនមានទីតាំង</span>';
       }
-      credsText = '<div class="space-y-1 text-left"><div class="text-[10px] text-emerald-800 font-black flex items-center gap-1"><i class="fas fa-bag-shopping text-emerald-600"></i> ភ្ញៀវកុម្ម៉ង់លើ Web</div>' + mapDisplay + '</div>';
+      credsText = '<div class="space-y-0.5 text-left"><div class="text-[10px] text-emerald-800 font-black flex items-center gap-1 whitespace-nowrap"><i class="fas fa-bag-shopping text-emerald-600"></i> ភ្ញៀវ Online</div>' + mapDisplay + '</div>';
     } else if (u.type === 'Monthly') {
-      credsText = '<span class="text-gray-400 text-[11px] italic">ម៉ូយប្រចាំខែ (គ្មាន Login)</span>';
+      credsText = '<span class="text-gray-400 text-[10.5px] italic whitespace-nowrap">ម៉ូយប្រចាំខែ (គ្មាន Login)</span>';
     } else {
-      credsText = '<span class="font-mono text-xs"><b>' + (u.username || '-') + '</b> / ' + (u.password || '-') + '</span>';
+      credsText = '<span class="font-mono text-xs whitespace-nowrap"><b>' + (u.username || '-') + '</b> / ' + (u.password || '-') + '</span>';
     }
 
-    var phoneDisplay = u.phone ? ('<span class="text-emerald-700 font-bold text-xs"><i class="fas fa-phone text-[10px] mr-1"></i>' + u.phone + '</span>') : '<span class="text-gray-400 text-[10px]">-</span>';
+    var phoneDisplay = u.phone ? ('<span class="text-emerald-700 font-bold text-xs whitespace-nowrap"><i class="fas fa-phone text-[10px] mr-1"></i>' + u.phone + '</span>') : '<span class="text-gray-400 text-[10px]">-</span>';
 
-    // 🌟 ប៊ូតុង [✏️ កែប្រែ] ធំៗច្បាស់ៗ & [🗑️ លុប]
     html += '<tr class="border-b hover:bg-gray-50 transition">' +
-      '<td class="p-2.5"><b class="text-gray-800 text-xs">' + u.full_name + '</b><br>' + phoneDisplay + '</td>' +
-      '<td class="p-2.5">' + credsText + '</td>' +
-      '<td class="p-2.5 text-center">' + badgeHtml + '</td>' +
-      '<td class="p-2.5 text-center whitespace-nowrap">' +
+      '<td class="p-2 sm:p-2.5 whitespace-nowrap"><b class="text-gray-800 text-xs">' + u.full_name + '</b><br>' + phoneDisplay + '</td>' +
+      '<td class="p-2 sm:p-2.5">' + credsText + '</td>' +
+      '<td class="p-2 sm:p-2.5 text-center whitespace-nowrap">' + badgeHtml + '</td>' +
+      '<td class="p-2 sm:p-2.5 text-center whitespace-nowrap">' +
         '<div class="flex items-center justify-center gap-1.5">' +
-          '<button type="button" onclick="prepareEditCustomer(' + u.id + ')" class="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-xl text-xs font-bold shadow-2xs active:scale-95 transition flex items-center gap-1" title="ចុចដើម្បីកែប្រែគណនី">' +
+          '<button type="button" onclick="prepareEditCustomer(' + u.id + ')" class="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-lg text-xs font-bold shadow-2xs active:scale-95 transition flex items-center gap-1" title="ចុចដើម្បីកែប្រែគណនី">' +
             '<i class="fas fa-pen-to-square text-amber-600"></i> កែប្រែ' +
           '</button>' +
-          '<button type="button" onclick="delUserFromSupabase(' + u.id + ')" class="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-xl text-xs active:scale-90 transition" title="លុបគណនី">' +
+          '<button type="button" onclick="delUserFromSupabase(' + u.id + ')" class="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg text-xs active:scale-90 transition" title="លុបគណនី">' +
             '<i class="fas fa-trash-can"></i>' +
           '</button>' +
         '</div>' +
@@ -2014,8 +2020,9 @@ function filterUsersModuleTable() {
     '</tr>';
   });
 
- tbody.innerHTML = html;
+  tbody.innerHTML = html;
 }
+
 
 async function fetchSpecialPricesTable() {
   var tbody = document.getElementById('specialPricesTableBody');
