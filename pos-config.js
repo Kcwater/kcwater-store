@@ -535,3 +535,26 @@ function kcPrompt(opts) {
     inputEl.onkeyup = function(e) { if (e.key === 'Enter') cleanUp(inputEl.value.trim()); };
   });
 }
+
+// ==========================================
+// 👓 ប្រព័ន្ធកំណត់ទំហំអក្សរប្រព័ន្ធ (FONT SIZE SCALING ENGINE)
+// ==========================================
+function setAppFontSize(scalePercent) {
+  scalePercent = parseInt(scalePercent) || 100;
+  localStorage.setItem('kc_font_scale', scalePercent);
+  
+  // កែប្រែទំហំអក្សរគោល ធ្វើឱ្យគ្រប់ផ្ទាំងទាំងអស់រីកធំតាមសមមាត្រ ១០០%
+  document.documentElement.style.fontSize = (scalePercent * 0.16) + 'px';
+}
+
+function initAppFontSize() {
+  var savedScale = localStorage.getItem('kc_font_scale') || 100;
+  setAppFontSize(savedScale);
+}
+
+// ដំណើរការកំណត់ទំហំអក្សរភ្លាមៗពេលបើកទំព័រ
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initAppFontSize, { once: true });
+} else {
+  initAppFontSize();
+}
