@@ -819,20 +819,56 @@ function goToSettleCustomerFromReport(name) {
 }
 
 // ==========================================
-// 📦 ៣. របាយការណ៍ស្តុក & ដើមទុន (STOCK REPORT & VALUATION)
+// 📦 ៣. របាយការណ៍ស្តុក & ដើមទុន (ពេញអេក្រង់ PC + សមមាត្រលើទូរស័ព្ទ)
 // ==========================================
 async function renderStockRepModule() {
   var area = document.getElementById('contentArea');
-  area.innerHTML = '<div class="max-w-4xl mx-auto space-y-4">' +
-    '<div class="flex justify-between items-center bg-white p-4 rounded-2xl border shadow-sm">' +
-      '<div><h2 class="text-base sm:text-xl font-extrabold text-green-900 flex items-center gap-2"><i class="fas fa-boxes-stacked text-green-600"></i>របាយការណ៍ស្តុក និងដើមទុនក្នុងឃ្លាំង (Stock Report)</h2><p class="text-xs text-gray-500 mt-0.5">តាមដានដើមទុនសរុប និងចលនាស្តុក Realtime</p></div>' +
-      '<button onclick="renderStockRepModule()" class="px-3.5 py-2 bg-green-50 text-green-700 rounded-xl text-xs font-bold border active:scale-95 transition flex items-center gap-1"><i class="fas fa-sync-alt"></i> Refresh</button>' +
+  if (!area) return;
+
+  // 🖥️ ប្រើ w-full max-w-[1600px] ដើម្បីឱ្យពេញអេក្រង់កុំព្យូទ័រស្មើស្អាត
+  area.innerHTML = '<div class="w-full max-w-[1600px] mx-auto space-y-3.5 px-1 sm:px-2">' +
+    // ក្បាលទំព័រ
+    '<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-3.5 sm:p-4 rounded-2xl border shadow-sm gap-2">' +
+      '<div>' +
+        '<h2 class="text-base sm:text-lg font-black text-green-900 flex items-center gap-2">' +
+          '<i class="fas fa-boxes-stacked text-green-600"></i>' +
+          '<span>របាយការណ៍ស្តុក និងដើមទុនក្នុងឃ្លាំង (Stock Report)</span>' +
+        '</h2>' +
+        '<p class="text-[11px] text-gray-500 mt-0.5">តាមដានដើមទុនសរុប និងចលនាស្តុក Realtime</p>' +
+      '</div>' +
+      '<button onclick="renderStockRepModule()" class="px-3.5 py-1.5 bg-green-50 hover:bg-green-100 text-green-700 rounded-xl text-xs font-bold border border-green-200 active:scale-95 transition flex items-center gap-1.5 shadow-2xs self-end sm:self-auto">' +
+        '<i class="fas fa-sync-alt"></i> Refresh' +
+      '</button>' +
     '</div>' +
+
+    // កាតសង្ខេប ២
     '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">' +
-      '<div class="dash-card border-l-4 border-blue-600 p-4 bg-white rounded-2xl"><div class="text-xs font-bold text-gray-500 uppercase">តម្លៃដើមទុនក្នុងស្តុកសរុប</div><div id="repStockValuation" class="mt-2 font-black text-blue-900 text-lg">0 ៛</div></div>' +
-      '<div class="dash-card border-l-4 border-orange-500 p-4 bg-white rounded-2xl"><div class="text-xs font-bold text-gray-500 uppercase">ទំនិញជិតអស់ស្តុក</div><div id="repStockAlertCount" class="mt-2 font-black text-orange-700 text-lg">0 មុខ</div></div>' +
+      '<div class="dash-card border-l-4 border-blue-600 p-3.5 bg-white rounded-2xl">' +
+        '<div class="text-gray-500 text-[10px] sm:text-xs font-bold uppercase">តម្លៃដើមទុនក្នុងស្តុកសរុប</div>' +
+        '<div id="repStockValuation" class="mt-1 font-black text-blue-900 text-base sm:text-lg">0 ៛</div>' +
+      '</div>' +
+      '<div class="dash-card border-l-4 border-orange-500 p-3.5 bg-white rounded-2xl">' +
+        '<div class="text-gray-500 text-[10px] sm:text-xs font-bold uppercase">ទំនិញជិតអស់ស្តុក</div>' +
+        '<div id="repStockAlertCount" class="mt-1 font-black text-orange-700 text-base sm:text-lg">0 មុខ</div>' +
+      '</div>' +
     '</div>' +
-    '<div class="card p-0 overflow-x-auto shadow-lg rounded-2xl border"><table class="w-full text-left text-xs border-collapse"><thead><tr class="bg-gray-100 text-gray-700 font-bold border-b"><th class="p-3">រូប</th><th class="p-3">ឈ្មោះទំនិញ</th><th class="p-3 text-right">ថ្លៃដើម</th><th class="p-3 text-center">សល់ក្នុងស្តុក</th><th class="p-3 text-right">ដើមទុនសរុប</th><th class="p-3 text-center">ស្ថានភាព</th></tr></thead><tbody id="stockRepTableBody"></tbody></table></div>' +
+
+    // តារាងស្តុកពេញទទឹងអេក្រង់ (Full Width Table)
+    '<div class="card p-0 overflow-x-auto max-h-[550px] overflow-y-auto shadow-xl rounded-2xl border border-gray-200 bg-white">' +
+      '<table class="w-full text-left text-xs border-collapse">' +
+        '<thead class="sticky top-0 bg-gray-100 text-gray-700 font-bold border-b z-10 shadow-xs">' +
+          '<tr>' +
+            '<th class="p-2.5 sm:p-3 text-center w-14">រូប</th>' +
+            '<th class="p-2.5 sm:p-3">ឈ្មោះទំនិញ</th>' +
+            '<th class="p-2.5 sm:p-3 text-right">ថ្លៃដើមទិញចូល</th>' +
+            '<th class="p-2.5 sm:p-3 text-center">សល់ក្នុងស្តុក</th>' +
+            '<th class="p-2.5 sm:p-3 text-right">ដើមទុនសរុប</th>' +
+            '<th class="p-2.5 sm:p-3 text-center w-24">ស្ថានភាព</th>' +
+          '</tr>' +
+        '</thead>' +
+        '<tbody id="stockRepTableBody"></tbody>' +
+      '</table>' +
+    '</div>' +
   '</div>';
 
   await loadStockRepDataFromSupabase();
