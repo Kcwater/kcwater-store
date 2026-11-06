@@ -453,12 +453,18 @@ function switchStockSortView(tab) {
   renderStockTableRows();
 }
 
-// 📋 មុខងារបង្ហាញតារាងទំនិញ (មានបង្ហាញឈ្មោះដេប៉ូផ្គត់ផ្គង់ & ប៊ូតុង ⬆️ ⬇️ រៀបលំដាប់)
+// 📋 មុខងារបង្ហាញតារាងទំនិញ (ចាក់សោរមិនឱ្យធ្លាក់អក្សរ «ទាំងពីរ» និងរៀបរយលើអេក្រង់តូច ១០០%)
 function renderStockTableRows() {
   var tbody = document.getElementById('stockModuleTableBody');
   if (!tbody) return;
-  var html = '';
 
+  // 🛡️ កំណត់ទទឹងអប្បបរមាកុំឱ្យតារាងច្របាច់ធ្លាក់អក្សរលើទូរស័ព្ទ (អាចរំកិល Scroll បានរលូន)
+  var tableEl = tbody.closest('table');
+  if (tableEl) {
+    tableEl.style.minWidth = "740px";
+  }
+
+  var html = '';
   var rateUSD = (typeof exchangeRateUSD !== 'undefined') ? exchangeRateUSD : 4100;
   var rateTHB = (typeof exchangeRateTHB !== 'undefined') ? exchangeRateTHB : 115;
   var isWebTab = (currentStockViewTab === 'WEB');
@@ -494,7 +500,6 @@ function renderStockTableRows() {
     var rawOnline = parseFloat(p.online_price || p.price || 0);
     var rawCost = parseFloat(p.cost || 0);
 
-    // 🪙 គណនាបំប្លែងលុយខ្មែរ (៛) ស្វ័យប្រវត្តិតាមរូបិយប័ណ្ណ
     var wholesaleKhr = rawWholesale;
     var onlineKhr = rawOnline;
     var costKhr = rawCost;
@@ -507,29 +512,30 @@ function renderStockTableRows() {
       wholesaleKhr = Math.round(rawWholesale * rateUSD);
       onlineKhr = Math.round(rawOnline * rateUSD);
       costKhr = Math.round(rawCost * rateUSD);
-      prWholesaleText = '$ ' + rawWholesale.toFixed(2) + ' <span class="text-emerald-700 font-bold">(≈ ៛ ' + wholesaleKhr.toLocaleString() + ')</span>';
-      prOnlineText = '$ ' + rawOnline.toFixed(2) + ' <span class="text-emerald-700 font-bold">(≈ ៛ ' + onlineKhr.toLocaleString() + ')</span>';
+      prWholesaleText = '<span class="whitespace-nowrap">$ ' + rawWholesale.toFixed(2) + ' <b class="text-emerald-700">(≈ ៛ ' + wholesaleKhr.toLocaleString() + ')</b></span>';
+      prOnlineText = '<span class="whitespace-nowrap">$ ' + rawOnline.toFixed(2) + ' <b class="text-emerald-700">(≈ ៛ ' + onlineKhr.toLocaleString() + ')</b></span>';
       costText = rawCost > 0 ? ('$ ' + rawCost.toFixed(2) + ' <small class="text-slate-500 font-normal block">(≈ ៛ ' + costKhr.toLocaleString() + ')</small>') : '-';
     } else if (curr === 'THB') {
       wholesaleKhr = Math.round(rawWholesale * rateTHB);
       onlineKhr = Math.round(rawOnline * rateTHB);
       costKhr = Math.round(rawCost * rateTHB);
-      prWholesaleText = '฿ ' + rawWholesale.toLocaleString() + ' <span class="text-amber-800 font-bold">(≈ ៛ ' + wholesaleKhr.toLocaleString() + ')</span>';
-      prOnlineText = '฿ ' + rawOnline.toLocaleString() + ' <span class="text-amber-800 font-bold">(≈ ៛ ' + onlineKhr.toLocaleString() + ')</span>';
+      prWholesaleText = '<span class="whitespace-nowrap">฿ ' + rawWholesale.toLocaleString() + ' <b class="text-amber-800">(≈ ៛ ' + wholesaleKhr.toLocaleString() + ')</b></span>';
+      prOnlineText = '<span class="whitespace-nowrap">฿ ' + rawOnline.toLocaleString() + ' <b class="text-amber-800">(≈ ៛ ' + onlineKhr.toLocaleString() + ')</b></span>';
       costText = rawCost > 0 ? ('฿ ' + rawCost.toLocaleString() + ' <small class="text-slate-500 font-normal block">(≈ ៛ ' + costKhr.toLocaleString() + ')</small>') : '-';
     } else {
-      prWholesaleText = '៛ ' + wholesaleKhr.toLocaleString();
-      prOnlineText = '៛ ' + onlineKhr.toLocaleString();
+      prWholesaleText = '<span class="whitespace-nowrap">៛ ' + wholesaleKhr.toLocaleString() + '</span>';
+      prOnlineText = '<span class="whitespace-nowrap">៛ ' + onlineKhr.toLocaleString() + '</span>';
       costText = rawCost > 0 ? ('៛ ' + costKhr.toLocaleString()) : '-';
     }
 
     var ch = String(p.channel || 'ALL').toUpperCase();
-    var chBadge = (ch === 'ONLINE') ? '<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-sky-100 text-sky-800 border border-sky-300">🌐 Web</span>' :
-                  (ch === 'POS') ? '<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-900 border border-amber-300">🚚 ដេប៉ូ</span>' :
-                  '<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">🔄 ទាំងពីរ</span>';
+    // 🏷️ ចាក់សោរ whitespace-nowrap inline-flex ដាច់ខាតមិនឱ្យធ្លាក់អក្សរ «ទាំងពីរ» ឡើយ
+    var chBadge = (ch === 'ONLINE') ? '<span class="px-2.5 py-0.5 rounded-full text-[9px] font-black bg-sky-100 text-sky-800 border border-sky-300 whitespace-nowrap inline-flex items-center gap-1">🌐 Web</span>' :
+                  (ch === 'POS') ? '<span class="px-2.5 py-0.5 rounded-full text-[9px] font-black bg-amber-100 text-amber-900 border border-amber-300 whitespace-nowrap inline-flex items-center gap-1">🚚 ដេប៉ូ</span>' :
+                  '<span class="px-2.5 py-0.5 rounded-full text-[9px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 whitespace-nowrap inline-flex items-center gap-1">🔄 ទាំងពីរ</span>';
 
-    var stockDisplay = (p.type === 'ផលិតឯង') ? '<span class="text-blue-700 font-bold text-xs">-</span>' : 
-      ('<span class="font-black ' + (parseFloat(p.stock || 0) <= parseFloat(p.min_stock || 5) ? 'text-red-600' : 'text-blue-800') + '">' + p.stock + '</span>');
+    var stockDisplay = (p.type === 'ផលិតឯង') ? '<span class="text-blue-700 font-bold text-xs whitespace-nowrap">-</span>' : 
+      ('<span class="font-black whitespace-nowrap ' + (parseFloat(p.stock || 0) <= parseFloat(p.min_stock || 5) ? 'text-red-600' : 'text-blue-800') + '">' + p.stock + '</span>');
 
     var isForPos = (ch === 'ALL' || ch === 'POS');
     var isForWeb = (ch === 'ALL' || ch === 'ONLINE');
@@ -540,58 +546,58 @@ function renderStockTableRows() {
     var sortControlHtml = '';
     if (isWebTab) {
       if (isForWeb) {
-        sortControlHtml = '<div class="flex items-center justify-center gap-1">' +
+        sortControlHtml = '<div class="flex items-center justify-center gap-1 whitespace-nowrap">' +
           '<button type="button" onclick="moveProductSort(\'' + p.id + '\', \'UP\')" class="w-6 h-6 rounded-md bg-emerald-50 hover:bg-emerald-200 text-emerald-800 border border-emerald-300 flex items-center justify-center text-[10px] active:scale-90 transition shadow-2xs font-bold" title="រុញឡើងលើ"><i class="fas fa-chevron-up"></i></button>' +
           '<input type="number" value="' + sortWebNum + '" onchange="quickUpdateSortWeb(\'' + p.id + '\', this.value)" class="w-10 text-center font-black text-emerald-900 border-2 border-emerald-300 focus:border-emerald-600 rounded-lg py-0.5 text-xs outline-none bg-white shadow-2xs" title="វាយលេខរៀង Web ផ្ទាល់">' +
           '<button type="button" onclick="moveProductSort(\'' + p.id + '\', \'DOWN\')" class="w-6 h-6 rounded-md bg-emerald-50 hover:bg-emerald-200 text-emerald-800 border border-emerald-300 flex items-center justify-center text-[10px] active:scale-90 transition shadow-2xs font-bold" title="រុញចុះក្រោម"><i class="fas fa-chevron-down"></i></button>' +
         '</div>' +
-        '<span class="text-[9px] text-slate-400 block mt-0.5">POS: #' + sortPosNum + '</span>';
+        '<span class="text-[9px] text-slate-400 block mt-0.5 whitespace-nowrap">POS: #' + sortPosNum + '</span>';
       } else {
-        sortControlHtml = '<span class="text-[9.5px] text-slate-400 italic bg-slate-100 px-1.5 py-0.5 rounded">មិនដាក់លើ Web</span>';
+        sortControlHtml = '<span class="text-[9.5px] text-slate-400 italic bg-slate-100 px-1.5 py-0.5 rounded whitespace-nowrap">មិនដាក់លើ Web</span>';
       }
     } else {
       if (isForPos) {
-        sortControlHtml = '<div class="flex items-center justify-center gap-1">' +
+        sortControlHtml = '<div class="flex items-center justify-center gap-1 whitespace-nowrap">' +
           '<button type="button" onclick="moveProductSort(\'' + p.id + '\', \'UP\')" class="w-6 h-6 rounded-md bg-blue-50 hover:bg-blue-200 text-blue-800 border border-blue-300 flex items-center justify-center text-[10px] active:scale-90 transition shadow-2xs font-bold" title="រុញឡើងលើ"><i class="fas fa-chevron-up"></i></button>' +
           '<input type="number" value="' + sortPosNum + '" onchange="quickUpdateSortPos(\'' + p.id + '\', this.value)" class="w-10 text-center font-black text-blue-900 border-2 border-blue-300 focus:border-blue-600 rounded-lg py-0.5 text-xs outline-none bg-white shadow-2xs" title="វាយលេខរៀង POS ផ្ទាល់">' +
           '<button type="button" onclick="moveProductSort(\'' + p.id + '\', \'DOWN\')" class="w-6 h-6 rounded-md bg-blue-50 hover:bg-blue-200 text-blue-800 border border-blue-300 flex items-center justify-center text-[10px] active:scale-90 transition shadow-2xs font-bold" title="រុញចុះក្រោម"><i class="fas fa-chevron-down"></i></button>' +
         '</div>' +
-        '<span class="text-[9px] text-slate-400 block mt-0.5">Web: #' + sortWebNum + '</span>';
+        '<span class="text-[9px] text-slate-400 block mt-0.5 whitespace-nowrap">Web: #' + sortWebNum + '</span>';
       } else {
-        sortControlHtml = '<span class="text-[9.5px] text-slate-400 italic bg-slate-100 px-1.5 py-0.5 rounded">មិនដាក់លើ POS</span>';
+        sortControlHtml = '<span class="text-[9.5px] text-slate-400 italic bg-slate-100 px-1.5 py-0.5 rounded whitespace-nowrap">មិនដាក់លើ POS</span>';
       }
     }
 
-    // 🏬 រកឈ្មោះដេប៉ូដែលផ្គត់ផ្គង់ទំនិញនេះ
+    // 🏬 ដេប៉ូផ្គត់ផ្គង់
     var depotBadge = '';
     if (p.type === 'ផលិតឯង') {
-      depotBadge = '<span class="text-[9px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.2 rounded border border-blue-200 inline-flex items-center gap-1 mt-0.5"><i class="fas fa-droplet text-[8px] text-blue-500"></i> ឃ្លាំង KC</span>';
+      depotBadge = '<span class="text-[9px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200 inline-flex items-center gap-1 mt-0.5 whitespace-nowrap"><i class="fas fa-droplet text-[8px] text-blue-500"></i> ឃ្លាំង KC</span>';
     } else {
       var dObj = (activePartnerDepots || []).find(d => d.id === p.depot_id);
       var dName = dObj ? dObj.name : 'ដេប៉ូដៃគូ';
       var dTerm = (dObj && dObj.payTerms === 'CASH') ? '💵' : '📝';
-      depotBadge = '<span class="text-[9px] font-bold text-rose-800 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-200 inline-flex items-center gap-1 mt-0.5" title="' + dName + '"><i class="fas fa-shop-lock text-[8px] text-rose-500"></i> ' + dTerm + ' ' + dName + '</span>';
+      depotBadge = '<span class="text-[9px] font-bold text-rose-800 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200 inline-flex items-center gap-1 mt-0.5 whitespace-nowrap truncate max-w-[170px]" title="' + dName + '"><i class="fas fa-shop-lock text-[8px] text-rose-500"></i> ' + dTerm + ' ' + dName + '</span>';
     }
 
     html += '<tr class="border-b hover:bg-gray-50">' +
       '<td class="p-2 text-center ' + (isWebTab ? 'bg-emerald-50/30' : 'bg-blue-50/30') + ' whitespace-nowrap">' +
         sortControlHtml +
       '</td>' +
-      '<td class="p-2.5"><img src="' + imgUrl + '" class="w-9 h-9 object-contain rounded border"></td>' +
+      '<td class="p-2 text-center whitespace-nowrap"><img src="' + imgUrl + '" class="w-9 h-9 object-contain rounded border mx-auto"></td>' +
       '<td class="p-2.5 font-bold text-gray-800">' + 
         p.name + 
-        '<br><span class="text-[9px] text-gray-400 font-normal">' + p.type + ' | ' + curr + '</span>' +
+        '<br><span class="text-[9px] text-gray-400 font-normal whitespace-nowrap">' + p.type + ' | ' + curr + '</span>' +
         '<br>' + depotBadge + 
       '</td>' +
-      '<td class="p-2.5 text-center">' + chBadge + '</td>' +
-      '<td class="p-2.5 text-center text-[10.5px] leading-tight">' + 
+      '<td class="p-2 text-center whitespace-nowrap">' + chBadge + '</td>' +
+      '<td class="p-2 text-center text-[10.5px] leading-tight whitespace-nowrap">' + 
         '<div>🚚 ' + prWholesaleText + '</div>' + 
         '<div class="mt-0.5">🌐 ' + prOnlineText + '</div>' + 
       '</td>' +
-      '<td class="p-2.5 text-center">' + stockDisplay + '</td>' +
-      '<td class="p-2.5 text-center"><div class="flex items-center justify-center gap-2">' +
-        '<button onclick="prepareEditProduct(\'' + p.id + '\')" class="text-blue-600 hover:text-blue-800 p-1" title="កែប្រែ"><i class="fas fa-edit text-xs"></i></button>' +
-        '<button onclick="delProductFromSupabase(\'' + p.id + '\')" class="text-red-500 hover:text-red-700 p-1" title="លុប"><i class="fas fa-trash-can text-xs"></i></button>' +
+      '<td class="p-2 text-center whitespace-nowrap">' + stockDisplay + '</td>' +
+      '<td class="p-2 text-center whitespace-nowrap"><div class="flex items-center justify-center gap-1.5">' +
+        '<button onclick="prepareEditProduct(\'' + p.id + '\')" class="p-1 text-blue-600 hover:text-blue-800" title="កែប្រែ"><i class="fas fa-edit text-xs"></i></button>' +
+        '<button onclick="delProductFromSupabase(\'' + p.id + '\')" class="p-1 text-red-500 hover:text-red-700" title="លុប"><i class="fas fa-trash-can text-xs"></i></button>' +
       '</div></td>' +
     '</tr>';
   });
