@@ -351,7 +351,9 @@ async function renderDashboardModule() {
   await loadDashboardData();
 }
 
-// 📊 មុខងារទាញទិន្នន័យ Dashboard (បង្រួញអក្សរខ្លី & លុប Bug ចេញស្ទួន)
+// ==========================================
+// 📊 មុខងារទាញទិន្នន័យ DASHBOARD (គណនាប្រាក់ចំណេញត្រឹមត្រូវ ១០០% គ្មានកាត់ស្ទួន)
+// ==========================================
 async function loadDashboardData() {
   try {
     var todayStr = getCambodiaToday();
@@ -398,7 +400,7 @@ async function loadDashboardData() {
         } else if (pObj.currency === 'THB') {
           itemCostKHR = itemCostKHR * (typeof exchangeRateTHB !== 'undefined' ? exchangeRateTHB : 115);
         }
-        monthCOGS += (qty * itemCostKHR);
+        monthCOGS += (qty * itemCostKHR); // ថ្លៃដើមទំនិញលក់ដាច់ (COGS)
       }
 
       if (isToday) {
@@ -421,14 +423,24 @@ async function loadDashboardData() {
     var rateUSD = (typeof exchangeRateUSD !== 'undefined') ? exchangeRateUSD : 4100;
     var rateTHB = (typeof exchangeRateTHB !== 'undefined') ? exchangeRateTHB : 115;
 
+    // 🛡️ គណនាការចំណាយ៖ បំបែកការទូទាត់ដេប៉ូចេញកុំឱ្យដកស្ទួនជាមួយ COGS
     var monthOperatingExpKHR = 0;
+    var monthDepotSettlementsKHR = 0;
+
     (monthExpenses || []).forEach(function(e) {
       var amt = parseFloat(e.amount || 0);
-      if (e.currency === 'USD') monthOperatingExpKHR += (amt * rateUSD);
-      else if (e.currency === 'THB') monthOperatingExpKHR += (amt * rateTHB);
-      else monthOperatingExpKHR += amt;
+      var amtKhr = amt;
+      if (e.currency === 'USD') amtKhr = amt * rateUSD;
+      else if (e.currency === 'THB') amtKhr = amt * rateTHB;
+
+      if (e.category === 'ទូទាត់ថ្លៃដើមដេប៉ូដៃគូ') {
+        monthDepotSettlementsKHR += amtKhr; // រាប់ជាការសងបំណុលដេប៉ូ (មិនដកស្ទួនលើប្រាក់ចំណេញឡើយ)
+      } else {
+        monthOperatingExpKHR += amtKhr; // ចំណាយប្រតិបត្តិការទូទៅ (សាំង, ទឹក, ភ្លើង, ម្ហូប...)
+      }
     });
 
+    // ចំណាយសរុប = ចំណាយប្រតិបត្តិការ + ថ្លៃដើមទំនិញលក់ដាច់ (COGS)
     var totalMonthExpensesKHR = monthOperatingExpKHR + monthCOGS;
     var netProfitKHR = monthSalesKHR - totalMonthExpensesKHR;
 
@@ -441,10 +453,14 @@ async function loadDashboardData() {
     if (document.getElementById('dashTodayBankAba')) document.getElementById('dashTodayBankAba').innerText = '៛ ' + todayBankAba.toLocaleString();
     if (document.getElementById('dashTotalDebt')) document.getElementById('dashTotalDebt').innerText = '៛ ' + totalDebtKHR.toLocaleString();
     if (document.getElementById('dashMonthSales')) document.getElementById('dashMonthSales').innerText = '៛ ' + monthSalesKHR.toLocaleString();
-    if (document.getElementById('dashMonthExpenses')) document.getElementById('dashMonthExpenses').innerText = '៛ ' + totalMonthExpensesKHR.toLocaleString();
-    if (document.getElementById('dashMonthExpDetail')) document.getElementById('dashMonthExpDetail').innerText = '(ប្រតិបត្តិការ: ៛ ' + Math.round(monthOperatingExpKHR).toLocaleString() + (monthCOGS > 0 ? ' | ដើមទឹកយួរ: ៛ ' + Math.round(monthCOGS).toLocaleString() : '') + ')';
+    if (document.getElementById('dashMonthExpenses')) document.getElementById('dashMonthExpenses').innerText = '៛ ' + Math.round(totalMonthExpensesKHR).toLocaleString();
+    
+    // បង្ហាញព័ត៌មានលម្អិតនៃចំណាយឱ្យច្បាស់ៗ
+    if (document.getElementById('dashMonthExpDetail')) {
+      document.getElementById('dashMonthExpDetail').innerText = '(ប្រតិបត្តិការ: ៛ ' + Math.round(monthOperatingExpKHR).toLocaleString() + (monthCOGS > 0 ? ' | ដើមទំនិញ: ៛ ' + Math.round(monthCOGS).toLocaleString() : '') + (monthDepotSettlementsKHR > 0 ? ' | សងដេប៉ូ: ៛ ' + Math.round(monthDepotSettlementsKHR).toLocaleString() : '') + ')';
+    }
 
-    // 🌟 បង្ហាញប្រាក់ចំណេញសុទ្ធ និងអត្រាប្តូរប្រាក់តែ ១ ជួរគត់ (បាត់ Bug ស្ទួន)
+    // 🌟 បង្ហាញប្រាក់ចំណេញសុទ្ធ
     var netEl = document.getElementById('dashNetProfit');
     var hintEl = document.getElementById('dashExchangeRateHint');
     if (netEl) {
@@ -541,7 +557,6 @@ async function loadDashboardData() {
             minute: '2-digit' 
           });
 
-          // 🏷️ បង្រួញអក្សរ «ដកជំនួស» ឱ្យខ្លីស្អាត មិនបែកជួរ (Clean Short Tag)
           var recByClean = String(r.recorded_by || '').replace(/\s*\(.*?\)/g, '').trim();
           var isWithdrawnByOther = (recByClean && recByClean !== r.customer_name && recByClean !== 'Admin');
           var isAdminProxy = (r.recorded_by && r.recorded_by.includes('Admin') && r.customer_name !== 'Walk-in');
