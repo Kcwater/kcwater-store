@@ -1866,7 +1866,7 @@ async function loadOnlineHubProductsTab() {
 }
 
 // ==========================================================================
-// 📦 មុខងារបង្ហាញបញ្ជីទីតាំងត្រូវទៅយកអីវ៉ាន់តាមដេប៉ូ & ផ្ញើ Telegram ទៅដេប៉ូនីមួយៗ
+// 📦 មុខងារបង្ហាញបញ្ជីទៅយកអីវ៉ាន់តាមដេប៉ូ (ឆ្លាតវៃ៖ លាក់ថ្លៃដើមពីអ្នកដឹក + បង្ហាញលុយត្រូវទារពីភ្ញៀវច្បាស់ៗ)
 // ==========================================================================
 async function openOrderPickupManifestModal(orderId) {
   if (!orderId) return;
@@ -1874,24 +1874,41 @@ async function openOrderPickupManifestModal(orderId) {
   var existing = document.getElementById('orderPickupManifestModal');
   if (existing) existing.remove();
 
+  var isAdmin = (currentUser && currentUser.role === 'Admin');
+
   var modalHtml = '<div id="orderPickupManifestModal" class="fixed inset-0 z-[8000] flex items-center justify-center p-3 sm:p-4 overflow-y-auto">' +
     '<div class="fixed inset-0 bg-slate-950/70 backdrop-blur-xs" onclick="closeOrderPickupManifestModal()"></div>' +
-    '<div class="bg-white rounded-3xl shadow-2xl z-10 w-full max-w-md p-5 space-y-3.5 text-center relative border border-slate-100 animate-in zoom-in-95 duration-200 my-auto max-h-[92dvh] flex flex-col">' +
+    '<div class="bg-white rounded-3xl shadow-2xl z-10 w-full max-w-md p-4 sm:p-5 space-y-3 text-center relative border border-slate-100 animate-in zoom-in-95 duration-200 my-auto max-h-[92dvh] flex flex-col">' +
+      // ក្បាលផ្ទាំង
       '<div class="flex justify-between items-center border-b pb-2">' +
         '<div class="text-left">' +
-          '<h3 class="font-black text-slate-900 text-sm sm:text-base flex items-center gap-1.5">' +
+          '<h3 class="font-black text-slate-900 text-xs sm:text-base flex items-center gap-1.5">' +
             '<i class="fas fa-boxes-packing text-rose-600"></i> បញ្ជីទីតាំងទៅយកអីវ៉ាន់ (Pick-up Route)' +
           '</h3>' +
-          '<p class="text-[10px] text-slate-500 font-mono mt-0.5" id="pmOrderCodeLabel">កូដ៖ ' + orderId + '</p>' +
+          '<p class="text-[10px] text-slate-500 font-mono mt-0.5" id="pmOrderCodeLabel">កូដកុម្ម៉ង់៖ ' + orderId + '</p>' +
         '</div>' +
         '<button type="button" onclick="closeOrderPickupManifestModal()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-400 hover:text-slate-700 text-lg font-bold flex items-center justify-center">&times;</button>' +
       '</div>' +
-      '<div id="pickupManifestContentArea" class="flex-1 overflow-y-auto space-y-2.5 text-left text-xs pr-1">' +
-        '<div class="text-center py-8 text-slate-400 italic text-xs"><i class="fas fa-spinner fa-spin mr-1 text-rose-600"></i> កំពុងរៀបចំផ្លូវទៅយកអីវ៉ាន់...</div>' +
+
+      // 💰 ប្រអប់បង្ហាញទឹកប្រាក់ត្រូវប្រមូលពីភ្ញៀវ (បង្ហាញធំៗច្បាស់ៗសម្រាប់អ្នកដឹក)
+      '<div id="pmCustomerCollectionBox" class="p-2.5 sm:p-3 bg-gradient-to-r from-emerald-600 to-green-700 text-white rounded-2xl shadow-sm text-left flex justify-between items-center">' +
+        '<div>' +
+          '<span class="text-[10px] uppercase font-bold text-emerald-200 block">💵 ទឹកប្រាក់ត្រូវប្រមូលពីភ្ញៀវពេលដឹកដល់</span>' +
+          '<b id="pmCustomerAmountText" class="text-base sm:text-xl font-black text-white">កំពុងគណនា...</b>' +
+        '</div>' +
+        '<span id="pmCustomerPayMethodBadge" class="px-2.5 py-1 bg-white/20 text-white border border-white/30 rounded-xl font-black text-xs"></span>' +
       '</div>' +
-      '<div id="pickupManifestSummaryFooter" class="pt-2 border-t text-left"></div>' +
-      '<button type="button" onclick="closeOrderPickupManifestModal()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition">' +
-        'យល់ព្រម (បិទ)' +
+
+      // តំបន់បង្ហាញបញ្ជីដេប៉ូដែលត្រូវទៅយកអីវ៉ាន់
+      '<div id="pickupManifestContentArea" class="flex-1 overflow-y-auto space-y-2.5 text-left text-xs pr-1">' +
+        '<div class="text-center py-6 text-slate-400 italic text-xs"><i class="fas fa-spinner fa-spin mr-1 text-rose-600"></i> កំពុងរៀបចំផ្លូវទៅយកអីវ៉ាន់...</div>' +
+      '</div>' +
+
+      // សង្ខេបថ្លៃដើមដេប៉ូ (បង្ហាញតែចំពោះ Admin ម្នាក់គត់)
+      '<div id="pickupManifestSummaryFooter" class="pt-1.5 border-t text-left ' + (isAdmin ? '' : 'hidden') + '"></div>' +
+
+      '<button type="button" onclick="closeOrderPickupManifestModal()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs active:scale-95 transition">' +
+        'រួចរាល់ (បិទ)' +
       '</button>' +
     '</div>' +
   '</div>';
@@ -1905,6 +1922,12 @@ async function openOrderPickupManifestModal(orderId) {
       .maybeSingle();
 
     if (ordErr || !order) throw new Error("រកមិនឃើញទិន្នន័យនៃការកុម្ម៉ង់នេះឡើយ");
+
+    // 💵 បង្ហាញចំនួនទឹកប្រាក់ត្រូវប្រមូលពីភ្ញៀវច្បាស់ៗ
+    var custAmtEl = document.getElementById('pmCustomerAmountText');
+    var custPayBadge = document.getElementById('pmCustomerPayMethodBadge');
+    if (custAmtEl) custAmtEl.innerText = '៛ ' + Number(order.total || 0).toLocaleString();
+    if (custPayBadge) custPayBadge.innerText = order.payment_method || 'COD (លុយសុទ្ធ)';
 
     if (typeof loadDepotsFromSupabase === 'function') {
       await loadDepotsFromSupabase();
@@ -2018,50 +2041,39 @@ async function openOrderPickupManifestModal(orderId) {
       var isInternal = (d.isInternal === true || d.id === 'DEPOT_KC');
 
       var cleanPhone = String(d.phone || '').replace(/[^0-9]/g, '');
-      var payTermsBadge = isInternal ? 
-        '<span class="px-2 py-0.5 rounded-full text-[9px] font-black bg-blue-100 text-blue-900 border border-blue-200">💧 លើកចេញពីរោងចក្រ</span>' : 
-        (d.payTerms === 'CASH' ? 
-          '<span class="px-2 py-0.5 rounded-full text-[9px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300">💵 បង់លុយសុទ្ធ ៛ ' + grp.totalCost.toLocaleString() + '</span>' : 
-          '<span class="px-2 py-0.5 rounded-full text-[9px] font-black bg-amber-100 text-amber-900 border border-amber-300">📝 កត់ជំពាក់ដេប៉ូ ៛ ' + grp.totalCost.toLocaleString() + '</span>');
+      
+      // 🔒 បើជា Admin ទើបឃើញតម្លៃលុយដេប៉ូ បើជាអ្នកដឹក ឃើញតែស្លាក «ទៅលើកអីវ៉ាន់» សាមញ្ញ
+      var payTermsBadge = '';
+      if (isAdmin) {
+        payTermsBadge = isInternal ? 
+          '<span class="px-2 py-0.5 rounded-full text-[9px] font-black bg-blue-100 text-blue-900 border border-blue-200">💧 លើកពីរោងចក្រ</span>' : 
+          (d.payTerms === 'CASH' ? 
+            '<span class="px-2 py-0.5 rounded-full text-[9px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300">💵 សុទ្ធ ៛ ' + grp.totalCost.toLocaleString() + '</span>' : 
+            '<span class="px-2 py-0.5 rounded-full text-[9px] font-black bg-amber-100 text-amber-900 border border-amber-300">📝 ជំពាក់ ៛ ' + grp.totalCost.toLocaleString() + '</span>');
+      } else {
+        payTermsBadge = isInternal ? 
+          '<span class="px-2 py-0.5 rounded-full text-[9px] font-black bg-blue-100 text-blue-900 border border-blue-200">💧 រោងចក្រ KC</span>' : 
+          '<span class="px-2 py-0.5 rounded-full text-[9px] font-black bg-rose-100 text-rose-900 border border-rose-300">🏬 ដេប៉ូដៃគូ (កត់ជំពាក់)</span>';
+      }
 
       var itemsListHtml = '';
-      var itemsForTgText = [];
-
       grp.items.forEach(function(itm) {
+        // 🔒 បើជា Admin ទើបបង្ហាញ (ដើម: ៛ ...) បើជាអ្នកដឹកលាក់ចោលជិតឈឹង
+        var costDisplay = (isAdmin && !isInternal && itm.totalCostKhr > 0) ? 
+          ('<span class="text-[10px] text-slate-400 block font-normal">ដើម: ៛ ' + itm.totalCostKhr.toLocaleString() + '</span>') : '';
+
         itemsListHtml += '<div class="flex justify-between items-center text-xs py-1 border-b border-slate-100 last:border-none">' +
-          '<div class="flex items-center gap-1.5">' +
-            '<span class="w-1.5 h-1.5 rounded-full ' + (isInternal ? 'bg-blue-500' : 'bg-rose-500') + '"></span>' +
-            '<b class="text-slate-800">' + itm.name + '</b>' +
-            (itm.isFreeGift ? '<span class="text-[9px] font-black bg-amber-100 text-amber-900 px-1.5 rounded">Free</span>' : '') +
+          '<div class="flex items-center gap-1.5 min-w-0 flex-1">' +
+            '<span class="w-2 h-2 rounded-full ' + (isInternal ? 'bg-blue-500' : 'bg-rose-500') + ' shrink-0"></span>' +
+            '<b class="text-slate-800 truncate">' + itm.name + '</b>' +
+            (itm.isFreeGift ? '<span class="text-[9px] font-black bg-amber-100 text-amber-900 px-1 rounded shrink-0">Free</span>' : '') +
           '</div>' +
-          '<div class="text-right">' +
-            '<b class="text-blue-700 font-mono text-xs">x ' + itm.qty + '</b>' +
-            (!isInternal && itm.totalCostKhr > 0 ? ('<span class="text-[10px] text-slate-400 block font-normal">ដើម: ៛ ' + itm.totalCostKhr.toLocaleString() + '</span>') : '') +
+          '<div class="text-right shrink-0 pl-2">' +
+            '<b class="text-blue-700 font-mono text-sm font-black">x ' + itm.qty + '</b>' +
+            costDisplay +
           '</div>' +
         '</div>';
-
-        itemsForTgText.push("  • " + itm.name + " x " + itm.qty);
       });
-
-      // 📲 រៀបចំសារ Telegram ផ្ញើទៅកាន់ម្ចាស់ដេប៉ូនីមួយៗ
-      var driverNameText = order.driver_name ? order.driver_name : 'កំពុងចាត់ចែង';
-      var driverPhoneText = order.driver_phone ? (' (' + order.driver_phone + ')') : '';
-      var payTermText = (d.payTerms === 'CASH') ? '💵 បង់លុយសុទ្ធភ្លាម' : '📝 កត់ជំពាក់ (ទូទាត់ពេលល្ងាច/ស្អែក)';
-
-      var tgPickupMsg = "📦 <b>[KC MART - ប័ណ្ណបើកអីវ៉ាន់]</b>\n\n" +
-                        "ជម្រាបសួរ <b>" + d.name + "</b>!\n" +
-                        "ខាង KC MART សុំបើកទំនិញដូចខាងក្រោម៖\n\n" +
-                        itemsForTgText.join("\n") + "\n\n" +
-                        "💰 <b>ថ្លៃដើមសរុប៖</b> <b>៛ " + grp.totalCost.toLocaleString() + "</b>\n" +
-                        "📌 <b>វិធីទូទាត់៖</b> " + payTermText + "\n\n" +
-                        "🛵 <b>អ្នកដឹក KC ទៅយក៖</b> <b>" + driverNameText + driverPhoneText + "</b>\n" +
-                        "🆔 <b>កូដកុម្ម៉ង់យោង៖</b> <code>" + order.order_id + "</code>\n" +
-                        "🕒 <b>ម៉ោង៖</b> " + new Date().toLocaleTimeString('km-KH') + "\n\n" +
-                        "👉 <i>សូមជួយរៀបចំទុកឱ្យអ្នកដឹកផង អរគុណច្រើនបង! 🙏</i>";
-
-      var intlPhone = cleanPhone.startsWith('0') ? ('855' + cleanPhone.substring(1)) : ('855' + cleanPhone);
-      var directTgDepotLink = "https://t.me/+" + intlPhone + "?text=" + encodeURIComponent(tgPickupMsg);
-      var shareTgDepotLink = "https://t.me/share/url?url=&text=" + encodeURIComponent(tgPickupMsg);
 
       html += '<div class="p-3 bg-slate-50 rounded-2xl border-2 ' + (isInternal ? 'border-blue-200 bg-blue-50/20' : 'border-rose-200 bg-rose-50/20') + ' space-y-2">' +
         '<div class="flex justify-between items-start gap-1">' +
@@ -2077,22 +2089,14 @@ async function openOrderPickupManifestModal(orderId) {
           '<div class="shrink-0">' + payTermsBadge + '</div>' +
         '</div>' +
 
-        (d.location ? '<div class="text-[10.5px] text-slate-600 font-medium"><i class="fas fa-location-dot text-rose-500 mr-1"></i>' + d.location + '</div>' : '') +
+        (d.location ? '<div class="text-[10.5px] text-slate-600 font-medium truncate"><i class="fas fa-location-dot text-rose-500 mr-1"></i>' + d.location + '</div>' : '') +
 
-        '<div class="bg-white p-2 rounded-xl border border-slate-200 space-y-0.5">' +
+        '<div class="bg-white p-2.5 rounded-xl border border-slate-200 space-y-0.5">' +
           itemsListHtml +
         '</div>' +
 
         (!isInternal ? 
-        ('<div class="flex flex-wrap items-center justify-end gap-1.5 pt-0.5">' +
-          // 📲 ប៊ូតុងផ្ញើសារប័ណ្ណបើកអីវ៉ាន់ទៅ Telegram ដេប៉ូ
-          (cleanPhone ? 
-          '<a href="' + directTgDepotLink + '" target="_blank" class="px-2.5 py-1 bg-sky-50 hover:bg-sky-100 text-sky-900 border border-sky-300 rounded-lg font-black text-[10px] flex items-center gap-1 shadow-2xs active:scale-95 transition" style="text-decoration:none;">' +
-            '<i class="fab fa-telegram text-sky-600"></i> ផ្ញើ Telegram ដេប៉ូ' +
-          '</a>' : 
-          '<a href="' + shareTgDepotLink + '" target="_blank" class="px-2.5 py-1 bg-sky-50 hover:bg-sky-100 text-sky-900 border border-sky-300 rounded-lg font-black text-[10px] flex items-center gap-1 shadow-2xs active:scale-95 transition" style="text-decoration:none;">' +
-            '<i class="fab fa-telegram text-sky-600"></i> ផ្ញើ Telegram' +
-          '</a>') +
+        ('<div class="flex items-center justify-end gap-1.5 pt-0.5">' +
           (cleanPhone ? '<a href="tel:' + cleanPhone + '" class="px-2.5 py-1 bg-green-50 hover:bg-green-100 text-green-800 border border-green-200 rounded-lg font-bold text-[10px] flex items-center gap-1 active:scale-95 transition" style="text-decoration:none;"><i class="fas fa-phone text-green-600"></i> ខលដេប៉ូ</a>' : '') +
           (d.mapUrl ? '<a href="' + d.mapUrl + '" target="_blank" class="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 rounded-lg font-bold text-[10px] flex items-center gap-1 active:scale-95 transition" style="text-decoration:none;"><i class="fas fa-map-location-dot text-blue-600"></i> ផែនទី</a>' : '') +
         '</div>') : '') +
@@ -2103,15 +2107,13 @@ async function openOrderPickupManifestModal(orderId) {
 
     contentArea.innerHTML = html;
 
-    var revenue = parseFloat(order.total || 0);
-
-    if (footerArea) {
-      footerArea.innerHTML = '<div class="p-3 bg-slate-100 rounded-2xl border border-slate-200 space-y-1.5 text-xs font-bold">' +
+    // 🔒 សង្ខេបថ្លៃដើមដេប៉ូ (បង្ហាញតែ Admin ម្នាក់គត់)
+    if (isAdmin && footerArea) {
+      footerArea.innerHTML = '<div class="p-2.5 bg-slate-100 rounded-2xl border border-slate-200 space-y-1 text-xs font-bold">' +
         (totalCashToPayDepots > 0 ? 
-        '<div class="flex justify-between text-rose-900"><span>💵 លុយសុទ្ធអ្នកដឹកត្រូវកាន់ទៅបើកអីវ៉ាន់៖</span><b class="font-black text-rose-700">៛ ' + totalCashToPayDepots.toLocaleString() + '</b></div>' : '') +
+        '<div class="flex justify-between text-rose-900"><span>💵 លុយសុទ្ធត្រូវបើកអីវ៉ាន់៖</span><b class="font-black text-rose-700">៛ ' + totalCashToPayDepots.toLocaleString() + '</b></div>' : '') +
         (totalCreditWithDepots > 0 ? 
-        '<div class="flex justify-between text-amber-900"><span>📝 កត់ជំពាក់ដេប៉ូដៃគូសរុប (Credit)៖</span><b class="font-black text-amber-700">៛ ' + totalCreditWithDepots.toLocaleString() + '</b></div>' : '') +
-        '<div class="flex justify-between text-emerald-950 border-t border-slate-300 pt-1.5"><span>💰 ប្រាក់ត្រូវប្រមូលពីភ្ញៀវសរុប៖</span><b class="font-black text-emerald-700 text-sm">៛ ' + revenue.toLocaleString() + '</b></div>' +
+        '<div class="flex justify-between text-amber-900"><span>📝 កត់ជំពាក់ដេប៉ូដៃគូសរុប៖</span><b class="font-black text-amber-700">៛ ' + totalCreditWithDepots.toLocaleString() + '</b></div>' : '') +
       '</div>';
     }
 
