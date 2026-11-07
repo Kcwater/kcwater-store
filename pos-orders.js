@@ -1866,7 +1866,7 @@ async function loadOnlineHubProductsTab() {
 }
 
 // ==========================================================================
-// 📦 មុខងារបង្ហាញបញ្ជីទីតាំងត្រូវទៅយកអីវ៉ាន់តាមដេប៉ូ (លាក់ផលចំណេញរោងចក្រ)
+// 📦 មុខងារបង្ហាញបញ្ជីទីតាំងត្រូវទៅយកអីវ៉ាន់តាមដេប៉ូ & ផ្ញើ Telegram ទៅដេប៉ូនីមួយៗ
 // ==========================================================================
 async function openOrderPickupManifestModal(orderId) {
   if (!orderId) return;
@@ -2025,6 +2025,8 @@ async function openOrderPickupManifestModal(orderId) {
           '<span class="px-2 py-0.5 rounded-full text-[9px] font-black bg-amber-100 text-amber-900 border border-amber-300">📝 កត់ជំពាក់ដេប៉ូ ៛ ' + grp.totalCost.toLocaleString() + '</span>');
 
       var itemsListHtml = '';
+      var itemsForTgText = [];
+
       grp.items.forEach(function(itm) {
         itemsListHtml += '<div class="flex justify-between items-center text-xs py-1 border-b border-slate-100 last:border-none">' +
           '<div class="flex items-center gap-1.5">' +
@@ -2037,7 +2039,29 @@ async function openOrderPickupManifestModal(orderId) {
             (!isInternal && itm.totalCostKhr > 0 ? ('<span class="text-[10px] text-slate-400 block font-normal">ដើម: ៛ ' + itm.totalCostKhr.toLocaleString() + '</span>') : '') +
           '</div>' +
         '</div>';
+
+        itemsForTgText.push("  • " + itm.name + " x " + itm.qty);
       });
+
+      // 📲 រៀបចំសារ Telegram ផ្ញើទៅកាន់ម្ចាស់ដេប៉ូនីមួយៗ
+      var driverNameText = order.driver_name ? order.driver_name : 'កំពុងចាត់ចែង';
+      var driverPhoneText = order.driver_phone ? (' (' + order.driver_phone + ')') : '';
+      var payTermText = (d.payTerms === 'CASH') ? '💵 បង់លុយសុទ្ធភ្លាម' : '📝 កត់ជំពាក់ (ទូទាត់ពេលល្ងាច/ស្អែក)';
+
+      var tgPickupMsg = "📦 <b>[KC MART - ប័ណ្ណបើកអីវ៉ាន់]</b>\n\n" +
+                        "ជម្រាបសួរ <b>" + d.name + "</b>!\n" +
+                        "ខាង KC MART សុំបើកទំនិញដូចខាងក្រោម៖\n\n" +
+                        itemsForTgText.join("\n") + "\n\n" +
+                        "💰 <b>ថ្លៃដើមសរុប៖</b> <b>៛ " + grp.totalCost.toLocaleString() + "</b>\n" +
+                        "📌 <b>វិធីទូទាត់៖</b> " + payTermText + "\n\n" +
+                        "🛵 <b>អ្នកដឹក KC ទៅយក៖</b> <b>" + driverNameText + driverPhoneText + "</b>\n" +
+                        "🆔 <b>កូដកុម្ម៉ង់យោង៖</b> <code>" + order.order_id + "</code>\n" +
+                        "🕒 <b>ម៉ោង៖</b> " + new Date().toLocaleTimeString('km-KH') + "\n\n" +
+                        "👉 <i>សូមជួយរៀបចំទុកឱ្យអ្នកដឹកផង អរគុណច្រើនបង! 🙏</i>";
+
+      var intlPhone = cleanPhone.startsWith('0') ? ('855' + cleanPhone.substring(1)) : ('855' + cleanPhone);
+      var directTgDepotLink = "https://t.me/+" + intlPhone + "?text=" + encodeURIComponent(tgPickupMsg);
+      var shareTgDepotLink = "https://t.me/share/url?url=&text=" + encodeURIComponent(tgPickupMsg);
 
       html += '<div class="p-3 bg-slate-50 rounded-2xl border-2 ' + (isInternal ? 'border-blue-200 bg-blue-50/20' : 'border-rose-200 bg-rose-50/20') + ' space-y-2">' +
         '<div class="flex justify-between items-start gap-1">' +
@@ -2060,9 +2084,17 @@ async function openOrderPickupManifestModal(orderId) {
         '</div>' +
 
         (!isInternal ? 
-        ('<div class="flex items-center justify-end gap-1.5 pt-0.5">' +
+        ('<div class="flex flex-wrap items-center justify-end gap-1.5 pt-0.5">' +
+          // 📲 ប៊ូតុងផ្ញើសារប័ណ្ណបើកអីវ៉ាន់ទៅ Telegram ដេប៉ូ
+          (cleanPhone ? 
+          '<a href="' + directTgDepotLink + '" target="_blank" class="px-2.5 py-1 bg-sky-50 hover:bg-sky-100 text-sky-900 border border-sky-300 rounded-lg font-black text-[10px] flex items-center gap-1 shadow-2xs active:scale-95 transition" style="text-decoration:none;">' +
+            '<i class="fab fa-telegram text-sky-600"></i> ផ្ញើ Telegram ដេប៉ូ' +
+          '</a>' : 
+          '<a href="' + shareTgDepotLink + '" target="_blank" class="px-2.5 py-1 bg-sky-50 hover:bg-sky-100 text-sky-900 border border-sky-300 rounded-lg font-black text-[10px] flex items-center gap-1 shadow-2xs active:scale-95 transition" style="text-decoration:none;">' +
+            '<i class="fab fa-telegram text-sky-600"></i> ផ្ញើ Telegram' +
+          '</a>') +
           (cleanPhone ? '<a href="tel:' + cleanPhone + '" class="px-2.5 py-1 bg-green-50 hover:bg-green-100 text-green-800 border border-green-200 rounded-lg font-bold text-[10px] flex items-center gap-1 active:scale-95 transition" style="text-decoration:none;"><i class="fas fa-phone text-green-600"></i> ខលដេប៉ូ</a>' : '') +
-          (d.mapUrl ? '<a href="' + d.mapUrl + '" target="_blank" class="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 rounded-lg font-bold text-[10px] flex items-center gap-1 active:scale-95 transition" style="text-decoration:none;"><i class="fas fa-map-location-dot text-blue-600"></i> ផែនទីដេប៉ូ</a>' : '') +
+          (d.mapUrl ? '<a href="' + d.mapUrl + '" target="_blank" class="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 rounded-lg font-bold text-[10px] flex items-center gap-1 active:scale-95 transition" style="text-decoration:none;"><i class="fas fa-map-location-dot text-blue-600"></i> ផែនទី</a>' : '') +
         '</div>') : '') +
       '</div>';
 
@@ -2071,7 +2103,6 @@ async function openOrderPickupManifestModal(orderId) {
 
     contentArea.innerHTML = html;
 
-    // 🔒 សង្ខេបទឹកប្រាក់ (បង្ហាញតែលុយដែលត្រូវទូទាត់ និងប្រមូល មិនបង្ហាញផលចំណេញរោងចក្រឡើយ)
     var revenue = parseFloat(order.total || 0);
 
     if (footerArea) {
