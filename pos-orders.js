@@ -346,22 +346,33 @@ function formatOrderItemsVerticalListHTML(itemsText) {
   return html;
 }
 
-// 💬 មុខងារផ្ញើ Telegram ទី ១៖ ផ្ញើឱ្យដេប៉ូត្រៀមអីវ៉ាន់ទុកមុន (គ្មានឈ្មោះភ្ញៀវឡើយ)
+// 💬 មុខងារផ្ញើ Telegram ទី ១៖ ផ្ញើឱ្យដេប៉ូត្រៀមអីវ៉ាន់ទុកមុន (ដំណើរការ ១០០% ទាំង PC និងទូរស័ព្ទ)
 function sendDepotAdvanceOrderTelegram(depotId, orderId) {
-  var d = (activePartnerDepots || []).find(item => item.id === depotId);
-  if (!d) return;
+  // ១. ស្វែងរកទិន្នន័យដេប៉ូពី Manifest ផ្ទាល់ ឬពី activePartnerDepots
+  var grp = (window.__currentManifestDepotGroups && window.__currentManifestDepotGroups[depotId]) ? window.__currentManifestDepotGroups[depotId] : null;
+  var d = (grp && grp.depot) ? grp.depot : ((typeof activePartnerDepots !== 'undefined') ? activePartnerDepots.find(item => item.id === depotId) : null);
 
-  var cleanPhone = String(d.phone || '').replace(/[^0-9]/g, '');
-  if (!cleanPhone) {
+  if (!d) {
     if (typeof kcAlert === 'function') {
-      kcAlert({ title: "ខ្វះលេខទូរស័ព្ទ", message: "ដេប៉ូនេះមិនមានលេខទូរស័ព្ទសម្រាប់ Telegram ឡើយ!", type: "warning" });
+      kcAlert({ title: "រកមិនឃើញដេប៉ូ", message: "មិនអាចស្វែងរកព័ត៌មានរបស់ដេប៉ូនេះបានឡើយ!", type: "warning" });
     } else {
-      showToast("ដេប៉ូនេះមិនមានលេខទូរស័ព្ទឡើយ!", "error");
+      showToast("រកមិនឃើញព័ត៌មានដេប៉ូឡើយ!", "error");
     }
     return;
   }
 
-  var intlPhone = cleanPhone.startsWith('0') ? ('855' + cleanPhone.substring(1)) : ('855' + cleanPhone);
+  var depotName = d.name || "ដេប៉ូដៃគូ";
+  var cleanPhone = String(d.phone || '').replace(/[^0-9]/g, '');
+
+  // ២. ស្រង់យកតែមុខទំនិញដែលត្រូវយកពីដេប៉ូនោះ
+  var itemsListStr = '';
+  if (grp && grp.items && grp.items.length > 0) {
+    grp.items.forEach(function(itm) {
+      itemsListStr += "• " + itm.name + " x " + itm.qty + "\n";
+    });
+  }
+
+  var termLabel = (d.payTerms === 'CASH') ? 'បង់លុយសុទ្ធពេលលើក' : 'កត់ជំពាក់ដេប៉ូ';
   var dateKhNow = new Date().toLocaleString('km-KH', { 
     timeZone: 'Asia/Phnom_Penh', 
     hour: '2-digit', 
@@ -369,20 +380,11 @@ function sendDepotAdvanceOrderTelegram(depotId, orderId) {
     dateStyle: 'short' 
   });
 
-  var grp = window.__currentManifestDepotGroups ? window.__currentManifestDepotGroups[depotId] : null;
-  var itemsListStr = '';
-  if (grp && grp.items) {
-    grp.items.forEach(function(itm) {
-      itemsListStr += "• " + itm.name + " x " + itm.qty + "\n";
-    });
-  }
-
-  var termLabel = (d.payTerms === 'CASH') ? 'បង់លុយសុទ្ធពេលលើក' : 'កត់ជំពាក់ដេប៉ូ';
-
-  // 🔒 សារ Telegram ទី ១ (គ្មានឈ្មោះភ្ញៀវឡើយ ដើម្បីរក្សាការសម្ងាត់)
+  // 🔒 ៣. សារ Telegram ទី ១ (គ្មានបង្ហាញឈ្មោះភ្ញៀវយើងឡើយ)
   var tgMsg = "📦 [KC MART - បញ្ជាទិញទំនិញ / ត្រៀមទុកជាមុន]\n" +
-              "🆔 កូដកុម្ម៉ង់៖ " + orderId + "\n" +
-              "🏪 ដេប៉ូ៖ " + d.name + "\n" +
+              "🆔 កូដកុម្ម៉ង់៖ " + (orderId || "-") + "\n" +
+              "🏪 ដេប៉ូ៖ " + depotName + "\n" +
+              (cleanPhone ? ("📞 ទូរស័ព្ទ៖ " + cleanPhone + "\n") : "") +
               "━━━━━━━━━━━━━━━━━━━━\n" +
               "🛒 មុខទំនិញត្រូវត្រៀមទុក៖\n" +
               (itemsListStr || "• សូមពិនិត្យតាមការកុម្ម៉ង់\n") +
@@ -391,8 +393,22 @@ function sendDepotAdvanceOrderTelegram(depotId, orderId) {
               "🛵 អ្នកដឹក KC នឹងទៅលើកក្នុងពេលបន្តិចទៀតនេះ!\n" +
               "🕒 ម៉ោង៖ " + dateKhNow;
 
-  var tgUrl = "https://t.me/+" + intlPhone + "?text=" + encodeURIComponent(tgMsg);
-  window.open(tgUrl, '_blank');
+  // 📋 ចម្លងសារទុកក្នុងទូរស័ព្ទអូតូ
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(tgMsg);
+    }
+  } catch(cErr) {}
+
+  // 🚀 ៤. បើក App Telegram តាម Universal Share Link (ដំណើរការ ១០០%)
+  var tgShareUrl = "https://t.me/share/url?text=" + encodeURIComponent(tgMsg);
+  
+  var win = window.open(tgShareUrl, '_blank');
+  if (!win || win.closed || typeof win.closed === 'undefined') {
+    window.location.href = tgShareUrl;
+  }
+
+  showToast("កំពុងបើក Telegram ទៅកាន់ដេប៉ូ " + depotName + "...", "info");
 }
 
 // ==========================================================================
