@@ -375,9 +375,8 @@ function sendDepotAdvanceOrderTelegram(depotId, orderId) {
   var termLabel = (d.payTerms === 'CASH') ? 'បង់លុយសុទ្ធពេលលើក' : 'កត់ជំពាក់ដេប៉ូ';
   var dateKhNow = new Date().toLocaleString('km-KH', { 
     timeZone: 'Asia/Phnom_Penh', 
-    hour: '2-digit', 
-    minute: '2-digit',
-    dateStyle: 'short' 
+    dateStyle: 'short', 
+    timeStyle: 'short' 
   });
 
   // 🔒 ៣. សារ Telegram ទី ១ (គ្មានបង្ហាញឈ្មោះភ្ញៀវយើងឡើយ)
