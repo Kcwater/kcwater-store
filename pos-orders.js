@@ -346,8 +346,9 @@ function formatOrderItemsVerticalListHTML(itemsText) {
   return html;
 }
 
-// 💬 មុខងារផ្ញើ Telegram ទី ១៖ បើកចូល Chat ម្ចាស់ដេប៉ូចំៗភ្លាមៗ (គាំទ្រទាំង Username និងលេខទូរស័ព្ទ)
+// 💬 មុខងារផ្ញើ Telegram ទី ១៖ បើកចូល Chat ម្ចាស់ដេប៉ូចំៗតាម «លេខទូរស័ព្ទ» ផ្ទាល់ ១០០%
 function sendDepotAdvanceOrderTelegram(depotId, orderId) {
+  // ១. ស្វែងរកទិន្នន័យដេប៉ូ
   var grp = (window.__currentManifestDepotGroups && window.__currentManifestDepotGroups[depotId]) ? window.__currentManifestDepotGroups[depotId] : null;
   var d = (grp && grp.depot) ? grp.depot : ((typeof activePartnerDepots !== 'undefined') ? activePartnerDepots.find(item => item.id === depotId) : null);
 
@@ -357,7 +358,24 @@ function sendDepotAdvanceOrderTelegram(depotId, orderId) {
   }
 
   var depotName = d.name || "ដេប៉ូដៃគូ";
-  var rawContact = String(d.phone || '').trim();
+  var cleanPhone = String(d.phone || '').replace(/[^0-9]/g, '');
+
+  if (!cleanPhone) {
+    if (typeof kcAlert === 'function') {
+      kcAlert({ title: "ខ្វះលេខទូរស័ព្ទ", message: "ដេប៉ូនេះមិនទាន់មានលេខទូរស័ព្ទឡើយ!", type: "warning" });
+    } else {
+      showToast("ដេប៉ូនេះមិនទាន់មានលេខទូរស័ព្ទឡើយ!", "error");
+    }
+    return;
+  }
+
+  // 🇰🇭 ២. បំប្លែងលេខទូរស័ព្ទដេប៉ូ ទៅជាទម្រង់អន្តរជាតិកម្ពុជា (+855...)
+  var intlPhone = cleanPhone;
+  if (intlPhone.startsWith('0')) {
+    intlPhone = '855' + intlPhone.substring(1);
+  } else if (!intlPhone.startsWith('855')) {
+    intlPhone = '855' + intlPhone;
+  }
 
   // ស្រង់យកតែមុខទំនិញដែលត្រូវយកពីដេប៉ូនោះ
   var itemsListStr = '';
@@ -374,10 +392,11 @@ function sendDepotAdvanceOrderTelegram(depotId, orderId) {
     timeStyle: 'short' 
   });
 
-  // 🔒 សារ Telegram ទី ១ (គ្មានឈ្មោះភ្ញៀវយើងឡើយ)
+  // 🔒 ៣. សារ Telegram ទី ១ (ភ្ជាប់លេខទូរស័ព្ទដេប៉ូ & គ្មានឈ្មោះភ្ញៀវយើងឡើយ)
   var tgMsg = "📦 [KC MART - បញ្ជាទិញទំនិញ / ត្រៀមទុកជាមុន]\n" +
               "🆔 កូដកុម្ម៉ង់៖ " + (orderId || "-") + "\n" +
               "🏪 ដេប៉ូ៖ " + depotName + "\n" +
+              "📞 លេខទូរស័ព្ទ៖ " + d.phone + "\n" +
               "━━━━━━━━━━━━━━━━━━━━\n" +
               "🛒 មុខទំនិញត្រូវត្រៀមទុក៖\n" +
               (itemsListStr || "• សូមពិនិត្យតាមការកុម្ម៉ង់\n") +
@@ -393,23 +412,16 @@ function sendDepotAdvanceOrderTelegram(depotId, orderId) {
     }
   } catch(cErr) {}
 
-  var tgUrl = "";
+  // 🚀 ៤. បើកចូល Chat ម្ចាស់ដេប៉ូចំៗតាមលេខទូរស័ព្ទ (+855...) ផ្ទាល់
+  var tgDirectUrl = "https://t.me/+" + intlPhone + "?text=" + encodeURIComponent(tgMsg);
+  var tgAppScheme = "tg://resolve?phone=" + intlPhone + "&text=" + encodeURIComponent(tgMsg);
 
-  // 🎯 ប្រសិនបើក្នុងប្រអប់ទូរស័ព្ទដេប៉ូ មានដាក់ Username (ឧ. @makara_shop ឬ makara_shop)
-  if (rawContact.includes('@') || isNaN(rawContact.replace(/[^0-9]/g, '')) || rawContact.startsWith('t.me/')) {
-    var cleanUsername = rawContact.replace('@', '').replace('https://t.me/', '').replace('t.me/', '').trim();
-    tgUrl = "https://t.me/" + cleanUsername + "?text=" + encodeURIComponent(tgMsg);
-  } else {
-    // បើជាលេខទូរស័ព្ទធម្មតា ប្រើប្រព័ន្ធ Share ផ្លូវការ
-    tgUrl = "https://t.me/share/url?text=" + encodeURIComponent(tgMsg);
-  }
-
-  var win = window.open(tgUrl, '_blank');
+  var win = window.open(tgDirectUrl, '_blank');
   if (!win || win.closed || typeof win.closed === 'undefined') {
-    window.location.href = tgUrl;
+    window.location.href = tgAppScheme;
   }
 
-  showToast("កំពុងបើក Telegram ទៅកាន់ " + depotName + "...", "info");
+  showToast("កំពុងបើក Telegram ទៅកាន់លេខ " + d.phone + "...", "info");
 }
 
 // ==========================================================================
