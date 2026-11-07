@@ -1099,7 +1099,7 @@ async function fetchPartnerDepotDebts() {
   }
 }
 
-// 📋 ២. បង្ហាញកាតដេប៉ូនីមួយៗដែលយើងជំពាក់
+// 📋 ២. បង្ហាញកាតដេប៉ូនីមួយៗដែលយើងជំពាក់ (មានប៊ូតុង Telegram ផ្ទៀងផ្ទាត់បំណុល)
 function renderDepotDebtsCardsUI(list) {
   var container = document.getElementById('depotDebtsCardsContainer');
   if (!container) return;
@@ -1118,54 +1118,7 @@ function renderDepotDebtsCardsUI(list) {
     var d = info.depot;
     var cleanPhone = String(d.phone || '').replace(/[^0-9]/g, '');
     var safeDepotName = String(d.name || '').replace(/'/g, "\\'");
-
-    html += '<div class="card p-4 shadow-md border-l-4 border-rose-500 bg-white rounded-2xl space-y-3 mb-0 hover:shadow-lg transition">' +
-      '<div class="flex justify-between items-start border-b border-slate-100 pb-2.5">' +
-        '<div>' +
-          '<b class="text-sm font-black text-slate-900 flex items-center gap-1.5"><i class="fas fa-shop-lock text-rose-600"></i> ' + d.name + '</b>' +
-          '<div class="text-[10px] text-slate-500 font-bold mt-0.5">' +
-            (d.phone ? ('📞 ' + d.phone) : '') +
-            (d.location ? (' | 📍 ' + d.location) : '') +
-          '</div>' +
-        '</div>' +
-        '<div class="text-right">' +
-          '<span class="text-[10px] font-bold text-slate-400 block uppercase">បំណុលត្រូវសង</span>' +
-          '<b class="text-base sm:text-lg font-black text-rose-700">៛ ' + info.netDebt.toLocaleString() + '</b>' +
-        '</div>' +
-      '</div>' +
-
-      '<div class="p-2.5 bg-rose-50/60 rounded-xl border border-rose-200 text-xs space-y-1 text-slate-700">' +
-        '<div class="flex justify-between"><span>ថ្លៃដើមទំនិញបានដកសរុប (+)៖</span><b>៛ ' + info.totalSourced.toLocaleString() + '</b></div>' +
-        '<div class="flex justify-between text-emerald-800"><span>ប្រាក់បានសងដេប៉ូរួច (-)៖</span><b>-៛ ' + info.totalPaid.toLocaleString() + '</b></div>' +
-        '<div class="flex justify-between text-rose-950 font-black border-t border-rose-200 pt-1"><span>បំណុលនៅសល់ (=)៖</span><span class="text-rose-700">៛ ' + info.netDebt.toLocaleString() + '</span></div>' +
-      '</div>' +
-
-      var intlPhone = cleanPhone.startsWith('0') ? ('855' + cleanPhone.substring(1)) : ('855' + cleanPhone);
-    var tgDepotChatMsg = "ជម្រាបសួរ " + d.name + "! ខាង KC MART សុំផ្ទៀងផ្ទាត់បំណុលថ្លៃដើមទំនិញសរុបចំនួន ៛ " + info.netDebt.toLocaleString() + "។ សូមអរគុណច្រើនបង!";
-    var tgDepotChatLink = "https://t.me/+" + intlPhone + "?text=" + encodeURIComponent(tgDepotChatMsg);
-
-    html += '<div class="card p-4 shadow-md border-l-4 border-rose-500 bg-white rounded-2xl space-y-3 mb-0 hover:shadow-lg transition">' +
-      '<div class="flex justify-between items-start border-b border-slate-100 pb-2.5">' +
-        '<div>' +
-          '<b class="text-sm font-black text-slate-900 flex items-center gap-1.5"><i class="fas fa-shop-lock text-rose-600"></i> ' + d.name + '</b>' +
-          '<div class="text-[10px] text-slate-500 font-bold mt-0.5">' +
-            (d.phone ? ('📞 ' + d.phone) : '') +
-            (d.location ? (' | 📍 ' + d.location) : '') +
-          '</div>' +
-        '</div>' +
-        '<div class="text-right">' +
-          '<span class="text-[10px] font-bold text-slate-400 block uppercase">បំណុលត្រូវសង</span>' +
-          '<b class="text-base sm:text-lg font-black text-rose-700">៛ ' + info.netDebt.toLocaleString() + '</b>' +
-        '</div>' +
-      '</div>' +
-
-      '<div class="p-2.5 bg-rose-50/60 rounded-xl border border-rose-200 text-xs space-y-1 text-slate-700">' +
-        '<div class="flex justify-between"><span>ថ្លៃដើមទំនិញបានដកសរុប (+)៖</span><b>៛ ' + info.totalSourced.toLocaleString() + '</b></div>' +
-        '<div class="flex justify-between text-emerald-800"><span>ប្រាក់បានសងដេប៉ូរួច (-)៖</span><b>-៛ ' + info.totalPaid.toLocaleString() + '</b></div>' +
-        '<div class="flex justify-between text-rose-950 font-black border-t border-rose-200 pt-1"><span>បំណុលនៅសល់ (=)៖</span><span class="text-rose-700">៛ ' + info.netDebt.toLocaleString() + '</span></div>' +
-      '</div>' +
-
-      var intlPhone = cleanPhone.startsWith('0') ? ('855' + cleanPhone.substring(1)) : ('855' + cleanPhone);
+    var intlPhone = cleanPhone.startsWith('0') ? ('855' + cleanPhone.substring(1)) : ('855' + cleanPhone);
     var tgDepotChatMsg = "ជម្រាបសួរ " + d.name + "! ខាង KC MART សុំផ្ទៀងផ្ទាត់បំណុលថ្លៃដើមទំនិញសរុបចំនួន ៛ " + info.netDebt.toLocaleString() + "។ សូមអរគុណច្រើនបង!";
     var tgDepotChatLink = "https://t.me/+" + intlPhone + "?text=" + encodeURIComponent(tgDepotChatMsg);
 
@@ -1198,19 +1151,6 @@ function renderDepotDebtsCardsUI(list) {
           '<button type="button" onclick="openDepotDebtBreakdownModal(\'' + d.id + '\')" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold border shadow-2xs active:scale-95 transition flex items-center gap-1"><i class="fas fa-list-ul"></i> មើលមុខទំនិញ</button>' +
         '</div>' +
 
-        '<button type="button" onclick="settleDepotDebtAction(\'' + d.id + '\', ' + info.netDebt + ', \'' + safeDepotName + '\')" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-black shadow-xs flex items-center gap-1.5 active:scale-95 transition">' +
-          '<i class="fas fa-hand-holding-dollar text-sm"></i> ទូទាត់សងដេប៉ូ' +
-        '</button>' +
-      '</div>' +
-    '</div>';
-
-        '<button type="button" onclick="settleDepotDebtAction(\'' + d.id + '\', ' + info.netDebt + ', \'' + safeDepotName + '\')" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-black shadow-xs flex items-center gap-1.5 active:scale-95 transition">' +
-          '<i class="fas fa-hand-holding-dollar text-sm"></i> ទូទាត់សងដេប៉ូ' +
-        '</button>' +
-      '</div>' +
-    '</div>';
-
-        // ប៊ូតុងទូទាត់សងដេប៉ូ
         '<button type="button" onclick="settleDepotDebtAction(\'' + d.id + '\', ' + info.netDebt + ', \'' + safeDepotName + '\')" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-black shadow-xs flex items-center gap-1.5 active:scale-95 transition">' +
           '<i class="fas fa-hand-holding-dollar text-sm"></i> ទូទាត់សងដេប៉ូ' +
         '</button>' +
