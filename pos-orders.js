@@ -346,25 +346,20 @@ function formatOrderItemsVerticalListHTML(itemsText) {
   return html;
 }
 
-// 💬 មុខងារផ្ញើ Telegram ទី ១៖ ផ្ញើឱ្យដេប៉ូត្រៀមអីវ៉ាន់ទុកមុន (ដំណើរការ ១០០% ទាំង PC និងទូរស័ព្ទ)
+// 💬 មុខងារផ្ញើ Telegram ទី ១៖ បើកចូល Chat ម្ចាស់ដេប៉ូចំៗភ្លាមៗ (គាំទ្រទាំង Username និងលេខទូរស័ព្ទ)
 function sendDepotAdvanceOrderTelegram(depotId, orderId) {
-  // ១. ស្វែងរកទិន្នន័យដេប៉ូពី Manifest ផ្ទាល់ ឬពី activePartnerDepots
   var grp = (window.__currentManifestDepotGroups && window.__currentManifestDepotGroups[depotId]) ? window.__currentManifestDepotGroups[depotId] : null;
   var d = (grp && grp.depot) ? grp.depot : ((typeof activePartnerDepots !== 'undefined') ? activePartnerDepots.find(item => item.id === depotId) : null);
 
   if (!d) {
-    if (typeof kcAlert === 'function') {
-      kcAlert({ title: "រកមិនឃើញដេប៉ូ", message: "មិនអាចស្វែងរកព័ត៌មានរបស់ដេប៉ូនេះបានឡើយ!", type: "warning" });
-    } else {
-      showToast("រកមិនឃើញព័ត៌មានដេប៉ូឡើយ!", "error");
-    }
+    showToast("រកមិនឃើញព័ត៌មានដេប៉ូឡើយ!", "error");
     return;
   }
 
   var depotName = d.name || "ដេប៉ូដៃគូ";
-  var cleanPhone = String(d.phone || '').replace(/[^0-9]/g, '');
+  var rawContact = String(d.phone || '').trim();
 
-  // ២. ស្រង់យកតែមុខទំនិញដែលត្រូវយកពីដេប៉ូនោះ
+  // ស្រង់យកតែមុខទំនិញដែលត្រូវយកពីដេប៉ូនោះ
   var itemsListStr = '';
   if (grp && grp.items && grp.items.length > 0) {
     grp.items.forEach(function(itm) {
@@ -379,11 +374,10 @@ function sendDepotAdvanceOrderTelegram(depotId, orderId) {
     timeStyle: 'short' 
   });
 
-  // 🔒 ៣. សារ Telegram ទី ១ (គ្មានបង្ហាញឈ្មោះភ្ញៀវយើងឡើយ)
+  // 🔒 សារ Telegram ទី ១ (គ្មានឈ្មោះភ្ញៀវយើងឡើយ)
   var tgMsg = "📦 [KC MART - បញ្ជាទិញទំនិញ / ត្រៀមទុកជាមុន]\n" +
               "🆔 កូដកុម្ម៉ង់៖ " + (orderId || "-") + "\n" +
               "🏪 ដេប៉ូ៖ " + depotName + "\n" +
-              (cleanPhone ? ("📞 ទូរស័ព្ទ៖ " + cleanPhone + "\n") : "") +
               "━━━━━━━━━━━━━━━━━━━━\n" +
               "🛒 មុខទំនិញត្រូវត្រៀមទុក៖\n" +
               (itemsListStr || "• សូមពិនិត្យតាមការកុម្ម៉ង់\n") +
@@ -392,22 +386,30 @@ function sendDepotAdvanceOrderTelegram(depotId, orderId) {
               "🛵 អ្នកដឹក KC នឹងទៅលើកក្នុងពេលបន្តិចទៀតនេះ!\n" +
               "🕒 ម៉ោង៖ " + dateKhNow;
 
-  // 📋 ចម្លងសារទុកក្នុងទូរស័ព្ទអូតូ
+  // 📋 ចម្លងសារទុកក្នុងទូរស័ព្ទអូតូ (ការពារក្រែងលោខកខាន)
   try {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(tgMsg);
     }
   } catch(cErr) {}
 
-  // 🚀 ៤. បើក App Telegram តាម Universal Share Link (ដំណើរការ ១០០%)
-  var tgShareUrl = "https://t.me/share/url?text=" + encodeURIComponent(tgMsg);
-  
-  var win = window.open(tgShareUrl, '_blank');
-  if (!win || win.closed || typeof win.closed === 'undefined') {
-    window.location.href = tgShareUrl;
+  var tgUrl = "";
+
+  // 🎯 ប្រសិនបើក្នុងប្រអប់ទូរស័ព្ទដេប៉ូ មានដាក់ Username (ឧ. @makara_shop ឬ makara_shop)
+  if (rawContact.includes('@') || isNaN(rawContact.replace(/[^0-9]/g, '')) || rawContact.startsWith('t.me/')) {
+    var cleanUsername = rawContact.replace('@', '').replace('https://t.me/', '').replace('t.me/', '').trim();
+    tgUrl = "https://t.me/" + cleanUsername + "?text=" + encodeURIComponent(tgMsg);
+  } else {
+    // បើជាលេខទូរស័ព្ទធម្មតា ប្រើប្រព័ន្ធ Share ផ្លូវការ
+    tgUrl = "https://t.me/share/url?text=" + encodeURIComponent(tgMsg);
   }
 
-  showToast("កំពុងបើក Telegram ទៅកាន់ដេប៉ូ " + depotName + "...", "info");
+  var win = window.open(tgUrl, '_blank');
+  if (!win || win.closed || typeof win.closed === 'undefined') {
+    window.location.href = tgUrl;
+  }
+
+  showToast("កំពុងបើក Telegram ទៅកាន់ " + depotName + "...", "info");
 }
 
 // ==========================================================================
