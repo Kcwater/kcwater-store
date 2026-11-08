@@ -284,11 +284,11 @@ async function renderDashboardModule() {
         '<div id="dashMonthSales" class="mt-1 font-black text-purple-800 text-sm sm:text-base">0 ៛</div>' +
       '</div>' +
 
-      '<div class="dash-card border-l-4 border-orange-500 p-3 sm:p-3.5 bg-white rounded-2xl">' +
-        '<div class="text-gray-500 text-[10px] sm:text-xs font-bold uppercase truncate">ចំណាយសរុបខែនេះ</div>' +
-        '<div id="dashMonthExpenses" class="mt-1 font-black text-orange-700 text-sm sm:text-base">0 ៛</div>' +
-        '<div id="dashMonthExpDetail" class="text-[9px] text-gray-400 font-bold mt-0.5 truncate"></div>' +
-      '</div>' +
+      <div class="dash-card border-l-4 border-orange-500 p-3 sm:p-3.5 bg-white rounded-2xl space-y-0.5">
+        <div class="text-gray-500 text-[10px] sm:text-xs font-bold uppercase truncate">ចំណាយសរុបខែនេះ</div>
+        <div id="dashMonthExpenses" class="mt-1 font-black text-orange-700 text-sm sm:text-base">0 ៛</div>
+        <div id="dashMonthExpDetail" class="border-t border-orange-100 pt-0.5 space-y-0.5 text-[9.5px]"></div>
+      </div>
 
       // 🌟 កាតប្រាក់ចំណេញ (លុបអក្សរស្ទួនចោល ១០០%)
       '<div class="dash-card border-l-4 border-emerald-600 p-3 sm:p-3.5 bg-emerald-50/60 rounded-2xl border border-emerald-200">' +
@@ -455,9 +455,17 @@ async function loadDashboardData() {
     if (document.getElementById('dashMonthSales')) document.getElementById('dashMonthSales').innerText = '៛ ' + monthSalesKHR.toLocaleString();
     if (document.getElementById('dashMonthExpenses')) document.getElementById('dashMonthExpenses').innerText = '៛ ' + Math.round(totalMonthExpensesKHR).toLocaleString();
     
-    // បង្ហាញព័ត៌មានលម្អិតនៃចំណាយឱ្យច្បាស់ៗ
-    if (document.getElementById('dashMonthExpDetail')) {
-      document.getElementById('dashMonthExpDetail').innerText = '(ប្រតិបត្តិការ: ៛ ' + Math.round(monthOperatingExpKHR).toLocaleString() + (monthCOGS > 0 ? ' | ដើមទំនិញ: ៛ ' + Math.round(monthCOGS).toLocaleString() : '') + (monthDepotSettlementsKHR > 0 ? ' | សងដេប៉ូ: ៛ ' + Math.round(monthDepotSettlementsKHR).toLocaleString() : '') + ')';
+    // បង្ហាញព័ត៌មានលម្អិតនៃចំណាយឱ្យច្បាស់ៗជា ២-៣ ជួរ (លែងដាច់អក្សរ ១០០%)
+    var expDetailEl = document.getElementById('dashMonthExpDetail');
+    if (expDetailEl) {
+      var dHtml = '<div class="text-slate-500 flex justify-between"><span>🛠️ ប្រតិបត្តិការ៖</span><b class="text-slate-800">៛ ' + Math.round(monthOperatingExpKHR).toLocaleString() + '</b></div>';
+      if (monthCOGS > 0) {
+        dHtml += '<div class="text-amber-800 flex justify-between"><span>📦 ដើមទំនិញ៖</span><b class="text-amber-950">៛ ' + Math.round(monthCOGS).toLocaleString() + '</b></div>';
+      }
+      if (monthDepotSettlementsKHR > 0) {
+        dHtml += '<div class="text-rose-700 flex justify-between"><span>🏬 សងដេប៉ូ៖</span><b class="text-rose-900">៛ ' + Math.round(monthDepotSettlementsKHR).toLocaleString() + '</b></div>';
+      }
+      expDetailEl.innerHTML = dHtml;
     }
 
     // 🌟 បង្ហាញប្រាក់ចំណេញសុទ្ធ
