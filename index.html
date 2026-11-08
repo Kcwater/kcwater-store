@@ -2646,28 +2646,22 @@ function adjustCheckoutItemQty(id, delta) {
 
         autoSaveCustomerInput();
 
-        // 🔔 ផ្ញើ Telegram Alert
+        // 🔔 ផ្ញើ Telegram Alert តាមប្រព័ន្ធសុវត្ថិភាព Database (លែងបែកធ្លាយ Token 100%)
         try {
-          if (telegramSettings.token && telegramSettings.chatId && telegramSettings.status !== 'OFF') {
-            function escapeTg(t) { return String(t || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
-            var tgMsg = "🔔 <b>[KC WATER - មានការកុម្ម៉ង់ទឹកថ្មីតាម ONLINE!]</b>\n\n" +
-                        "🆔 <b>លេខកូដ៖</b> <code>" + orderId + "</code>\n" +
-                        "👤 <b>អតិថិជន៖</b> " + escapeTg(name) + " (📞 " + escapeTg(phone) + ")\n" +
-                        "⏰ <b>ម៉ោងចង់ទទួល៖</b> <b>" + escapeTg(timeDetail) + "</b>\n" +
-                        "🏢 <b>ទីកន្លែង៖</b> <b>" + escapeTg(floorDetail) + "</b>\n" +
-                        "📦 <b>ទំនិញកុម្ម៉ង់៖</b> " + escapeTg(itemsSummaryText) + "\n" +
-                        "💰 <b>តម្លៃសរុប៖</b> <b>៛ " + Number(grandTotal).toLocaleString() + "</b>\n" +
-                        "💳 <b>វិធីបង់ប្រាក់៖</b> " + escapeTg(payMethodText) + "\n" +
-                        (mapUrl ? "🗺️ <b>ទីតាំងផែនទី GPS៖</b> <a href='" + mapUrl + "'>ចុចបើក Google Maps</a>\n" : "") +
-                        "🕒 <b>ម៉ោង៖</b> " + new Date().toLocaleTimeString('km-KH');
-
-            fetch("https://api.telegram.org/bot" + telegramSettings.token + "/sendMessage", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ chat_id: telegramSettings.chatId, text: tgMsg, parse_mode: "HTML" })
-            }).catch(function(){});
-          }
-        } catch(tgE) {}
+          await supabaseClient.rpc('send_order_telegram_alert', {
+            p_order_id: orderId,
+            p_customer_name: name,
+            p_phone: phone,
+            p_items: itemsSummaryText,
+            p_total: grandTotal,
+            p_pay_method: payMethodText,
+            p_time_detail: timeDetail,
+            p_floor_detail: floorDetail,
+            p_map_url: mapUrl || ''
+          });
+        } catch(tgE) {
+          console.warn("Telegram alert handled securely in DB:", tgE);
+        }
         
         // 💾 ចងចាំទំនិញដែលបានទិញ ដើម្បីឱ្យមុខងារ 1-Click Reorder ដំណើរការ
         localStorage.setItem('kc_last_order_items', JSON.stringify(cartItems));
@@ -3214,10 +3208,6 @@ async function loadStoreSettingsFromSupabase() {
       } catch(e) {}
     }
 
-    // ៣. កំណត់ Telegram Bot Settings
-    if (sMap['Telegram_Token']) telegramSettings.token = sMap['Telegram_Token'];
-    if (sMap['Telegram_ChatID']) telegramSettings.chatId = sMap['Telegram_ChatID'];
-    if (sMap['Telegram_Alert_Status']) telegramSettings.status = sMap['Telegram_Alert_Status'];
 
     // ៤. កំណត់ថ្លៃដឹកជញ្ជូន
     if (sMap['Delivery_Fee_Standard']) storeDeliveryConfig.standardFee = parseFloat(sMap['Delivery_Fee_Standard']) || 0;
