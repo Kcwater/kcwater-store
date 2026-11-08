@@ -262,9 +262,10 @@ function closeSidebar() {
   if (bd) bd.classList.remove('active');
 }
 
-// ⚙️ ៥. ទាញយកការកំណត់ SETTINGS & TELEGRAM BOT ពី SUPABASE
+// ⚙️ ៥. ទាញយកការកំណត់ SETTINGS, TELEGRAM BOT & រូប ABA QR ពី SUPABASE
 var exchangeRateUSD = 4100;
 var exchangeRateTHB = 115;
+var storeAbaQrCodeBase64 = "";
 
 async function loadSettingsAndTelegram() {
   try {
@@ -277,6 +278,15 @@ async function loadSettingsAndTelegram() {
         if (r.key === 'Telegram_Alert_Status') telegramConfig.status = r.value.toUpperCase();
         if (r.key === 'Exchange_Rate_USD') exchangeRateUSD = parseFloat(r.value) || 4100;
         if (r.key === 'Exchange_Rate_THB') exchangeRateTHB = parseFloat(r.value) || 115;
+
+        // 📱 ទាញយករូប ABA KHQR មកដាក់លើផ្ទាំងស្កេនលុយ POS និងសំណើម៉ូយភ្លាមៗ
+        if (r.key === 'Store_ABA_QR' && r.value && r.value.trim()) {
+          storeAbaQrCodeBase64 = r.value.trim();
+          var posModalQrImg = document.querySelector('#posKhqrModal img');
+          if (posModalQrImg) posModalQrImg.src = storeAbaQrCodeBase64;
+          var custModalQrImg = document.querySelector('#custQrSection img');
+          if (custModalQrImg) custModalQrImg.src = storeAbaQrCodeBase64;
+        }
       });
     }
   } catch(e) {
