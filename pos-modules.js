@@ -2180,14 +2180,13 @@ function switchUserTab(tab) {
   filterUsersModuleTable();
 }
 
-// 📋 បង្ហាញតារាងបញ្ជីគណនី (ការពារកុំឱ្យធ្លាក់ប្រអប់ និងមិនឱ្យដាច់អក្សរលើអេក្រង់តូច ១០០%)
+// 📋 បង្ហាញតារាងបញ្ជីគណនី (ការពារបិទបាំង Password & រៀបរយលើអេក្រង់តូច)
 function filterUsersModuleTable() {
   var tbody = document.getElementById('usersModuleTableBody');
   var searchInp = document.getElementById('custModuleSearchInp');
   var badgeCount = document.getElementById('userTotalCountBadge');
   if (!tbody) return;
 
-  // 🛡️ កំណត់ទទឹងអប្បបរមាកុំឱ្យតារាងច្របាច់ទាញធ្លាក់អក្សរលើទូរស័ព្ទ
   var tableEl = tbody.closest('table');
   if (tableEl) {
     tableEl.style.minWidth = "580px";
@@ -2228,7 +2227,6 @@ function filterUsersModuleTable() {
     var isOnlineRetail = !isSeller && u.role !== 'Admin' && (u.type === 'Retail' || u.role === 'Retail' || String(u.username || '').startsWith('online_'));
     var badgeHtml = '';
 
-    // 🏷️ ប្រើ whitespace-nowrap និង inline-flex ដាច់ខាតមិនឱ្យធ្លាក់ជួរ ឬដាច់អក្សរឡើយ
     if (u.type === 'Monthly') {
       badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-orange-100 text-orange-800 border border-orange-300 whitespace-nowrap inline-flex items-center gap-1">🏢 ប្រចាំខែ</span>';
     } else if (isSeller) {
@@ -2247,9 +2245,7 @@ function filterUsersModuleTable() {
     }
 
     var credsText = '';
-    if (isSeller) {
-      credsText = '<span class="font-mono text-xs whitespace-nowrap"><b>' + (u.username || '-') + '</b> / ' + (u.password || '-') + '</span>';
-    } else if (isOnlineRetail) {
+    if (isOnlineRetail) {
       var locInfo = u.linked_boss ? String(u.linked_boss).trim() : '';
       var mapDisplay = '';
       if (locInfo.indexOf('http') !== -1) {
@@ -2261,9 +2257,18 @@ function filterUsersModuleTable() {
       }
       credsText = '<div class="space-y-0.5 text-left"><div class="text-[10px] text-emerald-800 font-black flex items-center gap-1 whitespace-nowrap"><i class="fas fa-bag-shopping text-emerald-600"></i> ភ្ញៀវ Online</div>' + mapDisplay + '</div>';
     } else if (u.type === 'Monthly') {
-      credsText = '<span class="text-gray-400 text-[10.5px] italic whitespace-nowrap">ម៉ូយប្រចាំខែ (គ្មាន Login)</span>';
+      credsText = '<span class="text-gray-400 text-[10.5px] italic whitespace-nowrap">🔒 ម៉ូយប្រចាំខែ (គ្មាន Login)</span>';
     } else {
-      credsText = '<span class="font-mono text-xs whitespace-nowrap"><b>' + (u.username || '-') + '</b> / ' + (u.password || '-') + '</span>';
+      // 🛡️ បិទបាំង Password ដោយសញ្ញាចុចៗ •••••••• និងមានប៊ូតុងភ្នែកចុចមើល
+      var safePass = u.password || '-';
+      credsText = '<div class="flex items-center gap-1.5 font-mono text-xs whitespace-nowrap">' +
+        '<span><b>' + (u.username || '-') + '</b> / </span>' +
+        '<span id="passMask_' + u.id + '" class="tracking-widest text-slate-500 font-black">••••••••</span>' +
+        '<span id="passReal_' + u.id + '" class="hidden text-blue-900 font-bold">' + safePass + '</span>' +
+        '<button type="button" onclick="togglePasswordRowVisibility(' + u.id + ')" class="text-slate-400 hover:text-blue-600 p-0.5 active:scale-90 transition" title="ចុចបង្ហាញ/លាក់ លេខសម្ងាត់">' +
+          '<i id="passEyeIcon_' + u.id + '" class="fas fa-eye text-[11px]"></i>' +
+        '</button>' +
+      '</div>';
     }
 
     var phoneDisplay = u.phone ? ('<span class="text-emerald-700 font-bold text-xs whitespace-nowrap"><i class="fas fa-phone text-[10px] mr-1"></i>' + u.phone + '</span>') : '<span class="text-gray-400 text-[10px]">-</span>';
@@ -2288,6 +2293,23 @@ function filterUsersModuleTable() {
   tbody.innerHTML = html;
 }
 
+// 👁️ មុខងារចុចបង្ហាញ/លាក់ Password ក្នុងតារាងបញ្ជីគណនី
+function togglePasswordRowVisibility(userId) {
+  var maskEl = document.getElementById('passMask_' + userId);
+  var realEl = document.getElementById('passReal_' + userId);
+  var iconEl = document.getElementById('passEyeIcon_' + userId);
+  if (!maskEl || !realEl || !iconEl) return;
+
+  if (realEl.classList.contains('hidden')) {
+    realEl.classList.remove('hidden');
+    maskEl.classList.add('hidden');
+    iconEl.className = "fas fa-eye-slash text-blue-600 text-[11px]";
+  } else {
+    realEl.classList.add('hidden');
+    maskEl.classList.remove('hidden');
+    iconEl.className = "fas fa-eye text-slate-400 text-[11px]";
+  }
+}
 
 async function fetchSpecialPricesTable() {
   var tbody = document.getElementById('specialPricesTableBody');
