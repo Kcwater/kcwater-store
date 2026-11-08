@@ -461,7 +461,7 @@ async function loadDashboardData() {
     if (expDetailEl) {
       var dHtml = '<div class="text-slate-500 flex justify-between"><span>🛠️ ប្រតិបត្តិការ៖</span><b class="text-slate-800">៛ ' + Math.round(monthOperatingExpKHR).toLocaleString() + '</b></div>';
       if (monthCOGS > 0) {
-        dHtml += '<div class="text-amber-800 flex justify-between"><span>📦 ដើមទំនិញ៖</span><b class="text-amber-950">៛ ' + Math.round(monthCOGS).toLocaleString() + '</b></div>';
+        dHtml += '<div class="text-amber-800 flex justify-between"><span>📦 ថ្លៃដើមទឹកយួរ៖</span><b class="text-amber-950">៛ ' + Math.round(monthCOGS).toLocaleString() + '</b></div>';
       }
       if (monthDepotSettlementsKHR > 0) {
         dHtml += '<div class="text-rose-700 flex justify-between"><span>🏬 សងដេប៉ូ៖</span><b class="text-rose-900">៛ ' + Math.round(monthDepotSettlementsKHR).toLocaleString() + '</b></div>';
