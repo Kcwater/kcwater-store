@@ -17,6 +17,17 @@ function storeOrderPhoto(orderId, photoUrl, custName) {
   };
 }
 
+// 🛡️ មុខងារការពារសុវត្ថិភាពពីមេរោគ XSS (Sanitize HTML Input)
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 // ==========================================
 // 🔔 ១. សំឡេងរោទ៍ & ឆែកមើលការកុម្ម៉ង់ ONLINE ថ្មី
 // ==========================================
@@ -263,7 +274,7 @@ function parseOrderLocationDetails(raw) {
   };
 }
 
-// 🎨 បង្កើតប្លុក Badges ព័ត៌មានទីតាំងស្អាតៗ
+// 🎨 បង្កើតប្លុក Badges ព័ត៌មានទីតាំងស្អាតៗ & ការពារសុវត្ថិភាព XSS
 function formatOrderLocationBadgeHTML(rawLocation) {
   var loc = parseOrderLocationDetails(rawLocation);
   var html = '';
@@ -272,19 +283,19 @@ function formatOrderLocationBadgeHTML(rawLocation) {
   if (loc.timeText || loc.buildingText) {
     html += '<div class="flex flex-wrap items-center gap-1.5 pt-1">';
     if (loc.timeText) {
-      html += '<span class="px-2 py-0.5 rounded-lg bg-emerald-100 text-emerald-900 border border-emerald-300 font-black text-[10px] flex items-center gap-1"><i class="fas fa-clock text-emerald-600"></i> ' + loc.timeText + '</span>';
+      html += '<span class="px-2 py-0.5 rounded-lg bg-emerald-100 text-emerald-900 border border-emerald-300 font-black text-[10px] flex items-center gap-1"><i class="fas fa-clock text-emerald-600"></i> ' + escapeHtml(loc.timeText) + '</span>';
     }
     if (loc.buildingText) {
-      html += '<span class="px-2 py-0.5 rounded-lg bg-blue-100 text-blue-900 border border-blue-300 font-black text-[10px] flex items-center gap-1"><i class="fas fa-building text-blue-600"></i> ' + loc.buildingText + '</span>';
+      html += '<span class="px-2 py-0.5 rounded-lg bg-blue-100 text-blue-900 border border-blue-300 font-black text-[10px] flex items-center gap-1"><i class="fas fa-building text-blue-600"></i> ' + escapeHtml(loc.buildingText) + '</span>';
     }
     html += '</div>';
   }
 
-  // បង្ហាញចំណាំទីតាំងផ្ទះសុទ្ធ
+  // បង្ហាញចំណាំទីតាំងផ្ទះសុទ្ធ (មានការពារកូដអាក្រក់ escapeHtml)
   if (loc.noteText) {
     html += '<div class="flex items-start gap-1.5 pt-1 text-[11px] text-slate-800 font-bold">' +
       '<span class="text-slate-400 whitespace-nowrap"><i class="fas fa-location-dot text-rose-500 mr-1"></i>ចំណាំផ្ទះ៖</span>' +
-      '<span class="leading-snug break-words">' + loc.noteText + '</span>' +
+      '<span class="leading-snug break-words">' + escapeHtml(loc.noteText) + '</span>' +
     '</div>';
   }
 
