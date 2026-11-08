@@ -284,13 +284,14 @@ async function renderDashboardModule() {
         '<div id="dashMonthSales" class="mt-1 font-black text-purple-800 text-sm sm:text-base">0 ៛</div>' +
       '</div>' +
 
-      <div class="dash-card border-l-4 border-orange-500 p-3 sm:p-3.5 bg-white rounded-2xl space-y-0.5">
-        <div class="text-gray-500 text-[10px] sm:text-xs font-bold uppercase truncate">ចំណាយសរុបខែនេះ</div>
-        <div id="dashMonthExpenses" class="mt-1 font-black text-orange-700 text-sm sm:text-base">0 ៛</div>
-        <div id="dashMonthExpDetail" class="border-t border-orange-100 pt-0.5 space-y-0.5 text-[9.5px]"></div>
-      </div>
+      // 🌟 កាតចំណាយសរុបខែនេះ (ធ្លាក់ជា ២-៣ ជួរស្អាត លែងដាច់អក្សរ)
+      '<div class="dash-card border-l-4 border-orange-500 p-3 sm:p-3.5 bg-white rounded-2xl space-y-0.5">' +
+        '<div class="text-gray-500 text-[10px] sm:text-xs font-bold uppercase truncate">ចំណាយសរុបខែនេះ</div>' +
+        '<div id="dashMonthExpenses" class="mt-1 font-black text-orange-700 text-sm sm:text-base">0 ៛</div>' +
+        '<div id="dashMonthExpDetail" class="border-t border-orange-100 pt-0.5 space-y-0.5 text-[9.5px]"></div>' +
+      '</div>' +
 
-      // 🌟 កាតប្រាក់ចំណេញ (លុបអក្សរស្ទួនចោល ១០០%)
+      // 🌟 កាតប្រាក់ចំណេញសុទ្ធ
       '<div class="dash-card border-l-4 border-emerald-600 p-3 sm:p-3.5 bg-emerald-50/60 rounded-2xl border border-emerald-200">' +
         '<div class="text-emerald-900 text-[10px] sm:text-xs font-black uppercase truncate">ចំណេញសុទ្ធខែនេះ</div>' +
         '<div id="dashNetProfit" class="mt-1 font-black text-emerald-800 text-sm sm:text-base">0 ៛</div>' +
@@ -298,7 +299,7 @@ async function renderDashboardModule() {
       '</div>' +
     '</div>' +
 
-    // 📦 ជួរកណ្តាល៖ ចំនួនលក់ថ្ងៃនេះ & ស្តុកក្នុងឃ្លាំង (ពង្រីកពេញសងខាងស្មើគ្នា)
+    // 📦 ជួរកណ្តាល៖ ចំនួនលក់ថ្ងៃនេះ & ស្តុកក្នុងឃ្លាំង
     '<div class="grid grid-cols-1 lg:grid-cols-2 gap-3.5">' +
       '<div class="card p-4 sm:p-5 border-t-4 border-blue-600 shadow-md mb-0 bg-white">' +
         '<h3 class="font-bold text-gray-800 text-xs sm:text-sm mb-2.5 flex items-center gap-2">' +
@@ -320,7 +321,7 @@ async function renderDashboardModule() {
       '</div>' +
     '</div>' +
 
-    // 📋 ជួរក្រោម៖ តារាងប្រតិបត្តិការដកទំនិញថ្ងៃនេះ (ពេញទទឹងអេក្រង់ស្អាត)
+    // 📋 ជួរក្រោម៖ តារាងប្រតិបត្តិការដកទំនិញថ្ងៃនេះ
     '<div class="card p-4 sm:p-5 border-t-4 border-gray-700 shadow-md mb-0 bg-white">' +
       '<div class="flex justify-between items-center mb-2.5">' +
         '<h3 class="font-extrabold text-gray-800 text-xs sm:text-sm flex items-center gap-2">' +
@@ -352,7 +353,7 @@ async function renderDashboardModule() {
 }
 
 // ==========================================
-// 📊 មុខងារទាញទិន្នន័យ DASHBOARD (គណនាប្រាក់ចំណេញត្រឹមត្រូវ ១០០% គ្មានកាត់ស្ទួន)
+// 📊 មុខងារទាញទិន្នន័យ DASHBOARD
 // ==========================================
 async function loadDashboardData() {
   try {
@@ -423,7 +424,7 @@ async function loadDashboardData() {
     var rateUSD = (typeof exchangeRateUSD !== 'undefined') ? exchangeRateUSD : 4100;
     var rateTHB = (typeof exchangeRateTHB !== 'undefined') ? exchangeRateTHB : 115;
 
-    // 🛡️ គណនាការចំណាយ៖ បំបែកការទូទាត់ដេប៉ូចេញកុំឱ្យដកស្ទួនជាមួយ COGS
+    // គណនាការចំណាយ
     var monthOperatingExpKHR = 0;
     var monthDepotSettlementsKHR = 0;
 
@@ -434,9 +435,9 @@ async function loadDashboardData() {
       else if (e.currency === 'THB') amtKhr = amt * rateTHB;
 
       if (e.category === 'ទូទាត់ថ្លៃដើមដេប៉ូដៃគូ') {
-        monthDepotSettlementsKHR += amtKhr; // រាប់ជាការសងបំណុលដេប៉ូ (មិនដកស្ទួនលើប្រាក់ចំណេញឡើយ)
+        monthDepotSettlementsKHR += amtKhr;
       } else {
-        monthOperatingExpKHR += amtKhr; // ចំណាយប្រតិបត្តិការទូទៅ (សាំង, ទឹក, ភ្លើង, ម្ហូប...)
+        monthOperatingExpKHR += amtKhr;
       }
     });
 
@@ -455,7 +456,7 @@ async function loadDashboardData() {
     if (document.getElementById('dashMonthSales')) document.getElementById('dashMonthSales').innerText = '៛ ' + monthSalesKHR.toLocaleString();
     if (document.getElementById('dashMonthExpenses')) document.getElementById('dashMonthExpenses').innerText = '៛ ' + Math.round(totalMonthExpensesKHR).toLocaleString();
     
-    // បង្ហាញព័ត៌មានលម្អិតនៃចំណាយឱ្យច្បាស់ៗជា ២-៣ ជួរ (លែងដាច់អក្សរ ១០០%)
+    // 🌟 បង្ហាញព័ត៌មានលម្អិតនៃចំណាយជា ២-៣ ជួរស្អាត (លែងដាច់អក្សរ ១០០%)
     var expDetailEl = document.getElementById('dashMonthExpDetail');
     if (expDetailEl) {
       var dHtml = '<div class="text-slate-500 flex justify-between"><span>🛠️ ប្រតិបត្តិការ៖</span><b class="text-slate-800">៛ ' + Math.round(monthOperatingExpKHR).toLocaleString() + '</b></div>';
