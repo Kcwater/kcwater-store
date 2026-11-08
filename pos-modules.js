@@ -2499,6 +2499,20 @@ function renderSettingsModule() {
         '<i class="fas fa-chevron-right text-slate-300 group-hover:text-blue-600 group-hover:translate-x-1 transition text-xs"></i>' +
       '</div>' +
 
+    <!-- កាតថ្មី៖ រូបភាព ABA KHQR ផ្ទាល់ខ្លួន -->
+      <div onclick="openAbaQrSettingsModal()" class="card border-l-4 border-red-600 p-3.5 bg-red-50/30 rounded-2xl shadow-sm hover:shadow-xl hover:border-red-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">
+        <div class="flex items-center gap-2.5">
+          <div class="w-11 h-11 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center text-lg shadow-inner group-hover:scale-105 transition">
+            <i class="fas fa-qrcode"></i>
+          </div>
+          <div>
+            <b class="text-xs sm:text-sm font-black text-slate-900 block group-hover:text-red-700 transition">រូប ABA KHQR</b>
+            <span class="text-[10px] text-red-700 font-bold block mt-0.5">ផ្ទុក QR ផ្ទាល់ខ្លួនក្នុង DB 📱</span>
+          </div>
+        </div>
+        <i class="fas fa-chevron-right text-slate-300 group-hover:text-red-600 group-hover:translate-x-1 transition text-xs"></i>
+      </div>
+
       // កាត ៣៖ ដេប៉ូដៃគូផ្គត់ផ្គង់
       '<div onclick="openDepotManagerModal()" class="card border-l-4 border-rose-600 p-3.5 bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-rose-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
         '<div class="flex items-center gap-2.5">' +
@@ -5131,6 +5145,166 @@ async function submitUpdateMyPhone() {
     if (btn) {
       btn.disabled = false;
       btn.innerText = "រក្សាទុកលេខទូរស័ព្ទ";
+    }
+  }
+}
+
+// ==========================================================================
+// 📱 មុខងារ POP-UP UPLOAD រូប ABA KHQR ផ្ទាល់ខ្លួន (SELF-HOSTED ABA QR ENGINE)
+// ==========================================================================
+
+async function openAbaQrSettingsModal() {
+  var existing = document.getElementById('abaQrSettingsModal');
+  if (existing) existing.remove();
+
+  // ១. ទាញយករូប QR ដែលមានស្រាប់ពី Supabase Settings
+  var currentQrBase64 = "";
+  try {
+    const { data } = await supabaseClient
+      .from('settings')
+      .select('value')
+      .eq('key', 'Store_ABA_QR')
+      .maybeSingle();
+    if (data && data.value) {
+      currentQrBase64 = data.value;
+    }
+  } catch(e) {}
+
+  var previewSrc = currentQrBase64 || "https://i.postimg.cc/DzHPhnmQ/photo-2026-09-06-20-44-57.jpg";
+
+  var html = '<div id="abaQrSettingsModal" class="fixed inset-0 z-[7000] flex items-center justify-center p-3 sm:p-4 overflow-y-auto">' +
+    '<div class="fixed inset-0 bg-slate-950/65 backdrop-blur-xs" onclick="closeAbaQrSettingsModal()"></div>' +
+    '<div class="bg-white rounded-3xl shadow-2xl z-10 w-full max-w-sm p-5 space-y-3.5 text-center relative border border-slate-100 animate-in zoom-in-95 duration-200 my-auto">' +
+      '<div class="flex justify-between items-center border-b pb-2">' +
+        '<div class="text-left">' +
+          '<h3 class="font-black text-slate-900 text-sm sm:text-base flex items-center gap-2">' +
+            '<i class="fas fa-qrcode text-red-600"></i> កំណត់រូប ABA KHQR ហាង' +
+          '</h3>' +
+          '<p class="text-[10px] text-slate-500 font-bold mt-0.5">រូបនេះនឹងបង្ហាញលើ POS និង Web ភ្ញៀវស្វ័យប្រវត្តិ</p>' +
+        '</div>' +
+        '<button type="button" onclick="closeAbaQrSettingsModal()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-400 hover:text-slate-700 text-lg font-bold flex items-center justify-center">&times;</button>' +
+      '</div>' +
+
+      // 🖼️ ប្រអប់ Preview រូបភាព QR
+      '<div class="p-3 bg-red-50/60 rounded-2xl border-2 border-dashed border-red-300 space-y-2">' +
+        '<div class="p-2 bg-white rounded-xl border border-red-200 shadow-sm max-w-[190px] mx-auto overflow-hidden">' +
+          '<img id="abaQrPreviewImg" src="' + previewSrc + '" class="w-full h-auto rounded-lg object-contain shadow-xs" alt="ABA QR">' +
+        '</div>' +
+        '<span id="abaQrUploadStatusText" class="text-[10.5px] text-slate-600 font-bold block">' +
+          (currentQrBase64 ? '✅ បានភ្ជាប់រូប QR ផ្ទាល់ខ្លួនរួចរាល់' : '⚠️ កំពុងប្រើប្រាស់រូប QR លំនាំដើម') +
+        '</span>' +
+        '<input type="hidden" id="inpHiddenAbaQrBase64" value="' + currentQrBase64 + '">' +
+      '</div>' +
+
+      // ប៊ូតុងរើសរូប និងថតរូប
+      '<div class="grid grid-cols-2 gap-2">' +
+        '<label class="py-2.5 px-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-xs shadow-xs cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 transition">' +
+          '<i class="fas fa-image"></i> 📷 ផ្លាស់ប្តូររូប QR' +
+          '<input type="file" id="inpAbaQrFileInput" accept="image/*" onchange="previewAbaQrUpload(this)" class="hidden">' +
+        '</label>' +
+        '<button type="button" onclick="removeAbaQrSettings()" class="py-2.5 px-3 bg-slate-100 hover:bg-red-50 text-slate-600 hover:text-red-600 rounded-xl font-bold text-xs border border-slate-200 active:scale-95 transition flex items-center justify-center gap-1.5">' +
+          '<i class="fas fa-trash-can"></i> កំណត់ឡើងវិញ' +
+        '</button>' +
+      '</div>' +
+
+      '<div class="grid grid-cols-2 gap-2 pt-1 border-t">' +
+        '<button type="button" onclick="closeAbaQrSettingsModal()" class="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs active:scale-95 transition">បោះបង់</button>' +
+        '<button type="button" id="btnSaveAbaQrAction" onclick="saveAbaQrSettings()" class="py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-xl text-xs shadow-md active:scale-95 transition flex items-center justify-center gap-1">' +
+          '<i class="fas fa-floppy-disk"></i> រក្សាទុក QR' +
+        '</button>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+function closeAbaQrSettingsModal() {
+  var modal = document.getElementById('abaQrSettingsModal');
+  if (modal) modal.remove();
+}
+
+// 🖼️ មុខងារបំប្លែងរូប QR ឱ្យតូចល្មម (Canvas Resizer) ដើម្បីកុំឱ្យធ្ងន់ Database
+function previewAbaQrUpload(input) {
+  if (input.files && input.files[0]) {
+    var file = input.files[0];
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var img = new Image();
+      img.onload = function() {
+        var canvas = document.createElement('canvas');
+        var maxDim = 600; // ទំហំ 600px ច្បាស់ស្អាត ស្កេនបានលឿន និងស្រាល
+        var w = img.width, h = img.height;
+        if (w > h) {
+          if (w > maxDim) { h = Math.round((h * maxDim) / w); w = maxDim; }
+        } else {
+          if (h > maxDim) { w = Math.round((w * maxDim) / h); h = maxDim; }
+        }
+        canvas.width = w; canvas.height = h;
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        var base64 = canvas.toDataURL('image/jpeg', 0.85);
+
+        document.getElementById('abaQrPreviewImg').src = base64;
+        document.getElementById('inpHiddenAbaQrBase64').value = base64;
+        document.getElementById('abaQrUploadStatusText').innerHTML = '<span class="text-emerald-700 font-black">✔️ បានរើសរូបភាពថ្មីរួចរាល់ (សូមចុចរក្សាទុក)</span>';
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+function removeAbaQrSettings() {
+  document.getElementById('inpHiddenAbaQrBase64').value = '';
+  document.getElementById('abaQrPreviewImg').src = "https://i.postimg.cc/DzHPhnmQ/photo-2026-09-06-20-44-57.jpg";
+  document.getElementById('abaQrUploadStatusText').innerHTML = '<span class="text-amber-700 font-bold">⚠️ បានត្រឡប់ទៅរូប QR លំនាំដើម</span>';
+}
+
+// 💾 រក្សាទុករូប QR ចូលក្នុង Supabase Database
+async function saveAbaQrSettings() {
+  var base64 = document.getElementById('inpHiddenAbaQrBase64') ? document.getElementById('inpHiddenAbaQrBase64').value.trim() : '';
+  var btn = document.getElementById('btnSaveAbaQrAction');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> កំពុងរក្សាទុក...';
+  }
+
+  try {
+    const { error } = await supabaseClient.from('settings').upsert([
+      { key: 'Store_ABA_QR', value: base64 }
+    ]);
+
+    if (error) throw error;
+
+    // ធ្វើបច្ចុប្បន្នភាពលើផ្ទាំង POS KHQR Modal ភ្លាមៗបើមានបើក
+    var posKhqrImg = document.querySelector('#posKhqrModal img');
+    if (posKhqrImg && base64) {
+      posKhqrImg.src = base64;
+    }
+
+    closeAbaQrSettingsModal();
+
+    if (typeof kcAlert === 'function') {
+      await kcAlert({
+        title: "ជោគជ័យ! 🎉",
+        message: "រូបភាព ABA KHQR ត្រូវបានរក្សាទុកក្នុងប្រព័ន្ធរួចរាល់! ទាំងលើ POS និងលើ Web ភ្ញៀវនឹងបង្ហាញរូបថ្មីនេះភ្លាមៗ។",
+        type: "success"
+      });
+    } else {
+      showToast("បានរក្សាទុករូប ABA QR ជោគជ័យ!", "success");
+    }
+
+  } catch(err) {
+    if (typeof kcAlert === 'function') {
+      await kcAlert({ title: "កំហុស", message: err.message, type: "danger" });
+    } else {
+      showToast("កំហុស៖ " + err.message, "error");
+    }
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-floppy-disk mr-1"></i> រក្សាទុក QR';
     }
   }
 }
