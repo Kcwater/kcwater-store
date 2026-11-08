@@ -2371,3 +2371,267 @@ async function triggerAppSmartRefresh(forceHardReload) {
     if (btn) btn.classList.remove('opacity-60');
   }
 }
+
+// ==========================================================================
+// 🔔 មជ្ឈមណ្ឌលជូនដំណឹងក្នុង POS (NOTIFICATION CENTER ENGINE)
+// ==========================================================================
+
+var lastKnownNotificationTotal = 0;
+
+// ១. មុខងារទាញយក និងបង្ហាញចំនួនដំណឹងលើកណ្តឹង Navbar
+async function updateNotificationCenterBadge() {
+  var badge = document.getElementById('navNotificationTotalBadge');
+  var bellBtn = document.getElementById('navNotificationBellBtn');
+  if (!badge) return;
+
+  var isAdmin = (currentUser && currentUser.role === 'Admin');
+  var isCompanyDriver = (currentUser && currentUser.type === 'CompanyDriver');
+
+  // លាក់កណ្តឹងពីម៉ូយធម្មតា
+  if (!isAdmin && !isCompanyDriver) {
+    if (bellBtn) bellBtn.classList.add('hidden');
+    return;
+  }
+  if (bellBtn) bellBtn.classList.remove('hidden');
+
+  try {
+    var totalCount = 0;
+
+    // ក. ប្រសិនបើជាអ្នកដឹកជញ្ជូនរោងចក្រ ➔ រាប់តែការងារដឹករបស់គាត់
+    if (isCompanyDriver) {
+      const { count } = await supabaseClient
+        .from('orders')
+        .select('*', { count: 'exact', head: true })
+        .in('status', ['Assigned', 'Departed'])
+        .ilike('driver_name', (currentUser.fullName || '').trim());
+      
+      totalCount = count || 0;
+
+    // ខ. ប្រសិនបើជា Admin ➔ រាប់សរុបទាំង ៣ ប្រភេទ (Orders + Payments + Low Stock)
+    } else if (isAdmin) {
+      const [ordRes, payRes] = await Promise.all([
+        supabaseClient.from('orders').select('*', { count: 'exact', head: true }).eq('status', 'Pending'),
+        supabaseClient.from('pending_payments').select('*', { count: 'exact', head: true }).eq('status', 'Pending')
+      ]);
+
+      var pendingOrders = ordRes.count || 0;
+      var pendingPays = payRes.count || 0;
+
+      var lowStockCount = 0;
+      (allProducts || []).forEach(function(p) {
+        if (p.type === 'ទិញគេ' && parseFloat(p.stock || 0) <= parseFloat(p.min_stock || 5)) {
+          lowStockCount++;
+        }
+      });
+
+      totalCount = pendingOrders + pendingPays + lowStockCount;
+    }
+
+    if (totalCount > 0) {
+      badge.innerText = totalCount > 99 ? '99+' : totalCount;
+      badge.classList.remove('hidden');
+    } else {
+      badge.classList.add('hidden');
+    }
+
+    // បន្លឺសំឡេងរោទ៍ Chime បើមានដំណឹងថ្មីលោតឡើង
+    if (totalCount > lastKnownNotificationTotal && lastKnownNotificationTotal !== 0) {
+      if (typeof playOrderChime === 'function') playOrderChime();
+    }
+    lastKnownNotificationTotal = totalCount;
+
+  } catch(e) {}
+}
+
+// ២. មុខងារបើកផ្ទាំង Pop-up មជ្ឈមណ្ឌលជូនដំណឹង
+async function openNotificationCenterModal() {
+  var existing = document.getElementById('notificationCenterModal');
+  if (existing) existing.remove();
+
+  var isAdmin = (currentUser && currentUser.role === 'Admin');
+
+  var modalHtml = '<div id="notificationCenterModal" class="fixed inset-0 z-[7000] flex items-center justify-center p-3 sm:p-4 overflow-y-auto">' +
+    '<div class="fixed inset-0 bg-slate-950/65 backdrop-blur-xs" onclick="closeNotificationCenterModal()"></div>' +
+    '<div class="bg-white rounded-3xl shadow-2xl z-10 w-full max-w-md p-5 space-y-3.5 text-center relative border border-slate-100 animate-in zoom-in-95 duration-200 my-auto max-h-[90dvh] flex flex-col">' +
+      
+      // ក្បាលផ្ទាំង
+      '<div class="flex justify-between items-center border-b pb-2.5">' +
+        '<div class="text-left">' +
+          '<h3 class="font-black text-slate-900 text-sm sm:text-base flex items-center gap-2">' +
+            '<i class="fas fa-bell text-amber-500"></i> មជ្ឈមណ្ឌលជូនដំណឹង (Notifications)' +
+          '</h3>' +
+          '<p class="text-[10px] text-slate-500 font-bold mt-0.5">ដំណឹងបន្ទាន់ដែលទាមទារការពិនិត្យ និងចាត់ចែង</p>' +
+        '</div>' +
+        '<button type="button" onclick="closeNotificationCenterModal()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-400 hover:text-slate-700 text-lg font-bold flex items-center justify-center">&times;</button>' +
+      '</div>' +
+
+      // តួខ្លួនបញ្ជីដំណឹង
+      '<div id="notifCenterListArea" class="flex-1 overflow-y-auto space-y-2.5 text-left text-xs pr-1">' +
+        '<div class="text-center py-8 text-slate-400 italic text-xs"><i class="fas fa-spinner fa-spin mr-1.5 text-amber-600"></i> កំពុងពិនិត្យដំណឹង...</div>' +
+      '</div>' +
+
+      // ប៊ូតុង Refresh & បិទ
+      '<div class="grid grid-cols-2 gap-2 pt-1 border-t">' +
+        '<button type="button" onclick="fetchNotificationCenterData()" class="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs active:scale-95 transition flex items-center justify-center gap-1.5">' +
+          '<i class="fas fa-sync-alt text-[10px]"></i> ពិនិត្យម្តងទៀត' +
+        '</button>' +
+        '<button type="button" onclick="closeNotificationCenterModal()" class="py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-black rounded-xl text-xs shadow-md active:scale-95 transition">' +
+          'រួចរាល់ (បិទ)' +
+        '</button>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+  await fetchNotificationCenterData();
+}
+
+function closeNotificationCenterModal() {
+  var modal = document.getElementById('notificationCenterModal');
+  if (modal) modal.remove();
+}
+
+// ៣. មុខងារទាញទិន្នន័យជាក់ស្តែងចូលក្នុង Pop-up
+async function fetchNotificationCenterData() {
+  var area = document.getElementById('notifCenterListArea');
+  if (!area) return;
+
+  var isAdmin = (currentUser && currentUser.role === 'Admin');
+  var isCompanyDriver = (currentUser && currentUser.type === 'CompanyDriver');
+
+  try {
+    // 🛵 ក. សម្រាប់អ្នកដឹកជញ្ជូនរោងចក្រ
+    if (isCompanyDriver) {
+      const { data: missions } = await supabaseClient
+        .from('orders')
+        .select('*')
+        .in('status', ['Assigned', 'Departed'])
+        .ilike('driver_name', (currentUser.fullName || '').trim())
+        .order('created_at', { ascending: false });
+
+      if (!missions || missions.length === 0) {
+        area.innerHTML = '<div class="p-6 text-center bg-emerald-50 rounded-2xl border border-emerald-200 text-emerald-800 font-bold space-y-1">' +
+          '<i class="fas fa-check-circle text-2xl text-emerald-600 mb-1 block"></i>' +
+          '<b>គ្មានបេសកកម្មដែលនៅសល់ឡើយ!</b>' +
+          '<p class="text-[10px] text-slate-500 font-normal">រាល់ពេល Admin ចាត់ចែងការងារថ្មី វានឹងលោតមកទីនេះភ្លាមៗ។</p>' +
+        '</div>';
+        return;
+      }
+
+      var mHtml = '';
+      missions.forEach(function(m) {
+        mHtml += '<div class="p-3 bg-blue-50/70 border border-blue-200 rounded-2xl space-y-1.5">' +
+          '<div class="flex justify-between items-center">' +
+            '<b class="text-xs text-blue-950 font-black"><i class="fas fa-motorcycle text-blue-600 mr-1"></i> ' + m.customer_name + '</b>' +
+            '<span class="text-[9.5px] font-bold text-blue-800 bg-blue-100 px-2 py-0.5 rounded-full">' + m.status + '</span>' +
+          '</div>' +
+          '<div class="text-[11px] text-slate-700">📦 ' + m.items + '</div>' +
+          '<div class="flex justify-between items-center pt-1 border-t border-blue-200/60">' +
+            '<b class="text-emerald-700 font-black">៛ ' + Number(m.total || 0).toLocaleString() + '</b>' +
+            '<button type="button" onclick="closeNotificationCenterModal(); loadModule(\'CompanyDeliveries\');" class="px-2.5 py-1 bg-blue-600 text-white rounded-lg font-bold text-[10px] active:scale-95 transition">ទៅកាន់បេសកកម្ម ➔</button>' +
+          '</div>' +
+        '</div>';
+      });
+      area.innerHTML = mHtml;
+      return;
+    }
+
+    // 👑 ខ. សម្រាប់ Admin ➔ ទាញយកទាំង ៣ ប្រភេទ
+    const [ordRes, payRes] = await Promise.all([
+      supabaseClient.from('orders').select('*').eq('status', 'Pending').order('created_at', { ascending: false }),
+      supabaseClient.from('pending_payments').select('*').eq('status', 'Pending').order('created_at', { ascending: false })
+    ]);
+
+    var orders = ordRes.data || [];
+    var payments = payRes.data || [];
+    var lowStockItems = [];
+
+    (allProducts || []).forEach(function(p) {
+      if (p.type === 'ទិញគេ' && parseFloat(p.stock || 0) <= parseFloat(p.min_stock || 5)) {
+        lowStockItems.push(p);
+      }
+    });
+
+    var hasAny = (orders.length > 0 || payments.length > 0 || lowStockItems.length > 0);
+
+    if (!hasAny) {
+      area.innerHTML = '<div class="p-6 text-center bg-emerald-50 rounded-2xl border border-emerald-200 text-emerald-800 font-bold space-y-1">' +
+        '<i class="fas fa-circle-check text-3xl text-emerald-600 mb-1 block"></i>' +
+        '<b class="text-xs sm:text-sm">គ្មានដំណឹងបន្ទាន់ឡើយ!</b>' +
+        '<p class="text-[10.5px] text-slate-500 font-normal">ប្រព័ន្ធកំពុងដំណើរការយ៉ាងរលូន គ្មានការកុម្ម៉ង់ ឬសំណើបង់ប្រាក់រង់ចាំឡើយ។</p>' +
+      '</div>';
+      return;
+    }
+
+    var html = '';
+
+    // ១. ផ្នែកការកុម្ម៉ង់ Online ថ្មីៗ
+    if (orders.length > 0) {
+      html += '<div class="space-y-1.5">' +
+        '<div class="flex justify-between items-center text-[11px] font-black text-amber-950 uppercase">' +
+          '<span><i class="fas fa-truck-fast text-amber-600 mr-1"></i> កុម្ម៉ង់ Online រង់ចាំចាត់ចែង (' + orders.length + ')</span>' +
+          '<button type="button" onclick="closeNotificationCenterModal(); openOnlineOrdersModal();" class="text-blue-600 underline font-bold">មើលទាំងអស់</button>' +
+        '</div>';
+      orders.slice(0, 3).forEach(function(o) {
+        html += '<div class="p-2.5 bg-amber-50/80 border border-amber-300 rounded-2xl flex justify-between items-center gap-2">' +
+          '<div class="min-w-0 flex-1">' +
+            '<b class="text-xs text-amber-950 truncate block">' + o.customer_name + ' (📞 ' + (o.phone || '-') + ')</b>' +
+            '<span class="text-[10px] text-amber-800 truncate block">' + o.items + '</span>' +
+          '</div>' +
+          '<button type="button" onclick="closeNotificationCenterModal(); openOnlineOrdersModal();" class="px-2.5 py-1.5 bg-amber-600 text-white rounded-xl font-black text-[10px] shrink-0 active:scale-95 transition">ចាត់ចែង</button>' +
+        '</div>';
+      });
+      html += '</div>';
+    }
+
+    // ២. ផ្នែកសំណើទូទាត់ប្រាក់ពីម៉ូយ
+    if (payments.length > 0) {
+      html += '<div class="space-y-1.5 pt-1 border-t border-slate-100">' +
+        '<div class="flex justify-between items-center text-[11px] font-black text-blue-950 uppercase">' +
+          '<span><i class="fas fa-wallet text-blue-600 mr-1"></i> សំណើបង់ប្រាក់ពីម៉ូយ (' + payments.length + ')</span>' +
+          '<button type="button" onclick="closeNotificationCenterModal(); loadModule(\'Settlement\');" class="text-blue-600 underline font-bold">ទៅផ្ទាំងទូទាត់</button>' +
+        '</div>';
+      payments.slice(0, 3).forEach(function(pm) {
+        html += '<div class="p-2.5 bg-blue-50/80 border border-blue-300 rounded-2xl flex justify-between items-center gap-2">' +
+          '<div class="min-w-0 flex-1">' +
+            '<b class="text-xs text-blue-950 truncate block">' + pm.customer_name + '</b>' +
+            '<span class="text-[10px] text-emerald-800 font-bold block">៛ ' + Number(pm.khr_total || 0).toLocaleString() + ' (' + pm.method + ')</span>' +
+          '</div>' +
+          '<button type="button" onclick="closeNotificationCenterModal(); loadModule(\'Settlement\');" class="px-2.5 py-1.5 bg-blue-600 text-white rounded-xl font-black text-[10px] shrink-0 active:scale-95 transition">ផ្ទៀងផ្ទាត់</button>' +
+        '</div>';
+      });
+      html += '</div>';
+    }
+
+    // ៣. ផ្នែកទំនិញជិតអស់ស្តុក
+    if (lowStockItems.length > 0) {
+      html += '<div class="space-y-1.5 pt-1 border-t border-slate-100">' +
+        '<div class="flex justify-between items-center text-[11px] font-black text-rose-950 uppercase">' +
+          '<span><i class="fas fa-boxes-stacked text-rose-600 mr-1"></i> ទំនិញជិតអស់ស្តុក (' + lowStockItems.length + ')</span>' +
+          '<button type="button" onclick="closeNotificationCenterModal(); loadModule(\'StockRep\');" class="text-rose-600 underline font-bold">មើលស្តុក</button>' +
+        '</div>';
+      lowStockItems.slice(0, 3).forEach(function(pr) {
+        var isZero = parseFloat(pr.stock || 0) <= 0;
+        html += '<div class="p-2.5 bg-rose-50/70 border border-rose-200 rounded-2xl flex justify-between items-center gap-2">' +
+          '<div class="min-w-0 flex-1">' +
+            '<b class="text-xs text-rose-950 truncate block">' + pr.name + '</b>' +
+            '<span class="text-[10px] font-black ' + (isZero ? 'text-red-600' : 'text-rose-700') + '">' + (isZero ? 'អស់ស្តុក (០)' : 'សល់ត្រឹម ' + pr.stock) + '</span>' +
+          '</div>' +
+          '<button type="button" onclick="closeNotificationCenterModal(); openQuickRestockModal(\'' + pr.id + '\', \'' + pr.name.replace(/'/g, "\\'") + '\', ' + (pr.cost || 0) + ');" class="px-2.5 py-1.5 bg-rose-600 text-white rounded-xl font-black text-[10px] shrink-0 active:scale-95 transition">+ បញ្ចូល</button>' +
+        '</div>';
+      });
+      html += '</div>';
+    }
+
+    area.innerHTML = html;
+
+  } catch(e) {
+    area.innerHTML = '<div class="text-center py-4 text-red-500 font-bold text-xs">កំហុស៖ ' + e.message + '</div>';
+  }
+}
+
+// 🔄 ដំណើរការពិនិត្យដំណឹងស្វ័យប្រវត្តរៀងរាល់ ២០ វិនាទីម្តង
+setInterval(updateNotificationCenterBadge, 20000);
+window.addEventListener('load', function() {
+  setTimeout(updateNotificationCenterBadge, 1500);
+});
