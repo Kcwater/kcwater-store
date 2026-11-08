@@ -2441,7 +2441,7 @@ async function delUserFromSupabase(id) {
 }
 
 // ==========================================================================
-// ⚙️ ផ្ទាំង SETTINGS ស្តង់ដារ (ពេញអេក្រង់ PC + មានមុខងារកំណត់ទំហំអក្សរ FONT SIZE)
+// ⚙️ ផ្ទាំង SETTINGS ស្តង់ដារ (មានកាត ABA QR + FONT SIZE + SETTINGS ទាំងអស់)
 // ==========================================================================
 function renderSettingsModule() {
   var area = document.getElementById('contentArea');
@@ -2468,8 +2468,8 @@ function renderSettingsModule() {
       '</button>' +
     '</div>' +
 
-    // 📱 ក្រឡាចត្រង្គកាតមុខងារទាំង ៨ (រៀបរយ ៤ ជួរលើ PC ធំ, ២ ជួរលើ Laptop/Tablet)
-    '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">' +
+    // 📱 ក្រឡាចត្រង្គកាតមុខងារទាំង ៩
+    '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">' +
       
       // កាត ១៖ ប្រភេទទំនិញ
       '<div onclick="openCategoryManagerModal()" class="card border-l-4 border-emerald-600 p-3.5 bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-emerald-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
@@ -2499,21 +2499,21 @@ function renderSettingsModule() {
         '<i class="fas fa-chevron-right text-slate-300 group-hover:text-blue-600 group-hover:translate-x-1 transition text-xs"></i>' +
       '</div>' +
 
-    <!-- កាតថ្មី៖ រូបភាព ABA KHQR ផ្ទាល់ខ្លួន -->
-      <div onclick="openAbaQrSettingsModal()" class="card border-l-4 border-red-600 p-3.5 bg-red-50/30 rounded-2xl shadow-sm hover:shadow-xl hover:border-red-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">
-        <div class="flex items-center gap-2.5">
-          <div class="w-11 h-11 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center text-lg shadow-inner group-hover:scale-105 transition">
-            <i class="fas fa-qrcode"></i>
-          </div>
-          <div>
-            <b class="text-xs sm:text-sm font-black text-slate-900 block group-hover:text-red-700 transition">រូប ABA KHQR</b>
-            <span class="text-[10px] text-red-700 font-bold block mt-0.5">ផ្ទុក QR ផ្ទាល់ខ្លួនក្នុង DB 📱</span>
-          </div>
-        </div>
-        <i class="fas fa-chevron-right text-slate-300 group-hover:text-red-600 group-hover:translate-x-1 transition text-xs"></i>
-      </div>
+      // កាត ៣៖ រូបភាព ABA KHQR ផ្ទាល់ខ្លួន
+      '<div onclick="openAbaQrSettingsModal()" class="card border-l-4 border-red-600 p-3.5 bg-red-50/30 rounded-2xl shadow-sm hover:shadow-xl hover:border-red-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
+        '<div class="flex items-center gap-2.5">' +
+          '<div class="w-11 h-11 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center text-lg shadow-inner group-hover:scale-105 transition">' +
+            '<i class="fas fa-qrcode"></i>' +
+          '</div>' +
+          '<div>' +
+            '<b class="text-xs sm:text-sm font-black text-slate-900 block group-hover:text-red-700 transition">រូប ABA KHQR</b>' +
+            '<span class="text-[10px] text-red-700 font-bold block mt-0.5">ផ្ទុក QR ផ្ទាល់ខ្លួនក្នុង DB 📱</span>' +
+          '</div>' +
+        '</div>' +
+        '<i class="fas fa-chevron-right text-slate-300 group-hover:text-red-600 group-hover:translate-x-1 transition text-xs"></i>' +
+      '</div>' +
 
-      // កាត ៣៖ ដេប៉ូដៃគូផ្គត់ផ្គង់
+      // កាត ៤៖ ដេប៉ូដៃគូផ្គត់ផ្គង់
       '<div onclick="openDepotManagerModal()" class="card border-l-4 border-rose-600 p-3.5 bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-rose-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
         '<div class="flex items-center gap-2.5">' +
           '<div class="w-11 h-11 rounded-2xl bg-rose-100 text-rose-700 flex items-center justify-center text-lg shadow-inner group-hover:scale-105 transition">' +
@@ -2527,7 +2527,7 @@ function renderSettingsModule() {
         '<i class="fas fa-chevron-right text-slate-300 group-hover:text-rose-600 group-hover:translate-x-1 transition text-xs"></i>' +
       '</div>' +
 
-      // 🌟 កាត ៤ (មុខងារថ្មី)៖ កម្រិតទំហំអក្សរ (Font Size)
+      // កាត ៥៖ កម្រិតទំហំអក្សរ
       '<div onclick="openFontSizeModal()" class="card border-l-4 border-purple-600 p-3.5 bg-purple-50/40 rounded-2xl shadow-sm hover:shadow-xl hover:border-purple-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
         '<div class="flex items-center gap-2.5">' +
           '<div class="w-11 h-11 rounded-2xl bg-purple-100 text-purple-700 flex items-center justify-center text-lg shadow-inner group-hover:scale-105 transition">' +
@@ -2541,7 +2541,7 @@ function renderSettingsModule() {
         '<i class="fas fa-chevron-right text-slate-300 group-hover:text-purple-600 group-hover:translate-x-1 transition text-xs"></i>' +
       '</div>' +
 
-      // កាត ៥៖ សេវាដឹកជញ្ជូន & ម៉ោងធ្វើការ
+      // កាត ៦៖ សេវាដឹកជញ្ជូន & ម៉ោងធ្វើការ
       '<div onclick="openDeliverySettingsModal()" class="card border-l-4 border-indigo-600 p-3.5 bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-indigo-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
         '<div class="flex items-center gap-2.5">' +
           '<div class="w-11 h-11 rounded-2xl bg-indigo-100 text-indigo-700 flex items-center justify-center text-lg shadow-inner group-hover:scale-105 transition">' +
@@ -2555,7 +2555,7 @@ function renderSettingsModule() {
         '<i class="fas fa-chevron-right text-slate-300 group-hover:text-indigo-600 group-hover:translate-x-1 transition text-xs"></i>' +
       '</div>' +
 
-      // កាត ៦៖ ប្រព័ន្ធ Promotion
+      // កាត ៧៖ ប្រព័ន្ធ Promotion
       '<div onclick="openPromoSettingsModal()" class="card border-l-4 border-amber-500 p-3.5 bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-amber-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
         '<div class="flex items-center gap-2.5">' +
           '<div class="w-11 h-11 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center text-lg shadow-inner group-hover:scale-105 transition">' +
@@ -2569,7 +2569,7 @@ function renderSettingsModule() {
         '<i class="fas fa-chevron-right text-slate-300 group-hover:text-amber-600 group-hover:translate-x-1 transition text-xs"></i>' +
       '</div>' +
 
-      // កាត ៧៖ ផ្ទាំងស្លាយ Web
+      // កាត ៨៖ ផ្ទាំងស្លាយ Web
       '<div onclick="openSlidesSettingsModal()" class="card border-l-4 border-teal-600 p-3.5 bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-teal-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
         '<div class="flex items-center gap-2.5">' +
           '<div class="w-11 h-11 rounded-2xl bg-teal-100 text-teal-700 flex items-center justify-center text-lg shadow-inner group-hover:scale-105 transition">' +
@@ -2583,7 +2583,7 @@ function renderSettingsModule() {
         '<i class="fas fa-chevron-right text-slate-300 group-hover:text-teal-600 group-hover:translate-x-1 transition text-xs"></i>' +
       '</div>' +
 
-      // កាត ៨៖ Telegram Bot Alert
+      // កាត ៩៖ Telegram Bot Alert
       '<div onclick="openTelegramSettingsModal()" class="card border-l-4 border-green-600 p-3.5 bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-green-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
         '<div class="flex items-center gap-2.5">' +
           '<div class="w-11 h-11 rounded-2xl bg-green-100 text-green-700 flex items-center justify-center text-lg shadow-inner group-hover:scale-105 transition">' +
