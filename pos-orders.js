@@ -93,7 +93,7 @@ async function checkPendingOnlineOrdersBadge() {
   } catch(e) {}
 }
 
-// ⚡ REALTIME LISTENER (មានរំញ័រទូរស័ព្ទ Vibration & សំឡេងរោទ៍ ដាស់តឿនអ្នកដឹក)
+// ⚡ REALTIME LISTENER ពេញលេញ (កណ្តឹង 🔔 & បេសកកម្មលោតភ្លាមក្នុង ០.១ វិនាទី Real-Time)
 function initOrdersRealtimeListener() {
   try {
     if (ordersRealtimeChannel) {
@@ -102,9 +102,12 @@ function initOrdersRealtimeListener() {
     }
 
     ordersRealtimeChannel = supabaseClient
-      .channel('public:orders')
+      .channel('public:realtime_hub_channel')
+      // ១. ស្ទាក់ចាប់ការកុម្ម៉ង់ Online ថ្មីៗ (orders) ➔ លោតកណ្តឹងភ្លាម
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, function(payload) {
-        checkPendingOnlineOrdersBadge();
+        if (typeof checkPendingOnlineOrdersBadge === 'function') checkPendingOnlineOrdersBadge();
+        if (typeof updateNotificationCenterBadge === 'function') updateNotificationCenterBadge();
+
         var modal = document.getElementById('onlineOrdersAdminModal');
         if (modal && !modal.classList.contains('hidden')) {
           openOnlineOrdersModal();
@@ -114,19 +117,23 @@ function initOrdersRealtimeListener() {
         if (currentUser && currentUser.type === 'CompanyDriver') {
           var driverContainer = document.getElementById('driverOrdersContainer');
           if (driverContainer) {
-            renderCompanyDeliveriesModule(true); // Silent update រលូន មិនកន្ត្រាក់
+            renderCompanyDeliveriesModule(true);
           }
 
           var newRecord = payload.new || {};
           if (newRecord.status === 'Assigned' && newRecord.driver_name === currentUser.fullName) {
             playOrderChime();
-            // 📳 ញ័រទូរស័ព្ទដាស់តឿនអ្នកដឹកភ្លាមៗ
             if (navigator.vibrate) {
               navigator.vibrate([400, 200, 400, 200, 600]);
             }
             showToast("🛵 [ការងារថ្មី] Admin បានចាត់ចែងការដឹកទឹកថ្មីឱ្យអ្នក!", "success");
           }
         }
+      })
+      // ២. ស្ទាក់ចាប់សំណើបង់ប្រាក់ពីម៉ូយ (pending_payments) ➔ លោតកណ្តឹងភ្លាម
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pending_payments' }, function(payload) {
+        if (typeof updateNotificationCenterBadge === 'function') updateNotificationCenterBadge();
+        if (typeof checkAdminPendingPayments === 'function') checkAdminPendingPayments();
       })
       .subscribe();
   } catch(e) {}
