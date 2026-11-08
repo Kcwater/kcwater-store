@@ -8,7 +8,7 @@ var stmtCurrentFilter = 'ALL';
 var allDebtorsCache = [];
 
 // ==========================================
-// 📊 ១. របាយការណ៍ប្រចាំខែ & កាតគ្រី (ពេញអេក្រង់ PC + សមមាត្រលើទូរស័ព្ទ)
+// 📊 ១. របាយការណ៍ប្រចាំខែ & កាតគ្រី (មានដើមទុនទឹកយួរ & ការលក់តាមអ្នកលក់)
 // ==========================================
 function renderMonthlyRepModule() {
   var area = document.getElementById('contentArea');
@@ -26,7 +26,7 @@ function renderMonthlyRepModule() {
         '<i class="fas fa-chart-line"></i> របាយការណ៍អាជីវកម្មសរុប' +
       '</button>' +
       '<button id="tabBtnCustomer" onclick="switchRepTab(\'customer\')" class="flex-1 py-2 sm:py-2.5 rounded-xl transition-all bg-slate-100 text-slate-600 hover:bg-slate-200 flex items-center justify-center gap-1.5">' +
-        '<i class="fas fa-user-tag"></i> កាតគ្រីអតិថិជនម្នាក់ៗ' +
+        '<i class="fas fa-user-tag"></i> កាតគ្រីអតិថិជន & Walk-in' +
       '</button>' +
     '</div>' +
     
@@ -45,11 +45,15 @@ function renderMonthlyRepModule() {
         '</button>' +
       '</div>' +
 
-      // កាតសង្ខេប ៣
-      '<div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3" id="compCardsArea">' +
+      // កាតសង្ខេប ៤ (មានបន្ថែមដើមទុនទំនិញ/ទឹកយួរ)
+      '<div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3" id="compCardsArea">' +
         '<div class="dash-card border-l-4 border-blue-600 p-3.5 bg-white rounded-2xl">' +
           '<div class="text-gray-500 text-[10px] sm:text-xs font-bold uppercase truncate">ចំណូលលក់សរុប</div>' +
           '<div id="compSalesTotal" class="mt-1 text-base sm:text-lg font-black text-blue-900">0 ៛</div>' +
+        '</div>' +
+        '<div class="dash-card border-l-4 border-amber-500 p-3.5 bg-white rounded-2xl">' +
+          '<div class="text-gray-500 text-[10px] sm:text-xs font-bold uppercase truncate">ដើមទុនទំនិញ/ទឹកយួរ</div>' +
+          '<div id="compCogsTotal" class="mt-1 text-base sm:text-lg font-black text-amber-800">0 ៛</div>' +
         '</div>' +
         '<div class="dash-card border-l-4 border-green-600 p-3.5 bg-white rounded-2xl">' +
           '<div class="text-gray-500 text-[10px] sm:text-xs font-bold uppercase truncate">សាច់ប្រាក់ប្រមូលបាន</div>' +
@@ -61,40 +65,66 @@ function renderMonthlyRepModule() {
         '</div>' +
       '</div>' +
 
-      // តារាងបរិមាណលក់សរុប (Full Width Table)
+      // តារាងបរិមាណលក់ & ដើមទុនតាមមុខទំនិញ (Full Width Table)
       '<div class="card border-t-4 border-blue-600 shadow-lg p-4 sm:p-5 mb-0 bg-white">' +
         '<h4 class="font-bold text-gray-800 text-xs sm:text-sm mb-2.5 flex items-center gap-1.5">' +
-          '<i class="fas fa-boxes-stacked text-blue-600"></i>បរិមាណទឹក និងទំនិញលក់បានសរុប' +
+          '<i class="fas fa-boxes-stacked text-blue-600"></i>បរិមាណលក់, ដើមទុនទឹកយួរ/ទំនិញ & ចំណូល' +
         '</h4>' +
         '<div class="overflow-x-auto max-h-80 overflow-y-auto rounded-xl border border-gray-200">' +
           '<table class="w-full text-left text-xs border-collapse">' +
             '<thead class="sticky top-0 bg-gray-100 text-gray-700 font-bold border-b z-10 shadow-xs">' +
-              '<tr><th class="p-2.5 sm:p-3">មុខទំនិញ</th><th class="p-2.5 sm:p-3 text-center w-36">ចំនួនលក់បាន</th></tr>' +
+              '<tr>' +
+                '<th class="p-2.5 sm:p-3">មុខទំនិញ</th>' +
+                '<th class="p-2.5 sm:p-3 text-center w-28">ចំនួនលក់</th>' +
+                '<th class="p-2.5 sm:p-3 text-right w-36">ដើមទុនសរុប (COGS)</th>' +
+                '<th class="p-2.5 sm:p-3 text-right w-36">ចំណូលលក់សរុប</th>' +
+              '</tr>' +
             '</thead>' +
             '<tbody id="compQtyTableBody"></tbody>' +
           '</table>' +
         '</div>' +
       '</div>' +
+
+      // 🛒 តារាងការលក់តាមអ្នកលក់នៅកន្លែង & បុគ្គលិក (Sales by Cashier / Seller)
+      '<div class="card border-t-4 border-emerald-600 shadow-lg p-4 sm:p-5 mb-0 bg-white">' +
+        '<h4 class="font-bold text-gray-800 text-xs sm:text-sm mb-2.5 flex items-center gap-1.5">' +
+          '<i class="fas fa-user-check text-emerald-600"></i>ការលក់សរុបតាមអ្នកលក់នៅកន្លែង / បុគ្គលិក (Sales by Cashier / Seller)' +
+        '</h4>' +
+        '<div class="overflow-x-auto max-h-64 overflow-y-auto rounded-xl border border-gray-200">' +
+          '<table class="w-full text-left text-xs border-collapse">' +
+            '<thead class="sticky top-0 bg-gray-100 text-gray-700 font-bold border-b z-10 shadow-xs">' +
+              '<tr>' +
+                '<th class="p-2.5 sm:p-3">ឈ្មោះអ្នកលក់ / អ្នកកត់ត្រា</th>' +
+                '<th class="p-2.5 sm:p-3 text-center w-28">ចំនួនលើក</th>' +
+                '<th class="p-2.5 sm:p-3 text-right w-32">លុយសុទ្ធ (Cash)</th>' +
+                '<th class="p-2.5 sm:p-3 text-right w-32">ស្កេន (ABA)</th>' +
+                '<th class="p-2.5 sm:p-3 text-right w-36">លក់បានសរុប</th>' +
+              '</tr>' +
+            '</thead>' +
+            '<tbody id="compSellerTableBody"></tbody>' +
+          '</table>' +
+        '</div>' +
+      '</div>' +
     '</div>' +
 
-    // 👤 កាតកាតគ្រីអតិថិជន
+    // 👤 កាតកាតគ្រីអតិថិជន & Walk-in
     '<div id="secCustomerRep" class="space-y-3.5 hidden">' +
       '<div class="card border-t-4 border-green-700 shadow-xl p-4 sm:p-5 mb-0 bg-white">' +
         '<h3 class="font-extrabold text-green-900 text-xs sm:text-base mb-2.5 flex items-center gap-1.5">' +
-          '<i class="fas fa-file-invoice text-green-600"></i>ស្វែងរកកាតគ្រីអតិថិជន' +
+          '<i class="fas fa-file-invoice text-green-600"></i>ស្វែងរកកាតគ្រីអតិថិជន & ការលក់នៅកន្លែង (Walk-in)' +
         '</h3>' +
         '<div class="space-y-2.5">' +
           '<div>' +
-            '<label class="text-[9.5px] font-bold text-gray-600 uppercase block mb-0.5">ជ្រើសរើសឈ្មោះអតិថិជន</label>' +
+            '<label class="text-[9.5px] font-bold text-gray-600 uppercase block mb-0.5">ជ្រើសរើសឈ្មោះអតិថិជន ឬ លក់នៅកន្លែង</label>' +
             '<select id="custSelectDropdown" onchange="document.getElementById(\'custSearchInp\').value=this.value" class="font-bold text-blue-900 text-xs sm:text-sm border-2 border-blue-200 rounded-xl p-2 w-full bg-white outline-none focus:border-blue-500"></select>' +
           '</div>' +
-          '<input type="text" id="custSearchInp" placeholder="🔍 ឬវាយឈ្មោះម៉ូយ..." class="font-bold border p-2 rounded-xl w-full text-xs outline-none focus:border-green-600">' +
+          '<input type="text" id="custSearchInp" placeholder="🔍 ឬវាយឈ្មោះម៉ូយ ឬវាយ Walk-in..." class="font-bold border p-2 rounded-xl w-full text-xs outline-none focus:border-green-600">' +
           '<div class="grid grid-cols-2 gap-2">' +
             '<div><label class="text-[9.5px] font-bold text-gray-500 uppercase block mb-0.5">ចាប់ពីថ្ងៃ</label><input type="date" id="custStartDate" value="' + firstDay + '" class="font-bold border p-2 rounded-xl w-full text-xs outline-none"></div>' +
             '<div><label class="text-[9.5px] font-bold text-gray-500 uppercase block mb-0.5">ដល់ថ្ងៃ</label><input type="date" id="custEndDate" value="' + today + '" class="font-bold border p-2 rounded-xl w-full text-xs outline-none"></div>' +
           '</div>' +
           '<button onclick="fetchFullStatementFromSupabase()" class="btn-green shadow-lg flex items-center justify-center gap-1.5 py-2.5 text-xs sm:text-sm font-bold">' +
-            '<i class="fas fa-file-invoice"></i> បង្ហាញកាតគ្រី' +
+            '<i class="fas fa-file-invoice"></i> បង្ហាញកាតគ្រី / វិក្កយបត្រលក់' +
           '</button>' +
         '</div>' +
       '</div>' +
@@ -123,10 +153,12 @@ function switchRepTab(tab) {
   }
 }
 
+// 👥 បង្ហាញបញ្ជីឈ្មោះម៉ូយ & បើកជម្រើសលក់នៅកន្លែង (Walk-in)
 function populateCustSelectDropdown() {
   var sel = document.getElementById('custSelectDropdown');
   if (!sel) return;
-  sel.innerHTML = '<option value="">-- រើសឈ្មោះម៉ូយ --</option>';
+  sel.innerHTML = '<option value="">-- រើសឈ្មោះម៉ូយ --</option>' +
+    '<option value="Walk-in">🛒 -- លក់នៅកន្លែងទាំងអស់ (Walk-in) --</option>';
   allCustomers.forEach(function(c) {
     if (c.role !== 'Admin' && c.full_name !== 'Walk-in') {
       sel.innerHTML += '<option value="' + c.full_name + '">' + c.full_name + '</option>';
@@ -135,7 +167,7 @@ function populateCustSelectDropdown() {
 }
 
 // ==========================================
-// 🏢 គណនារបាយការណ៍អាជីវកម្មសរុប (ប្រើម៉ោងកម្ពុជា UTC+7 ពេញលេញ ២៤ ម៉ោង)
+// 🏢 គណនារបាយការណ៍អាជីវកម្មសរុប (គណនាដើមទុនទំនិញ COGS & ចំណូលតាមអ្នកលក់)
 // ==========================================
 async function fetchCompanySummaryFromSupabase() {
   var sd = document.getElementById('compStartDate').value;
@@ -143,62 +175,144 @@ async function fetchCompanySummaryFromSupabase() {
   if (!sd || !ed) return;
 
   try {
-    // 🇰🇭 កំណត់ម៉ោងកម្ពុជា UTC+7 ចាប់ពី 00:00:00 ដល់ 23:59:59 នៃថ្ងៃដែលបានជ្រើសរើស
     var startIso = sd + 'T00:00:00+07:00';
     var endIso = ed + 'T23:59:59.999+07:00';
 
-    // ១. ទាញទិន្នន័យប្រតិបត្តិការលក់ (Transactions) ក្នុងចន្លោះម៉ោងកម្ពុជា
+    if (!allProducts || allProducts.length === 0) {
+      const { data: pList } = await supabaseClient.from('products').select('*');
+      if (pList) allProducts = pList;
+    }
+
+    var rateUSD = (typeof exchangeRateUSD !== 'undefined') ? exchangeRateUSD : 4100;
+    var rateTHB = (typeof exchangeRateTHB !== 'undefined') ? exchangeRateTHB : 115;
+
+    // ១. ទាញប្រតិបត្តិការលក់ (Transactions) ក្នុងចន្លោះម៉ោងកម្ពុជា
     const { data: trans } = await supabaseClient
       .from('transactions')
       .select('*')
       .gte('created_at', startIso)
       .lte('created_at', endIso);
 
-    // ២. ទាញទិន្នន័យសាច់ប្រាក់ដែលប្រមូលបានពីការទូទាត់បំណុល (Settlements) ក្នុងចន្លោះម៉ោងកម្ពុជា
+    // ២. ទាញសាច់ប្រាក់សងបំណុល (Settlements) ក្នុងចន្លោះម៉ោងកម្ពុជា
     const { data: settles } = await supabaseClient
       .from('settlements')
       .select('*')
       .gte('settled_at', startIso)
       .lte('settled_at', endIso);
 
-    var salesTotal = 0, cashTotal = 0, debtTotal = 0;
-    var prodQty = {};
+    var salesTotal = 0, cashTotal = 0, debtTotal = 0, totalCogs = 0;
+    var prodSummaryMap = {};
+    var sellerSummaryMap = {};
 
-    // គណនាពីការលក់ទំនិញ
     if (trans) {
       trans.forEach(function(t) {
         var tot = parseFloat(t.total || 0);
         var paid = parseFloat(t.paid_khr || 0);
+        var qty = parseFloat(t.qty || 0);
+        var pName = (t.product_name || '').trim();
+
         salesTotal += tot;
-        cashTotal += paid; // សាច់ប្រាក់បានទទួលពេលលក់ភ្លាមៗ
+        cashTotal += paid;
         if (t.status === 'Unpaid') debtTotal += tot;
-        if (t.product_name) {
-          prodQty[t.product_name] = (prodQty[t.product_name] || 0) + parseFloat(t.qty || 0);
+
+        // 📦 គណនាថ្លៃដើមទំនិញ (COGS) ពិសេសទឹកយួរ & គ្រឿងទេស
+        var pObj = allProducts.find(p => p.name.trim().toLowerCase() === pName.toLowerCase());
+        var itemCostKhr = 0;
+        if (pObj && pObj.type === 'ទិញគេ' && pObj.cost > 0) {
+          itemCostKhr = parseFloat(pObj.cost);
+          if (pObj.currency === 'USD') itemCostKhr = itemCostKhr * rateUSD;
+          else if (pObj.currency === 'THB') itemCostKhr = itemCostKhr * rateTHB;
+        }
+
+        var lineCogs = itemCostKhr * qty;
+        totalCogs += lineCogs;
+
+        // សង្ខេបតាមមុខទំនិញ
+        if (pName) {
+          if (!prodSummaryMap[pName]) {
+            prodSummaryMap[pName] = { 
+              qty: 0, 
+              cogs: 0, 
+              sales: 0, 
+              isProduced: (pObj && pObj.type === 'ផលិតឯង') 
+            };
+          }
+          prodSummaryMap[pName].qty += qty;
+          prodSummaryMap[pName].cogs += lineCogs;
+          prodSummaryMap[pName].sales += tot;
+        }
+
+        // 🛒 សង្ខេបតាមអ្នកលក់នៅកន្លែង / បុគ្គលិកកត់ត្រា (Sales by Seller / Staff)
+        var rawSeller = (t.recorded_by || 'Admin').trim();
+        var sellerKey = rawSeller.replace(/\s*\(.*?\)/g, '').trim() || 'Admin';
+
+        if (!sellerSummaryMap[sellerKey]) {
+          sellerSummaryMap[sellerKey] = { count: 0, total: 0, cash: 0, aba: 0 };
+        }
+        sellerSummaryMap[sellerKey].count += 1;
+        sellerSummaryMap[sellerKey].total += tot;
+
+        if (t.payment_method === 'ABA') {
+          sellerSummaryMap[sellerKey].aba += paid;
+        } else if (t.payment_method === 'Cash') {
+          sellerSummaryMap[sellerKey].cash += paid;
         }
       });
     }
 
-    // បូកបន្ថែមសាច់ប្រាក់ពីការទូទាត់បំណុលរបស់ម៉ូយ (Settlements)
     if (settles) {
       settles.forEach(function(s) {
         cashTotal += parseFloat(s.paid_khr || 0);
       });
     }
 
-    document.getElementById('compSalesTotal').innerText = '៛ ' + salesTotal.toLocaleString();
-    document.getElementById('compCashTotal').innerText = '៛ ' + cashTotal.toLocaleString();
-    document.getElementById('compDebtTotal').innerText = '៛ ' + debtTotal.toLocaleString();
+    if (document.getElementById('compSalesTotal')) document.getElementById('compSalesTotal').innerText = '៛ ' + salesTotal.toLocaleString();
+    if (document.getElementById('compCogsTotal')) document.getElementById('compCogsTotal').innerText = '៛ ' + Math.round(totalCogs).toLocaleString();
+    if (document.getElementById('compCashTotal')) document.getElementById('compCashTotal').innerText = '៛ ' + cashTotal.toLocaleString();
+    if (document.getElementById('compDebtTotal')) document.getElementById('compDebtTotal').innerText = '៛ ' + debtTotal.toLocaleString();
 
-    var tbody = document.getElementById('compQtyTableBody');
-    var html = '';
-    for (var p in prodQty) {
-      html += '<tr class="border-b hover:bg-gray-50"><td class="p-3 font-bold text-gray-800">' + p + '</td><td class="p-3 text-center font-black text-blue-700">' + prodQty[p].toLocaleString() + '</td></tr>';
+    // 📋 បង្ហាញតារាងបរិមាណ & ដើមទុនទំនិញ
+    var tbodyProd = document.getElementById('compQtyTableBody');
+    if (tbodyProd) {
+      var pHtml = '';
+      for (var p in prodSummaryMap) {
+        var info = prodSummaryMap[p];
+        var cogsText = info.isProduced ? 
+          '<span class="text-slate-400 font-bold text-[10px]">ផលិតឯង</span>' : 
+          ('៛ ' + Math.round(info.cogs).toLocaleString());
+
+        pHtml += '<tr class="border-b hover:bg-gray-50">' +
+          '<td class="p-2.5 font-bold text-gray-800">' + p + '</td>' +
+          '<td class="p-2.5 text-center font-black text-blue-700">' + info.qty.toLocaleString() + '</td>' +
+          '<td class="p-2.5 text-right font-black text-amber-800">' + cogsText + '</td>' +
+          '<td class="p-2.5 text-right font-black text-green-700">៛ ' + Number(info.sales).toLocaleString() + '</td>' +
+        '</tr>';
+      }
+      tbodyProd.innerHTML = pHtml || '<tr><td colspan="4" class="p-4 text-center text-gray-400 italic">គ្មានការលក់ក្នុងចន្លោះថ្ងៃនេះ</td></tr>';
     }
-    tbody.innerHTML = html || '<tr><td colspan="2" class="p-4 text-center text-gray-400 italic">គ្មានការលក់ក្នុងចន្លោះថ្ងៃនេះ</td></tr>';
+
+    // 🛒 បង្ហាញតារាងការលក់តាមអ្នកលក់នៅកន្លែង / បុគ្គលិក
+    var tbodySeller = document.getElementById('compSellerTableBody');
+    if (tbodySeller) {
+      var sHtml = '';
+      for (var s in sellerSummaryMap) {
+        var sInfo = sellerSummaryMap[s];
+        sHtml += '<tr class="border-b hover:bg-gray-50">' +
+          '<td class="p-2.5 font-bold text-gray-800"><i class="fas fa-user-circle text-emerald-600 mr-1.5"></i>' + s + '</td>' +
+          '<td class="p-2.5 text-center font-bold text-slate-700">' + sInfo.count + ' លើក</td>' +
+          '<td class="p-2.5 text-right font-bold text-emerald-800">៛ ' + Number(sInfo.cash).toLocaleString() + '</td>' +
+          '<td class="p-2.5 text-right font-bold text-blue-800">៛ ' + Number(sInfo.aba).toLocaleString() + '</td>' +
+          '<td class="p-2.5 text-right font-black text-green-700">៛ ' + Number(sInfo.total).toLocaleString() + '</td>' +
+        '</tr>';
+      }
+      tbodySeller.innerHTML = sHtml || '<tr><td colspan="5" class="p-4 text-center text-gray-400 italic">គ្មានទិន្នន័យអ្នកលក់</td></tr>';
+    }
+
   } catch(e) {
     console.error("Company summary error:", e);
   }
 }
+
 // 👤 មុខងារទាញកាតគ្រីអតិថិជន (គណនាស៊ីសង្វាក់គ្នា ១០០% មិនឱ្យលើសលុយជំពាក់ឡើយ)
 async function fetchFullStatementFromSupabase() {
   var nameInp = document.getElementById('custSearchInp');
