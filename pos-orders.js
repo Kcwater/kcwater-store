@@ -984,7 +984,7 @@ async function completeOnlineOrder(orderId, custName, total, itemsText, driverNa
   document.getElementById('completeDeliveryModal').classList.remove('hidden');
 }
 
-// 💾 មុខងារកត់ត្រាការដឹកដល់ បំបែកទំនិញ & កាត់ស្តុកសំបកធុងចេញពីឃ្លាំង Supabase អូតូ ១០០%
+// 💾 មុខងារកត់ត្រាការដឹកដល់ បំបែកទំនិញ & កាត់ស្តុកសំបកធុង+ទំនិញជាក់លាក់ ១០០% (V2.0)
 async function executeFinalCompleteDelivery() {
   if (!activeDeliveryTaskData) return;
 
@@ -1027,39 +1027,58 @@ async function executeFinalCompleteDelivery() {
     var tid = "TR-" + new Date().getTime();
     var rowsToInsert = [];
     var totalAllocated = 0;
+    var stockDeductionQueue = [];
 
     var itemParts = String(itemsText).split(',');
     itemParts.forEach(function(partStr) {
-      if (!partStr.trim()) return;
-      var seg = partStr.split('x');
-      var rawName = seg[0] ? seg[0].trim() : partStr.trim();
+      var rawPart = partStr.trim();
+      if (!rawPart) return;
+
+      var seg = rawPart.split('x');
+      var rawName = seg[0] ? seg[0].trim() : rawPart;
       var qty = (seg.length >= 2) ? parseFloat(seg[1].trim() || 1) : 1;
       if (isNaN(qty) || qty <= 0) qty = 1;
 
-      // 🎁 ឆែកមើលទំនិញថែម Free
+      // 🎁 ឆែកមើលថាតើជាកាដូថែម Free ឬជាសំបកធុង
       var isFreeGift = rawName.includes('[Free]') || rawName.includes('🎁') || rawName.includes('កាដូ');
       
-      // 🛢️ សម្អាត Emoji ផ្សេងៗដើម្បីស្វែងរកឈ្មោះទំនិញពិតប្រាកដក្នុងស្តុក (សំបកធុង និងទំនិញទូទៅ)
+      // 🧹 សម្អាត Emoji និងពាក្យបន្ថែម ដើម្បីស្វែងរកឈ្មោះទំនិញពិតប្រាកដក្នុង Database
       var cleanName = rawName
         .replace(/🎁\s*\[Free\]/gi, '')
         .replace(/\[Free\]/gi, '')
         .replace(/\[កាដូថែម Free\]/gi, '')
         .replace(/🛢️/gi, '')
+        .replace(/\s+/g, ' ')
         .trim();
 
+      // ស្វែងរកទំនិញក្នុងស្តុក (ស្វែងរកទាំងចំឈ្មោះ និងធៀបអក្សរតូចធំ)
       var matchedProd = allProducts.find(function(p) {
-        return p.name.trim().toLowerCase() === cleanName.toLowerCase();
+        var pNameClean = (p.name || '').replace(/\s+/g, ' ').trim().toLowerCase();
+        return pNameClean === cleanName.toLowerCase();
       });
+
+      // បើជាសំបកធុង ហើយមិនទាន់រកឃើញ ស្វែងរកតាមពាក្យគន្លឹះ "សំបក"
+      if (!matchedProd && (cleanName.includes('សំបក') || cleanName.includes('ធុង'))) {
+        matchedProd = allProducts.find(function(p) {
+          var pName = (p.name || '').toLowerCase();
+          if (cleanName.includes('ខៀវ')) return pName.includes('សំបក') && pName.includes('ខៀវ');
+          if (cleanName.includes('ស')) return pName.includes('សំបក') && pName.includes('ស');
+          return false;
+        });
+      }
 
       var unitPrice = isFreeGift ? 0 : (matchedProd ? parseFloat(matchedProd.online_price || matchedProd.price || 0) : 0);
       var lineTotal = unitPrice * qty;
       totalAllocated += lineTotal;
 
+      var finalDisplayName = isFreeGift ? 
+        ("🎁 [Free] " + (matchedProd ? matchedProd.name : cleanName)) : 
+        (matchedProd ? matchedProd.name : rawName);
+
       rowsToInsert.push({
         transaction_id: tid,
         customer_name: custName,
-        product_name: isFreeGift ? ("🎁 [Free] " + (matchedProd ? matchedProd.name : cleanName)) : (matchedProd ? matchedProd.name : rawName),
-        clean_product_name: matchedProd ? matchedProd.name : cleanName,
+        product_name: finalDisplayName,
         qty: qty,
         price: unitPrice,
         currency: "KHR",
@@ -1069,16 +1088,23 @@ async function executeFinalCompleteDelivery() {
         status: "Paid",
         payment_method: actualPayMethod
       });
+
+      // កត់ត្រាចូលបញ្ជីកាត់ស្តុកផ្ទាល់ជាមួយ Product ID (ការពារកុំឱ្យច្រឡំ)
+      if (matchedProd && matchedProd.type === 'ទិញគេ') {
+        stockDeductionQueue.push({
+          product: matchedProd,
+          qty: qty
+        });
+      }
     });
 
-    // 🛵 គណនាថ្លៃដឹកជញ្ជូនជាក់ស្តែង (បើមាននៅសល់ពីតម្លៃទំនិញ & សំបកធុង)
+    // 🛵 គណនាថ្លៃដឹកជញ្ជូនជាក់ស្តែង (បើមាននៅសល់ពីតម្លៃទំនិញ និងសំបកធុង)
     var diff = total - totalAllocated;
     if (diff > 0) {
       rowsToInsert.push({
         transaction_id: tid,
         customer_name: custName,
         product_name: "សេវាដឹកជញ្ជូនដល់ផ្ទះ (Delivery Fee)",
-        clean_product_name: "",
         qty: 1,
         price: diff,
         currency: "KHR",
@@ -1090,51 +1116,49 @@ async function executeFinalCompleteDelivery() {
       });
     }
 
-    // កត់ត្រាប្រតិបត្តិការលក់ចូលតារាង Transactions
+    // ៤. កត់ត្រាប្រតិបត្តិការលក់ចូលតារាង Transactions
     if (rowsToInsert.length > 0) {
-      var rowsForDb = rowsToInsert.map(function(r) {
-        var copy = Object.assign({}, r);
-        delete copy.clean_product_name;
-        return copy;
-      });
-      await supabaseClient.from('transactions').insert(rowsForDb);
+      const { error: insErr } = await supabaseClient.from('transactions').insert(rowsToInsert);
+      if (insErr) throw insErr;
     }
 
-    // 📦 ៤. កាត់ស្តុកទំនិញទិញគេចេញពីឃ្លាំង Supabase អូតូ (រួមទាំងសំបកធុងស និងសំបកធុងខៀវ)
-    for (var i = 0; i < rowsToInsert.length; i++) {
-      var row = rowsToInsert[i];
-      var targetSearchName = (row.clean_product_name || row.product_name).toLowerCase();
-      var prodToDeduct = allProducts.find(function(p) {
-        return p.name.trim().toLowerCase() === targetSearchName;
-      });
+    // 📦 ៥. កាត់ស្តុកទំនិញទិញគេ និងសំបកធុងផ្ទាល់តាម ID ធានាត្រឹមត្រូវ ១០០%
+    for (var k = 0; k < stockDeductionQueue.length; k++) {
+      var itemToDeduct = stockDeductionQueue[k];
+      var prod = itemToDeduct.product;
+      var deductQty = itemToDeduct.qty;
 
-      if (prodToDeduct && prodToDeduct.type === 'ទិញគេ' && row.qty > 0) {
-        var newStock = Math.max(0, parseFloat(prodToDeduct.stock || 0) - row.qty);
-        await supabaseClient.from('products').update({ stock: newStock }).eq('id', prodToDeduct.id);
-        prodToDeduct.stock = newStock; // អាប់ដេត Memory ភ្លាមៗ
-      }
+      var currentStock = parseFloat(prod.stock || 0);
+      var updatedStock = Math.max(0, currentStock - deductQty);
+
+      await supabaseClient
+        .from('products')
+        .update({ stock: updatedStock })
+        .eq('id', prod.id);
+
+      prod.stock = updatedStock; // អាប់ដេត Memory ភ្លាមៗ
     }
-    
-    // ៥. បិទផ្ទាំងបញ្ជាក់ការដឹក
+
+    // ៦. បិទផ្ទាំងបញ្ជាក់ការដឹក
     closeCompleteDeliveryModal();
-    showToast("បានកត់ត្រាការដឹកដល់ និងកាត់ស្តុកសំបកធុងជោគជ័យ!", "success");
+    showToast("បានកត់ត្រាការដឹកដល់ និងកាត់ស្តុកជោគជ័យ!", "success");
 
-    // ៦. 🧾 បង្កើតវិក្កយបត្រឌីជីថល Pop-up ភ្លាមៗ
+    // ៧. 🧾 បង្កើតវិក្កយបត្រឌីជីថល Pop-up
     if (typeof generateReceiptImage === 'function') {
       try {
         generateReceiptImage(tid, custName, total, total, rowsToInsert, "វិក្កយបត្រដឹកជញ្ជូន (DELIVERY RECEIPT)");
       } catch(rcpErr) {
-        console.warn("Receipt canvas warning:", rcpErr);
+        console.warn("Receipt generation warning:", rcpErr);
       }
     }
 
-    // ៧. សំឡេង Chime & បាញ់កាំជ្រួច
+    // ៨. សំឡេង Chime & បាញ់កាំជ្រួច
     if (typeof playOrderChime === 'function') playOrderChime();
     if (typeof confetti === 'function') confetti({ particleCount: 120, spread: 80 });
 
-    // ៨. 🔄 Refresh ផ្ទាំង Admin + អ្នកដឹកភ្លាមៗ
+    // ៩. 🔄 Refresh ផ្ទាំង Admin + អ្នកដឹកភ្លាមៗ
     if (currentUser && currentUser.type === 'CompanyDriver') {
-      if (typeof renderCompanyDeliveriesModule === 'function') renderCompanyDeliveriesModule();
+      if (typeof renderCompanyDeliveriesModule === 'function') renderCompanyDeliveriesModule(false);
     }
     var adminModal = document.getElementById('onlineOrdersAdminModal');
     if (adminModal && !adminModal.classList.contains('hidden')) {
@@ -1144,7 +1168,7 @@ async function executeFinalCompleteDelivery() {
     if (typeof loadOnlineHubOrdersTab === 'function') loadOnlineHubOrdersTab();
     if (typeof fetchOnlineAuditOrders === 'function') fetchOnlineAuditOrders();
 
-    // ៩. ផ្ញើ Telegram Alert ទៅថៅកែ
+    // ១០. ផ្ញើ Telegram Alert ទៅថៅកែ
     try {
       var tgMsg = "✅ <b>[KC WATER - ដឹកជញ្ជូនដល់ & ប្រមូលប្រាក់ជោគជ័យ!]</b>\n\n" +
                   "🆔 <b>កូដកុម្ម៉ង់៖</b> <code>" + orderId + "</code>\n" +
@@ -1176,7 +1200,6 @@ async function executeFinalCompleteDelivery() {
     }
   }
 }
-
 
 // 🖼️ មុខងារបើកមើលរូបថតមុខផ្ទះភ្ញៀវប្រកបដោយសុវត្ថិភាព ១០០% (លែងបាត់ប៊ូតុងទៀតហើយ)
 function viewOrderHousePhotoById(orderId) {
