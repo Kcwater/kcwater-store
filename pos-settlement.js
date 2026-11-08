@@ -156,6 +156,7 @@ async function renderSettlementModule() {
                 '<th class="p-2 text-center">ចំនួន</th>' +
                 '<th class="p-2 text-right">តម្លៃរាយ</th>' +
                 '<th class="p-2 text-right">សរុប</th>' +
+                '<th class="p-2 text-center w-20">សកម្មភាព</th>' +
               '</tr>' +
             '</thead>' +
             '<tbody id="settleItemsTableBody"></tbody>' +
@@ -614,6 +615,8 @@ async function selectCustomerForSettlement(custName) {
     document.getElementById('settleOldDebtVal').innerText = '៛ ' + currentSettlementOldDebt.toLocaleString();
 
     var html = '';
+    var isAdmin = (currentUser && currentUser.role === 'Admin');
+
     currentSettlementItems.forEach(function(item) {
       var dateStr = new Date(item.created_at).toLocaleString('km-KH', { dateStyle: 'short', timeStyle: 'short' });
 
@@ -621,6 +624,14 @@ async function selectCustomerForSettlement(custName) {
       var recTag = isWithdrawnByOther ? 
         ('<br><span class="text-[9.5px] text-amber-950 font-black bg-amber-100 border border-amber-300 px-1.5 py-0.5 rounded-md inline-flex items-center gap-1 mt-0.5"><i class="fas fa-truck text-[9px] text-amber-600"></i>ដកជំនួសដោយ៖ ' + item.recorded_by + '</span>') : 
         (item.recorded_by && item.recorded_by === 'Admin' ? '<br><small class="text-slate-400 font-normal text-[9px]">កត់ត្រាដោយ Admin</small>' : '');
+
+      var actionBtnsHtml = isAdmin ?
+        ('<td class="p-2 text-center whitespace-nowrap">' +
+          '<div class="flex items-center justify-center gap-1">' +
+            '<button type="button" onclick="openEditSettleItemModal(' + item.id + ')" class="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg active:scale-90 transition" title="កែប្រែចំនួន/តម្លៃ"><i class="fas fa-pen-to-square text-xs"></i></button>' +
+            '<button type="button" onclick="deleteSettleItem(' + item.id + ', \'' + (item.product_name || '').replace(/'/g, "\\'") + '\', ' + (item.qty || 1) + ', ' + (item.total || 0) + ')" class="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg active:scale-90 transition" title="លុបជើងទឹកនេះ"><i class="fas fa-trash-can text-xs"></i></button>' +
+          '</div>' +
+        '</td>') : '<td class="p-2 text-center text-slate-300">-</td>';
 
       html += '<tr class="border-b hover:bg-blue-50/40 transition">' +
         '<td class="p-2 text-center">' +
@@ -631,11 +642,11 @@ async function selectCustomerForSettlement(custName) {
         '<td class="p-2 text-center font-bold text-blue-700">' + item.qty + '</td>' +
         '<td class="p-2 text-right">' + Number(item.price).toLocaleString() + '</td>' +
         '<td class="p-2 text-right font-black text-green-700 whitespace-nowrap">' + Number(item.total).toLocaleString() + ' ៛</td>' +
+        actionBtnsHtml +
       '</tr>';
     });
 
-    tbody.innerHTML = html || '<tr><td colspan="6" class="p-4 text-center text-gray-400 italic">គ្មានទំនិញជំពាក់</td></tr>';
-    recalcSettlementCalculation();
+    tbody.innerHTML = html || '<tr><td colspan="7" class="p-4 text-center text-gray-400 italic">គ្មានទំនិញជំពាក់</td></tr>';    recalcSettlementCalculation();
     fillExactSettlementPay();
 
     var card = document.getElementById('settlement_card');
@@ -968,6 +979,268 @@ async function submitSettlementPayment() {
     if (btn) {
       btn.disabled = false;
       btn.innerHTML = '<i class="fas fa-file-invoice-dollar text-xl"></i> ទូទាត់ & ចេញវិក្កយបត្រ (Save Settlement)';
+    }
+  }
+}
+// ==========================================================================
+// ✏️ មុខងារកែប្រែ & លុបជើងទឹកក្នុងផ្ទាំងទូទាត់ (SETTLEMENT EDIT & DELETE ENGINE)
+// ==========================================================================
+
+var activeEditingSettleItem = null;
+
+// ១. បើកផ្ទាំង Pop-up កែប្រែចំនួន ឬតម្លៃរាយ
+function openEditSettleItemModal(transId) {
+  var item = currentSettlementItems.find(function(i) { return i.id === transId; });
+  if (!item) return;
+
+  activeEditingSettleItem = item;
+  var existing = document.getElementById('editSettleItemModal');
+  if (existing) existing.remove();
+
+  var modalHtml = '<div id="editSettleItemModal" class="fixed inset-0 z-[7000] flex items-center justify-center p-3 sm:p-4 overflow-y-auto">' +
+    '<div class="fixed inset-0 bg-slate-950/65 backdrop-blur-xs" onclick="closeEditSettleItemModal()"></div>' +
+    '<div class="bg-white rounded-3xl shadow-2xl z-10 w-full max-w-sm p-5 space-y-3.5 text-center relative border border-slate-100 animate-in zoom-in-95 duration-200 my-auto">' +
+      '<div class="flex justify-between items-center border-b pb-2">' +
+        '<div class="text-left">' +
+          '<h3 class="font-black text-slate-900 text-sm sm:text-base flex items-center gap-1.5">' +
+            '<i class="fas fa-pen-to-square text-blue-600"></i> កែប្រែជើងទឹកដក' +
+          '</h3>' +
+          '<p class="text-[10px] text-slate-500 font-bold mt-0.5">អតិថិជន៖ ' + (currentSettlementCustomer || 'ម៉ូយ') + '</p>' +
+        '</div>' +
+        '<button type="button" onclick="closeEditSettleItemModal()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-400 hover:text-slate-700 text-lg font-bold flex items-center justify-center">&times;</button>' +
+      '</div>' +
+
+      '<div class="p-2.5 bg-blue-50/70 rounded-2xl border border-blue-200 text-left space-y-0.5">' +
+        '<span class="text-[10px] font-bold text-slate-500 block">មុខទំនិញ</span>' +
+        '<b class="text-xs sm:text-sm font-black text-blue-950 block">' + item.product_name + '</b>' +
+      '</div>' +
+
+      '<div class="grid grid-cols-2 gap-2 text-left text-xs">' +
+        '<div>' +
+          '<label class="text-[9.5px] font-black text-slate-700 uppercase block mb-1">ចំនួនទំនិញ (Qty) *</label>' +
+          '<input type="number" id="inpEditSettleQty" value="' + item.qty + '" min="1" oninput="updateEditSettleSubtotal()" class="w-full text-center font-black text-base p-2.5 bg-slate-50 border-2 border-blue-300 focus:border-blue-600 rounded-xl outline-none">' +
+        '</div>' +
+        '<div>' +
+          '<label class="text-[9.5px] font-black text-slate-700 uppercase block mb-1">តម្លៃរាយ (Price ៛) *</label>' +
+          '<input type="number" id="inpEditSettlePrice" value="' + item.price + '" min="0" oninput="updateEditSettleSubtotal()" class="w-full text-center font-black text-base p-2.5 bg-slate-50 border-2 border-blue-300 focus:border-blue-600 rounded-xl outline-none text-emerald-800">' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="p-2.5 bg-emerald-50 rounded-2xl border border-emerald-200 flex justify-between items-center text-xs font-bold text-emerald-950">' +
+        '<span>សរុបទឹកប្រាក់ថ្មី៖</span>' +
+        '<b id="editSettleNewTotalText" class="text-sm font-black text-emerald-800">៛ ' + Number(item.total).toLocaleString() + '</b>' +
+      '</div>' +
+
+      '<div class="grid grid-cols-2 gap-2 pt-1">' +
+        '<button type="button" onclick="closeEditSettleItemModal()" class="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs active:scale-95 transition">បោះបង់</button>' +
+        '<button type="button" id="btnSaveEditedSettleAction" onclick="saveEditedSettleItem()" class="py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-xl text-xs shadow-md active:scale-95 transition flex items-center justify-center gap-1">' +
+          '<i class="fas fa-check"></i> រក្សាទុកការកែ' +
+        '</button>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+function closeEditSettleItemModal() {
+  var modal = document.getElementById('editSettleItemModal');
+  if (modal) modal.remove();
+  activeEditingSettleItem = null;
+}
+
+function updateEditSettleSubtotal() {
+  var q = parseFloat(document.getElementById('inpEditSettleQty') ? document.getElementById('inpEditSettleQty').value || 0 : 0);
+  var pr = parseFloat(document.getElementById('inpEditSettlePrice') ? document.getElementById('inpEditSettlePrice').value || 0 : 0);
+  var totEl = document.getElementById('editSettleNewTotalText');
+  if (totEl) {
+    totEl.innerText = '៛ ' + Math.max(0, Math.round(q * pr)).toLocaleString();
+  }
+}
+
+// 💾 ២. រក្សាទុកការកែប្រែចំនួន/តម្លៃ និងកែតម្រូវស្តុកស្វ័យប្រវត្តិ
+async function saveEditedSettleItem() {
+  if (!activeEditingSettleItem) return;
+
+  var item = activeEditingSettleItem;
+  var newQty = parseFloat(document.getElementById('inpEditSettleQty') ? document.getElementById('inpEditSettleQty').value || 0 : 0);
+  var newPrice = parseFloat(document.getElementById('inpEditSettlePrice') ? document.getElementById('inpEditSettlePrice').value || 0 : 0);
+
+  if (newQty <= 0) {
+    showToast("សូមបញ្ចូលចំនួនទំនិញធំជាង ០!", "error");
+    return;
+  }
+
+  var btn = document.getElementById('btnSaveEditedSettleAction');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> កំពុងរក្សាទុក...';
+  }
+
+  try {
+    var oldQty = parseFloat(item.qty || 0);
+    var oldPrice = parseFloat(item.price || 0);
+    var oldTotal = parseFloat(item.total || 0);
+    var newTotal = Math.round(newQty * newPrice);
+    var qtyDiff = newQty - oldQty; // វិជ្ជមានបើដកថែម, អវិជ្ជមានបើកាត់បន្ថយ
+
+    // ក. កែតម្រូវស្តុកឃ្លាំង (បើជាទំនិញទិញគេ)
+    var prodObj = (allProducts || []).find(function(p) {
+      return p.name.trim().toLowerCase() === item.product_name.trim().toLowerCase();
+    });
+
+    if (prodObj && prodObj.type === 'ទិញគេ' && qtyDiff !== 0) {
+      var curStock = parseFloat(prodObj.stock || 0);
+      var updatedStock = Math.max(0, curStock - qtyDiff);
+
+      await supabaseClient
+        .from('products')
+        .update({ stock: updatedStock })
+        .eq('id', prodObj.id);
+
+      prodObj.stock = updatedStock; // អាប់ដេត Memory ភ្លាមៗ
+    }
+
+    // ខ. ធ្វើបច្ចុប្បន្នភាពក្នុងតារាង Transactions
+    const { error: updErr } = await supabaseClient
+      .from('transactions')
+      .update({
+        qty: newQty,
+        price: newPrice,
+        total: newTotal
+      })
+      .eq('id', item.id);
+
+    if (updErr) throw updErr;
+
+    closeEditSettleItemModal();
+
+    // 🔔 ផ្ញើ Telegram Alert
+    try {
+      var timeKhNow = new Date().toLocaleString('km-KH', { 
+        timeZone: 'Asia/Phnom_Penh', 
+        dateStyle: 'short', 
+        timeStyle: 'short' 
+      });
+
+      var tgMsg = "✏️ <b>[KC WATER - កែប្រែជើងទឹកដកជំពាក់]</b>\n\n" +
+                  "👤 <b>អតិថិជន៖</b> <b>" + currentSettlementCustomer + "</b>\n" +
+                  "📦 <b>ទំនិញ៖</b> " + item.product_name + "\n" +
+                  "📝 <b>ចាស់៖</b> " + oldQty + " x ៛ " + oldPrice.toLocaleString() + " = ៛ " + oldTotal.toLocaleString() + "\n" +
+                  "👉 <b>ថ្មី៖</b> <b>" + newQty + " x ៛ " + newPrice.toLocaleString() + " = ៛ " + newTotal.toLocaleString() + "</b>\n" +
+                  "✍️ <b>អ្នកកែ៖</b> " + (currentUser.fullName || "Admin") + "\n" +
+                  "🕒 <b>ម៉ោង៖</b> " + timeKhNow;
+
+      if (typeof sendTelegramAlert === 'function') {
+        sendTelegramAlert(tgMsg);
+      }
+    } catch(tgE) {}
+
+    // 🌟 បង្ហាញផ្ទាំង kcAlert ជោគជ័យ
+    if (typeof kcAlert === 'function') {
+      await kcAlert({
+        title: "កែប្រែជោគជ័យ! 🎉",
+        message: "ជើងទឹក [" + item.product_name + "] ត្រូវបានកែប្រែមកត្រឹម " + newQty + " x ៛ " + newPrice.toLocaleString() + " (សរុប ៛ " + newTotal.toLocaleString() + ") រួចរាល់!",
+        type: "success"
+      });
+    } else {
+      showToast("បានកែប្រែជោគជ័យ!", "success");
+    }
+
+    // 🔄 ទាញទិន្នន័យទូទាត់ និងគណនាប្រាក់ឡើងវិញភ្លាមៗ
+    await selectCustomerForSettlement(currentSettlementCustomer);
+    fetchSettlementOverviewData();
+    loadSettlementDebtorsList();
+
+  } catch(err) {
+    if (typeof kcAlert === 'function') {
+      await kcAlert({ title: "កំហុស", message: err.message, type: "danger" });
+    } else {
+      showToast("កំហុស៖ " + err.message, "error");
+    }
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+// 🗑️ ៣. មុខងារលុបជើងទឹកជំពាក់ & បង្វិលស្តុកសងចូលឃ្លាំងវិញ
+async function deleteSettleItem(transId, prodName, qty, total) {
+  var ok = await kcConfirm({
+    title: "បញ្ជាក់ការលុបជើងទឹក",
+    message: "តើអ្នកពិតជាចង់លុបជើងទឹក [" + prodName + " x " + qty + "] ចំនួន ៛ " + Number(total).toLocaleString() + " របស់ [" + currentSettlementCustomer + "] នេះមែនទេ? ស្តុកទំនិញនឹងត្រូវបង្វិលសងចូលឃ្លាំងវិញដោយស្វ័យប្រវត្តិ។",
+    type: "danger",
+    confirmText: "យល់ព្រមលុបជើងទឹក"
+  });
+
+  if (!ok) return;
+
+  try {
+    // ក. បង្វិលស្តុកសងចូលឃ្លាំងវិញ (បើជាទំនិញទិញគេ)
+    var prodObj = (allProducts || []).find(function(p) {
+      return p.name.trim().toLowerCase() === prodName.trim().toLowerCase();
+    });
+
+    if (prodObj && prodObj.type === 'ទិញគេ' && qty > 0) {
+      var curStock = parseFloat(prodObj.stock || 0);
+      var restoredStock = curStock + parseFloat(qty);
+
+      await supabaseClient
+        .from('products')
+        .update({ stock: restoredStock })
+        .eq('id', prodObj.id);
+
+      prodObj.stock = restoredStock; // អាប់ដេត Memory
+    }
+
+    // ខ. លុបកំណត់ត្រាចេញពី Transactions
+    const { error: delErr } = await supabaseClient
+      .from('transactions')
+      .delete()
+      .eq('id', transId);
+
+    if (delErr) throw delErr;
+
+    // 🔔 ផ្ញើ Telegram Alert
+    try {
+      var timeKhNow = new Date().toLocaleString('km-KH', { 
+        timeZone: 'Asia/Phnom_Penh', 
+        dateStyle: 'short', 
+        timeStyle: 'short' 
+      });
+
+      var tgMsg = "🗑️ <b>[KC WATER - លុបជើងទឹកជំពាក់ (Void Item)]</b>\n\n" +
+                  "👤 <b>អតិថិជន៖</b> <b>" + currentSettlementCustomer + "</b>\n" +
+                  "📦 <b>ទំនិញលុប៖</b> " + prodName + " x " + qty + "\n" +
+                  "💰 <b>ទឹកប្រាក់៖</b> <b>-៛ " + Number(total).toLocaleString() + "</b>\n" +
+                  "✍️ <b>អ្នកលុប៖</b> " + (currentUser.fullName || "Admin") + "\n" +
+                  "🕒 <b>ម៉ោង៖</b> " + timeKhNow;
+
+      if (typeof sendTelegramAlert === 'function') {
+        sendTelegramAlert(tgMsg);
+      }
+    } catch(tgE) {}
+
+    // 🌟 ជូនដំណឹងជោគជ័យ
+    if (typeof kcAlert === 'function') {
+      await kcAlert({
+        title: "បានលុបជោគជ័យ! 🎉",
+        message: "ជើងទឹក [" + prodName + "] ត្រូវបានលុប និងបង្វិលស្តុកសងវិញរួចរាល់!",
+        type: "success"
+      });
+    } else {
+      showToast("បានលុបជើងទឹកជោគជ័យ!", "success");
+    }
+
+    // 🔄 ទាញទិន្នន័យទូទាត់ និងគណនាប្រាក់ឡើងវិញភ្លាមៗ
+    await selectCustomerForSettlement(currentSettlementCustomer);
+    fetchSettlementOverviewData();
+    loadSettlementDebtorsList();
+
+  } catch(err) {
+    if (typeof kcAlert === 'function') {
+      await kcAlert({ title: "កំហុស", message: err.message, type: "danger" });
+    } else {
+      showToast("កំហុស៖ " + err.message, "error");
     }
   }
 }
