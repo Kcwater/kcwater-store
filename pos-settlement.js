@@ -573,13 +573,14 @@ async function loadSettlementDebtorsList() {
 }
 
 // ==========================================
-// 🔍 ៦. ជ្រើសរើសម៉ូយ & ទាញជើងទឹកជំពាក់ជាក់ស្តែង
+// 🔍 ៦. ជ្រើសរើសម៉ូយ & ទាញជើងទឹកជំពាក់ជាក់ស្តែង (កែសម្រួល Colspan & Reset ត្រឹមត្រូវ)
 // ==========================================
 async function selectCustomerForSettlement(custName) {
   var ui = document.getElementById('settlement_ui');
   if (!custName) {
     if (ui) ui.classList.add('hidden');
     currentSettlementOldDebt = 0;
+    currentActivePendingPaymentId = null; // សម្អាត ID សំណើចាស់កុំឱ្យច្រឡំ
     return;
   }
 
@@ -588,22 +589,24 @@ async function selectCustomerForSettlement(custName) {
   var sel = document.getElementById('set_c');
   if (sel) sel.value = custName;
 
-  // 🛡️ បើកផ្ទាំងដោយមានការការពារ Null មិនឱ្យ Error ឡើយ
   if (ui) {
     ui.classList.remove('hidden');
   }
 
   var tbody = document.getElementById('settleItemsTableBody');
   if (tbody) {
-    tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-gray-400 italic"><i class="fas fa-spinner fa-spin mr-1"></i> កំពុងទាញជើងទឹក...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-gray-400 italic"><i class="fas fa-spinner fa-spin mr-1 text-blue-600"></i> កំពុងទាញជើងទឹក...</td></tr>';
   }
+
   try {
-    const { data: items } = await supabaseClient
+    const { data: items, error: itemErr } = await supabaseClient
       .from('transactions')
       .select('*')
       .eq('customer_name', custName)
       .eq('status', 'Unpaid')
       .order('id', { ascending: true });
+
+    if (itemErr) throw itemErr;
 
     currentSettlementItems = items || [];
 
@@ -616,13 +619,20 @@ async function selectCustomerForSettlement(custName) {
       .maybeSingle();
 
     currentSettlementOldDebt = lastSet ? parseFloat(lastSet.balance_khr || 0) : 0;
-    document.getElementById('settleOldDebtVal').innerText = '៛ ' + currentSettlementOldDebt.toLocaleString();
+    var oldDebtValEl = document.getElementById('settleOldDebtVal');
+    if (oldDebtValEl) {
+      oldDebtValEl.innerText = '៛ ' + currentSettlementOldDebt.toLocaleString();
+    }
 
     var html = '';
     var isAdmin = (currentUser && currentUser.role === 'Admin');
 
     currentSettlementItems.forEach(function(item) {
-      var dateStr = new Date(item.created_at).toLocaleString('km-KH', { dateStyle: 'short', timeStyle: 'short' });
+      var dateStr = new Date(item.created_at).toLocaleString('km-KH', { 
+        timeZone: 'Asia/Phnom_Penh', 
+        dateStyle: 'short', 
+        timeStyle: 'short' 
+      });
 
       var isWithdrawnByOther = (item.recorded_by && item.recorded_by !== item.customer_name && item.recorded_by !== 'Admin');
       var recTag = isWithdrawnByOther ? 
@@ -641,23 +651,29 @@ async function selectCustomerForSettlement(custName) {
         '<td class="p-2 text-center">' +
           '<input type="checkbox" class="settle-item-cb w-4 h-4 accent-green-600 cursor-pointer" data-id="' + item.id + '" data-total="' + item.total + '" onchange="recalcSettlementCalculation()" checked>' +
         '</td>' +
-        '<td class="p-2 text-gray-500 text-[10px] whitespace-nowrap">' + dateStr + '</td>' +
+        '<td class="p-2 text-gray-500 text-[10px] whitespace-nowrap text-center">' + dateStr + '</td>' +
         '<td class="p-2 font-bold text-gray-800">' + item.product_name + recTag + '</td>' +
         '<td class="p-2 text-center font-bold text-blue-700">' + item.qty + '</td>' +
-        '<td class="p-2 text-right">' + Number(item.price).toLocaleString() + '</td>' +
-        '<td class="p-2 text-right font-black text-green-700 whitespace-nowrap">' + Number(item.total).toLocaleString() + ' ៛</td>' +
+        '<td class="p-2 text-right text-gray-600">' + Number(item.price).toLocaleString() + '</td>' +
+        '<td class="p-2 text-right font-black text-green-700 whitespace-nowrap">៛ ' + Number(item.total).toLocaleString() + '</td>' +
         actionBtnsHtml +
       '</tr>';
     });
 
-    tbody.innerHTML = html || '<tr><td colspan="7" class="p-4 text-center text-gray-400 italic">គ្មានទំនិញជំពាក់</td></tr>';    recalcSettlementCalculation();
+    if (tbody) {
+      tbody.innerHTML = html || '<tr><td colspan="7" class="p-6 text-center text-emerald-700 font-bold bg-emerald-50/50"><i class="fas fa-check-circle mr-1 text-base text-emerald-600"></i> អតិថិជននេះគ្មានជើងទឹកជំពាក់ដែលមិនទាន់ទូទាត់ឡើយ</td></tr>';
+    }
+
+    recalcSettlementCalculation();
     fillExactSettlementPay();
 
     var card = document.getElementById('settlement_card');
     if (card) card.scrollIntoView({ behavior: 'smooth' });
 
   } catch(err) {
-    tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-red-500 font-bold">កំហុស៖ ' + err.message + '</td></tr>';
+    if (tbody) {
+      tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-red-500 font-bold">កំហុសទាញទិន្នន័យ៖ ' + err.message + '</td></tr>';
+    }
   }
 }
 
@@ -820,13 +836,17 @@ function setSettlePayMode(mode) {
   calcSettleChange();
 }
 
-// 💾 មុខងារបញ្ជាក់ការទូទាត់លុយ & ចេញវិក្កយបត្រ (បិទបញ្ចប់សំណើ Pending ស្វ័យប្រវត្តិ)
+// ==========================================
+// 💾 មុខងារបញ្ជាក់ការទូទាត់លុយ & ចេញវិក្កយបត្រ (ប្រើ kcAlert & បិទបញ្ចប់ Pending ស្អាត)
+// ==========================================
 async function submitSettlementPayment() {
   if (isSubmittingSettleLock) return;
 
   var checkedCbs = document.querySelectorAll('.settle-item-cb:checked');
   var selectedIds = [];
-  checkedCbs.forEach(function(cb) { selectedIds.push(parseInt(cb.getAttribute('data-id'))); });
+  checkedCbs.forEach(function(cb) { 
+    selectedIds.push(parseInt(cb.getAttribute('data-id'))); 
+  });
 
   var totalDue = getTotalDueAmount();
   var paid = getSettlementActualPaid();
@@ -834,28 +854,22 @@ async function submitSettlementPayment() {
   var includeOldDebt = cbOldDebt ? cbOldDebt.checked : true;
 
   if (selectedIds.length === 0 && (!includeOldDebt || currentSettlementOldDebt === 0)) {
-    if (typeof kcAlert === 'function') {
-      await kcAlert({
-        title: "មិនទាន់បានជ្រើសរើស",
-        message: "សូមធីកជ្រើសរើសយ៉ាងហោចណាស់ ១ ជើងទឹកដើម្បីទូទាត់ប្រាក់!",
-        type: "warning"
-      });
-    } else {
-      showToast("សូមធីកជ្រើសរើសយ៉ាងហោចណាស់ ១ ជួរដើម្បីទូទាត់!", "error");
-    }
+    await kcAlert({
+      title: "មិនទាន់បានជ្រើសរើស",
+      message: "សូមធីកជ្រើសរើសយ៉ាងហោចណាស់ ១ ជើងទឹកដើម្បីទូទាត់ប្រាក់!",
+      type: "warning"
+    });
     return;
   }
 
   if (paid === 0) {
-    if (typeof kcAlert === 'function') {
-      await kcAlert({
-        title: "ខ្វះចំនួនប្រាក់",
-        message: "សូមបញ្ចូលចំនួនប្រាក់ដែលបានទទួលពីអតិថិជន!",
-        type: "warning"
-      });
-    } else {
-      showToast("សូមបញ្ចូលចំនួនប្រាក់ដែលបានបង់!", "error");
-    }
+    await kcAlert({
+      title: "ខ្វះចំនួនប្រាក់",
+      message: "សូមបញ្ចូលចំនួនប្រាក់ដែលបានទទួលជាក់ស្តែងពីអតិថិជន!",
+      type: "warning"
+    });
+    var paidInp = document.getElementById('settlePaidInput');
+    if (paidInp) paidInp.focus();
     return;
   }
 
@@ -909,7 +923,7 @@ async function submitSettlementPayment() {
     }]);
     if (setErr) throw setErr;
 
-    // ៣. 🔒 បិទបញ្ចប់រាល់សំណើ Pending ទាំងអស់របស់ម៉ូយនេះទៅជា 'Approved'
+    // ៣. បិទបញ្ចប់សំណើ Pending ទាំងអស់របស់ម៉ូយនេះទៅជា 'Approved'
     try {
       if (currentActivePendingPaymentId) {
         await supabaseClient
@@ -924,24 +938,31 @@ async function submitSettlementPayment() {
           .eq('customer_name', currentSettlementCustomer)
           .eq('status', 'Pending');
       }
-      currentActivePendingPaymentId = null;
     } catch(penErr) {
       console.warn("Pending payment update warning:", penErr);
     }
+    currentActivePendingPaymentId = null;
 
-    // ៤. ផ្ញើ Telegram Alert
+    // ៤. ផ្ញើសារដំណឹង Telegram ទៅកាន់រោងចក្រ
     try {
       var methodLabel = (currentSettlementPayMode === 'ABA') ? '📱 ស្កេន ABA' : 
                         (currentSettlementPayMode === 'Split' ? '🔀 ចម្រុះ (លុយសុទ្ធ: ៛ ' + cashKhrRecorded.toLocaleString() + ' + ABA: ៛ ' + scanKhrRecorded.toLocaleString() + ')' : '💵 លុយសុទ្ធ');
 
+      var timeKhNow = new Date().toLocaleString('km-KH', { 
+        timeZone: 'Asia/Phnom_Penh', 
+        dateStyle: 'short', 
+        timeStyle: 'short' 
+      });
+
       var tgMsg = "🙏 <b>[KC WATER - ទូទាត់ប្រាក់ជោគជ័យ]</b>\n\n" +
-                  "👤 <b>អតិថិជន៖</b> " + currentSettlementCustomer + "\n" +
+                  "👤 <b>អតិថិជន៖</b> <b>" + currentSettlementCustomer + "</b>\n" +
                   "💳 <b>វិធីទូទាត់៖</b> " + methodLabel + "\n" +
                   "💰 <b>សរុបត្រូវបង់៖</b> <b>៛ " + totalDue.toLocaleString() + "</b>\n" +
                   "✅ <b>ប្រាក់បានបង់៖</b> <b>៛ " + paid.toLocaleString() + "</b>\n" +
                   "⚠️ <b>នៅជំពាក់សល់៖</b> <b>៛ " + remainingBalance.toLocaleString() + "</b>\n" +
                   "✍️ <b>អ្នកទទួល៖</b> " + (currentUser.fullName || "Admin") + "\n" +
-                  "🕒 <b>ម៉ោង៖</b> " + new Date().toLocaleTimeString('km-KH');
+                  "🕒 <b>ម៉ោង៖</b> " + timeKhNow;
+
       if (typeof sendTelegramAlert === 'function') {
         sendTelegramAlert(tgMsg);
       }
@@ -951,9 +972,8 @@ async function submitSettlementPayment() {
     if (typeof playPaymentSuccessAudio === 'function') playPaymentSuccessAudio();
     if (typeof confetti === 'function') confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
 
-    // ៦. 🧾 បង្កើតវិក្កយបត្ររូបភាព
+    // ៦. បង្កើតវិក្កយបត្ររូបភាព (Receipt)
     var receiptItems = currentSettlementItems.filter(i => selectedIds.indexOf(i.id) !== -1);
-    
     if (includeOldDebt && currentSettlementOldDebt > 0) {
       receiptItems.push({
         name: "បំណុលចាស់ពីមុន (Old Debt Balance)",
@@ -967,9 +987,13 @@ async function submitSettlementPayment() {
       generateReceiptImage("SET-" + new Date().getTime(), currentSettlementCustomer, totalDue, paid, receiptItems, "វិក្កយបត្រទូទាត់ប្រាក់ (SETTLEMENT)");
     }
 
-    showToast("បានទូទាត់ប្រាក់ និងជម្រះបញ្ជីជោគជ័យ!", "success");
+    await kcAlert({
+      title: "ទូទាត់ជោគជ័យ! 🎉",
+      message: "បានទូទាត់ប្រាក់ចំនួន ៛ " + paid.toLocaleString() + " សម្រាប់ [" + currentSettlementCustomer + "] រួចរាល់! វិក្កយបត្រត្រូវបានបង្កើតដោយជោគជ័យ។",
+      type: "success"
+    });
 
-    // ៧. 🔄 Refresh ផ្ទាំង Settlement & បាត់កាតលឿងភ្លាមៗ
+    // ៧. Refresh ផ្ទាំង Settlement ឡើងវិញ
     var settleUi = document.getElementById('settlement_ui');
     if (settleUi) settleUi.classList.add('hidden');
     checkAdminPendingPayments();
@@ -977,15 +1001,16 @@ async function submitSettlementPayment() {
     await loadSettlementDebtorsList();
 
   } catch(err) {
-    showToast("កំហុសទូទាត់ប្រាក់៖ " + err.message, "error");
+    await kcAlert({ title: "កំហុសទូទាត់ប្រាក់", message: err.message, type: "danger" });
   } finally {
     isSubmittingSettleLock = false;
     if (btn) {
       btn.disabled = false;
-      btn.innerHTML = '<i class="fas fa-file-invoice-dollar text-xl"></i> ទូទាត់ & ចេញវិក្កយបត្រ (Save Settlement)';
+      btn.innerHTML = '<i class="fas fa-file-invoice-dollar text-base"></i> ទូទាត់ & ចេញវិក្កយបត្រ (Save Settlement)';
     }
   }
 }
+
 // ==========================================================================
 // ✏️ មុខងារកែប្រែ & លុបជើងទឹកក្នុងផ្ទាំងទូទាត់ (SETTLEMENT EDIT & DELETE ENGINE)
 // ==========================================================================
