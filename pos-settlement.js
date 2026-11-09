@@ -28,7 +28,7 @@ function playPaymentSuccessAudio() {
 }
 
 // ==========================================================================
-// 💳 ១. ផ្ទាំងទូទាត់លុយ SETTLEMENT UI (ពេញអេក្រង់ PC + សមមាត្រលើទូរស័ព្ទ)
+// 💳 ១. ផ្ទាំងទូទាត់លុយ SETTLEMENT UI (SPLIT VIEW ឆ្វេង-ស្តាំ មិនបាច់ Scroll វែង)
 // ==========================================================================
 async function renderSettlementModule() {
   var area = document.getElementById('contentArea');
@@ -48,15 +48,15 @@ async function renderSettlementModule() {
     }
   });
 
-  // 🖥️ ប្រើ w-full max-w-[1600px] ដើម្បីឱ្យពេញអេក្រង់កុំព្យូទ័រស្មើស្អាត
-  area.innerHTML = '<div class="w-full max-w-[1600px] mx-auto space-y-3.5 px-1 sm:px-2">' +
+  // 🖥️ ប្រើ w-full max-w-[1600px] + ក្រឡាចត្រង្គ Split View ឆ្វេង-ស្តាំលើ PC
+  area.innerHTML = '<div class="w-full max-w-[1600px] mx-auto space-y-3 px-1 sm:px-2">' +
     // របារក្បាលទំព័រ
-    '<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-3.5 sm:p-4 rounded-2xl border shadow-sm gap-2">' +
+    '<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-3 sm:p-3.5 rounded-2xl border shadow-sm gap-2">' +
       '<div>' +
         '<h2 class="text-base sm:text-lg font-black text-blue-900 flex items-center gap-2">' +
-          '<i class="fas fa-calculator text-blue-600"></i>ប្រព័ន្ធទូទាត់ប្រាក់ឆ្លាតវៃ (Smart Settlement)' +
+          '<i class="fas fa-calculator text-blue-600"></i>ប្រព័ន្ធទូទាត់ប្រាក់ (Smart Settlement - Split View)' +
         '</h2>' +
-        '<p class="text-[11px] text-gray-500 mt-0.5">គណនាបំពេញបង្គ្រប់អូតូ គិតលុយអាប់ និងចេញវិក្កយបត្រ Realtime</p>' +
+        '<p class="text-[11px] text-gray-500 mt-0.5">ទិដ្ឋភាពទន្ទឹមគ្នា ឆ្វេង-ស្តាំ មិនបាច់រមូរ Scroll វែង</p>' +
       '</div>' +
       '<button onclick="renderSettlementModule()" class="px-3.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-xs font-bold border border-blue-200 active:scale-95 transition flex items-center gap-1.5 shadow-2xs self-end sm:self-auto">' +
         '<i class="fas fa-sync-alt"></i> Refresh' +
@@ -64,7 +64,7 @@ async function renderSettlementModule() {
     '</div>' +
 
     // 🔔 បដាសំណើទូទាត់រង់ចាំពីម៉ូយ (Pending Approval Banner)
-    '<div id="pendingPaymentsBanner" class="hidden card border-t-4 border-yellow-500 bg-yellow-50/80 p-3.5 sm:p-4 shadow-md mb-0 space-y-2">' +
+    '<div id="pendingPaymentsBanner" class="hidden card border-t-4 border-yellow-500 bg-yellow-50/80 p-3 shadow-md mb-0 space-y-2">' +
       '<div class="flex justify-between items-center">' +
         '<h3 class="font-extrabold text-yellow-950 text-xs sm:text-sm flex items-center gap-2">' +
           '<i class="fas fa-bell text-yellow-600 animate-bounce"></i> សំណើទូទាត់រង់ចាំផ្ទៀងផ្ទាត់ពីម៉ូយ' +
@@ -74,172 +74,176 @@ async function renderSettlementModule() {
       '<div id="pendingCardsContainer" class="space-y-2 pt-1"></div>' +
     '</div>' +
 
-    // 📊 កាតស្ថិតិ ២ ខាងលើ (រត់ស្មើដៃគ្នា)
-    '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">' +
-      '<div class="dash-card border-l-4 border-orange-500 shadow-md p-3.5 bg-white rounded-2xl">' +
-        '<div class="text-gray-500 text-[10px] sm:text-xs font-bold uppercase flex justify-between items-center">' +
-          '<span>អ្នកដកថ្ងៃនេះមិនទាន់គិតលុយ</span><i class="fas fa-users-slash text-orange-500 text-base"></i>' +
-        '</div>' +
-        '<div id="todayUnpaidCount" class="mt-1 font-black text-orange-800 text-base sm:text-lg leading-tight">កំពុងឆែកមើល...</div>' +
-      '</div>' +
-      '<div class="dash-card border-l-4 border-red-500 shadow-md p-3.5 bg-white rounded-2xl">' +
-        '<div class="text-gray-500 text-[10px] sm:text-xs font-bold uppercase flex justify-between items-center">' +
-          '<span>ទឹកប្រាក់មិនទាន់ទូទាត់ថ្ងៃនេះសរុប</span><i class="fas fa-coins text-red-500 text-base"></i>' +
-        '</div>' +
-        '<div id="todayUnpaidTotal" class="mt-1 font-black text-red-700 text-base sm:text-lg leading-tight">កំពុងគណនា...</div>' +
-      '</div>' +
-    '</div>' +
+    // 🌟 ក្រឡាចត្រង្គ SPLIT VIEW (ឆ្វេង ៦ ភាគ | ស្តាំ ៦ ភាគ)
+    '<div class="grid grid-cols-1 lg:grid-cols-12 gap-3.5 items-start">' +
 
-    // 📋 តារាងអ្នកដកទំនិញថ្ងៃនេះ
-    '<div class="card p-3.5 sm:p-5 border-t-4 border-orange-500 shadow-md mb-0 bg-white">' +
-      '<h3 class="font-bold text-gray-800 text-xs sm:text-sm mb-2.5 flex items-center gap-2">' +
-        '<i class="fas fa-clock text-orange-500"></i>បញ្ជីអ្នកដកទំនិញថ្ងៃនេះ (មិនទាន់ទូទាត់)' +
-      '</h3>' +
-      '<div class="overflow-x-auto max-h-64 overflow-y-auto rounded-xl border border-gray-200 shadow-inner">' +
-        '<table class="w-full text-left text-xs border-collapse">' +
-          '<thead class="sticky top-0 bg-gray-100 text-gray-700 font-bold border-b z-10 shadow-xs">' +
-            '<tr>' +
-              '<th class="p-2 sm:p-2.5 text-center w-14">ម៉ោង</th>' +
-              '<th class="p-2 sm:p-2.5">ឈ្មោះអតិថិជន</th>' +
-              '<th class="p-2 sm:p-2.5">មុខទំនិញ</th>' +
-              '<th class="p-2 sm:p-2.5 text-center">ចំនួន</th>' +
-              '<th class="p-2 sm:p-2.5 text-right">តម្លៃសរុប</th>' +
-              '<th class="p-2 sm:p-2.5 text-center">សកម្មភាព</th>' +
-            '</tr>' +
-          '</thead>' +
-          '<tbody id="todayUnpaidTbody"><tr><td colspan="6" class="p-4 text-center text-gray-400 italic">កំពុងទាញទិន្នន័យ...</td></tr></tbody>' +
-        '</table>' +
-      '</div>' +
-    '</div>' +
-
-    // 👥 បញ្ជីឈ្មោះម៉ូយជំពាក់ទាំងអស់
-    '<div class="card border-t-4 border-blue-500 shadow-md p-3.5 sm:p-4 mb-0 bg-white">' +
-      '<h4 class="font-bold text-gray-800 text-xs sm:text-sm mb-2 flex items-center gap-1.5">' +
-        '<i class="fas fa-users text-blue-600"></i> ចុចរើសឈ្មោះម៉ូយជំពាក់ដើម្បីទូទាត់ភ្លាមៗ៖' +
-      '</h4>' +
-      '<div id="settleDebtorsBadgesContainer" class="flex flex-wrap gap-1.5 pt-0.5 text-xs">' +
-        '<i class="fas fa-spinner fa-spin text-blue-600"></i> កំពុងឆែកបញ្ជីជំពាក់...' +
-      '</div>' +
-    '</div>' +
-
-    // 📝 ទម្រង់គិតលុយ និងចេញវិក្កយបត្រ
-    '<div id="settlement_card" class="card border-t-4 border-blue-600 shadow-xl p-3.5 sm:p-6 mb-0 bg-white">' +
-      '<h3 class="font-bold text-center mb-3 text-blue-900 text-sm sm:text-base flex items-center justify-center gap-2">' +
-        '<i class="fas fa-file-invoice-dollar text-blue-600"></i>ទម្រង់គិតលុយ និងចេញវិក្កយបត្រ' +
-      '</h3>' +
-
-      '<div class="mb-3">' +
-        '<label class="text-[11px] font-bold text-gray-500 mb-1 block">ជ្រើសរើសឈ្មោះអតិថិជន</label>' +
-        '<select id="set_c" onchange="selectCustomerForSettlement(this.value)" class="border-2 border-blue-200 focus:border-blue-600 font-bold text-gray-800 rounded-xl p-2 w-full bg-white outline-none text-xs sm:text-sm">' +
-          custOptions +
-        '</select>' +
-      '</div>' +
-
-      // 📦 តំបន់ UI ទូទាត់លម្អិត
-      '<div id="settlement_ui" class="hidden space-y-3.5">' +
-        '<div class="flex justify-between items-center border-b pb-2">' +
-          '<b class="text-xs sm:text-sm text-blue-950 flex items-center gap-1.5"><i class="fas fa-boxes text-blue-600"></i>បញ្ជីជើងទឹកដកជំពាក់ជាក់ស្តែង</b>' +
-          '<span id="settleSelectedCountBadge" class="bg-blue-100 text-blue-800 text-xs px-2.5 py-0.5 rounded-full font-bold">0 ជើងទឹក</span>' +
-        '</div>' +
-
-        '<div id="settleProductSummaryArea" class="hidden p-2.5 bg-blue-50/80 rounded-2xl border border-blue-200 text-xs space-y-1 my-2"></div>' +
-
-        '<div class="overflow-x-auto max-h-60 overflow-y-auto rounded-xl border mb-2.5">' +
-          '<table class="w-full text-left text-xs border-collapse">' +
-            '<thead class="sticky top-0 bg-gray-100 text-gray-700 font-bold border-b z-10">' +
-              '<tr>' +
-                '<th class="p-2 text-center w-10">' +
-                  '<input type="checkbox" id="settleSelectAllCb" onchange="toggleSelectAllSettle(this.checked)" checked class="w-4 h-4 accent-green-600 cursor-pointer">' +
-                '</th>' +
-                '<th class="p-2 text-[10px] text-center w-24">កាលបរិច្ឆេទ</th>' +
-                '<th class="p-2">មុខទំនិញ</th>' +
-                '<th class="p-2 text-center">ចំនួន</th>' +
-                '<th class="p-2 text-right">តម្លៃរាយ</th>' +
-                '<th class="p-2 text-right">សរុប</th>' +
-                '<th class="p-2 text-center w-20">សកម្មភាព</th>' +
-              '</tr>' +
-            '</thead>' +
-            '<tbody id="settleItemsTableBody"></tbody>' +
-          '</table>' +
-        '</div>' +
-
-        // ប្រអប់សង្ខេបបំណុល & Checkbox បំណុលចាស់
-        '<div class="p-3 bg-orange-50 rounded-2xl border border-orange-200 text-xs space-y-1 text-orange-950 font-bold shadow-inner">' +
-          '<div class="flex justify-between">' +
-            '<span>សរុបទំនិញដែលបានធីក (+)៖</span>' +
-            '<b id="settleSelectedSubtotal" class="text-xs sm:text-sm text-blue-900">0 ៛</b>' +
+      // 👈 ផ្នែកខាងឆ្វេង (lg:col-span-6)៖ ស្ថិតិ, តារាងអ្នកដកថ្ងៃនេះ & បញ្ជីម៉ូយជំពាក់
+      '<div class="lg:col-span-6 space-y-3">' +
+        // ស្ថិតិ ២
+        '<div class="grid grid-cols-2 gap-2.5">' +
+          '<div class="dash-card border-l-4 border-orange-500 shadow-md p-3 bg-white rounded-2xl">' +
+            '<div class="text-gray-500 text-[10px] font-bold uppercase truncate">អ្នកដកមិនទាន់គិតលុយ</div>' +
+            '<div id="todayUnpaidCount" class="mt-1 font-black text-orange-800 text-sm sm:text-base leading-tight">កំពុងឆែកមើល...</div>' +
           '</div>' +
-          '<div id="settleOldDebtRow" class="flex justify-between items-center border-t border-orange-200 pt-1">' +
-            '<label class="flex items-center gap-1.5 cursor-pointer">' +
-              '<input type="checkbox" id="cbIncludeOldDebt" onchange="recalcSettlementCalculation()" checked class="w-4 h-4 accent-orange-600 cursor-pointer">' +
-              '<span>បូកបញ្ចូលបំណុលចាស់ពីមុន៖</span>' +
-            '</label>' +
-            '<b id="settleOldDebtVal" class="text-orange-700">0 ៛</b>' +
-          '</div>' +
-          '<div class="flex justify-between text-xs sm:text-base font-black text-orange-950 border-t border-orange-300 pt-1.5 mt-0.5">' +
-            '<span>សរុបត្រូវបង់លើកនេះ (=)៖</span>' +
-            '<span id="settleTotalDueText" class="text-sm sm:text-lg text-orange-800">0 ៛</span>' +
+          '<div class="dash-card border-l-4 border-red-500 shadow-md p-3 bg-white rounded-2xl">' +
+            '<div class="text-gray-500 text-[10px] font-bold uppercase truncate">មិនទាន់ទូទាត់សរុប</div>' +
+            '<div id="todayUnpaidTotal" class="mt-1 font-black text-red-700 text-sm sm:text-base leading-tight">កំពុងគណនា...</div>' +
           '</div>' +
         '</div>' +
 
-        // 🧠 ផ្នែកវិធីបង់ប្រាក់
-        '<div class="bg-blue-50/70 p-3 sm:p-4 rounded-2xl border border-blue-200 space-y-2.5">' +
-          '<div class="flex justify-between items-center">' +
-            '<label class="text-[11px] font-bold text-blue-900 uppercase">វិធីទូទាត់ប្រាក់ជាក់ស្តែង</label>' +
-            '<button onclick="fillExactSettlementPay()" class="px-3 py-1 bg-white text-blue-700 text-xs font-extrabold rounded-lg border border-blue-300 shadow-2xs active:scale-95 transition">លុយគ្រប់</button>' +
+        // តារាងអ្នកដកថ្ងៃនេះ
+        '<div class="card p-3 sm:p-4 border-t-4 border-orange-500 shadow-md mb-0 bg-white">' +
+          '<h3 class="font-bold text-gray-800 text-xs sm:text-sm mb-2 flex items-center gap-1.5">' +
+            '<i class="fas fa-clock text-orange-500"></i>បញ្ជីអ្នកដកទំនិញថ្ងៃនេះ (មិនទាន់ទូទាត់)' +
+          '</h3>' +
+          '<div class="overflow-x-auto max-h-56 overflow-y-auto rounded-xl border border-gray-200 shadow-inner">' +
+            '<table class="w-full text-left text-xs border-collapse">' +
+              '<thead class="sticky top-0 bg-gray-100 text-gray-700 font-bold border-b z-10 shadow-xs">' +
+                '<tr>' +
+                  '<th class="p-2 text-center w-12">ម៉ោង</th>' +
+                  '<th class="p-2">ឈ្មោះអតិថិជន</th>' +
+                  '<th class="p-2">មុខទំនិញ</th>' +
+                  '<th class="p-2 text-center">ចំនួន</th>' +
+                  '<th class="p-2 text-right">តម្លៃសរុប</th>' +
+                  '<th class="p-2 text-center">សកម្មភាព</th>' +
+                '</tr>' +
+              '</thead>' +
+              '<tbody id="todayUnpaidTbody"><tr><td colspan="6" class="p-4 text-center text-gray-400 italic">កំពុងទាញទិន្នន័យ...</td></tr></tbody>' +
+            '</table>' +
+          '</div>' +
+        '</div>' +
+
+        // បញ្ជីឈ្មោះម៉ូយជំពាក់ទាំងអស់
+        '<div class="card border-t-4 border-blue-500 shadow-md p-3 sm:p-4 mb-0 bg-white">' +
+          '<h4 class="font-bold text-gray-800 text-xs sm:text-sm mb-2 flex items-center gap-1.5">' +
+            '<i class="fas fa-users text-blue-600"></i> ចុចរើសឈ្មោះម៉ូយជំពាក់ដើម្បីទូទាត់ភ្លាមៗ៖' +
+          '</h4>' +
+          '<div id="settleDebtorsBadgesContainer" class="flex flex-wrap gap-1.5 pt-0.5 text-xs max-h-52 overflow-y-auto pr-1">' +
+            '<i class="fas fa-spinner fa-spin text-blue-600"></i> កំពុងឆែកបញ្ជីជំពាក់...' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+
+      // 👉 ផ្នែកខាងស្តាំ (lg:col-span-6)៖ ផ្ទាំងគិតលុយរបស់ម៉ូយ (Sticky ឈរស្ងៀមមួយកន្លែង)
+      '<div class="lg:col-span-6 lg:sticky lg:top-14">' +
+        '<div id="settlement_card" class="card border-t-4 border-blue-600 shadow-xl p-3.5 sm:p-5 mb-0 bg-white">' +
+          '<h3 class="font-bold text-center mb-2.5 text-blue-900 text-sm sm:text-base flex items-center justify-center gap-2">' +
+            '<i class="fas fa-file-invoice-dollar text-blue-600"></i>ទម្រង់គិតលុយ និងចេញវិក្កយបត្រ' +
+          '</h3>' +
+
+          '<div class="mb-2.5">' +
+            '<label class="text-[10.5px] font-bold text-gray-500 mb-1 block">ជ្រើសរើសឈ្មោះអតិថិជន</label>' +
+            '<select id="set_c" onchange="selectCustomerForSettlement(this.value)" class="border-2 border-blue-200 focus:border-blue-600 font-bold text-gray-800 rounded-xl p-2 w-full bg-white outline-none text-xs sm:text-sm">' +
+              custOptions +
+            '</select>' +
           '</div>' +
 
-          '<div class="grid grid-cols-3 gap-1.5 p-1 bg-white rounded-xl border">' +
-            '<button type="button" id="btnSettleCash" onclick="setSettlePayMode(\'Cash\')" class="py-2 rounded-lg text-xs font-bold bg-green-700 text-white shadow"><i class="fas fa-money-bill-wave mr-1"></i> លុយសុទ្ធ</button>' +
-            '<button type="button" id="btnSettleAba" onclick="setSettlePayMode(\'ABA\')" class="py-2 rounded-lg text-xs font-bold bg-gray-100 text-gray-600 hover:bg-gray-200"><i class="fas fa-qrcode mr-1"></i> ស្កេន ABA</button>' +
-            '<button type="button" id="btnSettleSplit" onclick="setSettlePayMode(\'Split\')" class="py-2 rounded-lg text-xs font-bold bg-gray-100 text-gray-600 hover:bg-gray-200"><i class="fas fa-layer-group mr-1"></i> ចម្រុះ</button>' +
-          '</div>' +
-
-          // បង់ធម្មតា
-          '<div id="settleSingleInputArea" class="space-y-1">' +
-            '<label class="text-[10px] font-bold text-gray-500 uppercase">ប្រាក់បានបង់ជាក់ស្តែង (៛)</label>' +
-            '<input type="number" id="settlePaidInput" oninput="calcSettleChange()" placeholder="0" class="w-full text-center text-lg sm:text-xl font-black text-blue-900 bg-white border-2 border-blue-200 focus:border-blue-600 rounded-xl p-2 outline-none">' +
-          '</div>' +
-
-          // 🔀 បង់ចម្រុះឆ្លាតវៃ
-          '<div id="settleSplitInputArea" class="hidden space-y-2 bg-white p-3 rounded-2xl border border-blue-200 shadow-2xs">' +
-            '<div class="text-[10px] sm:text-[11px] font-black text-blue-900 uppercase flex items-center justify-between">' +
-              '<span><i class="fas fa-layer-group text-blue-600 mr-1"></i> បែងចែកការទូទាត់ចម្រុះ (៛)៖</span>' +
-              '<span class="text-[9.5px] text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded-md">🧠 Auto-Balance</span>' +
+          // 📦 តំបន់ UI ទូទាត់លម្អិត
+          '<div id="settlement_ui" class="hidden space-y-3">' +
+            '<div class="flex justify-between items-center border-b pb-1.5">' +
+              '<b class="text-xs text-blue-950 flex items-center gap-1.5"><i class="fas fa-boxes text-blue-600"></i>បញ្ជីជើងទឹកដកជំពាក់</b>' +
+              '<span id="settleSelectedCountBadge" class="bg-blue-100 text-blue-800 text-[11px] px-2.5 py-0.5 rounded-full font-bold">0 ជើងទឹក</span>' +
             '</div>' +
-            '<div class="grid grid-cols-2 gap-2">' +
-              '<div>' +
-                '<label class="text-[9.5px] font-bold text-gray-600 block mb-0.5">💵 ទទួលលុយសុទ្ធ (៛)</label>' +
-                '<input type="number" id="splitKhrCash" oninput="onSplitCashInput(this.value)" placeholder="0" class="w-full text-center font-black text-xs sm:text-sm p-2 bg-gray-50 focus:bg-white rounded-xl border-2 border-gray-300 focus:border-green-600 outline-none">' +
+
+            '<div id="settleProductSummaryArea" class="hidden p-2 bg-blue-50/80 rounded-2xl border border-blue-200 text-xs space-y-1 my-1"></div>' +
+
+            '<div class="overflow-x-auto max-h-52 overflow-y-auto rounded-xl border mb-2">' +
+              '<table class="w-full text-left text-xs border-collapse">' +
+                '<thead class="sticky top-0 bg-gray-100 text-gray-700 font-bold border-b z-10">' +
+                  '<tr>' +
+                    '<th class="p-2 text-center w-8">' +
+                      '<input type="checkbox" id="settleSelectAllCb" onchange="toggleSelectAllSettle(this.checked)" checked class="w-4 h-4 accent-green-600 cursor-pointer">' +
+                    '</th>' +
+                    '<th class="p-2 text-[10px] text-center w-20">កាលបរិច្ឆេទ</th>' +
+                    '<th class="p-2">មុខទំនិញ</th>' +
+                    '<th class="p-2 text-center">ចំនួន</th>' +
+                    '<th class="p-2 text-right">តម្លៃរាយ</th>' +
+                    '<th class="p-2 text-right">សរុប</th>' +
+                    '<th class="p-2 text-center w-20">សកម្មភាព</th>' +
+                  '</tr>' +
+                '</thead>' +
+                '<tbody id="settleItemsTableBody"></tbody>' +
+              '</table>' +
+            '</div>' +
+
+            // ប្រអប់សង្ខេបបំណុល
+            '<div class="p-2.5 bg-orange-50 rounded-2xl border border-orange-200 text-xs space-y-1 text-orange-950 font-bold shadow-inner">' +
+              '<div class="flex justify-between">' +
+                '<span>សរុបទំនិញដែលបានធីក (+)៖</span>' +
+                '<b id="settleSelectedSubtotal" class="text-xs text-blue-900">0 ៛</b>' +
               '</div>' +
-              '<div>' +
-                '<label class="text-[9.5px] font-black text-blue-700 block mb-0.5">📱 ស្កេន ABA (៛)</label>' +
-                '<input type="number" id="splitKhrScan" oninput="onSplitScanInput(this.value)" placeholder="0" class="w-full text-center font-black text-xs sm:text-sm p-2 bg-white rounded-xl border-2 border-blue-400 text-blue-900 outline-none">' +
+              '<div id="settleOldDebtRow" class="flex justify-between items-center border-t border-orange-200 pt-1">' +
+                '<label class="flex items-center gap-1.5 cursor-pointer">' +
+                  '<input type="checkbox" id="cbIncludeOldDebt" onchange="recalcSettlementCalculation()" checked class="w-4 h-4 accent-orange-600 cursor-pointer">' +
+                  '<span>បូកបញ្ចូលបំណុលចាស់ពីមុន៖</span>' +
+                '</label>' +
+                '<b id="settleOldDebtVal" class="text-orange-700">0 ៛</b>' +
+              '</div>' +
+              '<div class="flex justify-between text-xs sm:text-sm font-black text-orange-950 border-t border-orange-300 pt-1 mt-0.5">' +
+                '<span>សរុបត្រូវបង់លើកនេះ (=)៖</span>' +
+                '<span id="settleTotalDueText" class="text-sm sm:text-base text-orange-800">0 ៛</span>' +
               '</div>' +
             '</div>' +
-            '<div class="pt-0.5">' +
-              '<button type="button" onclick="openSplitAbaQrModal()" class="w-full py-1.5 bg-gradient-to-r from-red-600 to-pink-600 hover:opacity-95 text-white font-bold text-xs rounded-xl shadow-2xs flex items-center justify-center gap-1 active:scale-95 transition">' +
-                '<i class="fas fa-qrcode"></i> 📱 បង្ហាញ QR សម្រាប់ស្កេន ៛ <span id="splitAbaAmountLabel">0</span>' +
-              '</button>' +
+
+            // 🧠 ផ្នែកវិធីបង់ប្រាក់
+            '<div class="bg-blue-50/70 p-3 rounded-2xl border border-blue-200 space-y-2">' +
+              '<div class="flex justify-between items-center">' +
+                '<label class="text-[10px] font-bold text-blue-900 uppercase">វិធីទូទាត់ប្រាក់ជាក់ស្តែង</label>' +
+                '<button onclick="fillExactSettlementPay()" class="px-2.5 py-0.5 bg-white text-blue-700 text-xs font-extrabold rounded-lg border border-blue-300 shadow-2xs active:scale-95 transition">លុយគ្រប់</button>' +
+              '</div>' +
+
+              '<div class="grid grid-cols-3 gap-1 p-1 bg-white rounded-xl border">' +
+                '<button type="button" id="btnSettleCash" onclick="setSettlePayMode(\'Cash\')" class="py-1.5 rounded-lg text-xs font-bold bg-green-700 text-white shadow"><i class="fas fa-money-bill-wave mr-1"></i> លុយសុទ្ធ</button>' +
+                '<button type="button" id="btnSettleAba" onclick="setSettlePayMode(\'ABA\')" class="py-1.5 rounded-lg text-xs font-bold bg-gray-100 text-gray-600 hover:bg-gray-200"><i class="fas fa-qrcode mr-1"></i> ស្កេន ABA</button>' +
+                '<button type="button" id="btnSettleSplit" onclick="setSettlePayMode(\'Split\')" class="py-1.5 rounded-lg text-xs font-bold bg-gray-100 text-gray-600 hover:bg-gray-200"><i class="fas fa-layer-group mr-1"></i> ចម្រុះ</button>' +
+              '</div>' +
+
+              // បង់ធម្មតា
+              '<div id="settleSingleInputArea" class="space-y-0.5">' +
+                '<label class="text-[9.5px] font-bold text-gray-500 uppercase">ប្រាក់បានបង់ជាក់ស្តែង (៛)</label>' +
+                '<input type="number" id="settlePaidInput" oninput="calcSettleChange()" placeholder="0" class="w-full text-center text-base sm:text-lg font-black text-blue-900 bg-white border-2 border-blue-200 focus:border-blue-600 rounded-xl p-1.5 outline-none">' +
+              '</div>' +
+
+              // 🔀 បង់ចម្រុះ
+              '<div id="settleSplitInputArea" class="hidden space-y-1.5 bg-white p-2.5 rounded-2xl border border-blue-200 shadow-2xs">' +
+                '<div class="text-[10px] font-black text-blue-900 uppercase flex items-center justify-between">' +
+                  '<span><i class="fas fa-layer-group text-blue-600 mr-1"></i> បែងចែកចម្រុះ (៛)៖</span>' +
+                  '<span class="text-[9px] text-blue-600 font-bold bg-blue-50 px-1.5 py-0.2 rounded">🧠 Auto-Balance</span>' +
+                '</div>' +
+                '<div class="grid grid-cols-2 gap-1.5">' +
+                  '<div>' +
+                    '<label class="text-[9px] font-bold text-gray-600 block mb-0.5">💵 លុយសុទ្ធ (៛)</label>' +
+                    '<input type="number" id="splitKhrCash" oninput="onSplitCashInput(this.value)" placeholder="0" class="w-full text-center font-black text-xs p-1.5 bg-gray-50 focus:bg-white rounded-xl border-2 border-gray-300 focus:border-green-600 outline-none">' +
+                  '</div>' +
+                  '<div>' +
+                    '<label class="text-[9px] font-black text-blue-700 block mb-0.5">📱 ស្កេន ABA (៛)</label>' +
+                    '<input type="number" id="splitKhrScan" oninput="onSplitScanInput(this.value)" placeholder="0" class="w-full text-center font-black text-xs p-1.5 bg-white rounded-xl border-2 border-blue-400 text-blue-900 outline-none">' +
+                  '</div>' +
+                '</div>' +
+                '<button type="button" onclick="openSplitAbaQrModal()" class="w-full py-1 bg-gradient-to-r from-red-600 to-pink-600 hover:opacity-95 text-white font-bold text-xs rounded-lg shadow-2xs flex items-center justify-center gap-1 active:scale-95 transition">' +
+                  '<i class="fas fa-qrcode text-[10px]"></i> 📱 ស្កេន ៛ <span id="splitAbaAmountLabel">0</span>' +
+                '</button>' +
+              '</div>' +
+
+              // 💵 ក្រដាសប្រាក់រហ័ស
+              '<div class="flex gap-1 pt-0.5 text-xs">' +
+                '<button type="button" onclick="setQuickCashBill(10000)" class="flex-1 py-1 bg-white hover:bg-green-50 text-gray-800 font-black rounded-lg border shadow-2xs active:scale-95 transition">10k</button>' +
+                '<button type="button" onclick="setQuickCashBill(20000)" class="flex-1 py-1 bg-white hover:bg-green-50 text-gray-800 font-black rounded-lg border shadow-2xs active:scale-95 transition">20k</button>' +
+                '<button type="button" onclick="setQuickCashBill(50000)" class="flex-1 py-1 bg-white hover:bg-green-50 text-gray-800 font-black rounded-lg border shadow-2xs active:scale-95 transition">50k</button>' +
+                '<button type="button" onclick="setQuickCashBill(100000)" class="flex-1 py-1 bg-white hover:bg-green-50 text-gray-800 font-black rounded-lg border shadow-2xs active:scale-95 transition">100k</button>' +
+              '</div>' +
+
+              '<div id="settleChangeArea" class="rounded-xl transition-all duration-200 hidden"></div>' +
             '</div>' +
-          '</div>' +
 
-          // 💵 ប៊ូតុងក្រដាសប្រាក់ខ្មែររហ័ស
-          '<div class="flex gap-1 pt-0.5 text-xs">' +
-            '<button type="button" onclick="setQuickCashBill(10000)" class="flex-1 py-1.5 bg-white hover:bg-green-50 text-gray-800 font-black rounded-xl border shadow-2xs active:scale-95 transition">10,000</button>' +
-            '<button type="button" onclick="setQuickCashBill(20000)" class="flex-1 py-1.5 bg-white hover:bg-green-50 text-gray-800 font-black rounded-xl border shadow-2xs active:scale-95 transition">20,000</button>' +
-            '<button type="button" onclick="setQuickCashBill(50000)" class="flex-1 py-1.5 bg-white hover:bg-green-50 text-gray-800 font-black rounded-xl border shadow-2xs active:scale-95 transition">50,000</button>' +
-            '<button type="button" onclick="setQuickCashBill(100000)" class="flex-1 py-1.5 bg-white hover:bg-green-50 text-gray-800 font-black rounded-xl border shadow-2xs active:scale-95 transition">100,000</button>' +
+            '<button onclick="submitSettlementPayment()" id="btnSubmitSettlement" class="btn-green shadow-xl py-3 text-xs sm:text-sm font-black flex items-center justify-center gap-2 active:scale-95 transition mt-1">' +
+              '<i class="fas fa-file-invoice-dollar text-base"></i> ទូទាត់ & ចេញវិក្កយបត្រ (Save Settlement)' +
+            '</button>' +
           '</div>' +
-
-          '<div id="settleChangeArea" class="rounded-xl transition-all duration-200 hidden"></div>' +
         '</div>' +
-
-        '<button onclick="submitSettlementPayment()" id="btnSubmitSettlement" class="btn-green shadow-xl py-3.5 sm:py-4 text-sm sm:text-base font-black flex items-center justify-center gap-2 active:scale-95 transition mt-2">' +
-          '<i class="fas fa-file-invoice-dollar text-lg"></i> ទូទាត់ & ចេញវិក្កយបត្រ (Save Settlement)' +
-        '</button>' +
       '</div>' +
-    '</div>' +
+
+    '</div>' + // បិទ split view grid
   '</div>';
 
   checkAdminPendingPayments();
