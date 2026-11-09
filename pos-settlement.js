@@ -28,7 +28,7 @@ function playPaymentSuccessAudio() {
 }
 
 // ==========================================================================
-// 💳 ១. ផ្ទាំងទូទាត់លុយ SETTLEMENT (ទំព័រស្រឡះភ្នែក + POP-UP គិតលុយចំកណ្តាលអេក្រង់)
+// 💳 ១. ផ្ទាំងទូទាត់លុយ SETTLEMENT (DROPDOWN ស្តង់ដារ មិនធ្លាក់ហួសកាតលើទូរស័ព្ទ)
 // ==========================================================================
 async function renderSettlementModule() {
   var area = document.getElementById('contentArea');
@@ -48,24 +48,29 @@ async function renderSettlementModule() {
     }
   });
 
-  // 🖥️ ទំព័រដើមស្រឡះភ្នែក មិនធ្លាក់ចុះវែង (Full Width Layout)
-  area.innerHTML = '<div class="w-full max-w-[1600px] mx-auto space-y-3.5 px-1 sm:px-2">' +
-    // របារក្បាលទំព័រ
-    '<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-3.5 sm:p-4 rounded-3xl border shadow-sm gap-2">' +
-      '<div>' +
-        '<h2 class="text-base sm:text-lg font-black text-blue-900 flex items-center gap-2">' +
-          '<i class="fas fa-calculator text-blue-600"></i>ប្រព័ន្ធទូទាត់ប្រាក់ (Smart Settlement Portal)' +
-        '</h2>' +
-        '<p class="text-[11px] text-gray-500 mt-0.5">ចុចពាក្យ «ទូទាត់» ដើម្បីបើកផ្ទាំងគិតលុយចំកណ្តាលអេក្រង់ភ្លាមៗ</p>' +
+  // 🖥️ ទំព័រដើមរចនាបថស្តង់ដារ មិនធ្លាក់ហួសកាតលើទូរស័ព្ទដៃ
+  area.innerHTML = '<div class="w-full max-w-[1600px] mx-auto space-y-3 px-1 sm:px-2">' +
+    
+    // របារក្បាលទំព័រ (Responsive ១០០% ស្រួលចុចលើទូរស័ព្ទ)
+    '<div class="bg-white p-3.5 sm:p-4 rounded-3xl border shadow-sm space-y-2.5">' +
+      '<div class="flex justify-between items-center">' +
+        '<div>' +
+          '<h2 class="text-sm sm:text-base font-black text-blue-900 flex items-center gap-1.5">' +
+            '<i class="fas fa-calculator text-blue-600"></i>ប្រព័ន្ធទូទាត់ប្រាក់ (Smart Settlement)' +
+          '</h2>' +
+          '<p class="text-[10px] sm:text-[11px] text-gray-500 font-bold mt-0.5">ជ្រើសរើសម៉ូយ ឬចុច «ទូទាត់» ដើម្បីចេញវិក្កយបត្រ</p>' +
+        '</div>' +
       '</div>' +
-      '<div class="flex items-center gap-2 self-end sm:self-auto">' +
-        '<div class="w-56 sm:w-64">' +
-          '<select id="set_c_quick" onchange="selectCustomerForSettlement(this.value)" class="border-2 border-blue-300 focus:border-blue-600 font-bold text-blue-950 rounded-xl p-2 w-full bg-blue-50/50 outline-none text-xs shadow-2xs">' +
+
+      // របារ Dropdown និងប៊ូតុង Refresh (រត់ស្មើជួរដេកស្អាត មិនបែក មិនធ្លាក់ហួសកាត)
+      '<div class="flex items-center gap-2 w-full">' +
+        '<div class="flex-1 min-w-0">' +
+          '<select id="set_c_quick" onchange="selectCustomerForSettlement(this.value)" class="w-full border-2 border-blue-300 focus:border-blue-600 font-bold text-blue-950 rounded-xl p-2.5 bg-blue-50/40 outline-none text-xs truncate shadow-2xs">' +
             custOptions +
           '</select>' +
         '</div>' +
-        '<button onclick="renderSettlementModule()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold border active:scale-95 transition flex items-center gap-1.5 shadow-2xs">' +
-          '<i class="fas fa-sync-alt"></i> Refresh' +
+        '<button type="button" onclick="renderSettlementModule()" class="px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold border border-slate-200 active:scale-95 transition flex items-center gap-1 shrink-0 shadow-2xs" title="Refresh">' +
+          '<i class="fas fa-sync-alt"></i><span class="hidden sm:inline">Refresh</span>' +
         '</button>' +
       '</div>' +
     '</div>' +
@@ -82,7 +87,7 @@ async function renderSettlementModule() {
     '</div>' +
 
     // 📊 កាតស្ថិតិសង្ខេប ២
-    '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">' +
+    '<div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">' +
       '<div class="dash-card border-l-4 border-orange-500 shadow-md p-3.5 bg-white rounded-2xl">' +
         '<div class="text-gray-500 text-[10px] sm:text-xs font-bold uppercase truncate">ចំនួនអ្នកដកទឹកថ្ងៃនេះមិនទាន់ទូទាត់</div>' +
         '<div id="todayUnpaidCount" class="mt-1 font-black text-orange-800 text-base sm:text-lg">កំពុងឆែកមើល...</div>' +
@@ -93,8 +98,8 @@ async function renderSettlementModule() {
       '</div>' +
     '</div>' +
 
-    // 📋 តារាងអ្នកដកទំនិញថ្ងៃនេះ (ពេញទទឹងអេក្រង់ស្អាត)
-    '<div class="card p-4 sm:p-5 border-t-4 border-orange-500 shadow-xl mb-0 bg-white rounded-2xl">' +
+    // 📋 តារាងអ្នកដកទំនិញថ្ងៃនេះ
+    '<div class="card p-3.5 sm:p-5 border-t-4 border-orange-500 shadow-xl mb-0 bg-white rounded-2xl">' +
       '<h3 class="font-bold text-gray-800 text-xs sm:text-sm mb-2.5 flex items-center gap-2">' +
         '<i class="fas fa-clock text-orange-500"></i>បញ្ជីអ្នកដកទំនិញថ្ងៃនេះ (មិនទាន់ទូទាត់)' +
       '</h3>' +
@@ -116,7 +121,7 @@ async function renderSettlementModule() {
     '</div>' +
 
     // 👥 បញ្ជីឈ្មោះម៉ូយជំពាក់ទាំងអស់
-    '<div class="card border-t-4 border-blue-500 shadow-xl p-4 sm:p-5 mb-0 bg-white rounded-2xl">' +
+    '<div class="card border-t-4 border-blue-500 shadow-xl p-3.5 sm:p-5 mb-0 bg-white rounded-2xl">' +
       '<h4 class="font-bold text-gray-800 text-xs sm:text-sm mb-2.5 flex items-center gap-2">' +
         '<i class="fas fa-users text-blue-600"></i> ចុចលើឈ្មោះម៉ូយជំពាក់ ដើម្បីបើកផ្ទាំងទូទាត់ភ្លាមៗ៖' +
       '</h4>' +
@@ -127,12 +132,10 @@ async function renderSettlementModule() {
 
   '</div>' +
 
-  // 🌟 ផ្ទាំង POP-UP MODAL គិតលុយចំកណ្តាលអេក្រង់ (SETTLEMENT POP-UP MODAL)
+  // 🌟 ផ្ទាំង POP-UP MODAL គិតលុយចំកណ្តាលអេក្រង់
   '<div id="settlementActionModal" class="fixed inset-0 z-[7000] flex items-center justify-center p-3 sm:p-4 hidden overflow-y-auto">' +
     '<div class="fixed inset-0 bg-slate-950/65 backdrop-blur-xs transition-opacity" onclick="closeSettlementModal()"></div>' +
     '<div class="bg-white rounded-3xl shadow-2xl z-10 w-full max-w-lg p-4 sm:p-5 space-y-3 relative border border-slate-100 animate-in zoom-in-95 duration-200 my-auto max-h-[92dvh] flex flex-col text-left">' +
-      
-      // ក្បាលផ្ទាំង Pop-up
       '<div class="flex justify-between items-center border-b pb-2.5">' +
         '<div>' +
           '<h3 class="font-black text-slate-900 text-sm sm:text-base flex items-center gap-2">' +
@@ -143,25 +146,17 @@ async function renderSettlementModule() {
         '</div>' +
         '<button type="button" onclick="closeSettlementModal()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-400 hover:text-slate-700 text-lg font-bold flex items-center justify-center shadow-xs">&times;</button>' +
       '</div>' +
-
-      // តួខ្លួន Pop-up (អាច Scroll ខាងក្នុងបានរលូន មិនបែកទំព័រ)
       '<div class="flex-1 overflow-y-auto space-y-2.5 pr-1 text-xs" id="settlementModalScrollableBody">' +
-        
-        // បញ្ជីជើងទឹក & សង្ខេប
         '<div class="flex justify-between items-center">' +
           '<b class="text-slate-800 font-black flex items-center gap-1.5"><i class="fas fa-boxes text-blue-600"></i>បញ្ជីជើងទឹកដកជំពាក់</b>' +
           '<span id="settleSelectedCountBadge" class="bg-blue-100 text-blue-800 text-[10px] sm:text-[11px] px-2.5 py-0.5 rounded-full font-bold">0 ជើងទឹក</span>' +
         '</div>' +
-
         '<div id="settleProductSummaryArea" class="hidden p-2 bg-blue-50/80 rounded-2xl border border-blue-200 text-xs space-y-1"></div>' +
-
         '<div class="overflow-x-auto max-h-48 overflow-y-auto rounded-xl border border-slate-200">' +
           '<table class="w-full text-left text-xs border-collapse">' +
             '<thead class="sticky top-0 bg-slate-100 text-slate-700 font-bold border-b z-10">' +
               '<tr>' +
-                '<th class="p-2 text-center w-8">' +
-                  '<input type="checkbox" id="settleSelectAllCb" onchange="toggleSelectAllSettle(this.checked)" checked class="w-4 h-4 accent-green-600 cursor-pointer">' +
-                '</th>' +
+                '<th class="p-2 text-center w-8"><input type="checkbox" id="settleSelectAllCb" onchange="toggleSelectAllSettle(this.checked)" checked class="w-4 h-4 accent-green-600 cursor-pointer"></th>' +
                 '<th class="p-2 text-[10px] text-center w-20">កាលបរិច្ឆេទ</th>' +
                 '<th class="p-2">មុខទំនិញ</th>' +
                 '<th class="p-2 text-center">ចំនួន</th>' +
@@ -173,13 +168,8 @@ async function renderSettlementModule() {
             '<tbody id="settleItemsTableBody"></tbody>' +
           '</table>' +
         '</div>' +
-
-        // ប្រអប់សង្ខេបបំណុល
         '<div class="p-3 bg-orange-50 rounded-2xl border border-orange-200 text-xs space-y-1 text-orange-950 font-bold shadow-2xs">' +
-          '<div class="flex justify-between">' +
-            '<span>សរុបទំនិញដែលបានធីក (+)៖</span>' +
-            '<b id="settleSelectedSubtotal" class="text-xs text-blue-900">0 ៛</b>' +
-          '</div>' +
+          '<div class="flex justify-between"><span>សរុបទំនិញដែលបានធីក (+)៖</span><b id="settleSelectedSubtotal" class="text-xs text-blue-900">0 ៛</b></div>' +
           '<div id="settleOldDebtRow" class="flex justify-between items-center border-t border-orange-200 pt-1">' +
             '<label class="flex items-center gap-1.5 cursor-pointer select-none">' +
               '<input type="checkbox" id="cbIncludeOldDebt" onchange="recalcSettlementCalculation()" checked class="w-4 h-4 accent-orange-600 cursor-pointer">' +
@@ -188,69 +178,47 @@ async function renderSettlementModule() {
             '<b id="settleOldDebtVal" class="text-orange-700">0 ៛</b>' +
           '</div>' +
           '<div class="flex justify-between text-xs sm:text-sm font-black text-orange-950 border-t border-orange-300 pt-1 mt-0.5">' +
-            '<span>សរុបត្រូវបង់លើកនេះ (=)៖</span>' +
-            '<span id="settleTotalDueText" class="text-sm sm:text-base text-orange-800 font-black">0 ៛</span>' +
+            '<span>សរុបត្រូវបង់លើកនេះ (=)៖</span><span id="settleTotalDueText" class="text-sm sm:text-base text-orange-800 font-black">0 ៛</span>' +
           '</div>' +
         '</div>' +
-
-        // 🧠 វិធីបង់ប្រាក់
         '<div class="bg-blue-50/70 p-3 rounded-2xl border border-blue-200 space-y-2">' +
           '<div class="flex justify-between items-center">' +
             '<label class="text-[10px] font-bold text-blue-900 uppercase">វិធីទូទាត់ប្រាក់ជាក់ស្តែង</label>' +
             '<button type="button" onclick="fillExactSettlementPay()" class="px-2.5 py-0.5 bg-white text-blue-700 text-xs font-extrabold rounded-lg border border-blue-300 shadow-2xs active:scale-95 transition">លុយគ្រប់</button>' +
           '</div>' +
-
           '<div class="grid grid-cols-3 gap-1 p-1 bg-white rounded-xl border">' +
             '<button type="button" id="btnSettleCash" onclick="setSettlePayMode(\'Cash\')" class="py-1.5 rounded-lg text-xs font-bold bg-green-700 text-white shadow"><i class="fas fa-money-bill-wave mr-1"></i> លុយសុទ្ធ</button>' +
             '<button type="button" id="btnSettleAba" onclick="setSettlePayMode(\'ABA\')" class="py-1.5 rounded-lg text-xs font-bold bg-gray-100 text-gray-600 hover:bg-gray-200"><i class="fas fa-qrcode mr-1"></i> ស្កេន ABA</button>' +
             '<button type="button" id="btnSettleSplit" onclick="setSettlePayMode(\'Split\')" class="py-1.5 rounded-lg text-xs font-bold bg-gray-100 text-gray-600 hover:bg-gray-200"><i class="fas fa-layer-group mr-1"></i> ចម្រុះ</button>' +
           '</div>' +
-
           '<div id="settleSingleInputArea" class="space-y-0.5">' +
             '<label class="text-[9.5px] font-bold text-gray-500 uppercase">ប្រាក់បានបង់ជាក់ស្តែង (៛)</label>' +
             '<input type="number" id="settlePaidInput" oninput="calcSettleChange()" placeholder="0" class="w-full text-center text-base sm:text-lg font-black text-blue-900 bg-white border-2 border-blue-200 focus:border-blue-600 rounded-xl p-1.5 outline-none">' +
           '</div>' +
-
           '<div id="settleSplitInputArea" class="hidden space-y-1.5 bg-white p-2.5 rounded-2xl border border-blue-200 shadow-2xs">' +
             '<div class="text-[10px] font-black text-blue-900 uppercase flex items-center justify-between">' +
               '<span><i class="fas fa-layer-group text-blue-600 mr-1"></i> បែងចែកចម្រុះ (៛)៖</span>' +
               '<span class="text-[9px] text-blue-600 font-bold bg-blue-50 px-1.5 py-0.2 rounded">🧠 Auto-Balance</span>' +
             '</div>' +
             '<div class="grid grid-cols-2 gap-1.5">' +
-              '<div>' +
-                '<label class="text-[9px] font-bold text-gray-600 block mb-0.5">💵 លុយសុទ្ធ (៛)</label>' +
-                '<input type="number" id="splitKhrCash" oninput="onSplitCashInput(this.value)" placeholder="0" class="w-full text-center font-black text-xs p-1.5 bg-gray-50 focus:bg-white rounded-xl border-2 border-gray-300 focus:border-green-600 outline-none">' +
-              '</div>' +
-              '<div>' +
-                '<label class="text-[9px] font-black text-blue-700 block mb-0.5">📱 ស្កេន ABA (៛)</label>' +
-                '<input type="number" id="splitKhrScan" oninput="onSplitScanInput(this.value)" placeholder="0" class="w-full text-center font-black text-xs p-1.5 bg-white rounded-xl border-2 border-blue-400 text-blue-900 outline-none">' +
-              '</div>' +
+              '<div><label class="text-[9px] font-bold text-gray-600 block mb-0.5">💵 លុយសុទ្ធ (៛)</label><input type="number" id="splitKhrCash" oninput="onSplitCashInput(this.value)" placeholder="0" class="w-full text-center font-black text-xs p-1.5 bg-gray-50 focus:bg-white rounded-xl border-2 border-gray-300 focus:border-green-600 outline-none"></div>' +
+              '<div><label class="text-[9px] font-black text-blue-700 block mb-0.5">📱 ស្កេន ABA (៛)</label><input type="number" id="splitKhrScan" oninput="onSplitScanInput(this.value)" placeholder="0" class="w-full text-center font-black text-xs p-1.5 bg-white rounded-xl border-2 border-blue-400 text-blue-900 outline-none"></div>' +
             '</div>' +
-            '<button type="button" onclick="openSplitAbaQrModal()" class="w-full py-1 bg-gradient-to-r from-red-600 to-pink-600 hover:opacity-95 text-white font-bold text-xs rounded-lg shadow-2xs flex items-center justify-center gap-1 active:scale-95 transition">' +
-              '<i class="fas fa-qrcode text-[10px]"></i> 📱 ស្កេន ៛ <span id="splitAbaAmountLabel">0</span>' +
-            '</button>' +
+            '<button type="button" onclick="openSplitAbaQrModal()" class="w-full py-1 bg-gradient-to-r from-red-600 to-pink-600 hover:opacity-95 text-white font-bold text-xs rounded-lg shadow-2xs flex items-center justify-center gap-1 active:scale-95 transition"><i class="fas fa-qrcode text-[10px]"></i> 📱 ស្កេន ៛ <span id="splitAbaAmountLabel">0</span></button>' +
           '</div>' +
-
           '<div class="flex gap-1 pt-0.5 text-xs">' +
             '<button type="button" onclick="setQuickCashBill(10000)" class="flex-1 py-1 bg-white hover:bg-green-50 text-gray-800 font-black rounded-lg border shadow-2xs active:scale-95 transition">10k</button>' +
             '<button type="button" onclick="setQuickCashBill(20000)" class="flex-1 py-1 bg-white hover:bg-green-50 text-gray-800 font-black rounded-lg border shadow-2xs active:scale-95 transition">20k</button>' +
             '<button type="button" onclick="setQuickCashBill(50000)" class="flex-1 py-1 bg-white hover:bg-green-50 text-gray-800 font-black rounded-lg border shadow-2xs active:scale-95 transition">50k</button>' +
             '<button type="button" onclick="setQuickCashBill(100000)" class="flex-1 py-1 bg-white hover:bg-green-50 text-gray-800 font-black rounded-lg border shadow-2xs active:scale-95 transition">100k</button>' +
           '</div>' +
-
           '<div id="settleChangeArea" class="rounded-xl transition-all duration-200 hidden"></div>' +
         '</div>' +
-
       '</div>' +
-
-      // ប៊ូតុងក្រោមបង្អស់
       '<div class="grid grid-cols-3 gap-2 pt-1 border-t">' +
         '<button type="button" onclick="closeSettlementModal()" class="col-span-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-2xl text-xs active:scale-95 transition">បិទ</button>' +
-        '<button type="button" onclick="submitSettlementPayment()" id="btnSubmitSettlement" class="col-span-2 btn-green shadow-xl py-3 text-xs sm:text-sm font-black flex items-center justify-center gap-2 active:scale-95 transition">' +
-          '<i class="fas fa-file-invoice-dollar text-base"></i> ទូទាត់ & ចេញវិក្កយបត្រ' +
-        '</button>' +
+        '<button type="button" onclick="submitSettlementPayment()" id="btnSubmitSettlement" class="col-span-2 btn-green shadow-xl py-3 text-xs sm:text-sm font-black flex items-center justify-center gap-2 active:scale-95 transition"><i class="fas fa-file-invoice-dollar text-base"></i> ទូទាត់ & ចេញវិក្កយបត្រ</button>' +
       '</div>' +
-
     '</div>' +
   '</div>';
 
@@ -410,7 +378,7 @@ async function fetchSettlementOverviewData() {
   }
 }
 // ==========================================
-// 🔔 ៤. ឆែកមើលសំណើទូទាត់រង់ចាំពីម៉ូយ (PENDING APPROVAL)
+// 🔔 ៤. ឆែកមើលសំណើទូទាត់រង់ចាំពីម៉ូយ (កាតស្តង់ដារ មិនបែកអក្សរលើទូរស័ព្ទ ១០០%)
 // ==========================================
 async function checkAdminPendingPayments() {
   var banner = document.getElementById('pendingPaymentsBanner');
@@ -435,25 +403,56 @@ async function checkAdminPendingPayments() {
 
     var html = '';
     list.forEach(function(item) {
-      var dateStr = new Date(item.created_at).toLocaleString('km-KH', { dateStyle: 'short', timeStyle: 'short' });
+      var dateStr = new Date(item.created_at).toLocaleString('km-KH', { 
+        timeZone: 'Asia/Phnom_Penh',
+        dateStyle: 'short', 
+        timeStyle: 'short' 
+      });
       var safeName = String(item.customer_name || '').replace(/'/g, "\\'");
 
-      html += '<div class="bg-white p-3 rounded-2xl border border-yellow-300 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2.5">' +
-        '<div class="space-y-1">' +
-          '<div class="flex items-center gap-2">' +
-            '<b class="text-xs sm:text-sm text-gray-900"><i class="fas fa-user-circle text-yellow-600 mr-1"></i>' + item.customer_name + '</b>' +
-            '<span class="px-2 py-0.5 bg-yellow-100 text-yellow-800 rounded-full font-bold text-[10px]">' + item.method + '</span>' +
-            '<small class="text-[10px] text-gray-400">' + dateStr + '</small>' +
+      // បង្រួម Badge វិធីបង់ប្រាក់ឱ្យខ្លីស្អាត មិនធ្លាក់ជា ២-៣ ជួរ
+      var rawMethod = String(item.method || '');
+      var methodBadge = '';
+      if (rawMethod.includes('CASH') || rawMethod.includes('លុយសុទ្ធ')) {
+        methodBadge = '<span class="px-2.5 py-0.5 bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-full font-black text-[10px] whitespace-nowrap">💵 លុយសុទ្ធ</span>';
+      } else if (rawMethod.includes('ABA') || rawMethod.includes('ស្កេន')) {
+        methodBadge = '<span class="px-2.5 py-0.5 bg-blue-100 text-blue-900 border border-blue-300 rounded-full font-black text-[10px] whitespace-nowrap">📱 ស្កេន ABA</span>';
+      } else {
+        methodBadge = '<span class="px-2.5 py-0.5 bg-amber-100 text-amber-900 border border-amber-300 rounded-full font-black text-[10px] whitespace-nowrap">🔀 ចម្រុះ</span>';
+      }
+
+      // 🎨 កាតរចនាបថទំនើប មិនកាត់ឈ្មោះ «លីគីម ស្រេង» និងមិនធ្លាក់អក្សរ
+      html += '<div class="bg-white p-3 sm:p-3.5 rounded-2xl border-2 border-amber-300 shadow-sm space-y-2.5">' +
+        // ជួរទី ១៖ ឈ្មោះពេញរបស់ម៉ូយ & ម៉ោងស្នើសុំ
+        '<div class="flex justify-between items-center gap-2 border-b border-slate-100 pb-2">' +
+          '<div class="flex items-center gap-2 min-w-0 flex-1">' +
+            '<div class="w-7 h-7 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center text-xs shrink-0">' +
+              '<i class="fas fa-user-circle"></i>' +
+            '</div>' +
+            '<b class="text-xs sm:text-sm font-black text-slate-900 truncate">' + item.customer_name + '</b>' +
           '</div>' +
-          '<div class="text-xs font-black text-green-700">៛ ' + Number(item.khr_total || 0).toLocaleString() + '</div>' +
-          (item.ref_code ? '<div class="text-[10px] text-gray-500 font-bold">Ref: <code>' + item.ref_code + '</code></div>' : '') +
+          '<span class="text-[10px] text-slate-400 font-mono shrink-0 whitespace-nowrap">' + dateStr + '</span>' +
         '</div>' +
-        '<div class="flex items-center gap-1.5 self-end sm:self-auto">' +
-          '<button onclick="applyPendingPaymentToSettlement(\'' + item.id + '\', \'' + safeName + '\', ' + (item.khr_total || 0) + ', \'' + (item.method || '') + '\')" class="px-3.5 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl text-xs font-black shadow active:scale-95 transition flex items-center gap-1 whitespace-nowrap">' +
-            '<i class="fas fa-hand-holding-dollar"></i> យកមកទូទាត់' +
+
+        // ជួរទី ២៖ ទឹកប្រាក់ស្នើសុំ & វិធីទូទាត់
+        '<div class="flex justify-between items-center text-xs px-0.5">' +
+          '<div>' +
+            '<span class="text-[9.5px] text-slate-400 font-bold uppercase block">ទឹកប្រាក់សុំទូទាត់</span>' +
+            '<b class="text-sm sm:text-base font-black text-emerald-700">៛ ' + Number(item.khr_total || 0).toLocaleString() + '</b>' +
+          '</div>' +
+          '<div class="text-right">' +
+            methodBadge +
+            (item.ref_code ? '<span class="text-[9.5px] text-slate-500 font-mono block mt-0.5">Ref: ' + item.ref_code + '</span>' : '') +
+          '</div>' +
+        '</div>' +
+
+        // ជួរទី ៣៖ ប៊ូតុង «យកមកទូទាត់» និងប៊ូតុង «បដិសេធ»
+        '<div class="flex items-center gap-2 pt-1 border-t border-slate-100">' +
+          '<button type="button" onclick="applyPendingPaymentToSettlement(\'' + item.id + '\', \'' + safeName + '\', ' + (item.khr_total || 0) + ', \'' + (item.method || '') + '\')" class="flex-1 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-xs flex items-center justify-center gap-1.5 active:scale-95 transition whitespace-nowrap">' +
+            '<i class="fas fa-hand-holding-dollar text-xs"></i> យកមកទូទាត់' +
           '</button>' +
-          '<button onclick="dismissPendingCard(\'' + item.id + '\')" title="បដិសេធ" class="p-2 bg-gray-100 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-xl text-xs active:scale-90 transition">' +
-            '<i class="fas fa-times text-sm"></i>' +
+          '<button type="button" onclick="dismissPendingCard(\'' + item.id + '\')" title="បដិសេធសំណើ" class="px-3 py-2 bg-slate-100 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-xl text-xs font-bold border border-slate-200 active:scale-90 transition shrink-0">' +
+            '<i class="fas fa-xmark text-sm"></i>' +
           '</button>' +
         '</div>' +
       '</div>';
@@ -462,6 +461,7 @@ async function checkAdminPendingPayments() {
     container.innerHTML = html;
   } catch(e) {}
 }
+
 
 // ==========================================
 // ❌ មុខងារបិទផ្ទាំង POP-UP គិតលុយ (SETTLEMENT MODAL)
