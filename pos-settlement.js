@@ -581,24 +581,38 @@ async function loadSettlementDebtorsList() {
 }
 
 // ==========================================
-// 🔍 ៦. ជ្រើសរើសម៉ូយ & ទាញជើងទឹកជំពាក់ជាក់ស្តែង (កែសម្រួល Colspan & Reset ត្រឹមត្រូវ)
+// ❌ មុខងារបិទផ្ទាំង POP-UP គិតលុយ (SETTLEMENT MODAL)
+// ==========================================
+function closeSettlementModal() {
+  var modal = document.getElementById('settlementActionModal');
+  if (modal) modal.classList.add('hidden');
+  var quickSel = document.getElementById('set_c_quick');
+  if (quickSel) quickSel.value = "";
+  currentSettlementCustomer = "";
+  currentSettlementItems = [];
+  currentActivePendingPaymentId = null;
+}
+
+// ==========================================
+// 🔍 ៦. ជ្រើសរើសម៉ូយ & បើកផ្ទាំង POP-UP គិតលុយ (ចំកណ្តាលអេក្រង់ភ្លាមៗ)
 // ==========================================
 async function selectCustomerForSettlement(custName) {
-  var ui = document.getElementById('settlement_ui');
+  var modal = document.getElementById('settlementActionModal');
+  var nameLabel = document.getElementById('settleModalCustName');
   if (!custName) {
-    if (ui) ui.classList.add('hidden');
-    currentSettlementOldDebt = 0;
-    currentActivePendingPaymentId = null; // សម្អាត ID សំណើចាស់កុំឱ្យច្រឡំ
+    closeSettlementModal();
     return;
   }
 
   currentSettlementCustomer = custName;
+  if (nameLabel) nameLabel.innerText = custName;
 
-  var sel = document.getElementById('set_c');
-  if (sel) sel.value = custName;
+  var quickSel = document.getElementById('set_c_quick');
+  if (quickSel) quickSel.value = custName;
 
-  if (ui) {
-    ui.classList.remove('hidden');
+  // 🌟 បើកផ្ទាំង Pop-up គិតលុយចំកណ្តាលអេក្រង់ភ្លាមៗ (មិនធ្លាក់ចុះវែងឡើយ)
+  if (modal) {
+    modal.classList.remove('hidden');
   }
 
   var tbody = document.getElementById('settleItemsTableBody');
@@ -674,9 +688,6 @@ async function selectCustomerForSettlement(custName) {
 
     recalcSettlementCalculation();
     fillExactSettlementPay();
-
-    var card = document.getElementById('settlement_card');
-    if (card) card.scrollIntoView({ behavior: 'smooth' });
 
   } catch(err) {
     if (tbody) {
@@ -1002,8 +1013,8 @@ async function submitSettlementPayment() {
     });
 
     // ៧. Refresh ផ្ទាំង Settlement ឡើងវិញ
-    var settleUi = document.getElementById('settlement_ui');
-    if (settleUi) settleUi.classList.add('hidden');
+    
+    closeSettlementModal();
     checkAdminPendingPayments();
     fetchSettlementOverviewData();
     await loadSettlementDebtorsList();
