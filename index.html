@@ -2091,6 +2091,35 @@ function filterCatalog(cat, btn) {
       activeModalProduct = null;
     }
 
+    // ==========================================================================
+// 🔔 មុខងារ TOAST ជូនដំណឹងលើ WEB STORE (ស្អាត រលូន មិនគាំង TELEGRAM)
+// ==========================================================================
+function showStoreToast(msg, type) {
+  var existing = document.getElementById('storeLiveToast');
+  if (existing) existing.remove();
+
+  var isError = (type === 'error' || type === 'warning');
+  var bgColor = isError ? 'bg-amber-600 text-white border-amber-400' : 'bg-slate-900 text-white border-emerald-500';
+  var icon = isError ? '<i class="fas fa-triangle-exclamation text-yellow-300 mr-2 text-sm"></i>' : '<i class="fas fa-circle-check text-emerald-400 mr-2 text-sm"></i>';
+
+  var toastHtml = '<div id="storeLiveToast" class="fixed top-5 left-1/2 transform -translate-x-1/2 z-[9999] max-w-xs w-full px-4 animate-in slide-in-from-top duration-300 pointer-events-none">' +
+    '<div class="' + bgColor + ' p-3 rounded-2xl shadow-2xl border-2 flex items-center justify-center text-center text-xs font-black">' +
+      icon + '<span>' + msg + '</span>' +
+    '</div>' +
+  '</div>';
+
+  document.body.insertAdjacentHTML('beforeend', toastHtml);
+
+  setTimeout(function() {
+    var t = document.getElementById('storeLiveToast');
+    if (t) {
+      t.style.opacity = '0';
+      t.style.transition = 'opacity 0.4s ease';
+      setTimeout(function() { if (t) t.remove(); }, 400);
+    }
+  }, 2500);
+}
+
     // ➕➖ ១. មុខងារទប់ស្កាត់កុំឱ្យចុចលើសស្តុក (ប្រើ Toast ជំនួស alert)
 function adjustDetailQty(delta) {
   var display = document.getElementById('modalQtyDisplay');
