@@ -28,7 +28,7 @@ function playPaymentSuccessAudio() {
 }
 
 // ==========================================================================
-// 💳 ១. ផ្ទាំងទូទាត់លុយ SETTLEMENT (DROPDOWN ស្តង់ដារ មិនធ្លាក់ហួសកាតលើទូរស័ព្ទ)
+// 💳 ១. ផ្ទាំងទូទាត់លុយ SETTLEMENT (DROPDOWN ពេញទំហំស្អាត គ្មានប៊ូតុងស្ទួន)
 // ==========================================================================
 async function renderSettlementModule() {
   var area = document.getElementById('contentArea');
@@ -48,30 +48,23 @@ async function renderSettlementModule() {
     }
   });
 
-  // 🖥️ ទំព័រដើមរចនាបថស្តង់ដារ មិនធ្លាក់ហួសកាតលើទូរស័ព្ទដៃ
+  // 🖥️ ទំព័រដើមរចនាបថស្តង់ដារ (លុបប៊ូតុងស្ទួន ទុកតែប៊ូតុង Navbar ខាងលើ)
   area.innerHTML = '<div class="w-full max-w-[1600px] mx-auto space-y-3 px-1 sm:px-2">' +
     
-    // របារក្បាលទំព័រ (Responsive ១០០% ស្រួលចុចលើទូរស័ព្ទ)
+    // របារក្បាលទំព័រ (Dropdown ពេញទំហំស្អាត មិនដាច់អក្សរ)
     '<div class="bg-white p-3.5 sm:p-4 rounded-3xl border shadow-sm space-y-2.5">' +
-      '<div class="flex justify-between items-center">' +
-        '<div>' +
-          '<h2 class="text-sm sm:text-base font-black text-blue-900 flex items-center gap-1.5">' +
-            '<i class="fas fa-calculator text-blue-600"></i>ប្រព័ន្ធទូទាត់ប្រាក់ (Smart Settlement)' +
-          '</h2>' +
-          '<p class="text-[10px] sm:text-[11px] text-gray-500 font-bold mt-0.5">ជ្រើសរើសម៉ូយ ឬចុច «ទូទាត់» ដើម្បីចេញវិក្កយបត្រ</p>' +
-        '</div>' +
+      '<div>' +
+        '<h2 class="text-sm sm:text-base font-black text-blue-900 flex items-center gap-1.5">' +
+          '<i class="fas fa-calculator text-blue-600"></i>ប្រព័ន្ធទូទាត់ប្រាក់ (Smart Settlement)' +
+        '</h2>' +
+        '<p class="text-[10px] sm:text-[11px] text-gray-500 font-bold mt-0.5">ជ្រើសរើសម៉ូយខាងក្រោម ឬចុចប៊ូតុង «ទូទាត់» ដើម្បីចេញវិក្កយបត្រ</p>' +
       '</div>' +
 
-      // របារ Dropdown និងប៊ូតុង Refresh (រត់ស្មើជួរដេកស្អាត មិនបែក មិនធ្លាក់ហួសកាត)
-      '<div class="flex items-center gap-2 w-full">' +
-        '<div class="flex-1 min-w-0">' +
-          '<select id="set_c_quick" onchange="selectCustomerForSettlement(this.value)" class="w-full border-2 border-blue-300 focus:border-blue-600 font-bold text-blue-950 rounded-xl p-2.5 bg-blue-50/40 outline-none text-xs truncate shadow-2xs">' +
-            custOptions +
-          '</select>' +
-        '</div>' +
-        '<button type="button" onclick="renderSettlementModule()" class="px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold border border-slate-200 active:scale-95 transition flex items-center gap-1 shrink-0 shadow-2xs" title="Refresh">' +
-          '<i class="fas fa-sync-alt"></i><span class="hidden sm:inline">Refresh</span>' +
-        '</button>' +
+      // 🌟 Dropdown ពេញទំហំកាត ១០០% ស្រួលចុច មិនកាត់អក្សរ គ្មានប៊ូតុងស្ទួននាំទើស
+      '<div class="w-full">' +
+        '<select id="set_c_quick" onchange="selectCustomerForSettlement(this.value)" class="w-full border-2 border-blue-300 focus:border-blue-600 font-black text-blue-950 rounded-2xl p-3 bg-blue-50/40 outline-none text-xs sm:text-sm shadow-xs">' +
+          custOptions +
+        '</select>' +
       '</div>' +
     '</div>' +
 
