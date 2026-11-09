@@ -618,22 +618,32 @@ function closeOnlineOrdersModal() {
 }
 
 // ==========================================================================
-// 🛵 ១. មុខងារចាត់ចែងអ្នកដឹកជញ្ជូនរោងចក្រ (បង្ហាញតែអ្នកដឹកពិតប្រាកដ & មាន kcAlert ព្រមាន)
+// 🛵 មុខងារចាត់ចែងអ្នកដឹកជញ្ជូនរោងចក្រ (ចាក់សោរសម្រាប់តែ Admin ១០០%)
 // ==========================================================================
 async function assignDriverToOnlineOrder(orderId, custName) {
+  // 🔒 ១. ចាក់សោរសិទ្ធិ៖ មានតែ Admin ប៉ុណ្ណោះដែលអាចចាត់ចែងអ្នកដឹកបាន
+  if (!currentUser || currentUser.role !== 'Admin') {
+    if (typeof kcAlert === 'function') {
+      await kcAlert({
+        title: "គ្មានសិទ្ធិចាត់ចែង!",
+        message: "មានតែ Admin ប៉ុណ្ណោះដែលអាចចាត់ចែងការងារដឹកជញ្ជូនបាន!",
+        type: "danger"
+      });
+    } else {
+      showToast("មានតែ Admin ប៉ុណ្ណោះដែលអាចចាត់ចែងបាន!", "error");
+    }
+    return;
+  }
+
   var sel = document.getElementById('driver_sel_' + orderId);
   var driverName = sel ? sel.value.trim() : "";
   
   if (!driverName) {
-    if (typeof kcAlert === 'function') {
-      await kcAlert({
-        title: "មិនទាន់រើសអ្នកដឹក",
-        message: "សូមជ្រើសរើសឈ្មោះអ្នកដឹកជញ្ជូនរោងចក្រជាមុនសិន!",
-        type: "warning"
-      });
-    } else {
-      showToast("សូមជ្រើសរើសឈ្មោះអ្នកដឹកជញ្ជូន!", "error");
-    }
+    await kcAlert({
+      title: "មិនទាន់រើសអ្នកដឹក",
+      message: "សូមជ្រើសរើសឈ្មោះអ្នកដឹកជញ្ជូនរោងចក្រជាមុនសិន!",
+      type: "warning"
+    });
     if (sel) sel.focus();
     return;
   }
@@ -642,26 +652,30 @@ async function assignDriverToOnlineOrder(orderId, custName) {
   var driverPhone = selectedOpt ? selectedOpt.getAttribute('data-phone') : '';
 
   try {
-    // ១. ទាញព័ត៌មានកុម្ម៉ង់ចាស់មកឆែកជាមុនសិន
-    const { data: orderInfo } = await supabaseClient
+    // ២. ទាញព័ត៌មានកុម្ម៉ង់ចាស់មកឆែកមើល
+    const { data: orderInfo, error: fetchErr } = await supabaseClient
       .from('orders')
       .select('*')
       .eq('order_id', orderId)
       .maybeSingle();
 
-    // ⚠️ បើការកុម្ម៉ង់នេះបានចាត់ចែងឱ្យអ្នកដឹកផ្សេងរួចហើយ ចេញផ្ទាំង kcConfirm សួរ Admin សិន!
-    if (orderInfo && orderInfo.driver_name && orderInfo.driver_name.trim() !== "" && orderInfo.driver_name.trim() !== driverName) {
+    if (fetchErr || !orderInfo) {
+      throw new Error("រកមិនឃើញទិន្នន័យនៃការកុម្ម៉ង់នេះក្នុងប្រព័ន្ធឡើយ!");
+    }
+
+    // ⚠️ ៣. ប្រសិនបើធ្លាប់ចាត់ចែងឱ្យអ្នកដឹកផ្សេងរួចហើយ ចេញផ្ទាំងសួរ Admin សិន
+    if (orderInfo.driver_name && orderInfo.driver_name.trim() !== "" && orderInfo.driver_name.trim() !== driverName) {
       var okChange = await kcConfirm({
         title: "ប្តូរអ្នកដឹកជញ្ជូន",
-        message: "ការកុម្ម៉ង់នេះបានចាត់ចែងឱ្យ [" + orderInfo.driver_name + "] រួចហើយ! តើអ្នកពិតជាចង់ដកចេញ ឬប្តូរទៅឱ្យ [" + driverName + "] វិញមែនទេ?",
+        message: "ការកុម្ម៉ង់នេះបានចាត់ចែងឱ្យ [" + orderInfo.driver_name + "] រួចហើយ! តើអ្នកពិតជាចង់ប្តូរទៅឱ្យ [" + driverName + "] វិញមែនទេ?",
         type: "warning",
         confirmText: "យល់ព្រមប្តូរអ្នកដឹក"
       });
       if (!okChange) return;
     }
 
-    // ២. Update ទៅក្នុង Supabase
-    const { error } = await supabaseClient
+    // ៤. ធ្វើបច្ចុប្បន្នភាពទៅក្នុង Supabase (គាំទ្រទាំង PROD & TEST តាម active client)
+    const { error: updErr } = await supabaseClient
       .from('orders')
       .update({
         status: 'Assigned',
@@ -670,28 +684,24 @@ async function assignDriverToOnlineOrder(orderId, custName) {
       })
       .eq('order_id', orderId);
 
-    if (error) throw error;
+    if (updErr) throw updErr;
 
-    if (typeof kcAlert === 'function') {
-      await kcAlert({
-        title: "ចាត់ចែងជោគជ័យ! 🎉",
-        message: "ការកុម្ម៉ង់លេខកូដ [" + orderId + "] ត្រូវបានចាត់ចែងទៅឱ្យអ្នកដឹក [" + driverName + "] រួចរាល់!",
-        type: "success"
-      });
-    } else {
-      showToast("បានចាត់ចែងទៅឱ្យ " + driverName + " ជោគជ័យ!", "success");
-    }
+    await kcAlert({
+      title: "ចាត់ចែងជោគជ័យ! 🎉",
+      message: "ការកុម្ម៉ង់លេខកូដ [" + orderId + "] ត្រូវបានចាត់ចែងទៅឱ្យអ្នកដឹក [" + driverName + "] រួចរាល់!",
+      type: "success"
+    });
 
     openOnlineOrdersModal();
 
-    // 🔔 ដំណឹង Telegram ផ្ញើទៅកាន់ Group អ្នកដឹកជញ្ជូន (Kc បេសកកម្មរបស់ខ្ញុំ)
+    // 🔔 ៥. ផ្ញើសារដំណឹងទៅ Telegram Group អ្នកដឹកជញ្ជូន
     try {
-      var phoneText = orderInfo && orderInfo.phone ? orderInfo.phone : '-';
-      var itemsText = orderInfo && orderInfo.items ? orderInfo.items : '-';
-      var totalText = orderInfo && orderInfo.total ? Number(orderInfo.total).toLocaleString() : '0';
-      var payText = orderInfo && orderInfo.payment_method ? orderInfo.payment_method : 'COD (លុយសុទ្ធ)';
-      var barrelText = orderInfo && orderInfo.barrel_swap ? orderInfo.barrel_swap : 'មានសំបកដូរ';
-      var rawLocation = orderInfo ? (orderInfo.location_url || orderInfo.address || '') : '';
+      var phoneText = orderInfo.phone ? orderInfo.phone : '-';
+      var itemsText = orderInfo.items ? orderInfo.items : '-';
+      var totalText = orderInfo.total ? Number(orderInfo.total).toLocaleString() : '0';
+      var payText = orderInfo.payment_method ? orderInfo.payment_method : 'COD (លុយសុទ្ធ)';
+      var barrelText = orderInfo.barrel_swap ? orderInfo.barrel_swap : 'មានសំបកដូរ';
+      var rawLocation = orderInfo.location_url || orderInfo.address || '';
 
       var mapLine = '';
       if (rawLocation) {
@@ -705,7 +715,7 @@ async function assignDriverToOnlineOrder(orderId, custName) {
         }
       }
 
-      var tgHeader = (orderInfo && orderInfo.driver_name && orderInfo.driver_name !== driverName) ? 
+      var tgHeader = (orderInfo.driver_name && orderInfo.driver_name !== driverName) ? 
         "⚠️ <b>[KC WATER - Admin បានប្តូរអ្នកដឹកជញ្ជូនថ្មី]</b>" : 
         "🛵 <b>[KC WATER - បេសកកម្មដឹកទឹកថ្មី]</b>";
 
@@ -725,7 +735,7 @@ async function assignDriverToOnlineOrder(orderId, custName) {
                   "🛢️ <b>ការដូរសំបកធុង៖</b> " + barrelText + "\n" +
                   "💰 <b>ទឹកប្រាក់ត្រូវប្រមូល៖</b> <b>៛ " + totalText + "</b> (" + payText + ")\n" +
                   mapLine +
-                  (orderInfo && orderInfo.address ? ("📝 <b>ចំណាំទីតាំង៖</b> " + orderInfo.address + "\n") : "") +
+                  (orderInfo.address ? ("📝 <b>ចំណាំទីតាំង៖</b> " + orderInfo.address + "\n") : "") +
                   "🕒 <b>ម៉ោងចាត់ចែង៖</b> " + timeKhNow;
 
       var targetChatId = (telegramConfig && telegramConfig.driverChatId) ? telegramConfig.driverChatId : ((telegramConfig && telegramConfig.chatId) ? telegramConfig.chatId : '');
@@ -735,11 +745,7 @@ async function assignDriverToOnlineOrder(orderId, custName) {
     } catch(tgErr) {}
     
   } catch(err) {
-    if (typeof kcAlert === 'function') {
-      await kcAlert({ title: "កំហុសចាត់ចែង", message: err.message, type: "danger" });
-    } else {
-      showToast("កំហុសចាត់ចែង៖ " + err.message, "error");
-    }
+    await kcAlert({ title: "កំហុសចាត់ចែង", message: err.message, type: "danger" });
   }
 }
 
