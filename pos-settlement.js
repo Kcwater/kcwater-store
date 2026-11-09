@@ -463,129 +463,15 @@ async function checkAdminPendingPayments() {
   } catch(e) {}
 }
 
-async function applyPendingPaymentToSettlement(pendingId, custName, amount, method) {
-  try {
-    // 🛡️ ១. ពិនិត្យមើលថាតើសំណើនេះត្រូវបាន Admin ផ្សេងទូទាត់រួចហើយឬនៅ
-    const { data: item } = await supabaseClient
-      .from('pending_payments')
-      .select('*')
-      .eq('id', pendingId)
-      .maybeSingle();
-
-    if (!item || item.status !== 'Pending') {
-      if (typeof kcAlert === 'function') {
-        await kcAlert({
-          title: "សំណើបានទូទាត់រួចហើយ!",
-          message: "សំណើបង់ប្រាក់របស់ [" + custName + "] នេះត្រូវបាន Admin ផ្សេងទូទាត់រួចរាល់ហើយ!",
-          type: "info"
-        });
-      } else {
-        showToast("សំណើនេះត្រូវបានទូទាត់រួចហើយ!", "info");
-      }
-      currentActivePendingPaymentId = null;
-      checkAdminPendingPayments();
-      return;
-    }
-
-    currentActivePendingPaymentId = pendingId;
-    await selectCustomerForSettlement(custName);
-
-    var kCash = parseFloat(item.khr_cash || 0);
-    var kScan = parseFloat(item.khr_scan || 0);
-
-    if (kCash > 0 && kScan > 0) {
-      setSettlePayMode('Split');
-      var cashInp = document.getElementById('splitKhrCash');
-      var scanInp = document.getElementById('splitKhrScan');
-      var abaLabel = document.getElementById('splitAbaAmountLabel');
-
-      if (cashInp) cashInp.value = kCash;
-      if (scanInp) scanInp.value = kScan;
-      if (abaLabel) abaLabel.innerText = kScan.toLocaleString();
-
-    } else if (method && method.indexOf('ABA') !== -1) {
-      setSettlePayMode('ABA');
-      if (document.getElementById('settlePaidInput')) {
-        document.getElementById('settlePaidInput').value = amount > 0 ? amount : "";
-      }
-    } else {
-      setSettlePayMode('Cash');
-      if (document.getElementById('settlePaidInput')) {
-        document.getElementById('settlePaidInput').value = amount > 0 ? amount : "";
-      }
-    }
-
-    calcSettleChange();
-
-    var card = document.getElementById('settlement_card');
-    if (card) card.scrollIntoView({ behavior: 'smooth' });
-
-    showToast("បានបញ្ចូលទិន្នន័យទូទាត់របស់ [" + custName + "] រួចរាល់!", "success");
-
-  } catch(e) {
-    showToast("កំហុសបញ្ចូលសំណើ៖ " + e.message, "error");
-  }
-}
-
-async function dismissPendingCard(pendingId) {
-  var ok = await kcConfirm({
-    title: "បដិសេធសំណើទូទាត់",
-    message: "តើអ្នកពិតជាចង់បដិសេធសំណើទូទាត់ប្រាក់នេះមែនទេ?",
-    type: "danger",
-    confirmText: "យល់ព្រមបដិសេធ"
-  });
-  if (!ok) return;
-
-  try {
-    await supabaseClient.from('pending_payments').update({ status: 'Cancelled' }).eq('id', pendingId);
-    showToast("បានបដិសេធសំណើជោគជ័យ!", "info");
-    checkAdminPendingPayments();
-  } catch(e) {}
-}
-
-// ==========================================
-// 📋 ៥. ស្រង់បញ្ជីឈ្មោះម៉ូយជំពាក់ពី SUPABASE
-// ==========================================
-async function loadSettlementDebtorsList() {
-  var badgesContainer = document.getElementById('settleDebtorsBadgesContainer');
-  if (!badgesContainer) return;
-
-  try {
-    const { data: unpaids } = await supabaseClient
-      .from('transactions')
-      .select('customer_name, total')
-      .eq('status', 'Unpaid');
-
-    if (!unpaids || unpaids.length === 0) {
-      badgesContainer.innerHTML = '<span class="text-green-600 font-bold text-xs"><i class="fas fa-check-circle mr-1"></i> អបអរសាទរ! គ្មានអតិថិជនណាជំពាក់ប្រាក់ឡើយ</span>';
-      return;
-    }
-
-    var custMap = {};
-    unpaids.forEach(function(u) {
-      var cName = (u.customer_name || "").trim();
-      if (cName && cName !== "Walk-in") {
-        custMap[cName] = (custMap[cName] || 0) + parseFloat(u.total || 0);
-      }
-    });
-
-    var html = '';
-    for (var name in custMap) {
-      html += '<button onclick="selectCustomerForSettlement(\'' + name.replace(/'/g, "\\'") + '\')" class="px-3.5 py-2 bg-white hover:bg-blue-50 text-blue-900 rounded-xl border border-blue-200 font-bold shadow-2xs active:scale-95 transition flex items-center gap-1.5">' +
-        '<i class="fas fa-user text-blue-600"></i> ' + name + ' <span class="text-[10px] bg-red-100 text-red-700 px-2 py-0.2 rounded-full font-black">៛ ' + custMap[name].toLocaleString() + '</span>' +
-      '</button>';
-    }
-
-    badgesContainer.innerHTML = html || '<span class="text-green-600 font-bold text-xs">គ្មានអតិថិជនជំពាក់ឡើយ</span>';
-  } catch(e) {}
-}
-
 // ==========================================
 // ❌ មុខងារបិទផ្ទាំង POP-UP គិតលុយ (SETTLEMENT MODAL)
 // ==========================================
 function closeSettlementModal() {
   var modal = document.getElementById('settlementActionModal');
-  if (modal) modal.classList.add('hidden');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.style.display = 'none';
+  }
   var quickSel = document.getElementById('set_c_quick');
   if (quickSel) quickSel.value = "";
   currentSettlementCustomer = "";
@@ -594,7 +480,7 @@ function closeSettlementModal() {
 }
 
 // ==========================================
-// 🔍 ៦. ជ្រើសរើសម៉ូយ & បើកផ្ទាំង POP-UP គិតលុយ (ចំកណ្តាលអេក្រង់ភ្លាមៗ)
+// 🔍 ៦. ជ្រើសរើសម៉ូយ & បើកផ្ទាំង POP-UP គិតលុយ (ចំកណ្តាលអេក្រង់ភ្លាមៗ ១០០%)
 // ==========================================
 async function selectCustomerForSettlement(custName) {
   var modal = document.getElementById('settlementActionModal');
@@ -610,9 +496,10 @@ async function selectCustomerForSettlement(custName) {
   var quickSel = document.getElementById('set_c_quick');
   if (quickSel) quickSel.value = custName;
 
-  // 🌟 បើកផ្ទាំង Pop-up គិតលុយចំកណ្តាលអេក្រង់ភ្លាមៗ (មិនធ្លាក់ចុះវែងឡើយ)
+  // 🌟 បង្ខំឱ្យបើកផ្ទាំង Pop-up គិតលុយចំកណ្តាលអេក្រង់ភ្លាមៗ
   if (modal) {
     modal.classList.remove('hidden');
+    modal.style.display = 'flex';
   }
 
   var tbody = document.getElementById('settleItemsTableBody');
@@ -695,6 +582,121 @@ async function selectCustomerForSettlement(custName) {
     }
   }
 }
+
+// ==========================================
+// 📥 មុខងារចុចលើប៊ូតុង «យកមកទូទាត់» (បើក POP-UP ភ្លាមៗ)
+// ==========================================
+async function applyPendingPaymentToSettlement(pendingId, custName, amount, method) {
+  try {
+    const { data: item } = await supabaseClient
+      .from('pending_payments')
+      .select('*')
+      .eq('id', pendingId)
+      .maybeSingle();
+
+    if (!item || item.status !== 'Pending') {
+      await kcAlert({
+        title: "សំណើបានទូទាត់រួចហើយ!",
+        message: "សំណើបង់ប្រាក់របស់ [" + custName + "] នេះត្រូវបាន Admin ផ្សេងទូទាត់រួចរាល់ហើយ!",
+        type: "info"
+      });
+      currentActivePendingPaymentId = null;
+      checkAdminPendingPayments();
+      return;
+    }
+
+    currentActivePendingPaymentId = pendingId;
+
+    // 🌟 ១. បើក Pop-up គិតលុយរបស់ម៉ូយម្នាក់នេះភ្លាមៗ
+    await selectCustomerForSettlement(custName);
+
+    // ២. បំពេញចំនួនទឹកប្រាក់ដែលគាត់បានផ្ញើមកអូតូ
+    var kCash = parseFloat(item.khr_cash || 0);
+    var kScan = parseFloat(item.khr_scan || 0);
+
+    if (kCash > 0 && kScan > 0) {
+      setSettlePayMode('Split');
+      var cashInp = document.getElementById('splitKhrCash');
+      var scanInp = document.getElementById('splitKhrScan');
+      var abaLabel = document.getElementById('splitAbaAmountLabel');
+
+      if (cashInp) cashInp.value = kCash;
+      if (scanInp) scanInp.value = kScan;
+      if (abaLabel) abaLabel.innerText = kScan.toLocaleString();
+
+    } else if (method && method.indexOf('ABA') !== -1) {
+      setSettlePayMode('ABA');
+      if (document.getElementById('settlePaidInput')) {
+        document.getElementById('settlePaidInput').value = amount > 0 ? amount : "";
+      }
+    } else {
+      setSettlePayMode('Cash');
+      if (document.getElementById('settlePaidInput')) {
+        document.getElementById('settlePaidInput').value = amount > 0 ? amount : "";
+      }
+    }
+
+    calcSettleChange();
+    showToast("បានបញ្ចូលទិន្នន័យទូទាត់របស់ [" + custName + "] រួចរាល់!", "success");
+
+  } catch(e) {
+    showToast("កំហុសបញ្ចូលសំណើ៖ " + e.message, "error");
+  }
+}
+
+async function dismissPendingCard(pendingId) {
+  var ok = await kcConfirm({
+    title: "បដិសេធសំណើទូទាត់",
+    message: "តើអ្នកពិតជាចង់បដិសេធសំណើទូទាត់ប្រាក់នេះមែនទេ?",
+    type: "danger",
+    confirmText: "យល់ព្រមបដិសេធ"
+  });
+  if (!ok) return;
+
+  try {
+    await supabaseClient.from('pending_payments').update({ status: 'Cancelled' }).eq('id', pendingId);
+    showToast("បានបដិសេធសំណើជោគជ័យ!", "info");
+    checkAdminPendingPayments();
+  } catch(e) {}
+}
+
+// ==========================================
+// 📋 ៥. ស្រង់បញ្ជីឈ្មោះម៉ូយជំពាក់ពី SUPABASE
+// ==========================================
+async function loadSettlementDebtorsList() {
+  var badgesContainer = document.getElementById('settleDebtorsBadgesContainer');
+  if (!badgesContainer) return;
+
+  try {
+    const { data: unpaids } = await supabaseClient
+      .from('transactions')
+      .select('customer_name, total')
+      .eq('status', 'Unpaid');
+
+    if (!unpaids || unpaids.length === 0) {
+      badgesContainer.innerHTML = '<span class="text-green-600 font-bold text-xs"><i class="fas fa-check-circle mr-1"></i> អបអរសាទរ! គ្មានអតិថិជនណាជំពាក់ប្រាក់ឡើយ</span>';
+      return;
+    }
+
+    var custMap = {};
+    unpaids.forEach(function(u) {
+      var cName = (u.customer_name || "").trim();
+      if (cName && cName !== "Walk-in") {
+        custMap[cName] = (custMap[cName] || 0) + parseFloat(u.total || 0);
+      }
+    });
+
+    var html = '';
+    for (var name in custMap) {
+      html += '<button onclick="selectCustomerForSettlement(\'' + name.replace(/'/g, "\\'") + '\')" class="px-3.5 py-2 bg-white hover:bg-blue-50 text-blue-900 rounded-xl border border-blue-200 font-bold shadow-2xs active:scale-95 transition flex items-center gap-1.5">' +
+        '<i class="fas fa-user text-blue-600"></i> ' + name + ' <span class="text-[10px] bg-red-100 text-red-700 px-2 py-0.2 rounded-full font-black">៛ ' + custMap[name].toLocaleString() + '</span>' +
+      '</button>';
+    }
+
+    badgesContainer.innerHTML = html || '<span class="text-green-600 font-bold text-xs">គ្មានអតិថិជនជំពាក់ឡើយ</span>';
+  } catch(e) {}
+}
+
 
 function toggleSelectAllSettle(isChecked) {
   document.querySelectorAll('.settle-item-cb').forEach(function(cb) { cb.checked = isChecked; });
