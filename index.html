@@ -3203,7 +3203,7 @@ async function checkActiveOrderLiveStatus() {
       }
     }
     
-    // ⚡ មុខងារកំណត់ Settings ហាង (ទាញយកពី Database និងស្គាល់រូប ABA QR ផ្ទាល់ខ្លួន)
+   // ⚡ មុខងារកំណត់ Settings ហាង (ទាញយកពី Database និងស្គាល់រូប ABA QR ផ្ទាល់ខ្លួន)
 async function loadStoreSettingsFromSupabase() {
   try {
     var sMap = window.__kcCachedSettingsMap;
@@ -3235,6 +3235,10 @@ async function loadStoreSettingsFromSupabase() {
       } catch(e) {}
     }
 
+    // 🔔 ៣. ទាញយក Telegram Bot Settings សម្រាប់ទទួលដំណឹងពេលភ្ញៀវ Cancel Order
+    if (sMap['Telegram_Token']) telegramSettings.token = sMap['Telegram_Token'].trim();
+    if (sMap['Telegram_ChatID']) telegramSettings.chatId = sMap['Telegram_ChatID'].trim();
+    if (sMap['Telegram_Alert_Status']) telegramSettings.status = sMap['Telegram_Alert_Status'].toUpperCase();
 
     // ៤. កំណត់ថ្លៃដឹកជញ្ជូន
     if (sMap['Delivery_Fee_Standard']) storeDeliveryConfig.standardFee = parseFloat(sMap['Delivery_Fee_Standard']) || 0;
