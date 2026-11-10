@@ -2761,10 +2761,87 @@ setInterval(function() {
 }, 1000);
 
 // ==========================================================================
-// 📂 បើកផ្ទាំងលក់រហ័ស (ចាក់សោរ ADMIN ONLY)
+// 📦 មុខងារបង្កើតផ្ទាំង POP-UP «លក់រហ័ស» (QUICK SALE MODAL MARKUP)
 // ==========================================================================
+var quickSaleSelectedProduct = null;
+var quickSaleQty = 1;
+var quickSalePayMethod = 'Cash';
+var isQuickSaleSubmittingLock = false;
+
+function injectQuickSaleModalMarkup() {
+  if (document.getElementById('quickSaleModal')) return;
+
+  var html = '<div id="quickSaleModal" class="fixed inset-0 z-[6500] flex items-center justify-center p-3 sm:p-4 hidden overflow-y-auto select-none">' +
+    '<div class="fixed inset-0 bg-slate-950/65 backdrop-blur-xs transition-opacity" onclick="closeQuickSaleModal()"></div>' +
+    '<div class="bg-white rounded-3xl shadow-2xl z-10 w-full max-w-sm p-4 sm:p-5 space-y-3 relative border border-slate-100 animate-in zoom-in-95 duration-200 my-auto text-left">' +
+      
+      // ក្បាលផ្ទាំង Pop-up
+      '<div class="flex justify-between items-center border-b pb-2">' +
+        '<div class="flex items-center gap-2">' +
+          '<div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center text-sm shadow-xs">' +
+            '<i class="fas fa-bolt text-yellow-300"></i>' +
+          '</div>' +
+          '<div>' +
+            '<h3 class="font-black text-slate-900 text-sm sm:text-base leading-none">លក់រហ័ស (Quick Walk-in)</h3>' +
+            '<p class="text-[10px] text-slate-500 font-bold mt-0.5">លក់នៅកន្លែងរហ័សត្រឹមតែ ១ វិនាទី</p>' +
+          '</div>' +
+        '</div>' +
+        '<button type="button" onclick="closeQuickSaleModal()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-400 hover:text-slate-700 text-lg font-bold flex items-center justify-center shadow-xs">&times;</button>' +
+      '</div>' +
+
+      // ១. បញ្ជីមុខទំនិញពេញនិយមលក់ដាច់បំផុត
+      '<div class="space-y-1.5">' +
+        '<label class="text-[10px] font-black text-slate-700 uppercase block">១. ជ្រើសរើសមុខទំនិញ *</label>' +
+        '<div id="quickSaleProductsGrid" class="grid grid-cols-2 gap-1.5 max-h-44 overflow-y-auto pr-0.5"></div>' +
+      '</div>' +
+
+      // ២. ចំនួនលក់រហ័ស (1, 2, 3, 5, 10)
+      '<div class="space-y-1.5">' +
+        '<div class="flex justify-between items-center">' +
+          '<label class="text-[10px] font-black text-slate-700 uppercase block">២. ចំនួនទិញ (Quantity) *</label>' +
+          '<span id="quickSaleQtyDisplayBadge" class="text-[11px] font-black text-blue-900 bg-blue-100 px-2 py-0.2 rounded-full">1 ធុង</span>' +
+        '</div>' +
+        '<div class="grid grid-cols-5 gap-1 text-xs font-black">' +
+          '<button type="button" onclick="setQuickSaleQty(1)" class="qs-qty-btn py-2 rounded-xl border-2 border-blue-600 bg-blue-600 text-white shadow-2xs active:scale-95 transition">1</button>' +
+          '<button type="button" onclick="setQuickSaleQty(2)" class="qs-qty-btn py-2 rounded-xl border-2 border-slate-200 bg-white text-slate-700 active:scale-95 transition">2</button>' +
+          '<button type="button" onclick="setQuickSaleQty(3)" class="qs-qty-btn py-2 rounded-xl border-2 border-slate-200 bg-white text-slate-700 active:scale-95 transition">3</button>' +
+          '<button type="button" onclick="setQuickSaleQty(5)" class="qs-qty-btn py-2 rounded-xl border-2 border-slate-200 bg-white text-slate-700 active:scale-95 transition">5</button>' +
+          '<button type="button" onclick="setQuickSaleQty(10)" class="qs-qty-btn py-2 rounded-xl border-2 border-slate-200 bg-white text-slate-700 active:scale-95 transition">10</button>' +
+        '</div>' +
+      '</div>' +
+
+      // ៣. វិធីទូទាត់ប្រាក់ (លុយសុទ្ធ vs ស្កេន ABA)
+      '<div class="space-y-1">' +
+        '<div class="grid grid-cols-2 gap-2 text-xs font-bold">' +
+          '<button type="button" id="btnQsPayCash" onclick="setQuickSalePayMode(\'Cash\')" class="py-2.5 rounded-xl border-2 border-emerald-600 bg-emerald-50 text-emerald-950 flex items-center justify-center gap-1.5 active:scale-95 transition">' +
+            '<i class="fas fa-money-bill-wave text-emerald-600"></i> 💵 លុយសុទ្ធ' +
+          '</button>' +
+          '<button type="button" id="btnQsPayAba" onclick="setQuickSalePayMode(\'ABA\')" class="py-2.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 flex items-center justify-center gap-1.5 active:scale-95 transition">' +
+            '<i class="fas fa-qrcode text-blue-600"></i> 📱 ស្កេន ABA' +
+          '</button>' +
+        '</div>' +
+      '</div>' +
+
+      // ៤. សរុបទឹកប្រាក់ត្រូវបង់
+      '<div class="p-2.5 bg-blue-50/70 rounded-2xl border border-blue-200 flex justify-between items-center text-xs font-bold text-blue-950">' +
+        '<span>សរុបទឹកប្រាក់ត្រូវទទួល៖</span>' +
+        '<b id="quickSaleTotalText" class="text-base sm:text-lg font-black text-blue-900">៛ 0</b>' +
+      '</div>' +
+
+      // ៥. ប៊ូតុងបញ្ជាក់ការលក់
+      '<button type="button" id="btnSubmitQuickSale" onclick="executeQuickSaleAction()" class="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-700 hover:opacity-95 text-white font-black rounded-2xl text-xs sm:text-sm shadow-md active:scale-95 transition flex items-center justify-center gap-2">' +
+        '<i class="fas fa-bolt text-yellow-300"></i>' +
+        '<span id="btnSubmitQuickSaleText">លក់ភ្លាម & ចេញវិក្កយបត្រ (Sell Now)</span>' +
+      '</button>' +
+
+    '</div>' +
+  '</div>';
+
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+// 📂 បើកផ្ទាំងលក់រហ័ស (ចាក់សោរ ADMIN ONLY)
 function openQuickSaleModal() {
-  // 🛡️ សុវត្ថិភាព៖ មានតែ Admin តែម្នាក់គត់!
   if (!currentUser || currentUser.role !== 'Admin') return;
 
   injectQuickSaleModalMarkup();
@@ -2790,13 +2867,13 @@ function openQuickSaleModal() {
       var unitPr = parseFloat(p.price || 0);
       var imgUrl = p.img || "https://cdn-icons-png.flaticon.com/512/3100/3100566.png";
 
-      html += '<div onclick="selectQuickSaleProduct(\'' + p.id + '\', this)" class="qs-prod-card p-2 rounded-2xl border-2 transition cursor-pointer flex items-center gap-2 ' + (isFirst ? 'border-emerald-600 bg-emerald-50/80 shadow-2xs' : 'border-slate-200 bg-white hover:bg-slate-50') + '">' +
+      html += '<div onclick="selectQuickSaleProduct(\'' + p.id + '\', this)" class="qs-prod-card p-2 rounded-2xl border-2 transition cursor-pointer flex items-center gap-2 ' + (isFirst ? 'border-blue-600 bg-blue-50/80 shadow-2xs' : 'border-slate-200 bg-white hover:bg-slate-50') + '">' +
         '<div class="w-8 h-8 rounded-lg bg-white border border-slate-200 p-0.5 flex items-center justify-center shrink-0 overflow-hidden">' +
           '<img src="' + imgUrl + '" class="max-w-full max-h-full object-contain">' +
         '</div>' +
         '<div class="min-w-0 flex-1 text-left">' +
           '<b class="text-[11px] font-black text-slate-800 truncate block leading-tight">' + p.name + '</b>' +
-          '<span class="text-[10px] text-emerald-800 font-bold block leading-none mt-0.5">៛ ' + unitPr.toLocaleString() + '</span>' +
+          '<span class="text-[10px] text-blue-800 font-bold block leading-none mt-0.5">៛ ' + unitPr.toLocaleString() + '</span>' +
         '</div>' +
       '</div>';
     });
@@ -2806,18 +2883,73 @@ function openQuickSaleModal() {
 
   setQuickSaleQty(1);
 
-  // 🌟 បង្ខំឱ្យបើកផ្ទាំង Pop-up លើអេក្រង់ភ្លាមៗ
   modal.classList.remove('hidden');
   modal.style.display = 'flex';
 }
 
-// ==========================================================================
-// ⚡ មុខងារបញ្ជាក់ការលក់រហ័ស (ចាក់សោរ ADMIN ONLY)
-// ==========================================================================
+function closeQuickSaleModal() {
+  var modal = document.getElementById('quickSaleModal');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.style.display = 'none';
+  }
+}
+
+function selectQuickSaleProduct(id, cardEl) {
+  var p = (allProducts || []).find(item => item.id === id);
+  if (!p) return;
+  quickSaleSelectedProduct = p;
+
+  document.querySelectorAll('.qs-prod-card').forEach(function(c) {
+    c.className = "qs-prod-card p-2 rounded-2xl border-2 border-slate-200 bg-white hover:bg-slate-50 transition cursor-pointer flex items-center gap-2";
+  });
+  if (cardEl) {
+    cardEl.className = "qs-prod-card p-2 rounded-2xl border-2 border-blue-600 bg-blue-50/80 shadow-2xs transition cursor-pointer flex items-center gap-2";
+  }
+  updateQuickSaleTotalCalc();
+}
+
+function setQuickSaleQty(q) {
+  quickSaleQty = parseInt(q) || 1;
+  document.querySelectorAll('.qs-qty-btn').forEach(function(btn) {
+    if (parseInt(btn.innerText) === quickSaleQty) {
+      btn.className = "qs-qty-btn py-2 rounded-xl border-2 border-blue-600 bg-blue-600 text-white shadow-2xs active:scale-95 transition";
+    } else {
+      btn.className = "qs-qty-btn py-2 rounded-xl border-2 border-slate-200 bg-white text-slate-700 active:scale-95 transition";
+    }
+  });
+
+  var badge = document.getElementById('quickSaleQtyDisplayBadge');
+  if (badge) badge.innerText = quickSaleQty + ' ធុង';
+
+  updateQuickSaleTotalCalc();
+}
+
+function setQuickSalePayMode(mode) {
+  quickSalePayMethod = mode;
+  var btnCash = document.getElementById('btnQsPayCash');
+  var btnAba = document.getElementById('btnQsPayAba');
+
+  if (mode === 'ABA') {
+    if (btnAba) btnAba.className = "py-2.5 rounded-xl border-2 border-blue-600 bg-blue-50 text-blue-950 font-black flex items-center justify-center gap-1.5 active:scale-95 transition shadow-2xs";
+    if (btnCash) btnCash.className = "py-2.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 font-bold flex items-center justify-center gap-1.5 active:scale-95 transition";
+  } else {
+    if (btnCash) btnCash.className = "py-2.5 rounded-xl border-2 border-emerald-600 bg-emerald-50 text-emerald-950 font-black flex items-center justify-center gap-1.5 active:scale-95 transition shadow-2xs";
+    if (btnAba) btnAba.className = "py-2.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 font-bold flex items-center justify-center gap-1.5 active:scale-95 transition";
+  }
+}
+
+function updateQuickSaleTotalCalc() {
+  var pr = quickSaleSelectedProduct ? parseFloat(quickSaleSelectedProduct.price || 0) : 0;
+  var tot = pr * quickSaleQty;
+  var totEl = document.getElementById('quickSaleTotalText');
+  if (totEl) totEl.innerText = '៛ ' + tot.toLocaleString();
+}
+
+// ⚡ បញ្ជាក់ការលក់រហ័ស
 async function executeQuickSaleAction() {
   if (isQuickSaleSubmittingLock) return;
 
-  // 🛡️ សុវត្ថិភាពដាច់ខាត៖ មានតែ Admin តែម្នាក់គត់!
   if (!currentUser || currentUser.role !== 'Admin') {
     await kcAlert({
       title: "គ្មានសិទ្ធិ!",
@@ -2888,7 +3020,6 @@ async function executeQuickSaleAction() {
       p.stock = updatedStock;
     }
 
-    // 🔔 ផ្ញើ Telegram
     try {
       var payText = (quickSalePayMethod === 'ABA') ? '📱 ស្កេន ABA' : '💵 លុយសុទ្ធ';
       var timeKhNow = new Date().toLocaleString('km-KH', { 
