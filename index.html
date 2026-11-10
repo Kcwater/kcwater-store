@@ -3240,6 +3240,10 @@ async function loadStoreSettingsFromSupabase() {
     if (sMap['Telegram_ChatID']) telegramSettings.chatId = sMap['Telegram_ChatID'].trim();
     if (sMap['Telegram_Alert_Status']) telegramSettings.status = sMap['Telegram_Alert_Status'].toUpperCase();
 
+    // 🔗 ៣.១ ទាញយក QR Code ចែករំលែកទាំង ២ (Telegram Mini App & Website KC Mart)
+    if (sMap['Store_Share_QR_TG']) storeShareQrTgBase64 = sMap['Store_Share_QR_TG'].trim();
+    if (sMap['Store_Share_QR_WEB']) storeShareQrWebBase64 = sMap['Store_Share_QR_WEB'].trim();
+
     // ៤. កំណត់ថ្លៃដឹកជញ្ជូន
     if (sMap['Delivery_Fee_Standard']) storeDeliveryConfig.standardFee = parseFloat(sMap['Delivery_Fee_Standard']) || 0;
     if (sMap['Delivery_Free_Min_Qty']) storeDeliveryConfig.freeMinQty = parseInt(sMap['Delivery_Free_Min_Qty']) || 2;
