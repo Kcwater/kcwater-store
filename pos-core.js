@@ -2633,29 +2633,34 @@ window.addEventListener('load', function() {
 });
 
 // ==========================================================================
-// ⚡ ប៊ូតុងអណ្តែត «លក់រហ័ស» (សម្រាប់ ADMIN តែម្នាក់គត់ & ដើរលើទូរស័ព្ទ ១០០%)
+// ⚡ ប៊ូតុងអណ្តែត «លក់រហ័ស» (បង្ហាញចំពោះ ADMIN អូតូ & ដើរទាំងទូរស័ព្ទ និង PC)
 // ==========================================================================
 var fabIsDragging = false;
 var fabHasMoved = false;
 var fabStartY = 0;
 var fabInitialTop = 0;
-var fabTouchStartTime = 0;
 
 function initDraggableQuickSaleFab() {
-  // 🛡️ ១. សុវត្ថិភាពដាច់ខាត៖ មុខងារលក់រហ័សមានតែ ADMIN តែម្នាក់គត់!
+  var mainApp = document.getElementById('mainApp');
+  
+  // បើមិនទាន់ Login ដល់ក្នុងប្រព័ន្ធទេ មិនទាន់បង្កើតឡើយ
+  if (!mainApp || mainApp.classList.contains('hidden')) return;
+
+  // 🛡️ សុវត្ថិភាពដាច់ខាត៖ បើមិនមែនជា Admin ➔ លុបចេញភ្លាម!
   if (!currentUser || currentUser.role !== 'Admin') {
     var oldFab = document.getElementById('floatingQuickSaleFab');
     if (oldFab) oldFab.remove();
     return;
   }
 
+  // បើមានប៊ូតុងនៅលើអេក្រង់រួចហើយ មិនបាច់បង្កើតស្ទួនទេ
   if (document.getElementById('floatingQuickSaleFab')) return;
 
   var savedTop = localStorage.getItem('kc_fab_top_pos') || (window.innerHeight * 0.65) + 'px';
 
-  // 🌟 ប៊ូតុងអណ្តែតសម្រាប់ Admin (ដំណើរការទាំង Touch ទូរស័ព្ទ និង Mouse កុំព្យូទ័រ)
+  // 🌟 ប៊ូតុងអណ្តែតពណ៌ខៀវស្អាត (រចនាបថច្បាស់ៗ ធានាមិនបាត់)
   var fabHtml = '<div id="floatingQuickSaleFab" style="top:' + savedTop + ';" class="fixed right-3 z-[4500] select-none touch-none">' +
-    '<button type="button" id="btnInsideQuickSaleFab" onclick="onFabDesktopClick(event)" class="flex items-center gap-1.5 px-3.5 py-2.5 bg-gradient-to-r from-blue-600 via-teal-600 to-emerald-600 hover:opacity-95 text-white font-black text-xs rounded-full shadow-2xl border-2 border-white/80 active:scale-95 transition cursor-pointer">' +
+    '<button type="button" id="btnInsideQuickSaleFab" onclick="onFabDesktopClick(event)" class="flex items-center gap-1.5 px-3.5 py-2.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:opacity-95 text-white font-black text-xs rounded-full shadow-2xl border-2 border-white/90 active:scale-95 transition cursor-pointer">' +
       '<i class="fas fa-bolt text-yellow-300 text-sm animate-pulse"></i>' +
       '<span>លក់រហ័ស</span>' +
       '<i class="fas fa-up-down text-white/60 text-[10px] ml-0.5"></i>' +
@@ -2667,12 +2672,11 @@ function initDraggableQuickSaleFab() {
   var fab = document.getElementById('floatingQuickSaleFab');
   if (!fab) return;
 
-  // 🧠 ប្រព័ន្ធអូស Smart Drag & Tap
+  // 🧠 ប្រព័ន្ធអូស Smart Drag
   function onDragStart(clientY) {
     fabIsDragging = true;
     fabHasMoved = false;
     fabStartY = clientY;
-    fabTouchStartTime = Date.now();
     fabInitialTop = fab.getBoundingClientRect().top;
     fab.style.transition = 'none';
   }
@@ -2680,8 +2684,7 @@ function initDraggableQuickSaleFab() {
   function onDragMove(clientY) {
     if (!fabIsDragging) return;
     var deltaY = clientY - fabStartY;
-    // 🛡️ រំកិលលើសពី ១០px ទើបចាត់ទុកថាជាការអូសប្តូរទីតាំង
-    if (Math.abs(deltaY) > 10) {
+    if (Math.abs(deltaY) > 8) {
       fabHasMoved = true;
       var newTop = fabInitialTop + deltaY;
       var minTop = 60;
@@ -2691,7 +2694,7 @@ function initDraggableQuickSaleFab() {
     }
   }
 
-  // 📱 ១. សម្រាប់ទម្រង់ទូរស័ព្ទដៃ (Touch / F12 Simulation)
+  // 📱 ១. សម្រាប់ទូរស័ព្ទដៃ (Touch Events / F12 Mode)
   fab.addEventListener('touchstart', function(e) {
     if (e.touches && e.touches[0]) onDragStart(e.touches[0].clientY);
   }, { passive: true });
@@ -2708,7 +2711,7 @@ function initDraggableQuickSaleFab() {
     if (fabHasMoved) {
       localStorage.setItem('kc_fab_top_pos', fab.style.top);
     } else {
-      // 📱 បើគ្រាន់តែចុច Tap លើទូរស័ព្ទ (មិនបានអូស) ➔ បើក Pop-up ភ្លាមៗ ១០០%!
+      // 📱 បើគ្រាន់តែចុច Tap លើទូរស័ព្ទ (មិនបានអូស) ➔ បើក Modal ភ្លាមៗ!
       e.preventDefault();
       openQuickSaleModal();
     }
@@ -2733,7 +2736,7 @@ function initDraggableQuickSaleFab() {
   });
 }
 
-// 🖱️ ចុចលើកុំព្យូទ័រ (Mouse Click)
+// 🖱️ សម្រាប់ Mouse Click លើកុំព្យូទ័រ
 function onFabDesktopClick(e) {
   if (fabHasMoved) {
     e.preventDefault();
@@ -2741,6 +2744,21 @@ function onFabDesktopClick(e) {
   }
   openQuickSaleModal();
 }
+
+// 🔄 ពិនិត្យបង្ហាញប៊ូតុងស្វ័យប្រវត្តភ្លាមៗពេល ADMIN Login ជោគជ័យ
+setInterval(function() {
+  var mainApp = document.getElementById('mainApp');
+  if (mainApp && !mainApp.classList.contains('hidden') && currentUser && currentUser.role === 'Admin') {
+    if (!document.getElementById('floatingQuickSaleFab')) {
+      initDraggableQuickSaleFab();
+    }
+  } else {
+    var oldFab = document.getElementById('floatingQuickSaleFab');
+    if (oldFab && (!currentUser || currentUser.role !== 'Admin')) {
+      oldFab.remove();
+    }
+  }
+}, 1000);
 
 // ==========================================================================
 // 📂 បើកផ្ទាំងលក់រហ័ស (ចាក់សោរ ADMIN ONLY)
