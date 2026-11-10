@@ -7,6 +7,8 @@
 var editingProductId = null;
 var custPortalDataCache = null;
 var currentCustPayMode = "ABA";
+var currentPromoRules = [];
+var currentTelegramAlertStatus = "ON";
 
 // ==========================================================================
 // 📦 ១. គ្រប់គ្រងស្តុក & បង្កើតទំនិញ (ពេញអេក្រង់ PC + ២ ជួរលើ Desktop + សមមាត្រលើទូរស័ព្ទ)
