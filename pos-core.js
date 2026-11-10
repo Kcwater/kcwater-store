@@ -2633,27 +2633,32 @@ window.addEventListener('load', function() {
 });
 
 // ==========================================================================
-// ⚡ ប៊ូតុងអណ្តែត «លក់រហ័ស» អូសឡើងចុះបាន (DRAGGABLE QUICK SALE FAB)
+// ⚡ ប៊ូតុងអណ្តែត «លក់រហ័ស» (សម្រាប់ ADMIN តែម្នាក់គត់ & ដើរលើទូរស័ព្ទ ១០០%)
 // ==========================================================================
+var fabIsDragging = false;
+var fabHasMoved = false;
+var fabStartY = 0;
+var fabInitialTop = 0;
+var fabTouchStartTime = 0;
+
 function initDraggableQuickSaleFab() {
-  // 🛡️ ១. សុវត្ថិភាព៖ បើជាអ្នកដឹកជញ្ជូនរោងចក្រ (CompanyDriver) គឺលាក់ចោលដាច់ខាត!
-  if (currentUser && currentUser.type === 'CompanyDriver') {
+  // 🛡️ ១. សុវត្ថិភាពដាច់ខាត៖ មុខងារលក់រហ័សមានតែ ADMIN តែម្នាក់គត់!
+  if (!currentUser || currentUser.role !== 'Admin') {
     var oldFab = document.getElementById('floatingQuickSaleFab');
     if (oldFab) oldFab.remove();
     return;
   }
 
-  // បើមានប៊ូតុងរួចហើយ មិនបាច់បង្កើតស្ទួនទេ
   if (document.getElementById('floatingQuickSaleFab')) return;
 
-  // ២. ទាញយកទីតាំងកម្ពស់ដែលធ្លាប់ Save ទុកពីមុន (លំនាំដើម 65% នៃអេក្រង់)
   var savedTop = localStorage.getItem('kc_fab_top_pos') || (window.innerHeight * 0.65) + 'px';
 
-  var fabHtml = '<div id="floatingQuickSaleFab" style="top:' + savedTop + ';" class="fixed right-3 z-[4500] select-none touch-none cursor-grab active:cursor-grabbing transition-transform active:scale-95">' +
-    '<button type="button" class="flex items-center gap-1.5 px-3.5 py-2.5 bg-gradient-to-r from-emerald-600 via-green-600 to-teal-700 text-white font-black text-xs rounded-full shadow-2xl border-2 border-white/60 active:opacity-90">' +
+  // 🌟 ប៊ូតុងអណ្តែតសម្រាប់ Admin (ដំណើរការទាំង Touch ទូរស័ព្ទ និង Mouse កុំព្យូទ័រ)
+  var fabHtml = '<div id="floatingQuickSaleFab" style="top:' + savedTop + ';" class="fixed right-3 z-[4500] select-none touch-none">' +
+    '<button type="button" id="btnInsideQuickSaleFab" onclick="onFabDesktopClick(event)" class="flex items-center gap-1.5 px-3.5 py-2.5 bg-gradient-to-r from-blue-600 via-teal-600 to-emerald-600 hover:opacity-95 text-white font-black text-xs rounded-full shadow-2xl border-2 border-white/80 active:scale-95 transition cursor-pointer">' +
       '<i class="fas fa-bolt text-yellow-300 text-sm animate-pulse"></i>' +
       '<span>លក់រហ័ស</span>' +
-      '<i class="fas fa-grip-vertical text-white/50 text-[10px] ml-0.5"></i>' +
+      '<i class="fas fa-up-down text-white/60 text-[10px] ml-0.5"></i>' +
     '</button>' +
   '</div>';
 
@@ -2662,270 +2667,143 @@ function initDraggableQuickSaleFab() {
   var fab = document.getElementById('floatingQuickSaleFab');
   if (!fab) return;
 
-  // 🧠 ៣. ប្រព័ន្ធអូស Touch (ទូរស័ព្ទ) និង Mouse (កុំព្យូទ័រ) មិនច្រឡំរវាង «អូស» និង «ចុច»
-  var isDragging = false;
-  var startY = 0;
-  var initialTop = 0;
-  var hasMovedSignificantly = false;
-
+  // 🧠 ប្រព័ន្ធអូស Smart Drag & Tap
   function onDragStart(clientY) {
-    isDragging = true;
-    hasMovedSignificantly = false;
-    startY = clientY;
-    initialTop = fab.getBoundingClientRect().top;
-    fab.style.transition = 'none'; // បិទ transition ពេលកំពុងអូសឱ្យរលូន
+    fabIsDragging = true;
+    fabHasMoved = false;
+    fabStartY = clientY;
+    fabTouchStartTime = Date.now();
+    fabInitialTop = fab.getBoundingClientRect().top;
+    fab.style.transition = 'none';
   }
 
   function onDragMove(clientY) {
-    if (!isDragging) return;
-    var deltaY = clientY - startY;
-    if (Math.abs(deltaY) > 5) {
-      hasMovedSignificantly = true;
-    }
-
-    var newTop = initialTop + deltaY;
-    // កំណត់មិនឱ្យអូសហួសក្បាលលើ (Navbar) និងមិនឱ្យធ្លាក់បាត់ពីបាតក្រោម
-    var minTop = 60;
-    var maxTop = window.innerHeight - 70;
-    newTop = Math.max(minTop, Math.min(newTop, maxTop));
-
-    fab.style.top = newTop + 'px';
-  }
-
-  function onDragEnd() {
-    if (!isDragging) return;
-    isDragging = false;
-    fab.style.transition = '';
-
-    if (hasMovedSignificantly) {
-      // 💾 ចងចាំទីតាំងថ្មីទុកក្នុងទូរស័ព្ទអូតូ
-      localStorage.setItem('kc_fab_top_pos', fab.style.top);
-    } else {
-      // 🎯 បើគ្រាន់តែចុចមួយប៉ក់ (Tap) ➔ បើកផ្ទាំងលក់រហ័សភ្លាម!
-      if (typeof openQuickSaleModal === 'function') {
-        openQuickSaleModal();
-      }
+    if (!fabIsDragging) return;
+    var deltaY = clientY - fabStartY;
+    // 🛡️ រំកិលលើសពី ១០px ទើបចាត់ទុកថាជាការអូសប្តូរទីតាំង
+    if (Math.abs(deltaY) > 10) {
+      fabHasMoved = true;
+      var newTop = fabInitialTop + deltaY;
+      var minTop = 60;
+      var maxTop = window.innerHeight - 70;
+      newTop = Math.max(minTop, Math.min(newTop, maxTop));
+      fab.style.top = newTop + 'px';
     }
   }
 
-  // 📱 សម្រាប់ទូរស័ព្ទដៃ (Touch Events)
+  // 📱 ១. សម្រាប់ទម្រង់ទូរស័ព្ទដៃ (Touch / F12 Simulation)
   fab.addEventListener('touchstart', function(e) {
     if (e.touches && e.touches[0]) onDragStart(e.touches[0].clientY);
   }, { passive: true });
 
   window.addEventListener('touchmove', function(e) {
-    if (isDragging && e.touches && e.touches[0]) onDragMove(e.touches[0].clientY);
+    if (fabIsDragging && e.touches && e.touches[0]) onDragMove(e.touches[0].clientY);
   }, { passive: true });
 
-  window.addEventListener('touchend', onDragEnd);
+  window.addEventListener('touchend', function(e) {
+    if (!fabIsDragging) return;
+    fabIsDragging = false;
+    fab.style.transition = '';
 
-  // 🖱️ សម្រាប់កុំព្យូទ័រ (Mouse Events)
+    if (fabHasMoved) {
+      localStorage.setItem('kc_fab_top_pos', fab.style.top);
+    } else {
+      // 📱 បើគ្រាន់តែចុច Tap លើទូរស័ព្ទ (មិនបានអូស) ➔ បើក Pop-up ភ្លាមៗ ១០០%!
+      e.preventDefault();
+      openQuickSaleModal();
+    }
+  });
+
+  // 🖱️ ២. សម្រាប់កុំព្យូទ័រ (Mouse Events)
   fab.addEventListener('mousedown', function(e) {
     onDragStart(e.clientY);
   });
 
   window.addEventListener('mousemove', function(e) {
-    if (isDragging) onDragMove(e.clientY);
+    if (fabIsDragging) onDragMove(e.clientY);
   });
 
-  window.addEventListener('mouseup', onDragEnd);
+  window.addEventListener('mouseup', function() {
+    if (!fabIsDragging) return;
+    fabIsDragging = false;
+    fab.style.transition = '';
+    if (fabHasMoved) {
+      localStorage.setItem('kc_fab_top_pos', fab.style.top);
+    }
+  });
 }
 
-// 🔄 ហៅឱ្យដំណើរការប៊ូតុងអណ្តែតពេល Login ឬបើកទំព័រ
-window.addEventListener('DOMContentLoaded', function() {
-  setTimeout(initDraggableQuickSaleFab, 1000);
-});
-
-// ==========================================================================
-// ⚡ ផ្ទាំង POP-UP «លក់រហ័ស» (QUICK SALE MODAL UI)
-// ==========================================================================
-var quickSaleSelectedProduct = null;
-var quickSaleQty = 1;
-var quickSalePayMethod = 'Cash';
-
-function injectQuickSaleModalMarkup() {
-  if (document.getElementById('quickSaleModal')) return;
-
-  var html = '<div id="quickSaleModal" class="fixed inset-0 z-[6500] flex items-center justify-center p-3 sm:p-4 hidden overflow-y-auto select-none">' +
-    '<div class="fixed inset-0 bg-slate-950/65 backdrop-blur-xs transition-opacity" onclick="closeQuickSaleModal()"></div>' +
-    '<div class="bg-white rounded-3xl shadow-2xl z-10 w-full max-w-sm p-4 sm:p-5 space-y-3 relative border border-slate-100 animate-in zoom-in-95 duration-200 my-auto text-left">' +
-      
-      // ក្បាលផ្ទាំង Pop-up
-      '<div class="flex justify-between items-center border-b pb-2">' +
-        '<div class="flex items-center gap-2">' +
-          '<div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-emerald-600 to-green-600 text-white flex items-center justify-center text-sm shadow-xs">' +
-            '<i class="fas fa-bolt text-yellow-300"></i>' +
-          '</div>' +
-          '<div>' +
-            '<h3 class="font-black text-slate-900 text-sm sm:text-base leading-none">លក់រហ័ស (Quick Walk-in)</h3>' +
-            '<p class="text-[10px] text-slate-500 font-bold mt-0.5">លក់នៅកន្លែងរហ័សត្រឹមតែ ១ វិនាទី</p>' +
-          '</div>' +
-        '</div>' +
-        '<button type="button" onclick="closeQuickSaleModal()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-400 hover:text-slate-700 text-lg font-bold flex items-center justify-center shadow-xs">&times;</button>' +
-      '</div>' +
-
-      // ១. បញ្ជីមុខទំនិញពេញនិយមលក់ដាច់បំផុត (Popular Fast Grid)
-      '<div class="space-y-1.5">' +
-        '<label class="text-[10px] font-black text-slate-700 uppercase block">១. ជ្រើសរើសមុខទំនិញ *</label>' +
-        '<div id="quickSaleProductsGrid" class="grid grid-cols-2 gap-1.5 max-h-44 overflow-y-auto pr-0.5"></div>' +
-      '</div>' +
-
-      // ២. ចំនួនលក់រហ័ស (1, 2, 3, 5, 10)
-      '<div class="space-y-1.5">' +
-        '<div class="flex justify-between items-center">' +
-          '<label class="text-[10px] font-black text-slate-700 uppercase block">២. ចំនួនទិញ (Quantity) *</label>' +
-          '<span id="quickSaleQtyDisplayBadge" class="text-[11px] font-black text-emerald-800 bg-emerald-100 px-2 py-0.2 rounded-full">1 ធុង</span>' +
-        '</div>' +
-        '<div class="grid grid-cols-5 gap-1 text-xs font-black">' +
-          '<button type="button" onclick="setQuickSaleQty(1)" class="qs-qty-btn py-2 rounded-xl border-2 border-emerald-600 bg-emerald-600 text-white shadow-2xs active:scale-95 transition">1</button>' +
-          '<button type="button" onclick="setQuickSaleQty(2)" class="qs-qty-btn py-2 rounded-xl border-2 border-slate-200 bg-white text-slate-700 active:scale-95 transition">2</button>' +
-          '<button type="button" onclick="setQuickSaleQty(3)" class="qs-qty-btn py-2 rounded-xl border-2 border-slate-200 bg-white text-slate-700 active:scale-95 transition">3</button>' +
-          '<button type="button" onclick="setQuickSaleQty(5)" class="qs-qty-btn py-2 rounded-xl border-2 border-slate-200 bg-white text-slate-700 active:scale-95 transition">5</button>' +
-          '<button type="button" onclick="setQuickSaleQty(10)" class="qs-qty-btn py-2 rounded-xl border-2 border-slate-200 bg-white text-slate-700 active:scale-95 transition">10</button>' +
-        '</div>' +
-      '</div>' +
-
-      // ៣. វិធីទូទាត់ប្រាក់ (លុយសុទ្ធ vs ស្កេន ABA)
-      '<div class="space-y-1">' +
-        '<div class="grid grid-cols-2 gap-2 text-xs font-bold">' +
-          '<button type="button" id="btnQsPayCash" onclick="setQuickSalePayMode(\'Cash\')" class="py-2.5 rounded-xl border-2 border-emerald-600 bg-emerald-50 text-emerald-950 flex items-center justify-center gap-1.5 active:scale-95 transition">' +
-            '<i class="fas fa-money-bill-wave text-emerald-600"></i> 💵 លុយសុទ្ធ' +
-          '</button>' +
-          '<button type="button" id="btnQsPayAba" onclick="setQuickSalePayMode(\'ABA\')" class="py-2.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 flex items-center justify-center gap-1.5 active:scale-95 transition">' +
-            '<i class="fas fa-qrcode text-blue-600"></i> 📱 ស្កេន ABA' +
-          '</button>' +
-        '</div>' +
-      '</div>' +
-
-      // ៤. សរុបទឹកប្រាក់ត្រូវបង់
-      '<div class="p-2.5 bg-emerald-50 rounded-2xl border border-emerald-200 flex justify-between items-center text-xs font-bold text-emerald-950">' +
-        '<span>សរុបទឹកប្រាក់ត្រូវទទួល៖</span>' +
-        '<b id="quickSaleTotalText" class="text-base sm:text-lg font-black text-emerald-800">៛ 0</b>' +
-      '</div>' +
-
-      // ប៊ូតុងបញ្ជាក់ការលក់
-      '<button type="button" id="btnSubmitQuickSale" onclick="executeQuickSaleAction()" class="w-full py-3 bg-gradient-to-r from-emerald-600 to-green-700 hover:from-emerald-700 text-white font-black rounded-2xl text-xs sm:text-sm shadow-md active:scale-95 transition flex items-center justify-center gap-2">' +
-        '<i class="fas fa-bolt text-yellow-300"></i>' +
-        '<span id="btnSubmitQuickSaleText">លក់ភ្លាម & ចេញវិក្កយបត្រ (Sell Now)</span>' +
-      '</button>' +
-
-    '</div>' +
-  '</div>';
-
-  document.body.insertAdjacentHTML('beforeend', html);
+// 🖱️ ចុចលើកុំព្យូទ័រ (Mouse Click)
+function onFabDesktopClick(e) {
+  if (fabHasMoved) {
+    e.preventDefault();
+    return;
+  }
+  openQuickSaleModal();
 }
 
-// 📂 បើកផ្ទាំងលក់រហ័ស
+// ==========================================================================
+// 📂 បើកផ្ទាំងលក់រហ័ស (ចាក់សោរ ADMIN ONLY)
+// ==========================================================================
 function openQuickSaleModal() {
+  // 🛡️ សុវត្ថិភាព៖ មានតែ Admin តែម្នាក់គត់!
+  if (!currentUser || currentUser.role !== 'Admin') return;
+
   injectQuickSaleModalMarkup();
 
   var modal = document.getElementById('quickSaleModal');
   var grid = document.getElementById('quickSaleProductsGrid');
-  if (!modal || !grid) return;
+  if (!modal) return;
 
   quickSaleQty = 1;
   quickSalePayMethod = 'Cash';
   setQuickSalePayMode('Cash');
 
-  // ចម្រាញ់យកទំនិញពេញនិយម (ទឹកធុងស, ទឹកធុងខៀវ, ទឹកយួរ ឬ ៤-៦ មុខដំបូង)
   var fastItems = (allProducts || []).filter(function(p) {
     return p.channel !== 'ONLINE';
   }).slice(0, 6);
 
-  var html = '';
-  fastItems.forEach(function(p, idx) {
-    var isFirst = (idx === 0);
-    if (isFirst) quickSaleSelectedProduct = p;
+  if (grid) {
+    var html = '';
+    fastItems.forEach(function(p, idx) {
+      var isFirst = (idx === 0);
+      if (isFirst) quickSaleSelectedProduct = p;
 
-    var unitPr = parseFloat(p.price || 0);
-    var imgUrl = p.img || "https://cdn-icons-png.flaticon.com/512/3100/3100566.png";
+      var unitPr = parseFloat(p.price || 0);
+      var imgUrl = p.img || "https://cdn-icons-png.flaticon.com/512/3100/3100566.png";
 
-    html += '<div onclick="selectQuickSaleProduct(\'' + p.id + '\', this)" class="qs-prod-card p-2 rounded-2xl border-2 transition cursor-pointer flex items-center gap-2 ' + (isFirst ? 'border-emerald-600 bg-emerald-50/80 shadow-2xs' : 'border-slate-200 bg-white hover:bg-slate-50') + '">' +
-      '<div class="w-8 h-8 rounded-lg bg-white border border-slate-200 p-0.5 flex items-center justify-center shrink-0 overflow-hidden">' +
-        '<img src="' + imgUrl + '" class="max-w-full max-h-full object-contain">' +
-      '</div>' +
-      '<div class="min-w-0 flex-1 text-left">' +
-        '<b class="text-[11px] font-black text-slate-800 truncate block leading-tight">' + p.name + '</b>' +
-        '<span class="text-[10px] text-emerald-800 font-bold block leading-none mt-0.5">៛ ' + unitPr.toLocaleString() + '</span>' +
-      '</div>' +
-    '</div>';
-  });
+      html += '<div onclick="selectQuickSaleProduct(\'' + p.id + '\', this)" class="qs-prod-card p-2 rounded-2xl border-2 transition cursor-pointer flex items-center gap-2 ' + (isFirst ? 'border-emerald-600 bg-emerald-50/80 shadow-2xs' : 'border-slate-200 bg-white hover:bg-slate-50') + '">' +
+        '<div class="w-8 h-8 rounded-lg bg-white border border-slate-200 p-0.5 flex items-center justify-center shrink-0 overflow-hidden">' +
+          '<img src="' + imgUrl + '" class="max-w-full max-h-full object-contain">' +
+        '</div>' +
+        '<div class="min-w-0 flex-1 text-left">' +
+          '<b class="text-[11px] font-black text-slate-800 truncate block leading-tight">' + p.name + '</b>' +
+          '<span class="text-[10px] text-emerald-800 font-bold block leading-none mt-0.5">៛ ' + unitPr.toLocaleString() + '</span>' +
+        '</div>' +
+      '</div>';
+    });
 
-  grid.innerHTML = html || '<div class="col-span-2 text-center text-slate-400 italic text-xs py-4">គ្មានទំនិញ</div>';
+    grid.innerHTML = html || '<div class="col-span-2 text-center text-slate-400 italic text-xs py-4">គ្មានទំនិញ</div>';
+  }
 
   setQuickSaleQty(1);
+
+  // 🌟 បង្ខំឱ្យបើកផ្ទាំង Pop-up លើអេក្រង់ភ្លាមៗ
   modal.classList.remove('hidden');
-}
-
-function closeQuickSaleModal() {
-  var modal = document.getElementById('quickSaleModal');
-  if (modal) modal.classList.add('hidden');
-}
-
-function selectQuickSaleProduct(id, cardEl) {
-  var p = (allProducts || []).find(item => item.id === id);
-  if (!p) return;
-  quickSaleSelectedProduct = p;
-
-  document.querySelectorAll('.qs-prod-card').forEach(function(c) {
-    c.className = "qs-prod-card p-2 rounded-2xl border-2 border-slate-200 bg-white hover:bg-slate-50 transition cursor-pointer flex items-center gap-2";
-  });
-  if (cardEl) {
-    cardEl.className = "qs-prod-card p-2 rounded-2xl border-2 border-emerald-600 bg-emerald-50/80 shadow-2xs transition cursor-pointer flex items-center gap-2";
-  }
-  updateQuickSaleTotalCalc();
-}
-
-function setQuickSaleQty(q) {
-  quickSaleQty = parseInt(q) || 1;
-  document.querySelectorAll('.qs-qty-btn').forEach(function(btn) {
-    if (parseInt(btn.innerText) === quickSaleQty) {
-      btn.className = "qs-qty-btn py-2 rounded-xl border-2 border-emerald-600 bg-emerald-600 text-white shadow-2xs active:scale-95 transition";
-    } else {
-      btn.className = "qs-qty-btn py-2 rounded-xl border-2 border-slate-200 bg-white text-slate-700 active:scale-95 transition";
-    }
-  });
-
-  var badge = document.getElementById('quickSaleQtyDisplayBadge');
-  if (badge) badge.innerText = quickSaleQty + ' ឯកតា';
-
-  updateQuickSaleTotalCalc();
-}
-
-function setQuickSalePayMode(mode) {
-  quickSalePayMethod = mode;
-  var btnCash = document.getElementById('btnQsPayCash');
-  var btnAba = document.getElementById('btnQsPayAba');
-
-  if (mode === 'ABA') {
-    if (btnAba) btnAba.className = "py-2.5 rounded-xl border-2 border-blue-600 bg-blue-50 text-blue-950 font-black flex items-center justify-center gap-1.5 active:scale-95 transition shadow-2xs";
-    if (btnCash) btnCash.className = "py-2.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 font-bold flex items-center justify-center gap-1.5 active:scale-95 transition";
-  } else {
-    if (btnCash) btnCash.className = "py-2.5 rounded-xl border-2 border-emerald-600 bg-emerald-50 text-emerald-950 font-black flex items-center justify-center gap-1.5 active:scale-95 transition shadow-2xs";
-    if (btnAba) btnAba.className = "py-2.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 font-bold flex items-center justify-center gap-1.5 active:scale-95 transition";
-  }
-}
-
-function updateQuickSaleTotalCalc() {
-  var pr = quickSaleSelectedProduct ? parseFloat(quickSaleSelectedProduct.price || 0) : 0;
-  var tot = pr * quickSaleQty;
-  var totEl = document.getElementById('quickSaleTotalText');
-  if (totEl) totEl.innerText = '៛ ' + tot.toLocaleString();
+  modal.style.display = 'flex';
 }
 
 // ==========================================================================
-// ⚡ មុខងារបញ្ជាក់ការលក់រហ័ស ១ វិនាទី (EXECUTE QUICK SALE ACTION)
+// ⚡ មុខងារបញ្ជាក់ការលក់រហ័ស (ចាក់សោរ ADMIN ONLY)
 // ==========================================================================
-var isQuickSaleSubmittingLock = false;
-
 async function executeQuickSaleAction() {
   if (isQuickSaleSubmittingLock) return;
 
-  // 🛡️ ១. សុវត្ថិភាព៖ បើជាអ្នកដឹកជញ្ជូនរោងចក្រ គឺគ្មានសិទ្ធិលក់ឡើយ
-  if (currentUser && currentUser.type === 'CompanyDriver') {
+  // 🛡️ សុវត្ថិភាពដាច់ខាត៖ មានតែ Admin តែម្នាក់គត់!
+  if (!currentUser || currentUser.role !== 'Admin') {
     await kcAlert({
       title: "គ្មានសិទ្ធិ!",
-      message: "អ្នកដឹកជញ្ជូនរោងចក្រ គ្មានសិទ្ធិលក់ទំនិញឡើយ!",
+      message: "មុខងារលក់រហ័សនេះ ត្រូវបានអនុញ្ញាតសម្រាប់តែ Admin តែម្នាក់គត់!",
       type: "danger"
     });
     closeQuickSaleModal();
@@ -2942,7 +2820,6 @@ async function executeQuickSaleAction() {
   var pr = parseFloat(p.price || 0);
   var lineTotal = q * pr;
 
-  // 📦 ២. ពិនិត្យស្តុកទំនិញជាក់ស្តែង (បើជាទំនិញទិញគេ)
   if (p.type === 'ទិញគេ') {
     var curStock = parseFloat(p.stock || 0);
     if (q > curStock) {
@@ -2966,7 +2843,6 @@ async function executeQuickSaleAction() {
   var tid = "TR-QS-" + new Date().getTime();
 
   try {
-    // 💾 ៣. កត់ត្រាចូលតារាង Transactions ក្នុង Supabase (គាំទ្រទាំង PROD & TEST)
     const { error: insErr } = await supabaseClient
       .from('transactions')
       .insert([{
@@ -2980,22 +2856,21 @@ async function executeQuickSaleAction() {
         paid_khr: lineTotal,
         recorded_by: (currentUser && currentUser.fullName) ? currentUser.fullName : "Admin",
         status: "Paid",
-        payment_method: quickSalePayMethod // 'Cash' ឬ 'ABA'
+        payment_method: quickSalePayMethod
       }]);
 
     if (insErr) throw insErr;
 
-    // 📦 ៤. កាត់ស្តុកទំនិញចេញពីឃ្លាំងភ្លាមៗ (បើជាទំនិញទិញគេ)
     if (p.type === 'ទិញគេ') {
       var updatedStock = Math.max(0, parseFloat(p.stock || 0) - q);
       await supabaseClient
         .from('products')
         .update({ stock: updatedStock })
         .eq('id', p.id);
-      p.stock = updatedStock; // អាប់ដេត Memory ភ្លាមៗ
+      p.stock = updatedStock;
     }
 
-    // 🔔 ៥. ផ្ញើសារដំណឹង Telegram ទៅកាន់រោងចក្រ
+    // 🔔 ផ្ញើ Telegram
     try {
       var payText = (quickSalePayMethod === 'ABA') ? '📱 ស្កេន ABA' : '💵 លុយសុទ្ធ';
       var timeKhNow = new Date().toLocaleString('km-KH', { 
@@ -3004,8 +2879,8 @@ async function executeQuickSaleAction() {
         timeStyle: 'short' 
       });
 
-      var tgMsg = "⚡ <b>[KC WATER - លក់រហ័ស (Quick Walk-in)]</b>\n\n" +
-                  "🆔 <b>កូដប្រតិបត្តិការ៖</b> <code>" + tid + "</code>\n" +
+      var tgMsg = "⚡ <b>[KC WATER - លក់រហ័ស (Admin Walk-in)]</b>\n\n" +
+                  "🆔 <b>កូដ៖</b> <code>" + tid + "</code>\n" +
                   "🛒 <b>អតិថិជន៖</b> លក់នៅកន្លែង (Walk-in)\n" +
                   "📦 <b>ទំនិញ៖</b> <b>" + p.name + "</b> x " + q + "\n" +
                   "💰 <b>ទឹកប្រាក់សរុប៖</b> <b>៛ " + lineTotal.toLocaleString() + "</b> (" + payText + ")\n" +
@@ -3017,7 +2892,6 @@ async function executeQuickSaleAction() {
       }
     } catch(tgE) {}
 
-    // 🎉 ៦. សំឡេង Chime, បាញ់កាំជ្រួច និង Toast ដំណឹង
     if (typeof playPaymentSuccessAudio === 'function') playPaymentSuccessAudio();
     else if (typeof playOrderChime === 'function') playOrderChime();
 
@@ -3025,7 +2899,6 @@ async function executeQuickSaleAction() {
 
     showToast("⚡ បានលក់ [" + p.name + "] x " + q + " (៛ " + lineTotal.toLocaleString() + ") ជោគជ័យ!", "success");
 
-    // 🧾 ៧. បង្កើតរូបភាពវិក្កយបត្រឌីជីថល (Receipt)
     if (typeof generateReceiptImage === 'function') {
       generateReceiptImage(
         tid, 
@@ -3037,10 +2910,8 @@ async function executeQuickSaleAction() {
       );
     }
 
-    // ៨. បិទផ្ទាំងលក់រហ័ស
     closeQuickSaleModal();
 
-    // 🔄 ៩. ធ្វើបច្ចុប្បន្នភាពទិន្នន័យលើផ្ទាំងដែលកំពុងបើក (Dashboard ឬ POS)
     if (document.getElementById('dashTodaySales') && typeof loadDashboardData === 'function') {
       loadDashboardData();
     } else if (document.getElementById('pGrid') && typeof rPG === 'function') {
