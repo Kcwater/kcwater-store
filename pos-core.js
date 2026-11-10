@@ -6,7 +6,7 @@
 var currentPosDiscount = { type: 'NONE', value: 0 };
 var activeQuickRestockData = null;
 
-// 🔗 Shortcut Aliases សម្រាប់ Render POS Grid & Cart (ការពារកុំឱ្យ ReferenceError)var previousActiveModuleBeforeQuickSale
+// 🔗 Shortcut Aliases សម្រាប់ Render POS Grid & Cart (ការពារកុំឱ្យ ReferenceError)
 var rPG = function() { if (typeof renderProductGrid === 'function') renderProductGrid(); };
 var rC = function() { if (typeof renderCart === 'function') renderCart(); };
 
