@@ -2634,7 +2634,7 @@ window.addEventListener('load', function() {
 });
 
 // ==========================================================================
-// ⚡ ប៊ូតុងអណ្តែត «លក់រហ័ស» (អូសទៅឆ្វេង/ស្តាំបាន & បង្រួមរាងមូលអូតូពេលអត់ប្រើ)
+// ⚡ ប៊ូតុងអណ្តែត «លក់រហ័ស» រាងមូល 48px រលូន ១០០% (SMOOTH ROUND CHATHEAD)
 // ==========================================================================
 var previousActiveModuleBeforeQuickSale = "Dashboard";
 var currentActiveModuleTracking = "Dashboard";
@@ -2644,75 +2644,29 @@ var fabStartX = 0;
 var fabStartY = 0;
 var fabInitialLeft = 0;
 var fabInitialTop = 0;
-var fabCollapseTimer = null;
 
-// 🧠 ១. កត់ត្រាទំព័រដែល Admin កំពុងបើកជានិច្ច
-var originalLoadModule = window.loadModule;
-window.loadModule = function(name) {
-  if (name !== 'POS') {
-    currentActiveModuleTracking = name;
-  }
-  if (typeof originalLoadModule === 'function') {
-    originalLoadModule(name);
-  }
-  updateFabButtonState();
-};
-
-// 🔄 ២. ធ្វើបច្ចុប្បន្នភាពរូបរាងប៊ូតុង (⚡ លក់រហ័ស VS ↩️ ត្រឡប់ក្រោយ)
+// 🔄 ១. ធ្វើបច្ចុប្បន្នភាពរូបរាងប៊ូតុង (⚡ លក់រហ័ស VS ↩️ ត្រឡប់ក្រោយ - រាងមូលស្អាត គ្មានធ្លាក់អក្សរ)
 function updateFabButtonState() {
   var fabBtn = document.getElementById('btnInsideQuickSaleFab');
   var fabIcon = document.getElementById('fabIconEl');
-  var fabText = document.getElementById('fabTextEl');
-  if (!fabBtn || !fabIcon || !fabText) return;
+  if (!fabBtn || !fabIcon) return;
 
-  var isCurrentlyOnPos = (currentActiveModuleTracking === 'POS' || document.getElementById('pGrid') !== null);
+  var isCurrentlyOnPos = (document.getElementById('pGrid') !== null);
 
   if (isCurrentlyOnPos) {
-    fabBtn.className = "flex items-center justify-center h-11 bg-gradient-to-r from-slate-800 to-slate-900 text-white rounded-full shadow-2xl border-2 border-white/80 active:scale-95 transition-all duration-300 cursor-pointer overflow-hidden";
-    fabIcon.className = "fas fa-arrow-left text-amber-300 text-sm";
-    fabText.innerText = "ត្រឡប់ក្រោយ";
+    // ពេលនៅ POS ➔ បង្ហាញព្រួញត្រឡប់ក្រោយ ↩️ ពណ៌ខ្មៅរលោង
+    fabBtn.className = "flex items-center justify-center w-12 h-12 bg-gradient-to-r from-slate-800 to-slate-900 text-white rounded-full shadow-2xl border-2 border-white/80 active:scale-90 transition cursor-pointer";
+    fabIcon.className = "fas fa-arrow-left text-amber-300 text-base";
     fabBtn.title = "ត្រឡប់ទៅកាន់៖ " + previousActiveModuleBeforeQuickSale;
   } else {
-    fabBtn.className = "flex items-center justify-center h-11 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white rounded-full shadow-2xl border-2 border-white/90 active:scale-95 transition-all duration-300 cursor-pointer overflow-hidden";
-    fabIcon.className = "fas fa-bolt text-yellow-300 text-sm animate-pulse";
-    fabText.innerText = "លក់រហ័ស";
-    fabBtn.title = "ចុចចូលលក់ POS ភ្លាមៗ";
-  }
-  resetFabIdleCollapseTimer();
-}
-
-// 🔘 ៣. មុខងារបង្រួមរាងមូលអូតូពេលអត់ប្រើ (Auto-Collapse / Expand)
-function expandFab() {
-  var text = document.getElementById('fabTextEl');
-  var btn = document.getElementById('btnInsideQuickSaleFab');
-  if (text && btn) {
-    text.style.maxWidth = '100px';
-    text.style.opacity = '1';
-    text.style.marginLeft = '6px';
-    btn.style.padding = '0 14px';
+    // ពេលនៅទំព័រផ្សេង ➔ បង្ហាញផ្លេកបន្ទោរ ⚡ ពណ៌ខៀវស្អាត
+    fabBtn.className = "flex items-center justify-center w-12 h-12 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white rounded-full shadow-2xl border-2 border-white/90 active:scale-90 transition cursor-pointer";
+    fabIcon.className = "fas fa-bolt text-yellow-300 text-base animate-pulse";
+    fabBtn.title = "ចុចចូលលក់ POS ភ្លាមៗ (អូសឡើងចុះ ឬឆ្វេងស្តាំបាន)";
   }
 }
 
-function collapseFab() {
-  var text = document.getElementById('fabTextEl');
-  var btn = document.getElementById('btnInsideQuickSaleFab');
-  if (text && btn) {
-    text.style.maxWidth = '0px';
-    text.style.opacity = '0';
-    text.style.marginLeft = '0px';
-    btn.style.padding = '0';
-    btn.style.width = '44px';
-  }
-}
-
-function resetFabIdleCollapseTimer() {
-  expandFab();
-  if (fabCollapseTimer) clearTimeout(fabCollapseTimer);
-  // ទុកចោល ២.៥ វិនាទី បង្រួមមកជារាងមូលតូចស្អាត
-  fabCollapseTimer = setTimeout(collapseFab, 2500);
-}
-
-// 🎯 ៤. មុខងារចុចលើប៊ូតុង
+// 🎯 ២. មុខងារចុចប្តូរទៅ POS ឬ ត្រឡប់មកការងារចាស់វិញ (លុប Toast ក្រហមរំខានចោល)
 function handleQuickSaleShortcutAction() {
   var isCurrentlyOnPos = (document.getElementById('pGrid') !== null);
 
@@ -2720,22 +2674,24 @@ function handleQuickSaleShortcutAction() {
     var target = previousActiveModuleBeforeQuickSale || "Dashboard";
     if (typeof loadModule === 'function') {
       loadModule(target);
-      showToast("បានត្រឡប់មកកាន់ " + target + " វិញ", "info");
     }
   } else {
-    previousActiveModuleBeforeQuickSale = currentActiveModuleTracking || "Dashboard";
+    // ចងចាំទំព័រដែលកំពុងបើកមុននឹងចូល POS
+    if (typeof currentActiveModuleTracking !== 'undefined') {
+      previousActiveModuleBeforeQuickSale = currentActiveModuleTracking;
+    }
     if (typeof loadModule === 'function') {
       loadModule('POS');
       setTimeout(function() {
         var searchInp = document.getElementById('posProductSearchInp');
         if (searchInp) searchInp.focus();
-      }, 200);
+      }, 150);
     }
   }
 }
 
 // ==========================================================================
-// ⚡ បង្កើតប៊ូតុងអណ្តែត (អូសទៅឆ្វេង/ស្តាំ & បង្រួមរាងមូល)
+// ⚡ បង្កើតប៊ូតុងអណ្តែត (រាងមូលតូចស្អាត មិនបាំងទិន្នន័យ មិនបាំង Menu)
 // ==========================================================================
 function initDraggableQuickSaleFab() {
   var mainApp = document.getElementById('mainApp');
@@ -2748,17 +2704,20 @@ function initDraggableQuickSaleFab() {
     return;
   }
 
+  // សម្អាត Pop-up ចាស់ចោលជាស្ថាពរ
+  var oldBrokenModal = document.getElementById('quickPosModalOverlay');
+  if (oldBrokenModal) oldBrokenModal.remove();
+
   if (document.getElementById('floatingQuickSaleFab')) return;
 
   var savedTop = localStorage.getItem('kc_fab_top_pos') || (window.innerHeight * 0.65) + 'px';
   var savedSide = localStorage.getItem('kc_fab_side') || 'right';
   var sideStyle = (savedSide === 'left') ? 'left:12px; right:auto;' : 'right:12px; left:auto;';
 
-  // 🌟 ប៊ូតុងអណ្តែតអាចបង្រួមរាងមូល និងអូសឆ្វេងស្តាំបាន
-  var fabHtml = '<div id="floatingQuickSaleFab" style="top:' + savedTop + '; ' + sideStyle + '" class="fixed z-[4500] select-none touch-none">' +
-    '<button type="button" id="btnInsideQuickSaleFab" onmouseenter="expandFab()" onmouseleave="resetFabIdleCollapseTimer()" onclick="onFabClickAction(event)" style="width:auto; padding:0 14px;" class="flex items-center justify-center h-11 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white rounded-full shadow-2xl border-2 border-white/90 active:scale-95 transition-all duration-300 cursor-pointer overflow-hidden">' +
-      '<i id="fabIconEl" class="fas fa-bolt text-yellow-300 text-sm animate-pulse"></i>' +
-      '<span id="fabTextEl" style="max-width:100px; opacity:1; margin-left:6px;" class="text-xs font-black whitespace-nowrap transition-all duration-300">លក់រហ័ស</span>' +
+  // 🌟 ប៊ូតុងរាងមូលសុទ្ធ 48px (Z-Index 1900 នៅក្រោម Sidebar Menu កុំឱ្យបាំង)
+  var fabHtml = '<div id="floatingQuickSaleFab" style="top:' + savedTop + '; ' + sideStyle + '" class="fixed z-[1900] select-none touch-none">' +
+    '<button type="button" id="btnInsideQuickSaleFab" onclick="onFabClickAction(event)" class="flex items-center justify-center w-12 h-12 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white rounded-full shadow-2xl border-2 border-white/90 active:scale-90 transition cursor-pointer">' +
+      '<i id="fabIconEl" class="fas fa-bolt text-yellow-300 text-base animate-pulse"></i>' +
     '</button>' +
   '</div>';
 
@@ -2776,7 +2735,6 @@ function initDraggableQuickSaleFab() {
     fabInitialLeft = rect.left;
     fabInitialTop = rect.top;
     fab.style.transition = 'none';
-    expandFab();
   }
 
   function onDragMove(clientX, clientY) {
@@ -2805,7 +2763,7 @@ function initDraggableQuickSaleFab() {
     fab.style.transition = 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
 
     if (fabHasMoved) {
-      // 🌟 គណនាថាតើនៅជិតគែមឆ្វេង ឬគែមស្តាំ រួចរត់ទៅតោងគែមនោះអូតូ
+      // តោងគែមឆ្វេង ឬស្តាំស្វ័យប្រវត្តិ
       var rect = fab.getBoundingClientRect();
       var isCloserToLeft = (rect.left + rect.width / 2) < (window.innerWidth / 2);
 
@@ -2820,7 +2778,6 @@ function initDraggableQuickSaleFab() {
       }
 
       localStorage.setItem('kc_fab_top_pos', fab.style.top);
-      resetFabIdleCollapseTimer();
     } else {
       handleQuickSaleShortcutAction();
     }
@@ -2848,7 +2805,7 @@ function initDraggableQuickSaleFab() {
 
   window.addEventListener('mouseup', onDragEnd);
 
-  resetFabIdleCollapseTimer();
+  updateFabButtonState();
 }
 
 function onFabClickAction(e) {
@@ -2859,12 +2816,14 @@ function onFabClickAction(e) {
   handleQuickSaleShortcutAction();
 }
 
-// 🔄 ពិនិត្យបង្ហាញប៊ូតុងស្វ័យប្រវត្តសម្រាប់តែ ADMIN
+// 🔄 ពិនិត្យបង្ហាញប៊ូតុងសម្រាប់ Admin ពេល Login
 setInterval(function() {
   var mainApp = document.getElementById('mainApp');
   if (mainApp && !mainApp.classList.contains('hidden') && currentUser && currentUser.role === 'Admin') {
     if (!document.getElementById('floatingQuickSaleFab')) {
       initDraggableQuickSaleFab();
+    } else {
+      updateFabButtonState();
     }
   } else {
     var oldFab = document.getElementById('floatingQuickSaleFab');
@@ -2872,7 +2831,7 @@ setInterval(function() {
       oldFab.remove();
     }
   }
-}, 1000);
+}, 1500);
 
 // ==========================================================================
 // 📦 មុខងារបង្កើតផ្ទាំង POP-UP «លក់រហ័ស» (QUICK SALE MODAL MARKUP)
