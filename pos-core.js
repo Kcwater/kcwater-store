@@ -2633,7 +2633,7 @@ window.addEventListener('load', function() {
 });
 
 // ==========================================================================
-// ⚡ ប៊ូតុងអណ្តែត «លក់រហ័ស» (បង្ហាញចំពោះ ADMIN អូតូ & ដើរទាំងទូរស័ព្ទ និង PC)
+// ⚡ ប៊ូតុងផ្លូវកាត់ «លក់រហ័ស» អណ្តែតលើអេក្រង់ (SHORTCUT ចូលផ្ទាំងលក់ POS ផ្ទាល់)
 // ==========================================================================
 var fabIsDragging = false;
 var fabHasMoved = false;
@@ -2642,25 +2642,22 @@ var fabInitialTop = 0;
 
 function initDraggableQuickSaleFab() {
   var mainApp = document.getElementById('mainApp');
-  
-  // បើមិនទាន់ Login ដល់ក្នុងប្រព័ន្ធទេ មិនទាន់បង្កើតឡើយ
   if (!mainApp || mainApp.classList.contains('hidden')) return;
 
-  // 🛡️ សុវត្ថិភាពដាច់ខាត៖ បើមិនមែនជា Admin ➔ លុបចេញភ្លាម!
+  // 🛡️ សុវត្ថិភាពដាច់ខាត៖ ប៊ូតុងផ្លូវកាត់លក់រហ័ស បង្ហាញសម្រាប់តែ ADMIN តែម្នាក់គត់!
   if (!currentUser || currentUser.role !== 'Admin') {
     var oldFab = document.getElementById('floatingQuickSaleFab');
     if (oldFab) oldFab.remove();
     return;
   }
 
-  // បើមានប៊ូតុងនៅលើអេក្រង់រួចហើយ មិនបាច់បង្កើតស្ទួនទេ
   if (document.getElementById('floatingQuickSaleFab')) return;
 
   var savedTop = localStorage.getItem('kc_fab_top_pos') || (window.innerHeight * 0.65) + 'px';
 
-  // 🌟 ប៊ូតុងអណ្តែតពណ៌ខៀវស្អាត (រចនាបថច្បាស់ៗ ធានាមិនបាត់)
+  // 🌟 ប៊ូតុងខៀវអណ្តែតផ្លូវកាត់ (អូសឡើងចុះបាន & ចុច ១ ប៉ក់ ចូលផ្ទាំងលក់ POS ភ្លាម)
   var fabHtml = '<div id="floatingQuickSaleFab" style="top:' + savedTop + ';" class="fixed right-3 z-[4500] select-none touch-none">' +
-    '<button type="button" id="btnInsideQuickSaleFab" onclick="onFabDesktopClick(event)" class="flex items-center gap-1.5 px-3.5 py-2.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:opacity-95 text-white font-black text-xs rounded-full shadow-2xl border-2 border-white/90 active:scale-95 transition cursor-pointer">' +
+    '<button type="button" id="btnInsideQuickSaleFab" onclick="goToPosShortcut(event)" class="flex items-center gap-1.5 px-3.5 py-2.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:opacity-95 text-white font-black text-xs rounded-full shadow-2xl border-2 border-white/90 active:scale-95 transition cursor-pointer">' +
       '<i class="fas fa-bolt text-yellow-300 text-sm animate-pulse"></i>' +
       '<span>លក់រហ័ស</span>' +
       '<i class="fas fa-up-down text-white/60 text-[10px] ml-0.5"></i>' +
@@ -2672,7 +2669,6 @@ function initDraggableQuickSaleFab() {
   var fab = document.getElementById('floatingQuickSaleFab');
   if (!fab) return;
 
-  // 🧠 ប្រព័ន្ធអូស Smart Drag
   function onDragStart(clientY) {
     fabIsDragging = true;
     fabHasMoved = false;
@@ -2694,7 +2690,7 @@ function initDraggableQuickSaleFab() {
     }
   }
 
-  // 📱 ១. សម្រាប់ទូរស័ព្ទដៃ (Touch Events / F12 Mode)
+  // 📱 ១. លើទូរស័ព្ទដៃ (Touch / F12 Mode)
   fab.addEventListener('touchstart', function(e) {
     if (e.touches && e.touches[0]) onDragStart(e.touches[0].clientY);
   }, { passive: true });
@@ -2711,13 +2707,13 @@ function initDraggableQuickSaleFab() {
     if (fabHasMoved) {
       localStorage.setItem('kc_fab_top_pos', fab.style.top);
     } else {
-      // 📱 បើគ្រាន់តែចុច Tap លើទូរស័ព្ទ (មិនបានអូស) ➔ បើក Modal ភ្លាមៗ!
+      // 📱 បើគ្រាន់តែចុច Tap លើទូរស័ព្ទ (មិនបានអូស) ➔ ចូលផ្ទាំងលក់ POS ភ្លាមៗ!
       e.preventDefault();
-      openQuickSaleModal();
+      goToPosDirectly();
     }
   });
 
-  // 🖱️ ២. សម្រាប់កុំព្យូទ័រ (Mouse Events)
+  // 🖱️ ២. លើកុំព្យូទ័រ (Mouse Events)
   fab.addEventListener('mousedown', function(e) {
     onDragStart(e.clientY);
   });
@@ -2736,16 +2732,30 @@ function initDraggableQuickSaleFab() {
   });
 }
 
-// 🖱️ សម្រាប់ Mouse Click លើកុំព្យូទ័រ
-function onFabDesktopClick(e) {
+// 🖱️ ចុចលើកុំព្យូទ័រ
+function goToPosShortcut(e) {
   if (fabHasMoved) {
     e.preventDefault();
     return;
   }
-  openQuickSaleModal();
+  goToPosDirectly();
 }
 
-// 🔄 ពិនិត្យបង្ហាញប៊ូតុងស្វ័យប្រវត្តភ្លាមៗពេល ADMIN Login ជោគជ័យ
+// 🚀 មុខងារផ្លូវកាត់៖ ចូលទៅកាន់ផ្ទាំងលក់ POS ពេញលេញភ្លាមៗ ១០០%
+function goToPosDirectly() {
+  if (typeof loadModule === 'function') {
+    loadModule('POS');
+    // ដាក់ Cursor ឱ្យចាំនៅប្រអប់ស្វែងរកទំនិញភ្លាមៗ
+    setTimeout(function() {
+      var searchInp = document.getElementById('posProductSearchInp');
+      if (searchInp) {
+        searchInp.focus();
+      }
+    }, 250);
+  }
+}
+
+// 🔄 ពិនិត្យបង្ហាញប៊ូតុងស្វ័យប្រវត្តសម្រាប់តែ ADMIN ពេល Login ជោគជ័យ
 setInterval(function() {
   var mainApp = document.getElementById('mainApp');
   if (mainApp && !mainApp.classList.contains('hidden') && currentUser && currentUser.role === 'Admin') {
