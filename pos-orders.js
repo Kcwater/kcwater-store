@@ -1670,9 +1670,12 @@ async function loadOnlineHubOrdersTab() {
             '<div class="mt-0.5">' + statusBadge + '</div>' +
           '</div>' +
         '</div>' +
-        '<div class="text-xs text-slate-700 space-y-1 bg-slate-50 p-2.5 rounded-xl border border-slate-100">' +
+        '<div class="text-xs text-slate-700 space-y-1.5 bg-slate-50 p-2.5 rounded-xl border border-slate-100">' +
           '<div><b>📞 ទូរស័ព្ទ៖</b> <span class="text-emerald-700 font-bold">' + (o.phone || '-') + '</span></div>' +
-          '<div><b>📦 ទំនិញ៖</b> ' + o.items + '</div>' +
+          '<div>' +
+            '<span class="text-slate-500 font-bold text-[11px] block mb-1">📦 មុខទំនិញកុម្ម៉ង់៖</span>' +
+            (typeof formatOrderItemsVerticalListHTML === 'function' ? formatOrderItemsVerticalListHTML(o.items) : o.items) +
+          '</div>' +
           (typeof formatOrderLocationBadgeHTML === 'function' ? formatOrderLocationBadgeHTML(rawLoc) : (rawLoc ? '<div><b>📍 ទីតាំង៖</b> ' + rawLoc + '</div>' : '')) +
         '</div>' +
         '<div class="flex justify-end pt-1">' +
@@ -1689,6 +1692,7 @@ async function loadOnlineHubOrdersTab() {
     area.innerHTML = '<div class="card p-4 text-center text-red-500 font-bold text-xs bg-white">កំហុស៖ ' + e.message + '</div>';
   }
 }
+
 // ==========================================
 // 🔍 TAB ២៖ ប្រវត្តិលក់ & ដោះស្រាយវិវាទ (មាន Dropdown កំណត់ជួរដេក ២០ ដល់ ១,០០០ ជួរ)
 // ==========================================
