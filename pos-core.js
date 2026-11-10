@@ -6,7 +6,7 @@
 var currentPosDiscount = { type: 'NONE', value: 0 };
 var activeQuickRestockData = null;
 
-// 🔗 Shortcut Aliases សម្រាប់ Render POS Grid & Cart (ការពារកុំឱ្យ ReferenceError)
+// 🔗 Shortcut Aliases សម្រាប់ Render POS Grid & Cart (ការពារកុំឱ្យ ReferenceError)var previousActiveModuleBeforeQuickSale
 var rPG = function() { if (typeof renderProductGrid === 'function') renderProductGrid(); };
 var rC = function() { if (typeof renderCart === 'function') renderCart(); };
 
@@ -2634,14 +2634,17 @@ window.addEventListener('load', function() {
 });
 
 // ==========================================================================
-// ⚡ ប៊ូតុងផ្លូវកាត់ «លក់រហ័ស & ចងចាំទំព័រចាស់» (SMART BACK-MEMORY SHORTCUT)
+// ⚡ ប៊ូតុងអណ្តែត «លក់រហ័ស» (អូសទៅឆ្វេង/ស្តាំបាន & បង្រួមរាងមូលអូតូពេលអត់ប្រើ)
 // ==========================================================================
 var previousActiveModuleBeforeQuickSale = "Dashboard";
 var currentActiveModuleTracking = "Dashboard";
 var fabIsDragging = false;
 var fabHasMoved = false;
+var fabStartX = 0;
 var fabStartY = 0;
+var fabInitialLeft = 0;
 var fabInitialTop = 0;
+var fabCollapseTimer = null;
 
 // 🧠 ១. កត់ត្រាទំព័រដែល Admin កំពុងបើកជានិច្ច
 var originalLoadModule = window.loadModule;
@@ -2655,39 +2658,71 @@ window.loadModule = function(name) {
   updateFabButtonState();
 };
 
-// 🔄 ២. ធ្វើបច្ចុប្បន្នភាពប៊ូតុងខៀវ (ប្តូររវាង «⚡ លក់រហ័ស» និង «↩️ ត្រឡប់ក្រោយ»)
+// 🔄 ២. ធ្វើបច្ចុប្បន្នភាពរូបរាងប៊ូតុង (⚡ លក់រហ័ស VS ↩️ ត្រឡប់ក្រោយ)
 function updateFabButtonState() {
   var fabBtn = document.getElementById('btnInsideQuickSaleFab');
-  if (!fabBtn) return;
+  var fabIcon = document.getElementById('fabIconEl');
+  var fabText = document.getElementById('fabTextEl');
+  if (!fabBtn || !fabIcon || !fabText) return;
 
   var isCurrentlyOnPos = (currentActiveModuleTracking === 'POS' || document.getElementById('pGrid') !== null);
 
   if (isCurrentlyOnPos) {
-    // ពេលកំពុងនៅទំព័រ POS ➔ ប្តូរទៅជាប៊ូតុងត្រឡប់ទៅការងារមុនវិញ
-    fabBtn.className = "flex items-center gap-1.5 px-3.5 py-2.5 bg-gradient-to-r from-slate-700 to-slate-900 text-white font-black text-xs rounded-full shadow-2xl border-2 border-white/80 active:scale-95 transition cursor-pointer";
-    fabBtn.innerHTML = '<i class="fas fa-arrow-left text-amber-300 text-sm"></i><span>ត្រឡប់ក្រោយ</span>';
+    fabBtn.className = "flex items-center justify-center h-11 bg-gradient-to-r from-slate-800 to-slate-900 text-white rounded-full shadow-2xl border-2 border-white/80 active:scale-95 transition-all duration-300 cursor-pointer overflow-hidden";
+    fabIcon.className = "fas fa-arrow-left text-amber-300 text-sm";
+    fabText.innerText = "ត្រឡប់ក្រោយ";
     fabBtn.title = "ត្រឡប់ទៅកាន់៖ " + previousActiveModuleBeforeQuickSale;
   } else {
-    // ពេលនៅទំព័រផ្សេង ➔ បង្ហាញប៊ូតុង «⚡ លក់រហ័ស»
-    fabBtn.className = "flex items-center gap-1.5 px-3.5 py-2.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:opacity-95 text-white font-black text-xs rounded-full shadow-2xl border-2 border-white/90 active:scale-95 transition cursor-pointer";
-    fabBtn.innerHTML = '<i class="fas fa-bolt text-yellow-300 text-sm animate-pulse"></i><span>លក់រហ័ស</span><i class="fas fa-up-down text-white/60 text-[10px] ml-0.5"></i>';
+    fabBtn.className = "flex items-center justify-center h-11 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white rounded-full shadow-2xl border-2 border-white/90 active:scale-95 transition-all duration-300 cursor-pointer overflow-hidden";
+    fabIcon.className = "fas fa-bolt text-yellow-300 text-sm animate-pulse";
+    fabText.innerText = "លក់រហ័ស";
     fabBtn.title = "ចុចចូលលក់ POS ភ្លាមៗ";
+  }
+  resetFabIdleCollapseTimer();
+}
+
+// 🔘 ៣. មុខងារបង្រួមរាងមូលអូតូពេលអត់ប្រើ (Auto-Collapse / Expand)
+function expandFab() {
+  var text = document.getElementById('fabTextEl');
+  var btn = document.getElementById('btnInsideQuickSaleFab');
+  if (text && btn) {
+    text.style.maxWidth = '100px';
+    text.style.opacity = '1';
+    text.style.marginLeft = '6px';
+    btn.style.padding = '0 14px';
   }
 }
 
-// 🎯 ៣. មុខងារចុចលើប៊ូតុង (ប្តូរទៅ POS ឬ ត្រឡប់មកការងារចាស់វិញ)
+function collapseFab() {
+  var text = document.getElementById('fabTextEl');
+  var btn = document.getElementById('btnInsideQuickSaleFab');
+  if (text && btn) {
+    text.style.maxWidth = '0px';
+    text.style.opacity = '0';
+    text.style.marginLeft = '0px';
+    btn.style.padding = '0';
+    btn.style.width = '44px';
+  }
+}
+
+function resetFabIdleCollapseTimer() {
+  expandFab();
+  if (fabCollapseTimer) clearTimeout(fabCollapseTimer);
+  // ទុកចោល ២.៥ វិនាទី បង្រួមមកជារាងមូលតូចស្អាត
+  fabCollapseTimer = setTimeout(collapseFab, 2500);
+}
+
+// 🎯 ៤. មុខងារចុចលើប៊ូតុង
 function handleQuickSaleShortcutAction() {
   var isCurrentlyOnPos = (document.getElementById('pGrid') !== null);
 
   if (isCurrentlyOnPos) {
-    // បើកំពុងនៅ POS ➔ ត្រឡប់ទៅទំព័រចាស់វិញភ្លាម!
     var target = previousActiveModuleBeforeQuickSale || "Dashboard";
     if (typeof loadModule === 'function') {
       loadModule(target);
       showToast("បានត្រឡប់មកកាន់ " + target + " វិញ", "info");
     }
   } else {
-    // បើនៅទំព័រផ្សេង ➔ ចងចាំទំព័រនេះ រួចចូលទៅ POS ភ្លាម!
     previousActiveModuleBeforeQuickSale = currentActiveModuleTracking || "Dashboard";
     if (typeof loadModule === 'function') {
       loadModule('POS');
@@ -2700,32 +2735,30 @@ function handleQuickSaleShortcutAction() {
 }
 
 // ==========================================================================
-// ⚡ បង្កើតប៊ូតុងអណ្តែតអូសបាន (សម្រាប់តែ ADMIN)
+// ⚡ បង្កើតប៊ូតុងអណ្តែត (អូសទៅឆ្វេង/ស្តាំ & បង្រួមរាងមូល)
 // ==========================================================================
 function initDraggableQuickSaleFab() {
   var mainApp = document.getElementById('mainApp');
   if (!mainApp || mainApp.classList.contains('hidden')) return;
 
-  // 🛡️ សុវត្ថិភាព៖ មានតែ ADMIN តែម្នាក់គត់!
+  // 🛡️ សុវត្ថិភាពដាច់ខាត៖ សម្រាប់តែ ADMIN តែម្នាក់គត់!
   if (!currentUser || currentUser.role !== 'Admin') {
     var oldFab = document.getElementById('floatingQuickSaleFab');
     if (oldFab) oldFab.remove();
     return;
   }
 
-  // សម្អាត Pop-up ចាស់ដែលបែកចោលជាស្ថាពរ
-  var oldBrokenModal = document.getElementById('quickPosModalOverlay');
-  if (oldBrokenModal) oldBrokenModal.remove();
-
   if (document.getElementById('floatingQuickSaleFab')) return;
 
   var savedTop = localStorage.getItem('kc_fab_top_pos') || (window.innerHeight * 0.65) + 'px';
+  var savedSide = localStorage.getItem('kc_fab_side') || 'right';
+  var sideStyle = (savedSide === 'left') ? 'left:12px; right:auto;' : 'right:12px; left:auto;';
 
-  var fabHtml = '<div id="floatingQuickSaleFab" style="top:' + savedTop + ';" class="fixed right-3 z-[4500] select-none touch-none">' +
-    '<button type="button" id="btnInsideQuickSaleFab" onclick="onFabClickAction(event)" class="flex items-center gap-1.5 px-3.5 py-2.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:opacity-95 text-white font-black text-xs rounded-full shadow-2xl border-2 border-white/90 active:scale-95 transition cursor-pointer">' +
-      '<i class="fas fa-bolt text-yellow-300 text-sm animate-pulse"></i>' +
-      '<span>លក់រហ័ស</span>' +
-      '<i class="fas fa-up-down text-white/60 text-[10px] ml-0.5"></i>' +
+  // 🌟 ប៊ូតុងអណ្តែតអាចបង្រួមរាងមូល និងអូសឆ្វេងស្តាំបាន
+  var fabHtml = '<div id="floatingQuickSaleFab" style="top:' + savedTop + '; ' + sideStyle + '" class="fixed z-[4500] select-none touch-none">' +
+    '<button type="button" id="btnInsideQuickSaleFab" onmouseenter="expandFab()" onmouseleave="resetFabIdleCollapseTimer()" onclick="onFabClickAction(event)" style="width:auto; padding:0 14px;" class="flex items-center justify-center h-11 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white rounded-full shadow-2xl border-2 border-white/90 active:scale-95 transition-all duration-300 cursor-pointer overflow-hidden">' +
+      '<i id="fabIconEl" class="fas fa-bolt text-yellow-300 text-sm animate-pulse"></i>' +
+      '<span id="fabTextEl" style="max-width:100px; opacity:1; margin-left:6px;" class="text-xs font-black whitespace-nowrap transition-all duration-300">លក់រហ័ស</span>' +
     '</button>' +
   '</div>';
 
@@ -2734,68 +2767,88 @@ function initDraggableQuickSaleFab() {
   var fab = document.getElementById('floatingQuickSaleFab');
   if (!fab) return;
 
-  function onDragStart(clientY) {
+  function onDragStart(clientX, clientY) {
     fabIsDragging = true;
     fabHasMoved = false;
+    fabStartX = clientX;
     fabStartY = clientY;
-    fabInitialTop = fab.getBoundingClientRect().top;
+    var rect = fab.getBoundingClientRect();
+    fabInitialLeft = rect.left;
+    fabInitialTop = rect.top;
     fab.style.transition = 'none';
+    expandFab();
   }
 
-  function onDragMove(clientY) {
+  function onDragMove(clientX, clientY) {
     if (!fabIsDragging) return;
+    var deltaX = clientX - fabStartX;
     var deltaY = clientY - fabStartY;
-    if (Math.abs(deltaY) > 10) {
+
+    if (Math.hypot(deltaX, deltaY) > 8) {
       fabHasMoved = true;
+      var newLeft = fabInitialLeft + deltaX;
       var newTop = fabInitialTop + deltaY;
+
       var minTop = 60;
-      var maxTop = window.innerHeight - 70;
+      var maxTop = window.innerHeight - 60;
       newTop = Math.max(minTop, Math.min(newTop, maxTop));
+
       fab.style.top = newTop + 'px';
+      fab.style.left = newLeft + 'px';
+      fab.style.right = 'auto';
     }
   }
 
-  // Touch លើទូរស័ព្ទ (F12)
+  function onDragEnd() {
+    if (!fabIsDragging) return;
+    fabIsDragging = false;
+    fab.style.transition = 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
+
+    if (fabHasMoved) {
+      // 🌟 គណនាថាតើនៅជិតគែមឆ្វេង ឬគែមស្តាំ រួចរត់ទៅតោងគែមនោះអូតូ
+      var rect = fab.getBoundingClientRect();
+      var isCloserToLeft = (rect.left + rect.width / 2) < (window.innerWidth / 2);
+
+      if (isCloserToLeft) {
+        fab.style.left = '12px';
+        fab.style.right = 'auto';
+        localStorage.setItem('kc_fab_side', 'left');
+      } else {
+        fab.style.left = 'auto';
+        fab.style.right = '12px';
+        localStorage.setItem('kc_fab_side', 'right');
+      }
+
+      localStorage.setItem('kc_fab_top_pos', fab.style.top);
+      resetFabIdleCollapseTimer();
+    } else {
+      handleQuickSaleShortcutAction();
+    }
+  }
+
+  // 📱 Touch លើទូរស័ព្ទដៃ
   fab.addEventListener('touchstart', function(e) {
-    if (e.touches && e.touches[0]) onDragStart(e.touches[0].clientY);
+    if (e.touches && e.touches[0]) onDragStart(e.touches[0].clientX, e.touches[0].clientY);
   }, { passive: true });
 
   window.addEventListener('touchmove', function(e) {
-    if (fabIsDragging && e.touches && e.touches[0]) onDragMove(e.touches[0].clientY);
+    if (fabIsDragging && e.touches && e.touches[0]) onDragMove(e.touches[0].clientX, e.touches[0].clientY);
   }, { passive: true });
 
-  window.addEventListener('touchend', function(e) {
-    if (!fabIsDragging) return;
-    fabIsDragging = false;
-    fab.style.transition = '';
+  window.addEventListener('touchend', onDragEnd);
 
-    if (fabHasMoved) {
-      localStorage.setItem('kc_fab_top_pos', fab.style.top);
-    } else {
-      e.preventDefault();
-      handleQuickSaleShortcutAction();
-    }
-  });
-
-  // Mouse លើកុំព្យូទ័រ
+  // 🖱️ Mouse លើកុំព្យូទ័រ
   fab.addEventListener('mousedown', function(e) {
-    onDragStart(e.clientY);
+    onDragStart(e.clientX, e.clientY);
   });
 
   window.addEventListener('mousemove', function(e) {
-    if (fabIsDragging) onDragMove(e.clientY);
+    if (fabIsDragging) onDragMove(e.clientX, e.clientY);
   });
 
-  window.addEventListener('mouseup', function() {
-    if (!fabIsDragging) return;
-    fabIsDragging = false;
-    fab.style.transition = '';
-    if (fabHasMoved) {
-      localStorage.setItem('kc_fab_top_pos', fab.style.top);
-    }
-  });
+  window.addEventListener('mouseup', onDragEnd);
 
-  updateFabButtonState();
+  resetFabIdleCollapseTimer();
 }
 
 function onFabClickAction(e) {
@@ -2806,7 +2859,7 @@ function onFabClickAction(e) {
   handleQuickSaleShortcutAction();
 }
 
-// 🔄 ពិនិត្យបង្ហាញប៊ូតុងស្វ័យប្រវត្តសម្រាប់ Admin ពេល Login
+// 🔄 ពិនិត្យបង្ហាញប៊ូតុងស្វ័យប្រវត្តសម្រាប់តែ ADMIN
 setInterval(function() {
   var mainApp = document.getElementById('mainApp');
   if (mainApp && !mainApp.classList.contains('hidden') && currentUser && currentUser.role === 'Admin') {
