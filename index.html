@@ -4104,23 +4104,32 @@ function shareViaNativeSheet() {
         <button type="button" onclick="closeShareStoreModal()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-400 hover:text-slate-700 text-lg font-bold flex items-center justify-center">&times;</button>
       </div>
 
-     <!-- 🖼️ ប្រអប់ QR Code សម្រាប់ស្កេន (ល្បឿនលឿនភ្លាមៗ 0ms) -->
-      <div class="p-4 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-3xl border-2 border-emerald-300 space-y-2">
-        <span class="text-[11px] font-black text-emerald-900 block">📱 ស្កេន QR Code ដើម្បីចូលទិញទំនិញ</span>
+      <!-- 🔄 របារជ្រើសរើស QR CODE ទាំង ២ (Telegram Mini App VS Website KC Mart) -->
+      <div class="flex bg-slate-100 p-1 rounded-2xl border border-slate-200 gap-1 text-xs font-bold">
+        <button type="button" id="btnShareTab_TG" onclick="switchShareQrTab('TG')" class="flex-1 py-2 px-2 rounded-xl text-xs font-black bg-emerald-700 text-white shadow-xs transition flex items-center justify-center gap-1">
+          <i class="fab fa-telegram text-sm"></i> Telegram App
+        </button>
+        <button type="button" id="btnShareTab_WEB" onclick="switchShareQrTab('WEB')" class="flex-1 py-2 px-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-white transition flex items-center justify-center gap-1">
+          <i class="fas fa-globe text-sm"></i> Website KC Mart
+        </button>
+      </div>
+
+      <!-- 🖼️ ប្រអប់ QR Code សម្រាប់ស្កេន -->
+      <div class="p-3.5 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-3xl border-2 border-emerald-300 space-y-2">
+        <span id="shareQrTitleLabel" class="text-[11px] font-black text-emerald-900 block">📱 ស្កេនចូល Telegram Mini App</span>
         
         <div class="p-2 bg-white rounded-2xl border border-emerald-200 shadow-sm max-w-[190px] mx-auto overflow-hidden flex items-center justify-center min-h-[160px]">
-          <!-- រូបភាព QR ល្បឿនលឿន -->
-          <img id="shareStoreQrImage" src="" class="w-full h-auto rounded-xl shadow-xs" alt="KC Mart QR Code">
+          <img id="shareStoreQrImage" src="" class="w-full h-auto rounded-xl shadow-xs object-contain" alt="KC Mart QR Code">
         </div>
 
-        <button type="button" onclick="downloadShareStoreQr()" class="text-[10px] font-bold text-emerald-700 hover:text-emerald-900 underline flex items-center justify-center gap-1 mx-auto active:scale-95 transition">
+        <button type="button" id="btnDownloadShareQr" onclick="downloadShareStoreQr()" class="text-[10px] font-bold text-emerald-700 hover:text-emerald-900 underline flex items-center justify-center gap-1 mx-auto active:scale-95 transition">
           <i class="fas fa-download"></i> ទាញយករូប QR ទុកក្នុងទូរស័ព្ទ
         </button>
       </div>
 
       <!-- 📋 ប្រអប់ចម្លង Link (Copy Link) -->
       <div class="flex items-center gap-1.5 bg-slate-50 p-1.5 rounded-2xl border border-slate-200">
-        <input type="text" id="shareStoreLinkInput" readonly class="text-[10px] font-bold text-slate-600 bg-transparent px-2 flex-1 outline-none truncate select-all">
+        <input type="text" id="shareStoreLinkInput" readonly class="text-[10px] font-bold text-slate-600 bg-transparent px-2 flex-1 outline-none truncate select-all font-mono">
         <button type="button" id="btnCopyShareLink" onclick="copyShareStoreLink()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-[10px] font-black shadow-xs active:scale-95 transition whitespace-nowrap">
           <i class="fas fa-copy"></i> ចម្លង Link
         </button>
@@ -4157,8 +4166,7 @@ function shareViaNativeSheet() {
       </button>
     </div>
   </div>
-  <script>
-  </script>
+  
   <!-- 📲 បដាដំឡើង App KC MART លើ Android & កុំព្យូទ័រ PC -->
   <div id="pwaInstallBanner" class="fixed bottom-20 left-3 right-3 z-[9990] max-w-sm mx-auto bg-slate-950/95 backdrop-blur-md text-white p-3 rounded-2xl shadow-2xl border border-emerald-500/40 hidden animate-in slide-in-from-bottom duration-300 select-none">
     <div class="flex items-center justify-between gap-2.5">
