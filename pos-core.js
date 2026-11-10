@@ -2634,132 +2634,95 @@ window.addEventListener('load', function() {
 });
 
 // ==========================================================================
-// ⚡ ផ្ទាំង POP-UP លក់ POS ពេញលេញជាន់ពីលើ (QUICK POS MODAL OVERLAY)
-// (ចុចបើកលក់ ពេលលក់ចប់បិទវិញអូតូ មិនបាត់បង់ការងារដែលកំពុងធ្វើឡើយ)
+// ⚡ ប៊ូតុងផ្លូវកាត់ «លក់រហ័ស & ចងចាំទំព័រចាស់» (SMART BACK-MEMORY SHORTCUT)
 // ==========================================================================
-var isQuickPosModalOpen = false;
+var previousActiveModuleBeforeQuickSale = "Dashboard";
+var currentActiveModuleTracking = "Dashboard";
 var fabIsDragging = false;
 var fabHasMoved = false;
 var fabStartY = 0;
 var fabInitialTop = 0;
 
-// ១. បង្កើតរចនាសម្ព័ន្ធផ្ទាំង Pop-up POS ពេញលេញ
-function injectQuickPosModalMarkup() {
-  if (document.getElementById('quickPosModalOverlay')) return;
+// 🧠 ១. កត់ត្រាទំព័រដែល Admin កំពុងបើកជានិច្ច
+var originalLoadModule = window.loadModule;
+window.loadModule = function(name) {
+  if (name !== 'POS') {
+    currentActiveModuleTracking = name;
+  }
+  if (typeof originalLoadModule === 'function') {
+    originalLoadModule(name);
+  }
+  updateFabButtonState();
+};
 
-  var html = '<div id="quickPosModalOverlay" class="fixed inset-0 z-[6000] flex items-end sm:items-center justify-center p-0 sm:p-4 hidden select-none">' +
-    '<div class="fixed inset-0 bg-slate-950/65 backdrop-blur-xs transition-opacity" onclick="closeQuickPosModal()"></div>' +
-    '<div class="bg-white rounded-t-[32px] sm:rounded-3xl shadow-2xl z-10 w-full max-w-4xl max-h-[92vh] sm:max-h-[90vh] flex flex-col overflow-hidden relative border border-slate-100 animate-in slide-in-from-bottom sm:zoom-in-95 duration-200">' +
-      
-      // ក្បាលផ្ទាំង Pop-up POS
-      '<div class="p-3.5 sm:p-4 bg-gradient-to-r from-green-800 to-green-700 text-white flex justify-between items-center shadow-md shrink-0">' +
-        '<div class="flex items-center gap-2">' +
-          '<div class="w-8 h-8 rounded-xl bg-white/20 text-yellow-300 flex items-center justify-center text-sm shadow-inner">' +
-            '<i class="fas fa-bolt animate-pulse"></i>' +
-          '</div>' +
-          '<div>' +
-            '<h3 class="font-black text-sm sm:text-base leading-none">ផ្ទាំងលក់ POS រហ័ស (Quick POS Overlay)</h3>' +
-            '<p class="text-[10px] text-green-100 font-bold mt-0.5">លក់រួច ផ្ទាំងនេះនឹងបិទស្វ័យប្រវត្ត ត្រឡប់ទៅការងារមុនវិញ</p>' +
-          '</div>' +
-        '</div>' +
-        '<div class="flex items-center gap-2">' +
-          '<button type="button" onclick="closeQuickPosModal()" class="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white text-lg font-bold flex items-center justify-center transition active:scale-90" title="បិទផ្ទាំង">&times;</button>' +
-        '</div>' +
-      '</div>' +
+// 🔄 ២. ធ្វើបច្ចុប្បន្នភាពប៊ូតុងខៀវ (ប្តូររវាង «⚡ លក់រហ័ស» និង «↩️ ត្រឡប់ក្រោយ»)
+function updateFabButtonState() {
+  var fabBtn = document.getElementById('btnInsideQuickSaleFab');
+  if (!fabBtn) return;
 
-      // តួខ្លួនផ្ទាំង POS ពេញលេញ (អាចរំកិល Scroll បានយ៉ាងរលូន)
-      '<div id="quickPosModalBodyContainer" class="p-3 sm:p-4 overflow-y-auto flex-1 space-y-3 bg-slate-50"></div>' +
+  var isCurrentlyOnPos = (currentActiveModuleTracking === 'POS' || document.getElementById('pGrid') !== null);
 
-    '</div>' +
-  '</div>';
-
-  document.body.insertAdjacentHTML('beforeend', html);
-}
-
-// ២. បើក ឬបិទ Pop-up POS តាមប៊ូតុងខៀវ
-function toggleQuickPosModal() {
-  if (isQuickPosModalOpen) {
-    closeQuickPosModal();
+  if (isCurrentlyOnPos) {
+    // ពេលកំពុងនៅទំព័រ POS ➔ ប្តូរទៅជាប៊ូតុងត្រឡប់ទៅការងារមុនវិញ
+    fabBtn.className = "flex items-center gap-1.5 px-3.5 py-2.5 bg-gradient-to-r from-slate-700 to-slate-900 text-white font-black text-xs rounded-full shadow-2xl border-2 border-white/80 active:scale-95 transition cursor-pointer";
+    fabBtn.innerHTML = '<i class="fas fa-arrow-left text-amber-300 text-sm"></i><span>ត្រឡប់ក្រោយ</span>';
+    fabBtn.title = "ត្រឡប់ទៅកាន់៖ " + previousActiveModuleBeforeQuickSale;
   } else {
-    openQuickPosModal();
-  }
-}
-
-// 📂 មុខងារបើក Pop-up POS ពេញលេញ
-function openQuickPosModal() {
-  // 🛡️ សុវត្ថិភាព៖ សម្រាប់តែ Admin
-  if (!currentUser || currentUser.role !== 'Admin') return;
-
-  injectQuickPosModalMarkup();
-
-  var modal = document.getElementById('quickPosModalOverlay');
-  var container = document.getElementById('quickPosModalBodyContainer');
-  if (!modal || !container) return;
-
-  // បង្ហាញកូដ POS ពេញលេញចូលក្នុង Pop-up
-  if (typeof renderPOSModule === 'function') {
-    renderPOSModule('quickPosModalBodyContainer');
-  }
-
-  modal.classList.remove('hidden');
-  modal.style.display = 'flex';
-  isQuickPosModalOpen = true;
-
-  // ប្តូររូបរាងប៊ូតុងខៀវទៅជាប៊ូតុងបិទ (✕)
-  var fabBtn = document.getElementById('btnInsideQuickSaleFab');
-  if (fabBtn) {
-    fabBtn.className = "flex items-center gap-1.5 px-3.5 py-2.5 bg-gradient-to-r from-red-600 to-rose-700 text-white font-black text-xs rounded-full shadow-2xl border-2 border-white active:scale-95 transition cursor-pointer";
-    fabBtn.innerHTML = '<i class="fas fa-times text-sm"></i><span>បិទ POS</span>';
-  }
-
-  // ដាក់ Cursor ឱ្យចាំនៅប្រអប់ស្វែងរកទំនិញភ្លាមៗ
-  setTimeout(function() {
-    var searchInp = container.querySelector('#posProductSearchInp');
-    if (searchInp) searchInp.focus();
-  }, 250);
-}
-
-// ❌ មុខងារបិទ Pop-up POS ត្រឡប់មកការងារមុនវិញ
-function closeQuickPosModal() {
-  var modal = document.getElementById('quickPosModalOverlay');
-  if (modal) {
-    modal.classList.add('hidden');
-    modal.style.display = 'none';
-  }
-  isQuickPosModalOpen = false;
-
-  // សម្អាតកន្ត្រក POS
-  cart = [];
-  currentPosDiscount = { type: 'NONE', value: 0 };
-
-  // ប្តូរប៊ូតុងត្រឡប់មកជាពណ៌ខៀវ «⚡ លក់រហ័ស» វិញ
-  var fabBtn = document.getElementById('btnInsideQuickSaleFab');
-  if (fabBtn) {
+    // ពេលនៅទំព័រផ្សេង ➔ បង្ហាញប៊ូតុង «⚡ លក់រហ័ស»
     fabBtn.className = "flex items-center gap-1.5 px-3.5 py-2.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:opacity-95 text-white font-black text-xs rounded-full shadow-2xl border-2 border-white/90 active:scale-95 transition cursor-pointer";
     fabBtn.innerHTML = '<i class="fas fa-bolt text-yellow-300 text-sm animate-pulse"></i><span>លក់រហ័ស</span><i class="fas fa-up-down text-white/60 text-[10px] ml-0.5"></i>';
+    fabBtn.title = "ចុចចូលលក់ POS ភ្លាមៗ";
+  }
+}
+
+// 🎯 ៣. មុខងារចុចលើប៊ូតុង (ប្តូរទៅ POS ឬ ត្រឡប់មកការងារចាស់វិញ)
+function handleQuickSaleShortcutAction() {
+  var isCurrentlyOnPos = (document.getElementById('pGrid') !== null);
+
+  if (isCurrentlyOnPos) {
+    // បើកំពុងនៅ POS ➔ ត្រឡប់ទៅទំព័រចាស់វិញភ្លាម!
+    var target = previousActiveModuleBeforeQuickSale || "Dashboard";
+    if (typeof loadModule === 'function') {
+      loadModule(target);
+      showToast("បានត្រឡប់មកកាន់ " + target + " វិញ", "info");
+    }
+  } else {
+    // បើនៅទំព័រផ្សេង ➔ ចងចាំទំព័រនេះ រួចចូលទៅ POS ភ្លាម!
+    previousActiveModuleBeforeQuickSale = currentActiveModuleTracking || "Dashboard";
+    if (typeof loadModule === 'function') {
+      loadModule('POS');
+      setTimeout(function() {
+        var searchInp = document.getElementById('posProductSearchInp');
+        if (searchInp) searchInp.focus();
+      }, 200);
+    }
   }
 }
 
 // ==========================================================================
-// ⚡ ប៊ូតុងអណ្តែត «លក់រហ័ស» (អូសឡើងចុះបាន & ចុចបើក/បិទ POP-UP POS)
+// ⚡ បង្កើតប៊ូតុងអណ្តែតអូសបាន (សម្រាប់តែ ADMIN)
 // ==========================================================================
 function initDraggableQuickSaleFab() {
   var mainApp = document.getElementById('mainApp');
   if (!mainApp || mainApp.classList.contains('hidden')) return;
 
-  // 🛡️ សុវត្ថិភាពដាច់ខាត៖ សម្រាប់តែ ADMIN តែម្នាក់គត់!
+  // 🛡️ សុវត្ថិភាព៖ មានតែ ADMIN តែម្នាក់គត់!
   if (!currentUser || currentUser.role !== 'Admin') {
     var oldFab = document.getElementById('floatingQuickSaleFab');
     if (oldFab) oldFab.remove();
     return;
   }
 
+  // សម្អាត Pop-up ចាស់ដែលបែកចោលជាស្ថាពរ
+  var oldBrokenModal = document.getElementById('quickPosModalOverlay');
+  if (oldBrokenModal) oldBrokenModal.remove();
+
   if (document.getElementById('floatingQuickSaleFab')) return;
 
   var savedTop = localStorage.getItem('kc_fab_top_pos') || (window.innerHeight * 0.65) + 'px';
 
-  var fabHtml = '<div id="floatingQuickSaleFab" style="top:' + savedTop + ';" class="fixed right-3 z-[6500] select-none touch-none">' +
-    '<button type="button" id="btnInsideQuickSaleFab" onclick="onFabDesktopClick(event)" class="flex items-center gap-1.5 px-3.5 py-2.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:opacity-95 text-white font-black text-xs rounded-full shadow-2xl border-2 border-white/90 active:scale-95 transition cursor-pointer">' +
+  var fabHtml = '<div id="floatingQuickSaleFab" style="top:' + savedTop + ';" class="fixed right-3 z-[4500] select-none touch-none">' +
+    '<button type="button" id="btnInsideQuickSaleFab" onclick="onFabClickAction(event)" class="flex items-center gap-1.5 px-3.5 py-2.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:opacity-95 text-white font-black text-xs rounded-full shadow-2xl border-2 border-white/90 active:scale-95 transition cursor-pointer">' +
       '<i class="fas fa-bolt text-yellow-300 text-sm animate-pulse"></i>' +
       '<span>លក់រហ័ស</span>' +
       '<i class="fas fa-up-down text-white/60 text-[10px] ml-0.5"></i>' +
@@ -2782,7 +2745,7 @@ function initDraggableQuickSaleFab() {
   function onDragMove(clientY) {
     if (!fabIsDragging) return;
     var deltaY = clientY - fabStartY;
-    if (Math.abs(deltaY) > 8) {
+    if (Math.abs(deltaY) > 10) {
       fabHasMoved = true;
       var newTop = fabInitialTop + deltaY;
       var minTop = 60;
@@ -2792,7 +2755,7 @@ function initDraggableQuickSaleFab() {
     }
   }
 
-  // 📱 ១. លើទូរស័ព្ទដៃ (Touch / F12 Simulation)
+  // Touch លើទូរស័ព្ទ (F12)
   fab.addEventListener('touchstart', function(e) {
     if (e.touches && e.touches[0]) onDragStart(e.touches[0].clientY);
   }, { passive: true });
@@ -2810,11 +2773,11 @@ function initDraggableQuickSaleFab() {
       localStorage.setItem('kc_fab_top_pos', fab.style.top);
     } else {
       e.preventDefault();
-      toggleQuickPosModal();
+      handleQuickSaleShortcutAction();
     }
   });
 
-  // 🖱️ ២. លើកុំព្យូទ័រ (Mouse Events)
+  // Mouse លើកុំព្យូទ័រ
   fab.addEventListener('mousedown', function(e) {
     onDragStart(e.clientY);
   });
@@ -2831,17 +2794,19 @@ function initDraggableQuickSaleFab() {
       localStorage.setItem('kc_fab_top_pos', fab.style.top);
     }
   });
+
+  updateFabButtonState();
 }
 
-function onFabDesktopClick(e) {
+function onFabClickAction(e) {
   if (fabHasMoved) {
     e.preventDefault();
     return;
   }
-  toggleQuickPosModal();
+  handleQuickSaleShortcutAction();
 }
 
-// 🔄 ពិនិត្យបង្ហាញប៊ូតុងស្វ័យប្រវត្តសម្រាប់តែ ADMIN
+// 🔄 ពិនិត្យបង្ហាញប៊ូតុងស្វ័យប្រវត្តសម្រាប់ Admin ពេល Login
 setInterval(function() {
   var mainApp = document.getElementById('mainApp');
   if (mainApp && !mainApp.classList.contains('hidden') && currentUser && currentUser.role === 'Admin') {
