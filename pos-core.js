@@ -244,16 +244,11 @@ async function renderDashboardModule() {
   // 🖥️ ប្រើ w-full max-w-[1600px] ដើម្បីឱ្យពេញអេក្រង់កុំព្យូទ័រស្អាត និងមិនបែកលើទូរស័ព្ទ
   area.innerHTML = '<div class="w-full max-w-[1600px] mx-auto space-y-3.5 px-1 sm:px-2">' +
     // របារក្បាលទំព័រ Dashboard
-    '<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-3.5 sm:p-4 rounded-2xl border shadow-sm gap-2">' +
-      '<div>' +
-        '<h2 class="text-base sm:text-lg font-black text-green-900 flex items-center gap-2">' +
-          '<i class="fas fa-chart-pie text-green-600"></i>ផ្ទាំងសង្ខេបអាជីវកម្ម KC WATER' +
-        '</h2>' +
-        '<p class="text-[11px] text-gray-500 mt-0.5">ទិដ្ឋភាពទូទៅនៃការលក់ សាច់ប្រាក់ ចំណាយ និងប្រាក់ចំណេញសុទ្ធ</p>' +
-      '</div>' +
-      '<button onclick="renderDashboardModule()" class="px-3.5 py-1.5 bg-green-50 hover:bg-green-100 text-green-700 rounded-xl text-xs font-bold border border-green-200 active:scale-95 transition flex items-center gap-1.5 shadow-2xs self-end sm:self-auto">' +
-        '<i class="fas fa-sync-alt"></i> Refresh' +
-      '</button>' +
+    '<div class="bg-white p-3.5 sm:p-4 rounded-2xl border shadow-sm">' +
+      '<h2 class="text-base sm:text-lg font-black text-green-900 flex items-center gap-2">' +
+        '<i class="fas fa-chart-pie text-green-600"></i>ផ្ទាំងសង្ខេបអាជីវកម្ម KC WATER' +
+      '</h2>' +
+      '<p class="text-[11px] text-gray-500 mt-0.5">ទិដ្ឋភាពទូទៅនៃការលក់ សាច់ប្រាក់ ចំណាយ និងប្រាក់ចំណេញសុទ្ធ</p>' +
     '</div>' +
 
     // 📊 កាតស្ថិតិទាំង ៦ (រត់ ៦ ជួរលើ PC ធំ, ៣ ជួរលើ Laptop, និង ២ ជួរលើទូរស័ព្ទ)
