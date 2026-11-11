@@ -1466,14 +1466,9 @@ function renderExpensesModule() {
 
       // កាតទី ២៖ ប្រវត្តិការចំណាយ (lg:col-span-7)
       '<div class="lg:col-span-7 card border-t-4 border-gray-700 shadow-xl p-4 sm:p-5 mb-0 bg-white">' +
-        '<div class="flex justify-between items-center mb-2.5">' +
-          '<h3 class="font-bold text-gray-800 text-xs sm:text-sm flex items-center gap-1.5">' +
-            '<i class="fas fa-history text-blue-600"></i>ប្រវត្តិការចំណាយថ្មីៗ' +
-          '</h3>' +
-          '<button onclick="fetchExpensesHistory()" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition flex items-center gap-1 shadow-2xs">' +
-            '<i class="fas fa-sync-alt text-[10px]"></i> Refresh' +
-          '</button>' +
-        '</div>' +
+        '<h3 class="font-bold text-gray-800 text-xs sm:text-sm mb-2.5 flex items-center gap-1.5">' +
+          '<i class="fas fa-history text-blue-600"></i>ប្រវត្តិការចំណាយថ្មីៗ' +
+        '</h3>' +
         '<div class="overflow-x-auto max-h-96 overflow-y-auto rounded-xl border border-gray-200 shadow-inner">' +
           '<table class="w-full text-left text-xs border-collapse">' +
             '<thead class="sticky top-0 bg-gray-100 text-gray-700 font-bold border-b z-10 shadow-xs">' +
@@ -1715,17 +1710,12 @@ function renderCustomersModule() {
     // ជួរខាងលើ៖ បង្កើតគណនី (ឆ្វេង ៦ ភាគ) + កំណត់តម្លៃកុងត្រា (ស្តាំ ៦ ភាគ) លើ PC ធំ
     '<div class="grid grid-cols-1 lg:grid-cols-2 gap-3.5 items-start">' +
       
-      // កាត ១៖ បង្កើត/កែប្រែគណនី
-      '<div class="card border-t-4 border-blue-600 shadow-xl p-4 sm:p-5 mb-0 bg-white">' +
-        '<div class="flex justify-between items-center mb-3">' +
-          '<h2 id="custFormTitle" class="font-extrabold text-blue-900 text-xs sm:text-base flex items-center gap-1.5">' +
-            '<i class="fas fa-user-plus text-blue-600"></i>បង្កើតគណនី Admin / អ្នកដឹក / អតិថិជន' +
-          '</h2>' +
-          '<button type="button" id="btnCancelEditCust" onclick="cancelEditCustomer()" class="text-xs font-bold text-gray-500 hover:text-red-600 hidden">' +
-            '<i class="fas fa-times mr-1"></i>បោះបង់ការកែប្រែ' +
-          '</button>' +
-        '</div>' +
-        '<div class="space-y-2.5">' +
+      // កាតទី ១៖ ទម្រង់កត់ត្រាការខ្ចី
+    '<div class="card border-t-4 border-blue-600 shadow-xl p-4 sm:p-5 mb-0 bg-white">' +
+      '<h2 class="font-extrabold text-blue-900 text-xs sm:text-base mb-3 flex items-center gap-1.5">' +
+        '<i class="fas fa-boxes-packing text-blue-600"></i>កត់ត្រាភ្ញៀវខ្ចីធុង / បរិក្ខារ' +
+      '</h2>' +
+      '<div class="space-y-2.5">' +
           '<div>' +
             '<label class="text-[9.5px] font-bold text-gray-500 uppercase block mb-0.5">ប្រភេទគណនីដែលត្រូវបង្កើត</label>' +
             '<select id="mem_role_type" onchange="toggleCustTypeFields()" class="font-bold border-2 border-blue-200 p-2 rounded-xl w-full bg-white text-xs sm:text-sm outline-none">' +
@@ -2479,17 +2469,12 @@ function renderSettingsModule() {
   // 🖥️ ប្រើ w-full max-w-[1600px] ដើម្បីឱ្យពេញអេក្រង់កុំព្យូទ័រស្មើស្អាត
   area.innerHTML = '<div class="w-full max-w-[1600px] mx-auto space-y-3.5 px-1 sm:px-2">' +
     // ក្បាលទំព័រ
-    '<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-3.5 sm:p-4 rounded-3xl border shadow-sm gap-2">' +
-      '<div>' +
-        '<h2 class="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">' +
-          '<i class="fas fa-gear text-emerald-600"></i>' +
-          '<span>ការកំណត់ប្រព័ន្ធ (System Settings)</span>' +
-        '</h2>' +
-        '<p class="text-[11px] text-slate-500 mt-0.5">ចុចលើកាតមុខងារនីមួយៗដើម្បីបើកផ្ទាំង Pop-up កំណត់ទិន្នន័យ</p>' +
-      '</div>' +
-      '<button onclick="renderSettingsModule()" class="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold shadow-2xs active:scale-95 transition flex items-center gap-1.5 self-end sm:self-auto">' +
-        '<i class="fas fa-sync-alt"></i> Refresh' +
-      '</button>' +
+    '<div class="bg-white p-3.5 sm:p-4 rounded-3xl border shadow-sm">' +
+      '<h2 class="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">' +
+        '<i class="fas fa-gear text-emerald-600"></i>' +
+        '<span>ការកំណត់ប្រព័ន្ធ (System Settings)</span>' +
+      '</h2>' +
+      '<p class="text-[11px] text-slate-500 mt-0.5">ចុចលើកាតមុខងារនីមួយៗដើម្បីបើកផ្ទាំង Pop-up កំណត់ទិន្នន័យ</p>' +
     '</div>' +
 
     // 📱 ក្រឡាចត្រង្គកាតមុខងារទាំង ៩
