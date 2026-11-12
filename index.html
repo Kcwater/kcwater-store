@@ -3681,7 +3681,7 @@ function applyCustomSlidesFromSettings(sMap) {
     // 📱 មុខងារគ្រប់គ្រង BOTTOM NAVIGATION & ប្រវត្តិទិញទឹក
     // ==========================================
 
-    // ១. ប្តូរ Tab លើ Bottom Navigation Bar
+   // ១. ប្តូរ Tab លើ Bottom Navigation Bar (គ្មាន alert ចាស់ មិនកន្ត្រាក់ Telegram)
     function switchStoreAppTab(tab, btn) {
       document.querySelectorAll('.bnav-btn').forEach(b => {
         b.className = "bnav-btn flex flex-col items-center gap-1 text-slate-500 hover:text-slate-900 transition active:scale-95";
@@ -3702,7 +3702,7 @@ function applyCustomSlidesFromSettings(sMap) {
         if (trackCard && !trackCard.classList.contains('hidden')) {
           trackCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
         } else {
-          alert("បច្ចុប្បន្នលោកអ្នកមិនមានការកុម្ម៉ង់ទឹកដែលកំពុងដឹកជញ្ជូនឡើយ!");
+          showStoreToast("បច្ចុប្បន្នលោកអ្នកមិនមានការកុម្ម៉ង់ទឹកដែលកំពុងដឹកជញ្ជូនឡើយ!", "info");
         }
       } else if (tab === 'HISTORY') {
         openCustomerHistoryModal();
