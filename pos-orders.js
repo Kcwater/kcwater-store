@@ -1935,7 +1935,19 @@ async function refundAndVoidOnlineOrder(orderId, custName, total, itemsText) {
             .replace(/🛢️/gi, '')
             .trim();
 
+          // ស្វែងរកទំនិញគោល
           var prodObj = allProducts.find(p => p.name.trim().toLowerCase() === cleanName.toLowerCase());
+
+          // 🛢️ បើជាសំបកធុង ហើយមិនទាន់រកឃើញ ស្វែងរកតាមពាក្យគន្លឹះ "សំបក"
+          if (!prodObj && (cleanName.includes('សំបក') || cleanName.includes('ធុង'))) {
+            prodObj = allProducts.find(function(p) {
+              var pName = (p.name || '').toLowerCase();
+              if (cleanName.includes('ខៀវ')) return pName.includes('សំបក') && pName.includes('ខៀវ');
+              if (cleanName.includes('ស')) return pName.includes('សំបក') && pName.includes('ស');
+              return false;
+            });
+          }
+
           if (prodObj && prodObj.type === 'ទិញគេ' && pQty > 0) {
             var restoredStock = parseFloat(prodObj.stock || 0) + pQty;
             await supabaseClient.from('products').update({ stock: restoredStock }).eq('id', prodObj.id);
@@ -1963,6 +1975,16 @@ async function refundAndVoidOnlineOrder(orderId, custName, total, itemsText) {
       payment_method: "Cash"
     }]);
 
+    // ធ្វើបច្ចុប្បន្នភាពស្ថានភាពក្នុង Memory ភ្លាមៗ
+    if (Array.isArray(cachedAuditOrders)) {
+      var foundAudit = cachedAuditOrders.find(o => o.order_id === orderId);
+      if (foundAudit) foundAudit.status = 'Cancelled';
+    }
+    if (Array.isArray(adminOnlineOrdersCache)) {
+      var foundAdmin = adminOnlineOrdersCache.find(o => o.order_id === orderId);
+      if (foundAdmin) foundAdmin.status = 'Cancelled';
+    }
+
     // 🎉 ប្រើ kcAlert ជូនដំណឹងជោគជ័យ
     if (typeof kcAlert === 'function') {
       await kcAlert({
@@ -1974,15 +1996,21 @@ async function refundAndVoidOnlineOrder(orderId, custName, total, itemsText) {
       showToast("បានបោះបង់ការកុម្ម៉ង់ និងកត់ត្រាសងប្រាក់ជូនភ្ញៀវជោគជ័យ!", "success");
     }
 
-    // ៤. ផ្ញើ Telegram Alert ទៅថៅកែភ្លាមៗ
+    // ៤. ផ្ញើ Telegram Alert ទៅថៅកែភ្លាមៗ (តាមម៉ោងកម្ពុជា)
     try {
+      var timeKhNow = new Date().toLocaleString('km-KH', { 
+        timeZone: 'Asia/Phnom_Penh', 
+        dateStyle: 'short', 
+        timeStyle: 'short' 
+      });
+
       var tgMsg = "⚠️ <b>[KC WATER - ដោះស្រាយវិវាទ & សងប្រាក់ភ្ញៀវ (Refund Online)]</b>\n\n" +
                   "🆔 <b>កូដកុម្ម៉ង់៖</b> <code>" + orderId + "</code>\n" +
                   "👤 <b>អតិថិជន៖</b> " + custName + "\n" +
                   "📦 <b>ទំនិញបង្វិលចូលស្តុកវិញ៖</b> " + itemsText + "\n" +
                   "💰 <b>ទឹកប្រាក់សងវិញ៖</b> <b>-៛ " + Number(total).toLocaleString() + "</b>\n" +
                   "✍️ <b>អ្នកដោះស្រាយ៖</b> " + (currentUser.fullName || "Admin") + "\n" +
-                  "🕒 <b>ម៉ោង៖</b> " + new Date().toLocaleTimeString('km-KH');
+                  "🕒 <b>ម៉ោង៖</b> " + timeKhNow;
       sendTelegramAlert(tgMsg);
     } catch(tgE) {}
 
