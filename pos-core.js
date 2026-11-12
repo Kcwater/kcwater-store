@@ -10,7 +10,7 @@ var activeQuickRestockData = null;
 var rPG = function() { if (typeof renderProductGrid === 'function') renderProductGrid(); };
 var rC = function() { if (typeof renderCart === 'function') renderCart(); };
 
-// 🔑 មុខងារចូលប្រើប្រាស់សុវត្ថិភាពខ្ពស់ (ផ្ទៀងផ្ទាត់ និងចងចាំឈ្មោះមេ ១០០%)
+// 🔑 មុខងារចូលប្រើប្រាស់សុវត្ថិភាពខ្ពស់ (ផ្ទៀងផ្ទាត់ និងចងចាំឈ្មោះមេ ១០០% - ទប់ស្កាត់ Monthly ភ្លាមៗ)
 async function login() {
   var userEl = document.getElementById('user');
   var passEl = document.getElementById('pass');
@@ -38,6 +38,17 @@ async function login() {
     var userRow = Array.isArray(data) ? data[0] : data;
 
     if (userRow && userRow.id) {
+      // 🔒 រារាំងអតិថិជនប្រចាំខែ (Monthly) ភ្លាមៗមុនពេលបើកប្រព័ន្ធ ឬទាញទិន្នន័យ!
+      if (userRow.type === 'Monthly') {
+        showToast("អតិថិជនប្រចាំខែ មិនអនុញ្ញាតឱ្យចូលប្រើប្រព័ន្ធឡើយ! Admin ជាអ្នកដកទំនិញជំនួស។", "error");
+        if (remEl) remEl.checked = false;
+        localStorage.removeItem('kc_pos_user');
+        localStorage.removeItem('kc_pos_pass');
+        userEl.value = '';
+        passEl.value = '';
+        return;
+      }
+
       var bossName = (userRow.linked_boss || "").trim();
 
       // 🔍 ប្រសិនបើជាកូនចៅ ហើយ RPC មិនបានផ្ញើ linked_boss មក ➔ ទាញយកពីតារាង users ផ្ទាល់
@@ -88,13 +99,6 @@ async function login() {
 
       await loadSettingsAndTelegram();
       await fetchInitialPOSData();
-
-      // 🔒 រារាំងអតិថិជនប្រចាំខែ (Monthly) មិនឱ្យ Login ចូលប្រព័ន្ធដាច់ខាត
-      if (currentUser.type === 'Monthly') {
-        showToast("អតិថិជនប្រចាំខែ មិនមានសិទ្ធិចូលប្រើប្រព័ន្ធឡើយ! Admin ជាអ្នកដកទំនិញជំនួស។", "error");
-        logout();
-        return;
-      }
 
       // 🎯 បែងចែកទំព័រដើមតាមតួនាទី (Role Routing)
       if (currentUser.role === 'Admin') {
