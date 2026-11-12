@@ -3845,10 +3845,40 @@ function applyCustomSlidesFromSettings(sMap) {
       if (modal) modal.classList.add('hidden');
     }
 
-   // ❌ ៤. មុខងារបោះបង់ការកុម្ម៉ង់របស់ភ្ញៀវ (មានសុវត្ថិភាព មិនគាំងទូរស័ព្ទ)
+   // ❌ ៤. មុខងារបោះបង់ការកុម្ម៉ង់របស់ភ្ញៀវ (2-Step In-App Confirm - គ្មាន window.confirm មិនគាំងទូរស័ព្ទ)
+var cancelOrderConfirmState = {};
+
 async function cancelCustomerActiveOrder(orderId) {
-  var ok = window.confirm("តើលោកអ្នកពិតជាចង់បោះបង់ការកុម្ម៉ង់ទឹកលេខកូដ [" + orderId + "] នេះមែនទេ?");
-  if (!ok) return;
+  var btn = event ? event.target.closest('button') : null;
+
+  // 🛡️ ជំហានទី ១៖ ចុចលើកទី ១ ➔ ប្តូរពណ៌ប៊ូតុងសួរភ្ញៀវសិន (ជំនួស window.confirm ការពារកុំឱ្យគាំង Telegram)
+  if (!cancelOrderConfirmState[orderId]) {
+    cancelOrderConfirmState[orderId] = true;
+    if (btn) {
+      btn.className = "w-full mt-2 py-2.5 bg-red-600 text-white font-black text-xs rounded-xl shadow-md transition active:scale-95 flex items-center justify-center gap-1.5 animate-pulse";
+      btn.innerHTML = '<i class="fas fa-triangle-exclamation text-yellow-300"></i> ចុចទីនេះម្តងទៀត ដើម្បីបញ្ជាក់ការបោះបង់!';
+    }
+    showStoreToast("សូមចុចលើប៊ូតុងក្រហមម្តងទៀត ដើម្បីបញ្ជាក់!", "warning");
+
+    // រង់ចាំ ៤ វិនាទី បើមិនចុចម្តងទៀត ➔ ត្រឡប់មកសភាពដើមវិញ
+    setTimeout(function() {
+      if (cancelOrderConfirmState[orderId]) {
+        delete cancelOrderConfirmState[orderId];
+        if (btn) {
+          btn.className = "w-full mt-2 py-2 bg-red-50 hover:bg-red-100 text-red-700 font-bold text-xs rounded-xl border border-red-200 transition active:scale-95 flex items-center justify-center gap-1.5";
+          btn.innerHTML = '<i class="fas fa-circle-xmark"></i> បោះបង់ការកុម្ម៉ង់នេះ';
+        }
+      }
+    }, 4000);
+    return;
+  }
+
+  // 🛡️ ជំហានទី ២៖ ភ្ញៀវបានចុចបញ្ជាក់លើកទី ២ ➔ ដំណើរការបោះបង់ភ្លាមៗ
+  delete cancelOrderConfirmState[orderId];
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> កំពុងបោះបង់...';
+  }
 
   try {
     const { error } = await supabaseClient
@@ -3868,12 +3898,13 @@ async function cancelCustomerActiveOrder(orderId) {
 
     showStoreToast("ការកុម្ម៉ង់ត្រូវបានបោះបង់ជោគជ័យ!", "info");
 
-    // ផ្ញើសារ Telegram ជូនដំណឹងទៅរោងចក្រ
+    // ផ្ញើសារ Telegram ជូនដំណឹងទៅរោងចក្រ (តាមម៉ោងកម្ពុជា)
     try {
       if (telegramSettings && telegramSettings.token && telegramSettings.chatId) {
+        var timeKhNow = new Date().toLocaleTimeString('km-KH', { timeZone: 'Asia/Phnom_Penh' });
         var msg = "🔔 <b>[KC WATER - ភ្ញៀវបានបោះបង់ការកុម្ម៉ង់ដោយខ្លួនឯង]</b>\n\n" +
                   "🆔 <b>កូដ៖</b> <code>" + orderId + "</code>\n" +
-                  "🕒 <b>ម៉ោង៖</b> " + new Date().toLocaleTimeString('km-KH');
+                  "🕒 <b>ម៉ោង៖</b> " + timeKhNow;
         fetch("https://api.telegram.org/bot" + telegramSettings.token + "/sendMessage", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -3884,6 +3915,10 @@ async function cancelCustomerActiveOrder(orderId) {
 
   } catch(err) {
     showStoreToast("កំហុស៖ " + err.message, "error");
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-circle-xmark"></i> បោះបង់ការកុម្ម៉ង់នេះ';
+    }
   }
 }
 
