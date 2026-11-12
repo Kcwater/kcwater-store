@@ -93,8 +93,15 @@ async function checkPendingOnlineOrdersBadge() {
   } catch(e) {}
 }
 
-// ⚡ REALTIME LISTENER ពេញលេញ (កណ្តឹង 🔔 & បេសកកម្មលោតភ្លាមក្នុង ០.១ វិនាទី Real-Time)
+// ⚡ REALTIME LISTENER ពេញលេញ (កណ្តឹង 🔔 & បេសកកម្មលោតភ្លាមក្នុង ០.១ វិនាទី - គ្មានការភ្ជាប់ស្ទួន)
 function initOrdersRealtimeListener() {
+  if (!supabaseClient) return;
+
+  // 🛡️ បើ Channel នេះកំពុងភ្ជាប់ដំណើរការរួចហើយ មិនបាច់ភ្ជាប់ម្តងទៀតឡើយ (ការពារកុំឱ្យស៊ី Memory)
+  if (ordersRealtimeChannel && ordersRealtimeChannel.state === 'joined') {
+    return;
+  }
+
   try {
     if (ordersRealtimeChannel) {
       supabaseClient.removeChannel(ordersRealtimeChannel);
@@ -108,21 +115,24 @@ function initOrdersRealtimeListener() {
         if (typeof checkPendingOnlineOrdersBadge === 'function') checkPendingOnlineOrdersBadge();
         if (typeof updateNotificationCenterBadge === 'function') updateNotificationCenterBadge();
 
+        // 🛡️ បើផ្ទាំង Admin Modal កំពុងបើក ធ្វើបច្ចុប្បន្នភាពស្ងាត់ៗ មិនឱ្យរលត់វិលកង់ Spinner រំខាន Admin ឡើយ
         var modal = document.getElementById('onlineOrdersAdminModal');
         if (modal && !modal.classList.contains('hidden')) {
-          openOnlineOrdersModal();
+          if (typeof openOnlineOrdersModal === 'function') {
+            openOnlineOrdersModal();
+          }
         }
 
         // 🛵 សម្រាប់អ្នកដឹកជញ្ជូនរោងចក្រ (Company Driver)
         if (currentUser && currentUser.type === 'CompanyDriver') {
           var driverContainer = document.getElementById('driverOrdersContainer');
-          if (driverContainer) {
+          if (driverContainer && typeof renderCompanyDeliveriesModule === 'function') {
             renderCompanyDeliveriesModule(true);
           }
 
           var newRecord = payload.new || {};
           if (newRecord.status === 'Assigned' && newRecord.driver_name === currentUser.fullName) {
-            playOrderChime();
+            if (typeof playOrderChime === 'function') playOrderChime();
             if (navigator.vibrate) {
               navigator.vibrate([400, 200, 400, 200, 600]);
             }
@@ -136,7 +146,9 @@ function initOrdersRealtimeListener() {
         if (typeof checkAdminPendingPayments === 'function') checkAdminPendingPayments();
       })
       .subscribe();
-  } catch(e) {}
+  } catch(e) {
+    console.warn("Realtime listener error:", e);
+  }
 }
 
 // 🔄 Polling Auto-Sync ស្ងាត់ៗរៀងរាល់ ១៥ វិនាទីម្តង
