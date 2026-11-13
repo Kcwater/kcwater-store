@@ -1604,7 +1604,8 @@ function getLocalizedText(text, lang) {
         closedHint.innerText = d.closedHint.replace('{open}', storeOperatingConfig.openTime).replace('{close}', storeOperatingConfig.closeTime);
       }
 
-      // ៤. Refresh ទំនិញលើកាតាឡុក កន្ត្រក និងការគណនាប្រាក់ភ្លាមៗ
+      // ៤. Refresh ប្រភេទទំនិញ កាតាឡុក កន្ត្រក និងការគណនាប្រាក់ភ្លាមៗ
+      if (typeof renderCategoryChips === 'function') renderCategoryChips();
       if (typeof renderCatalogGrid === 'function') renderCatalogGrid();
       if (typeof recalcCartDock === 'function') recalcCartDock();
       if (typeof updateCheckoutCalculation === 'function') updateCheckoutCalculation();
@@ -2993,11 +2994,12 @@ function subscribeOrderRealtime(orderId) {
 async function checkActiveOrderLiveStatus() {
   var orderId = currentTrackingOrderId || localStorage.getItem('kc_active_order_id');
   var cardBox = document.getElementById('activeOrderCardBox');
+  var trackBadge = document.getElementById('bnavTrackBadge');
   if (!orderId || !cardBox) {
     if (cardBox) cardBox.classList.add('hidden');
+    if (trackBadge) trackBadge.classList.add('hidden');
     return;
   }
-
   // ភ្ជាប់ Realtime Listener (ភ្ជាប់តែម្តងគត់)
   subscribeOrderRealtime(orderId);
 
@@ -3193,6 +3195,7 @@ async function checkActiveOrderLiveStatus() {
       '</div>' +
     '</div>';
 
+   if (trackBadge) trackBadge.classList.remove('hidden');
     cardBox.classList.remove('hidden');
   } catch(e) {
     console.warn("Tracking load error:", e);
@@ -3636,7 +3639,9 @@ function applyCustomSlidesFromSettings(sMap) {
       await loadStoreOnlineProducts();
       await loadStoreSettingsFromSupabase();
       
-      changeAppLanguage('km');
+      var savedLang = 'km';
+      try { savedLang = localStorage.getItem('kc_preferred_lang') || 'km'; } catch(e) {}
+      changeAppLanguage(savedLang);
       checkQuickReorderAvailability();
       checkActiveOrderLiveStatus();
       trackingPollTimer = setInterval(checkActiveOrderLiveStatus, 10000);
@@ -3701,16 +3706,25 @@ function applyCustomSlidesFromSettings(sMap) {
       if (modal) modal.classList.add('hidden');
     }
 
-    // 📸 ៣. ចុចប៊ូតុងថតយកភ្លាមៗ
+    // 📸 ៣. ចុចប៊ូតុងថតយកភ្លាមៗ (រក្សាទ្រង់ទ្រាយរូបភាពស្អាតតាមទូរស័ព្ទ)
     function captureLivePhoto() {
       var video = document.getElementById('liveCameraVideo');
       if (!video) return;
 
+      var vw = video.videoWidth || 640;
+      var vh = video.videoHeight || 480;
+      var maxDim = 800;
+      var w = vw, h = vh;
+      if (w > maxDim || h > maxDim) {
+        if (w > h) { h = Math.round((h * maxDim) / w); w = maxDim; }
+        else { w = Math.round((w * maxDim) / h); h = maxDim; }
+      }
+
       var canvas = document.createElement('canvas');
-      canvas.width = 600;
-      canvas.height = 450;
+      canvas.width = w;
+      canvas.height = h;
       var ctx = canvas.getContext('2d');
-      ctx.drawImage(video, 0, 0, 600, 450);
+      ctx.drawImage(video, 0, 0, w, h);
 
       var base64 = canvas.toDataURL('image/jpeg', 0.7);
       applyHousePhotoToUI(base64);
