@@ -3510,11 +3510,52 @@ function applyCustomSlidesFromSettings(sMap) {
       try {
         var rawSaved = localStorage.getItem('kc_last_order_items');
         if (!rawSaved) return;
-        cartItems = JSON.parse(rawSaved);
+        var parsed = JSON.parse(rawSaved);
+        var verifiedCart = {};
+        var skippedNames = [];
+
+        for (var k in parsed) {
+          var savedItem = parsed[k];
+          if (!savedItem || savedItem.qty <= 0) continue;
+
+          // ផ្ទៀងផ្ទាត់ជាមួយទំនិញ ស្តុក និងតម្លៃបច្ចុប្បន្នក្នុង STORE_CATALOG
+          var liveProd = STORE_CATALOG.find(function(p) { return p.id === String(k); });
+          if (!liveProd) {
+            skippedNames.push(savedItem.raw_name || k);
+            continue;
+          }
+          if (liveProd.type === 'ទិញគេ' && parseFloat(liveProd.stock || 0) <= 0) {
+            skippedNames.push(liveProd.raw_name);
+            continue;
+          }
+
+          var validQty = savedItem.qty;
+          if (liveProd.type === 'ទិញគេ' && validQty > parseFloat(liveProd.stock || 0)) {
+            validQty = parseFloat(liveProd.stock || 0);
+          }
+
+          verifiedCart[liveProd.id] = {
+            raw_name: liveProd.raw_name,
+            price: liveProd.price,
+            qty: validQty,
+            isBarrel20L: liveProd.isBarrel20L || false
+          };
+        }
+
+        if (Object.keys(verifiedCart).length === 0) {
+          showStoreToast("អភ័យទោស! ទំនិញពីលើកមុនអស់ស្តុក ឬលែងមានដាក់លក់ហើយ។", "warning");
+          return;
+        }
+
+        cartItems = verifiedCart;
         renderCatalogGrid();
         recalcCartDock();
         openCheckoutModal();
         confetti({ particleCount: 80, spread: 60, origin: { y: 0.7 } });
+
+        if (skippedNames.length > 0) {
+          showStoreToast("ទំនិញខ្លះអស់ស្តុកត្រូវបានដកចេញ៖ " + skippedNames.join(", "), "warning");
+        }
       } catch(e) {}
     }
 
