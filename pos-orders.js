@@ -1284,6 +1284,11 @@ function viewOrderHousePhotoById(orderId) {
     showToast("ការកុម្ម៉ង់នេះមិនមានភ្ជាប់រូបថតមុខផ្ទះឡើយ!", "info");
     return;
   }
+  var safeUrl = String(item.url).trim();
+  if (!safeUrl.startsWith('data:image/') && !safeUrl.startsWith('https://') && !safeUrl.startsWith('http://')) {
+    showToast("ទម្រង់រូបភាពមិនត្រឹមត្រូវ!", "error");
+    return;
+  }
   var existing = document.getElementById('orderHousePhotoModal');
   if (existing) existing.remove();
 
@@ -1293,12 +1298,12 @@ function viewOrderHousePhotoById(orderId) {
       '<div class="flex justify-between items-center border-b pb-2">' +
         '<div class="text-left">' +
           '<b class="text-xs sm:text-sm text-slate-900 flex items-center gap-1.5"><i class="fas fa-house-chimney text-emerald-600"></i> រូបថតមុខផ្ទះ / ច្រកចូល</b>' +
-          '<p class="text-[10px] text-slate-500 font-bold mt-0.5">អតិថិជន៖ ' + item.name + ' (កូដ: ' + orderId + ')</p>' +
+          '<p class="text-[10px] text-slate-500 font-bold mt-0.5">អតិថិជន៖ ' + escapeHtml(item.name) + ' (កូដ: ' + escapeHtml(orderId) + ')</p>' +
         '</div>' +
         '<button type="button" onclick="document.getElementById(\'orderHousePhotoModal\').remove()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:text-slate-800 text-lg font-bold flex items-center justify-center">&times;</button>' +
       '</div>' +
       '<div class="rounded-2xl overflow-hidden border border-slate-200 bg-slate-50 flex items-center justify-center max-h-[58vh]">' +
-        '<img src="' + item.url + '" class="w-full h-auto object-contain max-h-[58vh] rounded-xl shadow-xs" alt="House Photo">' +
+        '<img src="' + escapeHtml(safeUrl) + '" class="w-full h-auto object-contain max-h-[58vh] rounded-xl shadow-xs" alt="House Photo">' +
       '</div>' +
       '<button type="button" onclick="document.getElementById(\'orderHousePhotoModal\').remove()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl transition">បិទផ្ទាំងរូបភាព</button>' +
     '</div>' +
