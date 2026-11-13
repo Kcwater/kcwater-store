@@ -3729,7 +3729,8 @@ async function fetchCustomerPortalData() {
 // 💳 ៧. ផ្ទាំងស្នើទូទាត់លុយរបស់ម៉ូយ (CUSTOMER PAYMENT REQUEST MODAL)
 // ==========================================
 function openCustomerPortalPayment(mode) {
-  var due = custPortalDataCache ? custPortalDataCache.grandTotalDue : 0;
+ var due = custPortalDataCache ? custPortalDataCache.grandTotalDue : 0;
+  var qrSrc = (typeof storeAbaQrCodeBase64 !== 'undefined' && storeAbaQrCodeBase64) ? storeAbaQrCodeBase64 : 'https://i.postimg.cc/DzHPhnmQ/photo-2026-09-06-20-44-57.jpg';
   if (due <= 0) {
     showToast("អ្នកមិនមានបំណុលត្រូវទូទាត់ឡើយ!", "info");
     return;
@@ -3764,7 +3765,7 @@ function injectCustKhqrPaymentModal() {
           '<span class="text-xs font-black text-green-700">៛ ' + due.toLocaleString() + '</span>' +
         '</div>' +
         '<div class="p-1.5 bg-white rounded-2xl border shadow-inner max-w-[180px] mx-auto">' +
-          '<img src="https://i.postimg.cc/DzHPhnmQ/photo-2026-09-06-20-44-57.jpg" class="w-full rounded-xl shadow-xs">' +
+          '<img src="' + qrSrc + '" class="w-full rounded-xl shadow-xs">' +
         '</div>' +
         '<p class="text-[10px] text-gray-400 italic">ស្កេនទូទាត់ ឬ Save QR ទុកស្កេនក្នុង App ធនាគារ</p>' +
       '</div>' +
