@@ -447,12 +447,6 @@ async function loadDashboardData() {
     var totalDebtKHR = 0;
     (unpaids || []).forEach(u => { totalDebtKHR += parseFloat(u.total || 0); });
 
-    // បូកបន្ថែមបំណុលចាស់នៅសល់ចុងក្រោយបំផុតរបស់ម៉ូយម្នាក់ៗ (balance_khr)
-    const { data: allSettleBalances } = await supabaseClient
-      .from('settlements')
-      .select('id, customer_name, balance_khr')
-      .order('id', { ascending: false });
-
     var latestSettleSeen = {};
     (allSettleBalances || []).forEach(function(s) {
       var cName = (s.customer_name || "").trim();
