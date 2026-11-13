@@ -473,7 +473,7 @@ function renderAdminOnlineOrdersUI() {
 
   list.forEach(function(o) {
     if (o.status === 'Pending') pendingCount++;
-    if (o.status === 'Assigned') assignedCount++;
+    if (o.status === 'Assigned' || o.status === 'Departed') assignedCount++;
     if (o.status === 'Delivered') deliveredCount++;
   });
 
@@ -485,9 +485,9 @@ function renderAdminOnlineOrdersUI() {
   '</div>';
 
   var filteredList = list.filter(function(o) {
-    if (activeAdminOnlineTab === 'ACTIVE') return o.status === 'Pending' || o.status === 'Assigned';
+    if (activeAdminOnlineTab === 'ACTIVE') return o.status === 'Pending' || o.status === 'Assigned' || o.status === 'Departed';
     if (activeAdminOnlineTab === 'PENDING') return o.status === 'Pending';
-    if (activeAdminOnlineTab === 'ASSIGNED') return o.status === 'Assigned';
+    if (activeAdminOnlineTab === 'ASSIGNED') return o.status === 'Assigned' || o.status === 'Departed';
     if (activeAdminOnlineTab === 'DELIVERED') return o.status === 'Delivered';
     return true;
   });
@@ -507,6 +507,7 @@ function renderAdminOnlineOrdersUI() {
   var html = tabsHtml;
   filteredList.forEach(function(o) {
     var isPending = (o.status === 'Pending');
+    var isDeparted = (o.status === 'Departed');
     var isDelivered = (o.status === 'Delivered');
 
     // 🛡️ ចម្រាញ់ទិន្នន័យការពារ XSS Injection
@@ -520,7 +521,9 @@ function renderAdminOnlineOrdersUI() {
       '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300">⏳ រង់ចាំចាត់ចែង</span>' : 
       (isDelivered ? 
         '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300">✅ ដឹកដល់រួចរាល់</span>' : 
-        '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-blue-100 text-blue-900 border border-blue-300">🚚 កំពុងដឹក' + (safeDriverName ? ' (' + safeDriverName + ')' : '') + '</span>');
+        (isDeparted ? 
+          '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-blue-600 text-white border border-blue-400 animate-pulse">🛵💨 កំពុងធ្វើដំណើរ' + (safeDriverName ? ' (' + safeDriverName + ')' : '') + '</span>' :
+          '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300">📦 បានចាត់ចែង' + (safeDriverName ? ' (' + safeDriverName + ')' : '') + '</span>'));
 
     var cleanPhone = String(o.phone || '').replace(/[^0-9]/g, '');
     var safeNameForJs = String(o.customer_name || '').replace(/'/g, "\\'");
