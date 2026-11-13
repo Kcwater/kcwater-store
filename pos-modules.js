@@ -3730,7 +3730,7 @@ async function fetchCustomerPortalData() {
 // ==========================================
 function openCustomerPortalPayment(mode) {
  var due = custPortalDataCache ? custPortalDataCache.grandTotalDue : 0;
-  var qrSrc = (typeof storeAbaQrCodeBase64 !== 'undefined' && storeAbaQrCodeBase64) ? storeAbaQrCodeBase64 : 'https://i.postimg.cc/DzHPhnmQ/photo-2026-09-06-20-44-57.jpg';
+  var qrSrc = (typeof storeAbaQrCodeBase64 !== 'undefined' && storeAbaQrCodeBase64) ? storeAbaQrCodeBase64 : '';
   if (due <= 0) {
     showToast("អ្នកមិនមានបំណុលត្រូវទូទាត់ឡើយ!", "info");
     return;
