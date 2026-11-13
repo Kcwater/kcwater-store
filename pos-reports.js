@@ -890,28 +890,53 @@ function switchDebtorsTab(tab) {
 
 async function fetchDebtorsListFromSupabase() {
   try {
-    const { data: unpaids } = await supabaseClient.from('transactions').select('customer_name, total').eq('status', 'Unpaid');
+    const [unpaidRes, settleRes] = await Promise.all([
+      supabaseClient.from('transactions').select('customer_name, total').eq('status', 'Unpaid'),
+      supabaseClient.from('settlements').select('id, customer_name, balance_khr').order('id', { ascending: false })
+    ]);
+
+    var unpaids = unpaidRes.data || [];
+    var settles = settleRes.data || [];
     var map = {};
-    var grandTotal = 0;
 
-    if (unpaids) {
-      unpaids.forEach(function(u) {
-        var c = (u.customer_name || "").trim();
-        if (c && c !== "Walk-in") {
-          var tot = parseFloat(u.total || 0);
-          map[c] = (map[c] || 0) + tot;
-          grandTotal += tot;
+    // ១. បូកជើងទឹកដកថ្មីដែលមិនទាន់ទូទាត់ (Unpaid)
+    unpaids.forEach(function(u) {
+      var c = (u.customer_name || "").trim();
+      if (c && c !== "Walk-in") {
+        var tot = parseFloat(u.total || 0);
+        map[c] = (map[c] || 0) + tot;
+      }
+    });
+
+    // ២. បូកបន្ថែមបំណុលចាស់នៅសល់ចុងក្រោយបំផុតរបស់ម៉ូយម្នាក់ៗ (balance_khr)
+    var latestSeen = {};
+    settles.forEach(function(s) {
+      var c = (s.customer_name || "").trim();
+      if (c && c !== "Walk-in" && !latestSeen[c]) {
+        latestSeen[c] = true;
+        var oldBal = parseFloat(s.balance_khr || 0);
+        if (oldBal > 0) {
+          map[c] = (map[c] || 0) + oldBal;
         }
-      });
-    }
+      }
+    });
 
+    var grandTotal = 0;
     allDebtorsCache = [];
-    for (var k in map) { allDebtorsCache.push({ name: k, total: map[k] }); }
+    for (var k in map) {
+      if (map[k] > 0) {
+        allDebtorsCache.push({ name: k, total: map[k] });
+        grandTotal += map[k];
+      }
+    }
     allDebtorsCache.sort((a, b) => b.total - a.total);
 
-    document.getElementById('debtorsGrandTotalText').innerText = '៛ ' + grandTotal.toLocaleString();
+    var grandEl = document.getElementById('debtorsGrandTotalText');
+    if (grandEl) grandEl.innerText = '៛ ' + grandTotal.toLocaleString();
     renderDebtorsCardsUI(allDebtorsCache);
-  } catch(e) {}
+  } catch(e) {
+    console.error("Fetch debtors error:", e);
+  }
 }
 
 function renderDebtorsCardsUI(list) {
