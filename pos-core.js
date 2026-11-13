@@ -369,26 +369,19 @@ async function loadDashboardData() {
     var monthQueryStart = firstDayMonthStr + 'T00:00:00+07:00';
     var todayQueryStart = todayStr + 'T00:00:00+07:00';
 
-    const { data: monthTrans } = await supabaseClient
-      .from('transactions')
-      .select('*')
-      .gte('created_at', monthQueryStart)
-      .order('created_at', { ascending: false });
-
-    const { data: todaySettles } = await supabaseClient
-      .from('settlements')
-      .select('*')
-      .gte('settled_at', todayQueryStart);
-
-    const { data: monthExpenses } = await supabaseClient
-      .from('expenses')
-      .select('*')
-      .gte('created_at', monthQueryStart);
-
-    const { data: unpaids } = await supabaseClient
-      .from('transactions')
-      .select('total')
-      .eq('status', 'Unpaid');
+    const [
+      { data: monthTrans },
+      { data: todaySettles },
+      { data: monthExpenses },
+      { data: unpaids },
+      { data: allSettleBalances }
+    ] = await Promise.all([
+      supabaseClient.from('transactions').select('*').gte('created_at', monthQueryStart).order('created_at', { ascending: false }),
+      supabaseClient.from('settlements').select('*').gte('settled_at', todayQueryStart),
+      supabaseClient.from('expenses').select('*').gte('created_at', monthQueryStart),
+      supabaseClient.from('transactions').select('total').eq('status', 'Unpaid'),
+      supabaseClient.from('settlements').select('id, customer_name, balance_khr').order('id', { ascending: false })
+    ]);
 
     var todaySalesKHR = 0, todayCashInHand = 0, todayBankAba = 0, monthSalesKHR = 0, monthCOGS = 0;
     var todayProdQty = {}, todayRecentSales = [];
