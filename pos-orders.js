@@ -1056,16 +1056,30 @@ async function executeFinalCompleteDelivery() {
   }
 
   try {
-    // ១. Update ស្ថានភាពទៅជា Delivered ក្នុងតារាង Orders
-    const { error: ordErr } = await supabaseClient
+    // ១. Update ស្ថានភាពទៅជា Delivered ក្នុងតារាង Orders (ការពារកុំឱ្យកត់ត្រាស្ទួន ២ ដង)
+    const { data: updatedOrders, error: ordErr } = await supabaseClient
       .from('orders')
       .update({
         status: 'Delivered',
         payment_method: payTextLabel
       })
-      .eq('order_id', orderId);
+      .eq('order_id', orderId)
+      .neq('status', 'Delivered')
+      .neq('status', 'Cancelled')
+      .select('order_id');
 
     if (ordErr) throw ordErr;
+
+    if (!updatedOrders || updatedOrders.length === 0) {
+      closeCompleteDeliveryModal();
+      showToast("ការកុម្ម៉ង់នេះត្រូវបានបញ្ចប់ ឬបោះបង់រួចហើយ!", "info");
+      if (currentUser && currentUser.type === 'CompanyDriver' && typeof renderCompanyDeliveriesModule === 'function') {
+        renderCompanyDeliveriesModule(false);
+      }
+      var adminM = document.getElementById('onlineOrdersAdminModal');
+      if (adminM && !adminM.classList.contains('hidden')) openOnlineOrdersModal();
+      return;
+    }
 
     // ២. ធានាថាមានទិន្នន័យទំនិញស្រស់ៗពី Database ដើម្បីពិនិត្យស្តុក
     if (!allProducts || allProducts.length === 0) {
