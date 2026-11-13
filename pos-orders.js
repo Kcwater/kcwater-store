@@ -1079,14 +1079,18 @@ async function executeFinalCompleteDelivery() {
     var totalAllocated = 0;
     var stockDeductionQueue = [];
 
+    var rateU = (typeof exchangeRateUSD !== 'undefined') ? exchangeRateUSD : 4100;
+    var rateT = (typeof exchangeRateTHB !== 'undefined') ? exchangeRateTHB : 115;
+
     var itemParts = String(itemsText).split(',');
     itemParts.forEach(function(partStr) {
       var rawPart = partStr.trim();
       if (!rawPart) return;
 
-      var seg = rawPart.split('x');
-      var rawName = seg[0] ? seg[0].trim() : rawPart;
-      var qty = (seg.length >= 2) ? parseFloat(seg[1].trim() || 1) : 1;
+      // ✅ កាត់យកតែ " x ចំនួន" នៅខាងចុងបំផុត (ការពារឈ្មោះទំនិញមានអក្សរ x)
+      var m = rawPart.match(/^(.*)\s+x\s*(\d+(?:\.\d+)?)$/i);
+      var rawName = m ? m[1].trim() : rawPart;
+      var qty = m ? parseFloat(m[2].trim() || 1) : 1;
       if (isNaN(qty) || qty <= 0) qty = 1;
 
       // 🎁 ឆែកមើលថាតើជាកាដូថែម Free ឬជាសំបកធុង
@@ -1117,7 +1121,15 @@ async function executeFinalCompleteDelivery() {
         });
       }
 
-      var unitPrice = isFreeGift ? 0 : (matchedProd ? parseFloat(matchedProd.online_price || matchedProd.price || 0) : 0);
+      // 💵 បំប្លែងតម្លៃទំនិញ (USD/THB) ចេញជាប្រាក់រៀល (KHR) ឱ្យត្រូវតាមវិក្កយបត្រភ្ញៀវ
+      var rawOnlinePrice = matchedProd ? parseFloat(matchedProd.online_price || matchedProd.price || 0) : 0;
+      var prodCurr = matchedProd ? (matchedProd.currency || 'KHR').toUpperCase() : 'KHR';
+      var unitPriceKhr = rawOnlinePrice;
+      if (prodCurr === 'USD') unitPriceKhr = Math.round(rawOnlinePrice * rateU);
+      else if (prodCurr === 'THB') unitPriceKhr = Math.round(rawOnlinePrice * rateT);
+      else unitPriceKhr = Math.round(rawOnlinePrice);
+
+      var unitPrice = isFreeGift ? 0 : unitPriceKhr;
       var lineTotal = unitPrice * qty;
       totalAllocated += lineTotal;
 
@@ -1147,7 +1159,7 @@ async function executeFinalCompleteDelivery() {
         });
       }
     });
-
+    
     // 🛵 គណនាថ្លៃដឹកជញ្ជូនជាក់ស្តែង (បើមាននៅសល់ពីតម្លៃទំនិញ និងសំបកធុង)
     var diff = total - totalAllocated;
     if (diff > 0) {
