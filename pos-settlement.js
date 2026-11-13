@@ -914,7 +914,7 @@ async function submitSettlementPayment() {
     return;
   }
 
-  var remainingBalance = Math.max(0, totalDue - paid);
+  var remainingBalance = Math.max(0, totalDue - paid) + (includeOldDebt ? 0 : (currentSettlementOldDebt || 0));
   var actualSettledPaid = Math.min(paid, totalDue);
   var changeKhr = Math.max(0, paid - totalDue);
   var cashKhrRecorded = 0;
