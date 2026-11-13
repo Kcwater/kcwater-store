@@ -2224,7 +2224,7 @@ function confirmAddToCart() {
   showStoreToast("បានបញ្ចូលកន្ត្រកជោគជ័យ!", "success");
 }
 
-    // 🛒 មុខងារគណនាកន្ត្រកអណ្តែត ជា ៣ រូបិយប័ណ្ណ (៛, ฿, $)
+    // 🛒 មុខងារគណនាកន្ត្រកអណ្តែត ជា ៣ រូបិយប័ណ្ណ (និងរុញបដាដំឡើង App ឡើងលើអូតូ មិនឱ្យបាំងកន្ត្រក)
     function recalcCartDock() {
       var totalUnits = 0, totalPriceKhr = 0;
       for (var k in cartItems) {
@@ -2241,6 +2241,7 @@ function confirmAddToCart() {
       var dock = document.getElementById('floatingCartDock');
       var countEl = document.getElementById('dockItemCount');
       var priceEl = document.getElementById('dockTotalPrice');
+      var pwaBanner = document.getElementById('pwaInstallBanner');
       var d = DICT[currentLang] || DICT.km;
       var rateU = (typeof exchangeRateUSD !== 'undefined') ? exchangeRateUSD : 4100;
       var rateT = (typeof exchangeRateTHB !== 'undefined') ? exchangeRateTHB : 115;
@@ -2261,8 +2262,20 @@ function confirmAddToCart() {
           '</div>';
         }
         dock.classList.remove('translate-y-32', 'opacity-0', 'pointer-events-none');
+
+        // 🚀 រុញបដាដំឡើង App ឡើងទៅលើកម្ពស់ (bottom-36) មិនឱ្យបាំងកន្ត្រក និងប៊ូតុងគិតលុយឡើយ
+        if (pwaBanner) {
+          pwaBanner.classList.remove('bottom-20');
+          pwaBanner.classList.add('bottom-36');
+        }
       } else {
         dock.classList.add('translate-y-32', 'opacity-0', 'pointer-events-none');
+
+        // ⬇️ ពេលកន្ត្រកទទេ វិលត្រឡប់មកកម្ពស់ដើម (bottom-20) វិញ
+        if (pwaBanner) {
+          pwaBanner.classList.remove('bottom-36');
+          pwaBanner.classList.add('bottom-20');
+        }
       }
     }
     
@@ -4246,7 +4259,8 @@ function shareViaNativeSheet() {
   </div>
   
   <!-- 📲 បដាដំឡើង App KC MART លើ Android & កុំព្យូទ័រ PC -->
-  <div id="pwaInstallBanner" class="fixed bottom-20 left-3 right-3 z-[9990] max-w-sm mx-auto bg-slate-950/95 backdrop-blur-md text-white p-3 rounded-2xl shadow-2xl border border-emerald-500/40 hidden animate-in slide-in-from-bottom duration-300 select-none">
+  <!-- 📲 បដាដំឡើង App KC MART (កែសម្រួលកម្ពស់ & z-index មិនបាំងកន្ត្រក) -->
+  <div id="pwaInstallBanner" class="fixed bottom-20 left-3 right-3 z-30 max-w-sm mx-auto bg-slate-950/95 backdrop-blur-md text-white p-3 rounded-2xl shadow-2xl border border-emerald-500/40 hidden animate-in slide-in-from-bottom transition-all duration-300 select-none">
     <div class="flex items-center justify-between gap-2.5">
       <div class="flex items-center gap-2.5 min-w-0 flex-1">
         <div class="w-10 h-10 rounded-xl bg-emerald-700 text-white flex items-center justify-center text-lg shadow-inner shrink-0 border border-emerald-400/40">
