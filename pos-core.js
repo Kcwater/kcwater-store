@@ -454,6 +454,22 @@ async function loadDashboardData() {
     var totalDebtKHR = 0;
     (unpaids || []).forEach(u => { totalDebtKHR += parseFloat(u.total || 0); });
 
+    // បូកបន្ថែមបំណុលចាស់នៅសល់ចុងក្រោយបំផុតរបស់ម៉ូយម្នាក់ៗ (balance_khr)
+    const { data: allSettleBalances } = await supabaseClient
+      .from('settlements')
+      .select('id, customer_name, balance_khr')
+      .order('id', { ascending: false });
+
+    var latestSettleSeen = {};
+    (allSettleBalances || []).forEach(function(s) {
+      var cName = (s.customer_name || "").trim();
+      if (cName && cName !== "Walk-in" && !latestSettleSeen[cName]) {
+        latestSettleSeen[cName] = true;
+        var oldBal = parseFloat(s.balance_khr || 0);
+        if (oldBal > 0) totalDebtKHR += oldBal;
+      }
+    });
+
     if (document.getElementById('dashTodaySales')) document.getElementById('dashTodaySales').innerText = '៛ ' + todaySalesKHR.toLocaleString();
     if (document.getElementById('dashTodayCashTotal')) document.getElementById('dashTodayCashTotal').innerText = '៛ ' + todayTotalCash.toLocaleString();
     if (document.getElementById('dashTodayCashInHand')) document.getElementById('dashTodayCashInHand').innerText = '៛ ' + todayCashInHand.toLocaleString();
