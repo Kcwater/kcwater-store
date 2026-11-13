@@ -1215,6 +1215,8 @@ async function fetchPartnerDepotDebts() {
       for (var dId in cachedDepotDebtsBreakdown) {
         if (noteText.includes(dId) || noteText.includes(cachedDepotDebtsBreakdown[dId].depot.name)) {
           var amt = parseFloat(e.amount || 0);
+          if (e.currency === 'USD') amt = Math.round(amt * rateUSD);
+          else if (e.currency === 'THB') amt = Math.round(amt * rateTHB);
           cachedDepotDebtsBreakdown[dId].totalPaid += amt;
         }
       }
