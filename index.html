@@ -3465,6 +3465,13 @@ function applyCustomSlidesFromSettings(sMap) {
   if (typeof totalPromoSlides !== 'undefined') {
     totalPromoSlides = totalCount;
   }
+  currentPromoIndex = 0;
+  if (typeof updatePromoSlideUI === 'function') updatePromoSlideUI();
+  if (totalCount <= 1 && promoSliderTimer) {
+    clearInterval(promoSliderTimer);
+  } else if (totalCount > 1 && typeof resetPromoSliderTimer === 'function') {
+    resetPromoSliderTimer();
+  }
   var dotsContainer = track.parentElement.querySelector('.absolute.bottom-2\\.5');
   if (dotsContainer) {
     if (totalCount <= 1) {
