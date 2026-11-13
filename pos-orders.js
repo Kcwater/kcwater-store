@@ -334,9 +334,10 @@ function formatOrderItemsVerticalListHTML(itemsText) {
     var str = partStr.trim();
     if (!str) return;
 
-    var seg = str.split('x');
-    var rawName = seg[0] ? seg[0].trim() : str;
-    var qty = (seg.length >= 2) ? seg[1].trim() : '1';
+    // ✅ កាត់យកតែ " x ចំនួន" នៅខាងចុងបំផុត (ការពារកុំឱ្យដាច់ឈ្មោះទំនិញដែលមានអក្សរ x ដូចជា Box, Extra, 500ml x 24)
+    var m = str.match(/^(.*)\s+x\s*(\d+(?:\.\d+)?)$/i);
+    var rawName = m ? m[1].trim() : str;
+    var qty = m ? m[2].trim() : '1';
 
     var isFreeGift = rawName.includes('[Free]') || rawName.includes('🎁') || rawName.includes('កាដូ');
     var isBarrel = rawName.includes('🛢️') || rawName.includes('សំបក');
@@ -353,6 +354,9 @@ function formatOrderItemsVerticalListHTML(itemsText) {
     });
 
     var imgUrl = (matchedProd && matchedProd.img) ? matchedProd.img : 'https://cdn-icons-png.flaticon.com/512/3100/3100566.png';
+    var safeName = escapeHtml(cleanName);
+    var safeQty = escapeHtml(qty);
+    var safeImg = escapeHtml(imgUrl);
 
     var giftBadge = isFreeGift ? '<span class="px-1.5 py-0.2 bg-amber-100 text-amber-900 text-[9px] font-black rounded border border-amber-300 ml-1 whitespace-nowrap">🎁 Free</span>' : '';
     var barrelBadge = isBarrel ? '<span class="px-1.5 py-0.2 bg-blue-100 text-blue-900 text-[9px] font-black rounded border border-blue-200 ml-1 whitespace-nowrap">🛢️ សំបក</span>' : '';
@@ -360,14 +364,14 @@ function formatOrderItemsVerticalListHTML(itemsText) {
     html += '<div class="flex items-center justify-between p-1.5 bg-white rounded-xl border border-slate-200 shadow-2xs">' +
       '<div class="flex items-center gap-2 min-w-0 flex-1">' +
         '<div class="w-8 h-8 rounded-lg bg-slate-50 border border-slate-100 p-0.5 flex items-center justify-center shrink-0 overflow-hidden">' +
-          '<img src="' + imgUrl + '" class="max-w-full max-h-full object-contain" alt="' + cleanName + '">' +
+          '<img src="' + safeImg + '" class="max-w-full max-h-full object-contain" alt="' + safeName + '">' +
         '</div>' +
         '<div class="min-w-0 flex-1">' +
-          '<span class="text-xs font-bold text-slate-900 block truncate">' + cleanName + giftBadge + barrelBadge + '</span>' +
+          '<span class="text-xs font-bold text-slate-900 block truncate">' + safeName + giftBadge + barrelBadge + '</span>' +
         '</div>' +
       '</div>' +
       '<div class="text-right shrink-0 pl-2">' +
-        '<span class="text-xs font-black text-blue-700 bg-blue-50 px-2 py-0.5 rounded-lg border border-blue-200 font-mono">x ' + qty + '</span>' +
+        '<span class="text-xs font-black text-blue-700 bg-blue-50 px-2 py-0.5 rounded-lg border border-blue-200 font-mono">x ' + safeQty + '</span>' +
       '</div>' +
     '</div>';
   });
