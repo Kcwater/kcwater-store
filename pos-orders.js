@@ -1692,11 +1692,16 @@ async function loadOnlineHubOrdersTab() {
       var isPending = (o.status === 'Pending');
       var isDeparted = (o.status === 'Departed');
 
+      var safeCustName = escapeHtml(o.customer_name || 'អតិថិជន');
+      var safeOrderId = escapeHtml(o.order_id || '');
+      var safePhone = escapeHtml(o.phone || '-');
+      var safeDriver = escapeHtml(o.driver_name || 'អ្នកដឹក');
+
       var statusBadge = isPending ? 
         '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300 whitespace-nowrap">⏳ រង់ចាំចាត់ចែង</span>' : 
         (isDeparted ? 
-          '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-blue-100 text-blue-900 border border-blue-300 animate-pulse whitespace-nowrap">🛵💨 កំពុងធ្វើដំណើរ (' + (o.driver_name || 'អ្នកដឹក') + ')</span>' : 
-          '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300 whitespace-nowrap">📦 បានចាត់ចែង (' + (o.driver_name || 'អ្នកដឹក') + ')</span>');
+          '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-blue-100 text-blue-900 border border-blue-300 animate-pulse whitespace-nowrap">🛵💨 កំពុងធ្វើដំណើរ (' + safeDriver + ')</span>' : 
+          '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300 whitespace-nowrap">📦 បានចាត់ចែង (' + safeDriver + ')</span>');
 
       var rawLoc = (o.location_url || o.address || '').trim();
       var dateStr = new Date(o.created_at).toLocaleString('km-KH', { dateStyle: 'short', timeStyle: 'short' });
@@ -1704,8 +1709,8 @@ async function loadOnlineHubOrdersTab() {
       html += '<div class="card p-4 border-l-4 ' + (isPending ? 'border-amber-500' : 'border-blue-500') + ' shadow-md mb-0 space-y-2.5 hover:shadow-lg transition bg-white rounded-2xl">' +
         '<div class="flex justify-between items-start border-b pb-2">' +
           '<div>' +
-            '<b class="text-sm font-black text-slate-900">' + o.customer_name + '</b>' +
-            '<div class="text-[10px] text-slate-400 mt-0.5 font-mono">កូដ៖ <code>' + o.order_id + '</code> | ម៉ោង៖ ' + dateStr + '</div>' +
+            '<b class="text-sm font-black text-slate-900">' + safeCustName + '</b>' +
+            '<div class="text-[10px] text-slate-400 mt-0.5 font-mono">កូដ៖ <code>' + safeOrderId + '</code> | ម៉ោង៖ ' + dateStr + '</div>' +
           '</div>' +
           '<div class="text-right">' +
             '<b class="text-emerald-700 text-sm font-black">៛ ' + Number(o.total || 0).toLocaleString() + '</b>' +
@@ -1713,12 +1718,12 @@ async function loadOnlineHubOrdersTab() {
           '</div>' +
         '</div>' +
         '<div class="text-xs text-slate-700 space-y-1.5 bg-slate-50 p-2.5 rounded-xl border border-slate-100">' +
-          '<div><b>📞 ទូរស័ព្ទ៖</b> <span class="text-emerald-700 font-bold">' + (o.phone || '-') + '</span></div>' +
+          '<div><b>📞 ទូរស័ព្ទ៖</b> <span class="text-emerald-700 font-bold">' + safePhone + '</span></div>' +
           '<div>' +
             '<span class="text-slate-500 font-bold text-[11px] block mb-1">📦 មុខទំនិញកុម្ម៉ង់៖</span>' +
-            (typeof formatOrderItemsVerticalListHTML === 'function' ? formatOrderItemsVerticalListHTML(o.items) : o.items) +
+            (typeof formatOrderItemsVerticalListHTML === 'function' ? formatOrderItemsVerticalListHTML(o.items) : escapeHtml(o.items)) +
           '</div>' +
-          (typeof formatOrderLocationBadgeHTML === 'function' ? formatOrderLocationBadgeHTML(rawLoc) : (rawLoc ? '<div><b>📍 ទីតាំង៖</b> ' + rawLoc + '</div>' : '')) +
+          (typeof formatOrderLocationBadgeHTML === 'function' ? formatOrderLocationBadgeHTML(rawLoc) : (rawLoc ? '<div><b>📍 ទីតាំង៖</b> ' + escapeHtml(rawLoc) + '</div>' : '')) +
         '</div>' +
         '<div class="flex justify-end pt-1">' +
           '<button type="button" onclick="openOnlineOrdersModal()" class="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-black shadow-xs active:scale-95 transition flex items-center gap-1.5">' +
@@ -1859,21 +1864,35 @@ function renderOnlineAuditResultsList() {
     var isCancelled = (o.status === 'Cancelled');
     var dateStr = new Date(o.created_at).toLocaleString('km-KH', { dateStyle: 'short', timeStyle: 'short' });
 
+    var safeCustName = escapeHtml(o.customer_name || 'អតិថិជន');
+    var safeOrderId = escapeHtml(o.order_id || '');
+    var safePhone = escapeHtml(o.phone || '-');
+    var safeItems = escapeHtml(o.items || '');
+    var safeDriver = escapeHtml(o.driver_name || '');
+    var safeDriverPhone = escapeHtml(o.driver_phone || '-');
+    var safePayMethod = escapeHtml(o.payment_method || 'COD');
+    var safeAddress = escapeHtml(o.address || '');
+    var safeStatus = escapeHtml(o.status || '');
+
+    var jsSafeCustName = escapeHtml(String(o.customer_name || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
+    var jsSafeItems = escapeHtml(String(o.items || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
+    var jsSafeLoc = escapeHtml(String(o.location_url || o.address || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
+
     if (o.photo_url) {
-      storeOrderPhoto(o.order_id, o.photo_url, o.customer_name);
+      storeOrderPhoto(o.order_id, o.photo_url, safeCustName);
     }
 
     var statusBadge = isDelivered ? 
       '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300">✅ ដឹកដល់ (ទូទាត់រួច)</span>' : 
       (isCancelled ? 
         '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-red-100 text-red-700 border border-red-300">❌ បានបោះបង់ / សងលុយ</span>' : 
-        '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300">⏳ ' + o.status + '</span>');
+        '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300">⏳ ' + safeStatus + '</span>');
 
     html += '<div class="bg-white p-3.5 rounded-2xl border ' + (isCancelled ? 'border-red-200 bg-red-50/20' : 'border-slate-200') + ' shadow-xs space-y-2.5 hover:shadow-md transition">' +
       '<div class="flex justify-between items-start border-b pb-2">' +
         '<div>' +
-          '<b class="text-xs sm:text-sm text-slate-900 font-black"><i class="fas fa-user-circle text-blue-600 mr-1"></i>' + o.customer_name + '</b>' +
-          '<div class="text-[10px] text-slate-400 mt-0.5 font-mono">កូដ៖ ' + o.order_id + ' | ម៉ោង៖ ' + dateStr + '</div>' +
+          '<b class="text-xs sm:text-sm text-slate-900 font-black"><i class="fas fa-user-circle text-blue-600 mr-1"></i>' + safeCustName + '</b>' +
+          '<div class="text-[10px] text-slate-400 mt-0.5 font-mono">កូដ៖ ' + safeOrderId + ' | ម៉ោង៖ ' + dateStr + '</div>' +
         '</div>' +
         '<div class="text-right">' +
           '<b class="text-emerald-700 text-xs sm:text-sm font-black">៛ ' + Number(o.total || 0).toLocaleString() + '</b>' +
@@ -1882,33 +1901,32 @@ function renderOnlineAuditResultsList() {
       '</div>' +
 
       '<div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-xs space-y-1 text-slate-700">' +
-        '<div><b>📞 ទូរស័ព្ទភ្ញៀវ៖</b> <span class="text-emerald-700 font-bold">' + (o.phone || '-') + '</span></div>' +
-        '<div><b>📦 មុខទំនិញ៖</b> ' + o.items + '</div>' +
-        '<div><b>🛵 អ្នកដឹកជញ្ជូន៖</b> ' + (o.driver_name ? (o.driver_name + ' (📞 ' + (o.driver_phone || '-') + ')') : 'មិនទាន់ចាត់ចែង') + '</div>' +
-        '<div><b>💳 វិធីបង់ប្រាក់៖</b> ' + (o.payment_method || 'COD') + '</div>' +
-        (o.address ? '<div><b>📍 អាសយដ្ឋាន/ចំណាំ៖</b> ' + o.address + '</div>' : '') +
+        '<div><b>📞 ទូរស័ព្ទភ្ញៀវ៖</b> <span class="text-emerald-700 font-bold">' + safePhone + '</span></div>' +
+        '<div><b>📦 មុខទំនិញ៖</b> ' + safeItems + '</div>' +
+        '<div><b>🛵 អ្នកដឹកជញ្ជូន៖</b> ' + (safeDriver ? (safeDriver + ' (📞 ' + safeDriverPhone + ')') : 'មិនទាន់ចាត់ចែង') + '</div>' +
+        '<div><b>💳 វិធីបង់ប្រាក់៖</b> ' + safePayMethod + '</div>' +
+        (safeAddress ? '<div><b>📍 អាសយដ្ឋាន/ចំណាំ៖</b> ' + safeAddress + '</div>' : '') +
       '</div>' +
 
       '<div class="flex flex-wrap items-center justify-between gap-2 pt-0.5">' +
         '<div class="flex items-center gap-1.5">' +
           (o.photo_url ? 
-          '<button type="button" onclick="viewOrderHousePhotoById(\'' + o.order_id + '\')" class="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-xl text-xs font-bold shadow-2xs flex items-center gap-1 active:scale-95 transition">' +
+          '<button type="button" onclick="viewOrderHousePhotoById(\'' + safeOrderId + '\')" class="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-xl text-xs font-bold shadow-2xs flex items-center gap-1 active:scale-95 transition">' +
             '<i class="fas fa-camera text-amber-600"></i> មើលរូបផ្ទះ' +
           '</button>' : '') +
           (o.location_url || o.address ? 
-          '<button type="button" onclick="openOrderMap(\'' + (o.location_url || o.address).replace(/'/g, "\\'") + '\')" class="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 rounded-xl text-xs font-bold shadow-2xs flex items-center gap-1 active:scale-95 transition">' +
+          '<button type="button" onclick="openOrderMap(\'' + jsSafeLoc + '\')" class="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 rounded-xl text-xs font-bold shadow-2xs flex items-center gap-1 active:scale-95 transition">' +
             '<i class="fas fa-map-location-dot text-blue-600"></i> ផែនទី' +
           '</button>' : '') +
         '</div>' +
 
         (isDelivered ? 
-        '<button type="button" onclick="refundAndVoidOnlineOrder(\'' + o.order_id + '\', \'' + o.customer_name.replace(/'/g, "\\'") + '\', ' + (o.total || 0) + ', \'' + (o.items || '').replace(/'/g, "\\'") + '\')" class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-black shadow-xs flex items-center gap-1 active:scale-95 transition">' +
+        '<button type="button" onclick="refundAndVoidOnlineOrder(\'' + safeOrderId + '\', \'' + jsSafeCustName + '\', ' + (o.total || 0) + ', \'' + jsSafeItems + '\')" class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-black shadow-xs flex items-center gap-1 active:scale-95 transition">' +
           '<i class="fas fa-rotate-left text-xs"></i> សងលុយវិញ / បោះបង់ (Refund)' +
         '</button>' : '') +
       '</div>' +
     '</div>';
   });
-
   resArea.innerHTML = html;
 }
 // ⚠️ មុខងារដោះស្រាយវិវាទ៖ បង្វិលសងលុយ & កាត់ស្តុកត្រឡប់មកវិញ (ស្គាល់ទាំងសំបកធុង 🛢️ និងកាដូថែម 🎁)
