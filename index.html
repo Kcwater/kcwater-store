@@ -1742,6 +1742,29 @@ async function loadStoreOnlineProducts() {
       try {
         localStorage.setItem('kc_cached_catalog', JSON.stringify(STORE_CATALOG));
       } catch(se) {}
+      // 🔄 ផ្ទៀងផ្ទាត់តម្លៃ និងស្តុកក្នុងកន្ត្រកចាស់ឱ្យត្រូវតាមតម្លៃថ្មីក្នុង Database
+      if (cartItems && Object.keys(cartItems).length > 0) {
+        var cartUpdated = false;
+        for (var cId in cartItems) {
+          var liveP = STORE_CATALOG.find(function(x) { return x.id === String(cId); });
+          if (!liveP || (liveP.type === 'ទិញគេ' && liveP.stock <= 0)) {
+            delete cartItems[cId];
+            cartUpdated = true;
+          } else {
+            if (cartItems[cId].price !== liveP.price || cartItems[cId].raw_name !== liveP.raw_name) {
+              cartItems[cId].price = liveP.price;
+              cartItems[cId].raw_name = liveP.raw_name;
+              cartItems[cId].isBarrel20L = liveP.isBarrel20L || false;
+              cartUpdated = true;
+            }
+            if (liveP.type === 'ទិញគេ' && cartItems[cId].qty > liveP.stock) {
+              cartItems[cId].qty = liveP.stock;
+              cartUpdated = true;
+            }
+          }
+        }
+        if (cartUpdated && typeof recalcCartDock === 'function') recalcCartDock();
+      }
 
       if (typeof renderCategoryChips === 'function') renderCategoryChips();
       renderCatalogGrid('ALL');
