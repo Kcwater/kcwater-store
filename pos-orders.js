@@ -205,11 +205,11 @@ async function openOnlineOrdersModal() {
   if (container) container.innerHTML = '<div class="text-center py-8 text-gray-400 italic text-xs"><i class="fas fa-spinner fa-spin mr-1.5 text-amber-600"></i> កំពុងទាញយកបញ្ជីកុម្ម៉ង់...</div>';
 
   try {
-    // ១. ធានាថាមានទិន្នន័យអ្នកដឹកជញ្ជូនក្នុង Dropdown
+    // ១. ធានាថាមានទិន្នន័យអ្នកដឹកជញ្ជូនក្នុង Dropdown (មិនទាញ Password ឡើយ)
     if (!allCustomers || allCustomers.length === 0) {
       const { data: custs } = await supabaseClient
         .from('users')
-        .select('*')
+        .select('id, full_name, role, type, phone, linked_boss')
         .order('full_name', { ascending: true });
       if (custs) allCustomers = custs;
     }
@@ -218,29 +218,29 @@ async function openOnlineOrdersModal() {
     var todayStr = getCambodiaToday();
     var todayQueryStart = todayStr + 'T00:00:00+07:00';
 
-    // ២. ទាញយកទាំង Order កំពុងដំណើរការ (Pending, Assigned) និង Order ដឹកដល់ថ្ងៃនេះ (Delivered Today)
-    const { data: activeList, error: actErr } = await supabaseClient
-      .from('orders')
-      .select('*')
-      .in('status', ['Pending', 'Assigned'])
-      .order('created_at', { ascending: false });
+    // ២. ទាញយក Order កំពុងដំណើរការ (Pending, Assigned, Departed) និង ដឹកដល់ថ្ងៃនេះ ព្រមគ្នា
+    const [activeRes, deliveredRes] = await Promise.all([
+      supabaseClient
+        .from('orders')
+        .select('*')
+        .in('status', ['Pending', 'Assigned', 'Departed'])
+        .order('created_at', { ascending: false }),
+      supabaseClient
+        .from('orders')
+        .select('*')
+        .eq('status', 'Delivered')
+        .gte('created_at', todayQueryStart)
+        .order('created_at', { ascending: false })
+    ]);
 
-    if (actErr) throw actErr;
+    if (activeRes.error) throw activeRes.error;
+    if (deliveredRes.error) throw deliveredRes.error;
 
-    const { data: deliveredToday, error: delErr } = await supabaseClient
-      .from('orders')
-      .select('*')
-      .eq('status', 'Delivered')
-      .gte('created_at', todayQueryStart)
-      .order('created_at', { ascending: false });
-
-    if (delErr) throw delErr;
-
-    adminOnlineOrdersCache = (activeList || []).concat(deliveredToday || []);
+    adminOnlineOrdersCache = (activeRes.data || []).concat(deliveredRes.data || []);
     renderAdminOnlineOrdersUI();
 
   } catch(err) {
-    if (container) container.innerHTML = '<div class="p-4 text-center text-red-500 font-bold text-xs">កំហុស៖ ' + err.message + '</div>';
+    if (container) container.innerHTML = '<div class="p-4 text-center text-red-500 font-bold text-xs">កំហុស៖ ' + escapeHtml(err.message) + '</div>';
   }
 }
 
