@@ -1157,12 +1157,17 @@ async function fetchPartnerDepotDebts() {
         var str = partStr.trim();
         if (!str) return;
 
-        var seg = str.split('x');
-        var rawName = seg[0] ? seg[0].trim() : str;
-        var qty = (seg.length >= 2) ? parseFloat(seg[1].trim() || 1) : 1;
+        var m = str.match(/^(.*)\s+x\s*(\d+(?:\.\d+)?)$/i);
+        var rawName = m ? m[1].trim() : str;
+        var qty = m ? parseFloat(m[2].trim() || 1) : 1;
         if (isNaN(qty) || qty <= 0) qty = 1;
 
-        var cleanName = rawName.replace(/🎁\s*\[Free\]/gi, '').replace(/\[Free\]/gi, '').trim();
+        var cleanName = rawName
+          .replace(/🎁\s*\[Free\]/gi, '')
+          .replace(/\[Free\]/gi, '')
+          .replace(/\[កាដូថែម Free\]/gi, '')
+          .replace(/🛢️/gi, '')
+          .trim();
 
         var matchedProd = (allProducts || []).find(function(p) {
           return p.name.trim().toLowerCase() === cleanName.toLowerCase();
