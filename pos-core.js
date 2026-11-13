@@ -92,6 +92,9 @@ async function login() {
       document.getElementById('userInfo').innerText = roleLabel + currentUser.fullName;
 
       renderSidebarMenu();
+      if (typeof renderEnvironmentBanner === 'function') {
+        renderEnvironmentBanner();
+      }
 
       if (typeof checkPendingOnlineOrdersBadge === 'function') {
         checkPendingOnlineOrdersBadge();
@@ -130,6 +133,9 @@ function logout() {
   document.getElementById('mainApp').classList.add('hidden');
   document.getElementById('loginPage').style.display = 'flex';
   closeSidebar();
+  if (typeof renderEnvironmentBanner === 'function') {
+    renderEnvironmentBanner();
+  }
   showToast("បានចាកចេញពីប្រព័ន្ធ!", "info");
 }
 
