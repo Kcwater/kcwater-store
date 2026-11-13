@@ -1941,11 +1941,13 @@ async function refundAndVoidOnlineOrder(orderId, custName, total, itemsText) {
     try {
       var itemParts = String(itemsText).split(',');
       for (var i = 0; i < itemParts.length; i++) {
-        var seg = itemParts[i].split('x');
-        if (seg.length >= 2) {
-          var rawName = seg[0].trim();
-          var pQty = parseFloat(seg[1].trim() || 0);
-
+        var partStr = itemParts[i].trim();
+        if (!partStr) continue;
+        var m = partStr.match(/^(.*)\s+x\s*(\d+(?:\.\d+)?)$/i);
+        if (m) {
+          var rawName = m[1].trim();
+          var pQty = parseFloat(m[2].trim() || 0);
+          
           // 🧹 ជម្រះ Emoji និងស្លាក Free ដើម្បីស្វែងរកឈ្មោះទំនិញពិតប្រាកដក្នុងស្តុក
           var cleanName = rawName
             .replace(/🎁\s*\[Free\]/gi, '')
@@ -2139,12 +2141,17 @@ async function openOrderPickupManifestModal(orderId) {
       var str = partStr.trim();
       if (!str) return;
 
-      var seg = str.split('x');
-      var rawName = seg[0] ? seg[0].trim() : str;
-      var qty = (seg.length >= 2) ? parseFloat(seg[1].trim() || 1) : 1;
+      var m = str.match(/^(.*)\s+x\s*(\d+(?:\.\d+)?)$/i);
+      var rawName = m ? m[1].trim() : str;
+      var qty = m ? parseFloat(m[2].trim() || 1) : 1;
       if (isNaN(qty) || qty <= 0) qty = 1;
 
-      var cleanName = rawName.replace(/🎁\s*\[Free\]/gi, '').replace(/\[Free\]/gi, '').trim();
+      var cleanName = rawName
+        .replace(/🎁\s*\[Free\]/gi, '')
+        .replace(/\[Free\]/gi, '')
+        .replace(/\[កាដូថែម Free\]/gi, '')
+        .replace(/🛢️/gi, '')
+        .trim();
 
       var matchedProd = (allProducts || []).find(function(p) {
         return p.name.trim().toLowerCase() === cleanName.toLowerCase();
