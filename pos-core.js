@@ -2663,6 +2663,8 @@ function updateFabButtonState() {
   if (!fabBtn || !fabIcon) return;
 
   var isCurrentlyOnPos = (document.getElementById('pGrid') !== null);
+  if (fabBtn.dataset.lastPosState === String(isCurrentlyOnPos)) return;
+  fabBtn.dataset.lastPosState = String(isCurrentlyOnPos);
 
   if (isCurrentlyOnPos) {
     // ពេលនៅ POS ➔ បង្ហាញព្រួញត្រឡប់ក្រោយ ↩️ ពណ៌ខ្មៅរលោង
