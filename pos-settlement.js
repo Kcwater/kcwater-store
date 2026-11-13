@@ -661,17 +661,16 @@ async function loadSettlementDebtorsList() {
   if (!badgesContainer) return;
 
   try {
-    const { data: unpaids } = await supabaseClient
-      .from('transactions')
-      .select('customer_name, total')
-      .eq('status', 'Unpaid');
+    const [unpaidRes, settleRes] = await Promise.all([
+      supabaseClient.from('transactions').select('customer_name, total').eq('status', 'Unpaid'),
+      supabaseClient.from('settlements').select('id, customer_name, balance_khr').order('id', { ascending: false })
+    ]);
 
-    if (!unpaids || unpaids.length === 0) {
-      badgesContainer.innerHTML = '<span class="text-green-600 font-bold text-xs"><i class="fas fa-check-circle mr-1"></i> អបអរសាទរ! គ្មានអតិថិជនណាជំពាក់ប្រាក់ឡើយ</span>';
-      return;
-    }
-
+    var unpaids = unpaidRes.data || [];
+    var settles = settleRes.data || [];
     var custMap = {};
+
+    // ១. បូកជើងទឹកដកថ្មីដែលមិនទាន់ទូទាត់ (Unpaid)
     unpaids.forEach(function(u) {
       var cName = (u.customer_name || "").trim();
       if (cName && cName !== "Walk-in") {
@@ -679,17 +678,45 @@ async function loadSettlementDebtorsList() {
       }
     });
 
-    var html = '';
+    // ២. បូកបន្ថែមបំណុលចាស់នៅសល់ចុងក្រោយបំផុត (balance_khr)
+    var latestSeen = {};
+    settles.forEach(function(s) {
+      var cName = (s.customer_name || "").trim();
+      if (cName && cName !== "Walk-in" && !latestSeen[cName]) {
+        latestSeen[cName] = true;
+        var oldBal = parseFloat(s.balance_khr || 0);
+        if (oldBal > 0) {
+          custMap[cName] = (custMap[cName] || 0) + oldBal;
+        }
+      }
+    });
+
+    // តម្រៀបអ្នកជំពាក់ច្រើនជាងគេនៅខាងមុខ
+    var debtorsArr = [];
     for (var name in custMap) {
-      html += '<button onclick="selectCustomerForSettlement(\'' + name.replace(/'/g, "\\'") + '\')" class="px-3.5 py-2 bg-white hover:bg-blue-50 text-blue-900 rounded-xl border border-blue-200 font-bold shadow-2xs active:scale-95 transition flex items-center gap-1.5">' +
-        '<i class="fas fa-user text-blue-600"></i> ' + name + ' <span class="text-[10px] bg-red-100 text-red-700 px-2 py-0.2 rounded-full font-black">៛ ' + custMap[name].toLocaleString() + '</span>' +
-      '</button>';
+      if (custMap[name] > 0) {
+        debtorsArr.push({ name: name, total: custMap[name] });
+      }
+    }
+    debtorsArr.sort((a, b) => b.total - a.total);
+
+    if (debtorsArr.length === 0) {
+      badgesContainer.innerHTML = '<span class="text-green-600 font-bold text-xs"><i class="fas fa-check-circle mr-1"></i> អបអរសាទរ! គ្មានអតិថិជនណាជំពាក់ប្រាក់ឡើយ</span>';
+      return;
     }
 
-    badgesContainer.innerHTML = html || '<span class="text-green-600 font-bold text-xs">គ្មានអតិថិជនជំពាក់ឡើយ</span>';
-  } catch(e) {}
-}
+    var html = '';
+    debtorsArr.forEach(function(d) {
+      html += '<button onclick="selectCustomerForSettlement(\'' + d.name.replace(/'/g, "\\'") + '\')" class="px-3.5 py-2 bg-white hover:bg-blue-50 text-blue-900 rounded-xl border border-blue-200 font-bold shadow-2xs active:scale-95 transition flex items-center gap-1.5">' +
+        '<i class="fas fa-user text-blue-600"></i> ' + d.name + ' <span class="text-[10px] bg-red-100 text-red-700 px-2 py-0.2 rounded-full font-black">៛ ' + d.total.toLocaleString() + '</span>' +
+      '</button>';
+    });
 
+    badgesContainer.innerHTML = html;
+  } catch(e) {
+    console.error("Load settlement debtors error:", e);
+  }
+}
 
 function toggleSelectAllSettle(isChecked) {
   document.querySelectorAll('.settle-item-cb').forEach(function(cb) { cb.checked = isChecked; });
