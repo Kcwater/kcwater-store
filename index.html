@@ -1644,7 +1644,8 @@ async function loadStoreOnlineProducts() {
         .order('sort_order', { ascending: true }),
       supabaseClient
         .from('settings')
-        .select('*')
+        .select('key, value')
+        .not('key', 'ilike', 'Telegram_%')
     ]);
 
     if (prodResult.error) throw prodResult.error;
@@ -3292,7 +3293,7 @@ async function loadStoreSettingsFromSupabase() {
 
     // បើគ្មានក្នុង Memory ស្រាប់ ទើបបាញ់ទៅទាញពី Supabase
     if (!sMap || Object.keys(sMap).length === 0) {
-      const { data: settings } = await supabaseClient.from('settings').select('*');
+      const { data: settings } = await supabaseClient.from('settings').select('key, value').not('key', 'ilike', 'Telegram_%');
       if (!settings) return;
       sMap = {};
       settings.forEach(r => { sMap[r.key] = r.value; });
@@ -3316,11 +3317,6 @@ async function loadStoreSettingsFromSupabase() {
         }
       } catch(e) {}
     }
-
-    // 🔔 ៣. ទាញយក Telegram Bot Settings សម្រាប់ទទួលដំណឹងពេលភ្ញៀវ Cancel Order
-    if (sMap['Telegram_Token']) telegramSettings.token = sMap['Telegram_Token'].trim();
-    if (sMap['Telegram_ChatID']) telegramSettings.chatId = sMap['Telegram_ChatID'].trim();
-    if (sMap['Telegram_Alert_Status']) telegramSettings.status = sMap['Telegram_Alert_Status'].toUpperCase();
 
     // 🔗 ៣.១ ទាញយក QR Code ចែករំលែកទាំង ២ (Telegram Mini App & Website KC Mart)
     if (sMap['Store_Share_QR_TG']) storeShareQrTgBase64 = sMap['Store_Share_QR_TG'].trim();
@@ -4039,19 +4035,11 @@ async function cancelCustomerActiveOrder(orderId, btnEl) {
 
     showStoreToast("ការកុម្ម៉ង់ត្រូវបានបោះបង់ជោគជ័យ!", "info");
 
-    // ផ្ញើសារ Telegram ជូនដំណឹងទៅរោងចក្រ (តាមម៉ោងកម្ពុជា)
+    // 🔔 ផ្ញើ Telegram Alert តាមប្រព័ន្ធសុវត្ថិភាព Database (លែងបែកធ្លាយ Token 100%)
     try {
-      if (telegramSettings && telegramSettings.token && telegramSettings.chatId) {
-        var timeKhNow = new Date().toLocaleTimeString('km-KH', { timeZone: 'Asia/Phnom_Penh' });
-        var msg = "🔔 <b>[KC WATER - ភ្ញៀវបានបោះបង់ការកុម្ម៉ង់ដោយខ្លួនឯង]</b>\n\n" +
-                  "🆔 <b>កូដ៖</b> <code>" + orderId + "</code>\n" +
-                  "🕒 <b>ម៉ោង៖</b> " + timeKhNow;
-        fetch("https://api.telegram.org/bot" + telegramSettings.token + "/sendMessage", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ chat_id: telegramSettings.chatId, text: msg, parse_mode: "HTML" })
-        }).catch(function(){});
-      }
+      await supabaseClient.rpc('send_cancel_telegram_alert', {
+        p_order_id: orderId
+      });
     } catch(tgE) {}
 
   } catch(err) {
