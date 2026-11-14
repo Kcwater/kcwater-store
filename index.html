@@ -3208,7 +3208,7 @@ async function checkActiveOrderLiveStatus() {
       '</div>' +
 
       (isPending ? 
-      '<button type="button" onclick="cancelCustomerActiveOrder(\'' + orderId + '\')" class="w-full mt-2 py-2 bg-red-50 hover:bg-red-100 text-red-700 font-bold text-xs rounded-xl border border-red-200 transition active:scale-95 flex items-center justify-center gap-1.5">' +
+      '<button type="button" onclick="cancelCustomerActiveOrder(\'' + orderId + '\', this)" class="w-full mt-2 py-2 bg-red-50 hover:bg-red-100 text-red-700 font-bold text-xs rounded-xl border border-red-200 transition active:scale-95 flex items-center justify-center gap-1.5">' +
         '<i class="fas fa-circle-xmark"></i> បោះបង់ការកុម្ម៉ង់នេះ' +
       '</button>' : '') +
 
@@ -3989,8 +3989,8 @@ function applyCustomSlidesFromSettings(sMap) {
    // ❌ ៤. មុខងារបោះបង់ការកុម្ម៉ង់របស់ភ្ញៀវ (2-Step In-App Confirm - គ្មាន window.confirm មិនគាំងទូរស័ព្ទ)
 var cancelOrderConfirmState = {};
 
-async function cancelCustomerActiveOrder(orderId) {
-  var btn = event ? event.target.closest('button') : null;
+async function cancelCustomerActiveOrder(orderId, btnEl) {
+  var btn = btnEl || (typeof event !== 'undefined' && event && event.target ? event.target.closest('button') : null);
 
   // 🛡️ ជំហានទី ១៖ ចុចលើកទី ១ ➔ ប្តូរពណ៌ប៊ូតុងសួរភ្ញៀវសិន (ជំនួស window.confirm ការពារកុំឱ្យគាំង Telegram)
   if (!cancelOrderConfirmState[orderId]) {
