@@ -4458,6 +4458,7 @@ async function saveQuickExchangeRates() {
 
     exchangeRateUSD = rUSD;
     exchangeRateTHB = rTHB;
+    if (typeof renderSettingsModule === 'function') renderSettingsModule();
 
     if (typeof kcAlert === 'function') {
       await kcAlert({
