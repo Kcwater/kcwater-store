@@ -707,7 +707,9 @@ function injectQuickRestockModal() {
 
 function openQuickRestockModal(prodId, prodName, currentCost) {
   injectQuickRestockModal();
-  activeQuickRestockData = { id: prodId, name: prodName, cost: currentCost };
+  var prod = (allProducts || []).find(function(p) { return p.id === prodId; });
+  var curr = prod ? (prod.currency || 'KHR').toUpperCase() : 'KHR';
+  activeQuickRestockData = { id: prodId, name: prodName, cost: currentCost, currency: curr };
 
   var titleEl = document.getElementById('qrProdTitle');
   var qtyInp = document.getElementById('qrQtyInput');
@@ -715,10 +717,32 @@ function openQuickRestockModal(prodId, prodName, currentCost) {
   var hintEl = document.getElementById('qrCurrentCostHint');
   var modal = document.getElementById('quickRestockModal');
 
-  if (titleEl) titleEl.innerText = "ទំនិញ៖ [" + prodName + "]";
-  if (qtyInp) { qtyInp.value = "50"; setTimeout(() => { qtyInp.focus(); qtyInp.select(); }, 150); }
-  if (costInp) costInp.value = currentCost > 0 ? currentCost : "";
-  if (hintEl) hintEl.innerText = "*ថ្លៃដើមបច្ចុប្បន្ន៖ ៛ " + Number(currentCost).toLocaleString() + " (អាចកែប្រែបាន)";
+  var rateUSD = (typeof exchangeRateUSD !== 'undefined') ? exchangeRateUSD : 4100;
+  var rateTHB = (typeof exchangeRateTHB !== 'undefined') ? exchangeRateTHB : 115;
+
+  function formatQuickCostHint(val) {
+    var num = parseFloat(val || 0);
+    if (num <= 0) return '-';
+    if (curr === 'USD') return '$ ' + num.toFixed(2) + ' (≈ ៛ ' + Math.round(num * rateUSD).toLocaleString() + ')';
+    if (curr === 'THB') return '฿ ' + num.toLocaleString() + ' (≈ ៛ ' + Math.round(num * rateTHB).toLocaleString() + ')';
+    return '៛ ' + num.toLocaleString();
+  }
+
+  if (titleEl) titleEl.innerText = "ទំនិញ៖ [" + prodName + "] (" + curr + ")";
+  if (qtyInp) { qtyInp.value = "50"; setTimeout(function() { qtyInp.focus(); qtyInp.select(); }, 150); }
+  if (costInp) {
+    costInp.value = currentCost > 0 ? currentCost : "";
+    costInp.placeholder = "វាយថ្លៃដើមថ្មី (" + curr + ")";
+    costInp.oninput = function() {
+      var v = parseFloat(this.value || 0);
+      if (hintEl) {
+        hintEl.innerText = v > 0
+          ? "👉 ថ្លៃដើមថ្មីលើកនេះ៖ " + formatQuickCostHint(v)
+          : "*ថ្លៃដើមបច្ចុប្បន្ន៖ " + formatQuickCostHint(currentCost) + " [" + curr + "]";
+      }
+    };
+  }
+  if (hintEl) hintEl.innerText = "*ថ្លៃដើមបច្ចុប្បន្ន៖ " + formatQuickCostHint(currentCost) + " [" + curr + "]";
 
   if (modal) modal.classList.remove('hidden');
 }
@@ -744,6 +768,7 @@ async function confirmQuickRestockSubmit() {
 
   var targetProdId = activeQuickRestockData.id;
   var prodName = activeQuickRestockData.name;
+  var curr = (activeQuickRestockData.currency || 'KHR').toUpperCase();
   var btn = document.getElementById('qrConfirmBtn');
   btn.disabled = true;
 
@@ -770,10 +795,18 @@ async function confirmQuickRestockSubmit() {
     renderDashboardModule();
 
     try {
+      var rateUSD = (typeof exchangeRateUSD !== 'undefined') ? exchangeRateUSD : 4100;
+      var rateTHB = (typeof exchangeRateTHB !== 'undefined') ? exchangeRateTHB : 115;
+      var costTgDisplay = '';
+      if (newCost > 0) {
+        if (curr === 'USD') costTgDisplay = "$ " + newCost.toFixed(2) + " (≈ ៛ " + Math.round(newCost * rateUSD).toLocaleString() + ")";
+        else if (curr === 'THB') costTgDisplay = "฿ " + newCost.toLocaleString() + " (≈ ៛ " + Math.round(newCost * rateTHB).toLocaleString() + ")";
+        else costTgDisplay = "៛ " + newCost.toLocaleString();
+      }
       var tgMsg = "📦 <b>[KC WATER - បញ្ចូលស្តុកថ្មី (Dashboard)]</b>\n\n" +
                   "• ទំនិញ៖ <b>" + prodName + "</b>\n" +
                   "• ចំនួនទិញចូល៖ <b>+" + q + "</b>\n" +
-                  (newCost > 0 ? "• ថ្លៃដើមថ្មី៖ <b>៛ " + Number(newCost).toLocaleString() + "</b>\n" : "") +
+                  (costTgDisplay ? "• ថ្លៃដើមថ្មី៖ <b>" + costTgDisplay + "</b>\n" : "") +
                   "• ស្តុកសរុបបច្ចុប្បន្ន៖ <b>" + finalStock + "</b>\n" +
                   "• អ្នកកត់ត្រា៖ " + (currentUser.fullName || "Admin") + "\n" +
                   "🕒 ម៉ោង៖ " + new Date().toLocaleTimeString('km-KH');
@@ -1031,12 +1064,21 @@ async function onAdminPosCustomerChange(val) {
       });
     }
   } else if (!isMonthly && cart && cart.length > 0) {
-    // ចំពោះម៉ូយធម្មតា អាប់ដេតតម្លៃពិសេសបើមាន
+    var rU = (typeof exchangeRateUSD !== 'undefined') ? exchangeRateUSD : 4100;
+    var rT = (typeof exchangeRateTHB !== 'undefined') ? exchangeRateTHB : 115;
+    // ចំពោះម៉ូយធម្មតា អាប់ដេតតម្លៃពិសេសបើមាន និងបំប្លែងជាប្រាក់រៀលត្រឹមត្រូវ
     cart.forEach(function(item) {
       var sp = specialPrices.find(s => s.customer_name === val && s.product_name === item.name);
       var prod = allProducts.find(p => p.id === item.id);
-      if (sp) item.price = parseFloat(sp.price);
-      else if (prod) item.price = parseFloat(prod.price || 0);
+      if (sp) {
+        var spCurr = (sp.currency || 'KHR').toUpperCase();
+        var spRaw = parseFloat(sp.price || 0);
+        item.price = (spCurr === 'USD') ? Math.round(spRaw * rU) : ((spCurr === 'THB') ? Math.round(spRaw * rT) : Math.round(spRaw));
+      } else if (prod) {
+        var pCurr = (prod.currency || 'KHR').toUpperCase();
+        var pRaw = parseFloat(prod.price || 0);
+        item.price = (pCurr === 'USD') ? Math.round(pRaw * rU) : ((pCurr === 'THB') ? Math.round(pRaw * rT) : Math.round(pRaw));
+      }
     });
   }
 
@@ -1142,7 +1184,7 @@ function renderProductGrid() {
   filtered.forEach(function(p) {
     var sp = specialPrices.find(s => s.customer_name === custName && s.product_name === p.name);
     var unitPrice = sp ? parseFloat(sp.price) : parseFloat(p.price || 0);
-    var rawCurr = (p.currency || 'KHR').toUpperCase();
+    var rawCurr = sp ? (sp.currency || 'KHR').toUpperCase() : (p.currency || 'KHR').toUpperCase();
 
     var khrVal = 0, thbVal = 0, usdVal = 0;
     if (rawCurr === 'USD') {
