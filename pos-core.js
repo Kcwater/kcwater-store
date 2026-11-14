@@ -135,6 +135,8 @@ function logout() {
   closeSidebar();
   if (typeof renderEnvironmentBanner === 'function') {
     renderEnvironmentBanner();
+    var oldFab = document.getElementById('floatingQuickSaleFab');
+  if (oldFab) oldFab.remove();
   }
   showToast("បានចាកចេញពីប្រព័ន្ធ!", "info");
 }
@@ -246,7 +248,15 @@ function loadModule(name) {
   else if (name === 'CustHistory' && typeof renderCustomerHistoryModule === 'function') renderCustomerHistoryModule();
   else if (name === 'CustBottles' && typeof renderCustomerBottlesModule === 'function') renderCustomerBottlesModule();
   else if (name === 'CompanyDeliveries' && typeof renderCompanyDeliveriesModule === 'function') renderCompanyDeliveriesModule();
+  if (currentUser && currentUser.role === 'Admin') {
+    if (!document.getElementById('floatingQuickSaleFab') && typeof initDraggableQuickSaleFab === 'function') {
+      initDraggableQuickSaleFab();
+    } else if (typeof updateFabButtonState === 'function') {
+      updateFabButtonState();
+    }
+  }
 }
+
 // ==========================================
 // 📊 ២. ផ្ទាំង DASHBOARD (ពេញអេក្រង់ PC + សមមាត្រលើទូរស័ព្ទ + អក្សរខ្លីស្អាត)
 // ==========================================
@@ -2824,20 +2834,3 @@ function onFabClickAction(e) {
   }
   handleQuickSaleShortcutAction();
 }
-
-// 🔄 ពិនិត្យបង្ហាញប៊ូតុងសម្រាប់ Admin ពេល Login
-setInterval(function() {
-  var mainApp = document.getElementById('mainApp');
-  if (mainApp && !mainApp.classList.contains('hidden') && currentUser && currentUser.role === 'Admin') {
-    if (!document.getElementById('floatingQuickSaleFab')) {
-      initDraggableQuickSaleFab();
-    } else {
-      updateFabButtonState();
-    }
-  } else {
-    var oldFab = document.getElementById('floatingQuickSaleFab');
-    if (oldFab && (!currentUser || currentUser.role !== 'Admin')) {
-      oldFab.remove();
-    }
-  }
-}, 1500);
