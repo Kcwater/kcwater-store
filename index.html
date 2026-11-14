@@ -471,8 +471,8 @@
         <div class="space-y-1.5">
           <label class="font-black text-slate-700 uppercase tracking-wider block" id="coSectionUser">១. ព័ត៌មានអ្នកទទួលទឹក</label>
           <div class="grid grid-cols-2 gap-2">
-            <input type="text" id="inp_custName" oninput="autoSaveCustomerInput()" placeholder="ឈ្មោះអ្នកទទួល (*)" class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold outline-none focus:bg-white focus:border-emerald-600">
-            <input type="tel" id="inp_custPhone" oninput="autoSaveCustomerInput()" placeholder="លេខទូរស័ព្ទ (*)" class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold outline-none focus:bg-white focus:border-emerald-600">
+            <input type="tel" id="inp_custPhone" oninput="autoSaveCustomerInput()" placeholder="លេខទូរស័ព្ទ (* ចាំបាច់)" class="p-2.5 bg-white border-2 border-emerald-400 rounded-xl font-bold outline-none focus:border-emerald-600">
+            <input type="text" id="inp_custName" oninput="autoSaveCustomerInput()" placeholder="ឈ្មោះ (ដាក់ឬមិនដាក់ក៏បាន)" class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold outline-none focus:bg-white focus:border-emerald-600">
           </div>
         </div>
 
@@ -1226,8 +1226,8 @@ var exchangeRateTHB = 115;
         if (p.photoUrl && typeof applyHousePhotoToUI === 'function') applyHousePhotoToUI(p.photoUrl);
 
         // បើមានឈ្មោះ និងលេខទូរស័ព្ទស្រាប់ ➔ បង្ហាញកាតបង្រួមតូចកុំឱ្យធ្លាក់វែងអន្លាយ
-        if (p.name && p.phone) {
-          document.getElementById('cProfName').innerText = p.name;
+        if (p.phone) {
+          document.getElementById('cProfName').innerText = p.name || 'ភ្ញៀវ (Guest)';
           document.getElementById('cProfPhone').innerText = p.phone;
           document.getElementById('cProfBuilding').innerText = getFormattedBuildingDetails();
           document.getElementById('cProfAddress').innerText = p.address || 'មិនមានចំណាំបន្ថែម';
@@ -2661,16 +2661,15 @@ function adjustCheckoutItemQty(id, delta) {
       var timeDetail = typeof getFormattedTimeDetails === 'function' ? getFormattedTimeDetails() : '⚡ ដឹកភ្លាមៗ';
       var floorDetail = typeof getFormattedBuildingDetails === 'function' ? getFormattedBuildingDetails() : '🏠 ផ្ទះផ្ទាល់ដី';
 
-      if (!name) {
-        showInAppError(d.errName);
-        if (nameInp) nameInp.focus();
-        return;
-      }
-
-      if (!phone) {
+      var rawPhoneDigits = phone.replace(/[^0-9]/g, '');
+      if (!phone || rawPhoneDigits.length < 8) {
         showInAppError(d.errPhone);
         if (phoneInp) phoneInp.focus();
         return;
+      }
+
+      if (!name) {
+        name = 'ភ្ញៀវ (' + phone + ')';
       }
 
       // រៀបចំទំនិញ
