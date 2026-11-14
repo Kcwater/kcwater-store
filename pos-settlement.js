@@ -40,11 +40,20 @@ async function renderSettlementModule() {
   currentSettlementOldDebt = 0;
   currentActivePendingPaymentId = null;
 
-  var custOptions = '<option value="">-- 🔍 ជ្រើសរើសឈ្មោះម៉ូយដើម្បីទូទាត់ --</option><option value="Walk-in">🛒 -- លក់នៅកន្លែង (Walk-in) --</option>';
+  var custOptions = '<option value="">-- 🔍 ជ្រើសរើសឈ្មោះអ្នកលក់បន្តដើម្បីទូទាត់ --</option>';
   allCustomers.forEach(function(c) {
-    if (c.role !== 'Admin' && c.full_name !== 'Walk-in') {
-      var tag = (c.type === 'Monthly') ? ' [ប្រចាំខែ]' : ' [អ្នកលក់បន្ត]';
-      custOptions += '<option value="' + c.full_name + '">' + c.full_name + tag + '</option>';
+    var isReseller = (c.role === 'Customer' || c.type === 'Regular') &&
+                     c.role !== 'Admin' &&
+                     c.role !== 'Seller' &&
+                     c.role !== 'Driver' &&
+                     c.type !== 'Monthly' &&
+                     c.type !== 'Retail' &&
+                     c.type !== 'Driver' &&
+                     c.type !== 'CompanyDriver' &&
+                     c.type !== 'Staff' &&
+                     c.full_name !== 'Walk-in';
+    if (isReseller) {
+      custOptions += '<option value="' + c.full_name + '">' + c.full_name + ' [អ្នកលក់បន្ត]</option>';
     }
   });
 
