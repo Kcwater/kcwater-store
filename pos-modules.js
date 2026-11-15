@@ -3754,6 +3754,7 @@ function injectCustKhqrPaymentModal() {
   if (existing) existing.remove();
 
   var due = custPortalDataCache ? custPortalDataCache.grandTotalDue : 0;
+  var qrSrc = (typeof storeAbaQrCodeBase64 !== 'undefined' && storeAbaQrCodeBase64) ? storeAbaQrCodeBase64 : 'https://i.postimg.cc/DzHPhnmQ/photo-2026-09-06-20-44-57.jpg';
 
   var modalHtml = '<div id="custKhqrModal" class="fixed inset-0 z-[6000] flex items-center justify-center p-3 sm:p-4 hidden">' +
     '<div class="absolute inset-0 bg-black/60 backdrop-blur-xs" onclick="closeCustKhqrModal()"></div>' +
