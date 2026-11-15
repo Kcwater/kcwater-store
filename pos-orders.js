@@ -27,7 +27,17 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 }
-
+function escapeJsAttr(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/\r?\n/g, ' ')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
 // ==========================================
 // 🔔 ១. សំឡេងរោទ៍ & ឆែកមើលការកុម្ម៉ង់ ONLINE ថ្មី
 // ==========================================
@@ -534,7 +544,7 @@ function renderAdminOnlineOrdersUI() {
           '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300">📦 បានចាត់ចែង' + (safeDriverName ? ' (' + safeDriverName + ')' : '') + '</span>'));
 
     var cleanPhone = String(o.phone || '').replace(/[^0-9]/g, '');
-    var safeNameForJs = String(o.customer_name || '').replace(/'/g, "\\'");
+    var safeNameForJs = escapeJsAttr(o.customer_name || '');
     var dateStr = new Date(o.created_at).toLocaleString('km-KH', { dateStyle: 'short', timeStyle: 'short' });
     var rawLoc = (o.location_url || o.address || '').trim();
 
@@ -583,7 +593,7 @@ function renderAdminOnlineOrdersUI() {
       '</a>' : '') +
 
       (rawLoc ? 
-      '<button type="button" onclick="openOrderMap(\'' + rawLoc.replace(/'/g, "\\'") + '\')" class="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-xl font-bold border border-blue-200 shadow-2xs flex items-center gap-1 active:scale-95 transition">' +
+      '<button type="button" onclick="openOrderMap(\'' + escapeJsAttr(rawLoc) + '\')" class="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-xl font-bold border border-blue-200 shadow-2xs flex items-center gap-1 active:scale-95 transition">' +
         '<i class="fas fa-map-location-dot text-xs text-blue-600"></i> ផែនទី' +
       '</button>' : '');
 
@@ -602,7 +612,7 @@ function renderAdminOnlineOrdersUI() {
       actionButtonsHtml += '<button type="button" onclick="cancelOnlineOrder(\'' + o.order_id + '\', \'' + safeNameForJs + '\')" class="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 rounded-xl font-bold border border-red-200 shadow-2xs flex items-center gap-1 active:scale-95 transition">' +
         '<i class="fas fa-trash-can text-xs text-red-500"></i> បោះបង់' +
       '</button>' +
-      '<button type="button" onclick="completeOnlineOrder(\'' + o.order_id + '\', \'' + safeNameForJs + '\', ' + (o.total || 0) + ', \'' + (o.items || '').replace(/'/g, "\\'") + '\', \'' + (o.driver_name || '').replace(/'/g, "\\'") + '\', \'' + (o.payment_method || 'COD').replace(/'/g, "\\'") + '\')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black shadow-xs flex items-center gap-1 active:scale-95 transition">' +
+      '<button type="button" onclick="completeOnlineOrder(\'' + escapeJsAttr(o.order_id) + '\', \'' + safeNameForJs + '\', ' + (Number(o.total) || 0) + ', \'' + escapeJsAttr(o.items || '') + '\', \'' + escapeJsAttr(o.driver_name || '') + '\', \'' + escapeJsAttr(o.payment_method || 'COD') + '\')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black shadow-xs flex items-center gap-1 active:scale-95 transition">' +
         '<i class="fas fa-check text-xs"></i> ដឹកដល់' +
       '</button>';
     }
