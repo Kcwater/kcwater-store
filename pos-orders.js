@@ -1454,7 +1454,7 @@ async function renderCompanyDeliveriesModule(isSilentRefresh) {
       var safePayMethod = escapeHtml(task.payment_method || 'COD');
 
       var cleanPhone = String(task.phone || '').replace(/[^0-9]/g, '');
-      var safeNameForJs = String(task.customer_name || '').replace(/'/g, "\\'");
+      var safeNameForJs = escapeJsAttr(task.customer_name || '');
       var rawLoc = (task.location_url || task.address || '').trim();
       var timeStr = new Date(task.created_at).toLocaleString('km-KH', { 
         timeZone: 'Asia/Phnom_Penh', 
@@ -1526,7 +1526,7 @@ async function renderCompanyDeliveriesModule(isSilentRefresh) {
           '</a>' : '') +
 
           (rawLoc ? 
-          '<button type="button" onclick="openOrderMap(\'' + rawLoc.replace(/'/g, "\\'") + '\')" class="py-2 px-2 bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-xl font-bold border border-blue-200 shadow-2xs flex items-center justify-center gap-1 active:scale-95 transition">' +
+          '<button type="button" onclick="openOrderMap(\'' + escapeJsAttr(rawLoc) + '\')" class="py-2 px-2 bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-xl font-bold border border-blue-200 shadow-2xs flex items-center justify-center gap-1 active:scale-95 transition">' +
             '<i class="fas fa-map-location-dot text-blue-600"></i> ផែនទី' +
           '</button>' : '') +
 
@@ -1538,7 +1538,7 @@ async function renderCompanyDeliveriesModule(isSilentRefresh) {
 
         departActionHtml +
 
-        '<button type="button" onclick="completeOnlineOrder(\'' + task.order_id + '\', \'' + safeNameForJs + '\', ' + (task.total || 0) + ', \'' + (task.items || '').replace(/'/g, "\\'") + '\', \'' + driverName.replace(/'/g, "\\'") + '\', \'' + (task.payment_method || 'COD').replace(/'/g, "\\'") + '\')" class="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-green-700 hover:from-emerald-700 text-white rounded-2xl font-black text-xs sm:text-sm shadow-md flex items-center justify-center gap-2 active:scale-95 transition">' +
+        '<button type="button" onclick="completeOnlineOrder(\'' + escapeJsAttr(task.order_id) + '\', \'' + safeNameForJs + '\', ' + (Number(task.total) || 0) + ', \'' + escapeJsAttr(task.items || '') + '\', \'' + escapeJsAttr(driverName) + '\', \'' + escapeJsAttr(task.payment_method || 'COD') + '\')" class="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-green-700 hover:from-emerald-700 text-white rounded-2xl font-black text-xs sm:text-sm shadow-md flex items-center justify-center gap-2 active:scale-95 transition">' +
           '<i class="fas fa-check-circle text-base"></i> ដឹកដល់ហើយ & ប្រមូលលុយរួច' +
         '</button>' +
       '</div>';
