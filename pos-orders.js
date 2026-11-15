@@ -201,11 +201,14 @@ async function openOnlineOrdersModal() {
   injectOnlineOrdersAdminModal();
   var modal = document.getElementById('onlineOrdersAdminModal');
   var container = document.getElementById('onlineOrdersAdminListContainer');
+  var isAlreadyOpen = (modal && !modal.classList.contains('hidden'));
+
   if (modal) modal.classList.remove('hidden');
-  if (container) container.innerHTML = '<div class="text-center py-8 text-gray-400 italic text-xs"><i class="fas fa-spinner fa-spin mr-1.5 text-amber-600"></i> កំពុងទាញយកបញ្ជីកុម្ម៉ង់...</div>';
+  if (container && !isAlreadyOpen) {
+    container.innerHTML = '<div class="text-center py-8 text-gray-400 italic text-xs"><i class="fas fa-spinner fa-spin mr-1.5 text-amber-600"></i> កំពុងទាញយកបញ្ជីកុម្ម៉ង់...</div>';
+  }
 
   try {
-    // ១. ធានាថាមានទិន្នន័យអ្នកដឹកជញ្ជូនក្នុង Dropdown (មិនទាញ Password ឡើយ)
     if (!allCustomers || allCustomers.length === 0) {
       const { data: custs } = await supabaseClient
         .from('users')
@@ -214,11 +217,9 @@ async function openOnlineOrdersModal() {
       if (custs) allCustomers = custs;
     }
 
-    // 🇰🇭 ប្រើប្រព័ន្ធម៉ោងកម្ពុជា UTC+7
     var todayStr = getCambodiaToday();
     var todayQueryStart = todayStr + 'T00:00:00+07:00';
 
-    // ២. ទាញយក Order កំពុងដំណើរការ (Pending, Assigned, Departed) និង ដឹកដល់ថ្ងៃនេះ ព្រមគ្នា
     const [activeRes, deliveredRes] = await Promise.all([
       supabaseClient
         .from('orders')
@@ -236,11 +237,18 @@ async function openOnlineOrdersModal() {
     if (activeRes.error) throw activeRes.error;
     if (deliveredRes.error) throw deliveredRes.error;
 
+    var activeEl = document.activeElement;
+    if (isAlreadyOpen && activeEl && activeEl.id && activeEl.id.indexOf('driver_sel_') === 0) {
+      return;
+    }
+
     adminOnlineOrdersCache = (activeRes.data || []).concat(deliveredRes.data || []);
     renderAdminOnlineOrdersUI();
 
   } catch(err) {
-    if (container) container.innerHTML = '<div class="p-4 text-center text-red-500 font-bold text-xs">កំហុស៖ ' + escapeHtml(err.message) + '</div>';
+    if (container && !isAlreadyOpen) {
+      container.innerHTML = '<div class="p-4 text-center text-red-500 font-bold text-xs">កំហុស៖ ' + escapeHtml(err.message) + '</div>';
+    }
   }
 }
 
