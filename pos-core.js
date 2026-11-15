@@ -2886,7 +2886,6 @@ function initDraggableQuickSaleFab() {
   window.addEventListener('mouseup', onDragEnd);
 
   updateFabButtonState();
-}
 
 function onFabClickAction(e) {
   if (fabHasMoved) {
