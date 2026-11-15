@@ -1153,13 +1153,13 @@ async function executeFinalCompleteDelivery() {
         });
       }
 
-      // 💵 បំប្លែងតម្លៃទំនិញ (USD/THB) ចេញជាប្រាក់រៀល (KHR) ឱ្យត្រូវតាមវិក្កយបត្រភ្ញៀវ
+      // 💵 បំប្លែងតម្លៃទំនិញ (USD/THB) ចេញជាប្រាក់រៀល (KHR) បង្គត់ឡើងដល់ខ្ទង់ ១០០៛ ឱ្យត្រូវតាមវិក្កយបត្រភ្ញៀវ ១០០%
       var rawOnlinePrice = matchedProd ? parseFloat(matchedProd.online_price || matchedProd.price || 0) : 0;
       var prodCurr = matchedProd ? (matchedProd.currency || 'KHR').toUpperCase() : 'KHR';
-      var unitPriceKhr = rawOnlinePrice;
-      if (prodCurr === 'USD') unitPriceKhr = Math.round(rawOnlinePrice * rateU);
-      else if (prodCurr === 'THB') unitPriceKhr = Math.round(rawOnlinePrice * rateT);
-      else unitPriceKhr = Math.round(rawOnlinePrice);
+      var unitPriceKhr = 0;
+      if (prodCurr === 'USD') unitPriceKhr = Math.ceil(Math.round(rawOnlinePrice * rateU) / 100) * 100;
+      else if (prodCurr === 'THB') unitPriceKhr = Math.ceil(Math.round(rawOnlinePrice * rateT) / 100) * 100;
+      else unitPriceKhr = Math.ceil(Math.round(rawOnlinePrice) / 100) * 100;
 
       var unitPrice = isFreeGift ? 0 : unitPriceKhr;
       var lineTotal = unitPrice * qty;
