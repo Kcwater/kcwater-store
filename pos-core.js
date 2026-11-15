@@ -102,6 +102,9 @@ async function login() {
 
       await loadSettingsAndTelegram();
       await fetchInitialPOSData();
+      if (typeof updateNotificationCenterBadge === 'function') {
+        updateNotificationCenterBadge();
+      }
 
       // 🎯 បែងចែកទំព័រដើមតាមតួនាទី (Role Routing)
       if (currentUser.role === 'Admin') {
@@ -2445,53 +2448,48 @@ async function updateNotificationCenterBadge() {
   if (!badge) return;
 
   var isAdmin = (currentUser && currentUser.role === 'Admin');
-  var isCompanyDriver = (currentUser && currentUser.type === 'CompanyDriver');
 
-  // លាក់កណ្តឹងពីម៉ូយធម្មតា
-  if (!isAdmin && !isCompanyDriver) {
-    if (bellBtn) bellBtn.classList.add('hidden');
+  // 🔒 លាក់រូបកណ្តឹងពីគ្រប់តួនាទីទាំងអស់ ទុកឱ្យតែ Admin ម្នាក់គត់
+  if (!isAdmin) {
+    if (bellBtn) {
+      bellBtn.classList.add('hidden');
+      bellBtn.style.setProperty('display', 'none', 'important');
+    }
+    badge.classList.add('hidden');
+    badge.style.display = 'none';
     return;
   }
-  if (bellBtn) bellBtn.classList.remove('hidden');
+
+  if (bellBtn) {
+    bellBtn.classList.remove('hidden');
+    bellBtn.style.setProperty('display', 'inline-flex', 'important');
+  }
 
   try {
-    var totalCount = 0;
+    const [ordRes, payRes] = await Promise.all([
+      supabaseClient.from('orders').select('*', { count: 'exact', head: true }).eq('status', 'Pending'),
+      supabaseClient.from('pending_payments').select('*', { count: 'exact', head: true }).eq('status', 'Pending')
+    ]);
 
-    // ក. ប្រសិនបើជាអ្នកដឹកជញ្ជូនរោងចក្រ ➔ រាប់តែការងារដឹករបស់គាត់
-    if (isCompanyDriver) {
-      const { count } = await supabaseClient
-        .from('orders')
-        .select('*', { count: 'exact', head: true })
-        .in('status', ['Assigned', 'Departed'])
-        .ilike('driver_name', (currentUser.fullName || '').trim());
-      
-      totalCount = count || 0;
+    var pendingOrders = ordRes.count || 0;
+    var pendingPays = payRes.count || 0;
 
-    // ខ. ប្រសិនបើជា Admin ➔ រាប់សរុបទាំង ៣ ប្រភេទ (Orders + Payments + Low Stock)
-    } else if (isAdmin) {
-      const [ordRes, payRes] = await Promise.all([
-        supabaseClient.from('orders').select('*', { count: 'exact', head: true }).eq('status', 'Pending'),
-        supabaseClient.from('pending_payments').select('*', { count: 'exact', head: true }).eq('status', 'Pending')
-      ]);
+    var lowStockCount = 0;
+    (allProducts || []).forEach(function(p) {
+      if (p.type === 'ទិញគេ' && parseFloat(p.stock || 0) <= parseFloat(p.min_stock || 5)) {
+        lowStockCount++;
+      }
+    });
 
-      var pendingOrders = ordRes.count || 0;
-      var pendingPays = payRes.count || 0;
-
-      var lowStockCount = 0;
-      (allProducts || []).forEach(function(p) {
-        if (p.type === 'ទិញគេ' && parseFloat(p.stock || 0) <= parseFloat(p.min_stock || 5)) {
-          lowStockCount++;
-        }
-      });
-
-      totalCount = pendingOrders + pendingPays + lowStockCount;
-    }
+    var totalCount = pendingOrders + pendingPays + lowStockCount;
 
     if (totalCount > 0) {
       badge.innerText = totalCount > 99 ? '99+' : totalCount;
       badge.classList.remove('hidden');
+      badge.style.display = 'flex';
     } else {
       badge.classList.add('hidden');
+      badge.style.display = 'none';
     }
 
     // បន្លឺសំឡេងរោទ៍ Chime បើមានដំណឹងថ្មីលោតឡើង
@@ -2505,6 +2503,10 @@ async function updateNotificationCenterBadge() {
 
 // ២. មុខងារបើកផ្ទាំង Pop-up មជ្ឈមណ្ឌលជូនដំណឹង
 async function openNotificationCenterModal() {
+  if (!currentUser || currentUser.role !== 'Admin') {
+    showToast("មានតែ Admin ប៉ុណ្ណោះដែលមានសិទ្ធិមើលមជ្ឈមណ្ឌលជូនដំណឹង!", "error");
+    return;
+  }
   var existing = document.getElementById('notificationCenterModal');
   if (existing) existing.remove();
 
