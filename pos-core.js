@@ -30,18 +30,17 @@ async function login() {
 
   try {
     const { data, error } = await supabaseClient
-      .rpc('verify_user_login', { p_username: u, p_password: p });
+      .rpc('login_with_session', { p_username: u, p_password: p });
 
     if (error) throw error;
 
-    // 🔍 ស្រង់យកទិន្នន័យគណនី (គាំទ្រទាំង Array និង Object ធានាស្គាល់ឈ្មោះ និង Role ១០០%)
     var userRow = Array.isArray(data) ? data[0] : data;
 
     if (userRow && userRow.id) {
-      // 🔒 រារាំងអតិថិជនប្រចាំខែ (Monthly) ភ្លាមៗមុនពេលបើកប្រព័ន្ធ ឬទាញទិន្នន័យ!
       if (userRow.type === 'Monthly') {
         showToast("អតិថិជនប្រចាំខែ មិនអនុញ្ញាតឱ្យចូលប្រើប្រព័ន្ធឡើយ! Admin ជាអ្នកដកទំនិញជំនួស។", "error");
         if (remEl) remEl.checked = false;
+        localStorage.removeItem('kc_pos_session');
         localStorage.removeItem('kc_pos_user');
         localStorage.removeItem('kc_pos_pass');
         userEl.value = '';
@@ -51,19 +50,73 @@ async function login() {
 
       var bossName = (userRow.linked_boss || "").trim();
 
-      // 🔍 ប្រសិនបើជាកូនចៅ ហើយ RPC មិនបានផ្ញើ linked_boss មក ➔ ទាញយកពីតារាង users ផ្ទាល់
-      if ((userRow.role === 'Driver' || userRow.type === 'Driver') && !bossName) {
-        try {
-          const { data: uRow } = await supabaseClient
-            .from('users')
-            .select('linked_boss')
-            .eq('id', userRow.id)
-            .maybeSingle();
-          if (uRow && uRow.linked_boss) {
-            bossName = uRow.linked_boss.trim();
-          }
-        } catch(fe) {}
+      currentUser = {
+        id: userRow.id,
+        username: userRow.username,
+        fullName: userRow.full_name,
+        role: userRow.role,
+        type: userRow.type,
+        phone: userRow.phone,
+        linkedBoss: bossName,
+        sessionToken: userRow.session_token || ''
+      };
+
+      localStorage.removeItem('kc_pos_user');
+      localStorage.removeItem('kc_pos_pass');
+      if (remEl && remEl.checked && currentUser.sessionToken) {
+        localStorage.setItem('kc_pos_session', currentUser.sessionToken);
+      } else {
+        localStorage.removeItem('kc_pos_session');
       }
+
+      await completePosLoginFlow();
+      showToast("ចូលប្រើប្រាស់ជោគជ័យ! សួស្តី " + currentUser.fullName, "success");
+    } else {
+      showToast("ឈ្មោះ ឬលេខសម្ងាត់មិនត្រឹមត្រូវឡើយ!", "error");
+    }
+  } catch (err) {
+    showToast("កំហុសតភ្ជាប់៖ " + err.message, "error");
+  } finally {
+    btnEl.innerHTML = '<span>ចូលប្រើប្រាស់</span>';
+    btnEl.disabled = false;
+  }
+}
+
+async function completePosLoginFlow() {
+  document.getElementById('loginPage').style.display = 'none';
+  document.getElementById('mainApp').classList.remove('hidden');
+
+  var roleLabel = (currentUser.role === 'Admin') ? 'Admin៖ ' : 
+                  (currentUser.type === 'CompanyDriver' ? 'អ្នកដឹកជញ្ជូនរោងចក្រ៖ ' :
+                  (currentUser.role === 'Driver' ? ('អ្នកដឹក (កូនចៅ ' + (currentUser.linkedBoss || 'មេ') + ')៖ ') : 'ម៉ូយ៖ '));
+  document.getElementById('userInfo').innerText = roleLabel + currentUser.fullName;
+
+  renderSidebarMenu();
+  if (typeof renderEnvironmentBanner === 'function') {
+    renderEnvironmentBanner();
+  }
+
+  if (typeof checkPendingOnlineOrdersBadge === 'function') {
+    checkPendingOnlineOrdersBadge();
+  }
+
+  await loadSettingsAndTelegram();
+  await fetchInitialPOSData();
+
+  if (typeof updateNotificationCenterBadge === 'function') {
+    updateNotificationCenterBadge();
+  }
+
+  if (currentUser.role === 'Admin') {
+    loadModule('Dashboard');
+  } else if (currentUser.type === 'CompanyDriver') {
+    loadModule('CompanyDeliveries');
+  } else if (currentUser.role === 'Seller' || currentUser.role === 'Driver') {
+    loadModule('POS');
+  } else {
+    loadModule('CustPortal');
+  }
+}
 
       currentUser = {
         id: userRow.id,
@@ -130,6 +183,11 @@ async function login() {
 }
 
 function logout() {
+  var tokenToClear = (currentUser && currentUser.sessionToken) ? currentUser.sessionToken : localStorage.getItem('kc_pos_session');
+  if (tokenToClear) {
+    supabaseClient.rpc('logout_pos_session', { p_token: tokenToClear }).then(function(){}).catch(function(){});
+  }
+  localStorage.removeItem('kc_pos_session');
   localStorage.removeItem('kc_pos_user');
   localStorage.removeItem('kc_pos_pass');
   currentUser = {};
@@ -138,9 +196,11 @@ function logout() {
   closeSidebar();
   if (typeof renderEnvironmentBanner === 'function') {
     renderEnvironmentBanner();
-    var oldFab = document.getElementById('floatingQuickSaleFab');
-  if (oldFab) oldFab.remove();
   }
+  var oldFab = document.getElementById('floatingQuickSaleFab');
+  if (oldFab) oldFab.remove();
+  if (typeof updateNotificationCenterBadge === 'function') updateNotificationCenterBadge();
+  if (typeof checkPendingOnlineOrdersBadge === 'function') checkPendingOnlineOrdersBadge();
   showToast("បានចាកចេញពីប្រព័ន្ធ!", "info");
 }
 
@@ -2292,15 +2352,35 @@ async function sharePOSReceiptImage() {
   }
 }
 
-// 🔄 Auto-Login បើមាន Remember Me
-window.addEventListener('load', function() {
-  var savedU = localStorage.getItem('kc_pos_user');
-  var savedP = localStorage.getItem('kc_pos_pass');
-  if (savedU && savedP) {
-    document.getElementById('user').value = savedU;
-    document.getElementById('pass').value = savedP;
-    document.getElementById('rememberMe').checked = true;
-    login();
+// 🔄 Auto-Login បើមាន Remember Me (ប្រើ Session Token សុវត្ថិភាព មិនរក្សាទុក Password ឡើយ)
+window.addEventListener('load', async function() {
+  localStorage.removeItem('kc_pos_user');
+  localStorage.removeItem('kc_pos_pass');
+  var savedToken = localStorage.getItem('kc_pos_session');
+  if (!savedToken) return;
+
+  try {
+    const { data, error } = await supabaseClient.rpc('verify_pos_session', { p_token: savedToken });
+    if (error) throw error;
+
+    var userRow = Array.isArray(data) ? data[0] : data;
+    if (userRow && userRow.id && userRow.type !== 'Monthly') {
+      currentUser = {
+        id: userRow.id,
+        username: userRow.username,
+        fullName: userRow.full_name,
+        role: userRow.role,
+        type: userRow.type,
+        phone: userRow.phone,
+        linkedBoss: (userRow.linked_boss || "").trim(),
+        sessionToken: userRow.session_token || savedToken
+      };
+      await completePosLoginFlow();
+    } else {
+      localStorage.removeItem('kc_pos_session');
+    }
+  } catch(e) {
+    localStorage.removeItem('kc_pos_session');
   }
 });
 
