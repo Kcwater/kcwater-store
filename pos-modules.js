@@ -1961,7 +1961,8 @@ function toggleCustTypeFields() {
   }
 }
 
-// 💾 មុខងាររក្សាទុក ឬកែប្រែគណនី (ការពារកុំឱ្យច្រឡំ Role និងប្រើ kcAlert ស្តង់ដារ)async function saveUserToSupabase() {
+// 💾 មុខងាររក្សាទុក ឬកែប្រែគណនី (ការពារកុំឱ្យច្រឡំ Role និងប្រើ kcAlert ស្តង់ដារ)
+  async function saveUserToSupabase() {
   var name = getElVal('mem_name');
   var roleType = getElVal('mem_role_type') || 'MONTHLY';
   var phone = getElVal('mem_phone');
