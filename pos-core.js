@@ -2881,29 +2881,6 @@ function initDraggableQuickSaleFab() {
   updateFabButtonState();
 }
 
-  // 📱 Touch លើទូរស័ព្ទដៃ
-  fab.addEventListener('touchstart', function(e) {
-    if (e.touches && e.touches[0]) onDragStart(e.touches[0].clientX, e.touches[0].clientY);
-  }, { passive: true });
-
-  window.addEventListener('touchmove', function(e) {
-    if (fabIsDragging && e.touches && e.touches[0]) onDragMove(e.touches[0].clientX, e.touches[0].clientY);
-  }, { passive: true });
-
-  window.addEventListener('touchend', onDragEnd);
-
-  // 🖱️ Mouse លើកុំព្យូទ័រ
-  fab.addEventListener('mousedown', function(e) {
-    onDragStart(e.clientX, e.clientY);
-  });
-
-  window.addEventListener('mousemove', function(e) {
-    if (fabIsDragging) onDragMove(e.clientX, e.clientY);
-  });
-
-  window.addEventListener('mouseup', onDragEnd);
-
-  updateFabButtonState();
 
 function onFabClickAction(e) {
   if (fabHasMoved) {
