@@ -168,17 +168,6 @@ async function completePosLoginFlow() {
         loadModule('POS');
       } else {
         loadModule('CustPortal');
-      }
-
-      showToast("ចូលប្រើប្រាស់ជោគជ័យ! សួស្តី " + currentUser.fullName, "success");
-    } else {
-      showToast("ឈ្មោះ ឬលេខសម្ងាត់មិនត្រឹមត្រូវឡើយ!", "error");
-    }
-  } catch (err) {
-    showToast("កំហុសតភ្ជាប់៖ " + err.message, "error");
-  } finally {
-    btnEl.innerHTML = '<span>ចូលប្រើប្រាស់</span>';
-    btnEl.disabled = false;
   }
 }
 
