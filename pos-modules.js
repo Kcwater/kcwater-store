@@ -2070,7 +2070,7 @@ async function fetchUsersModuleTable() {
   tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-400 italic"><i class="fas fa-spinner fa-spin text-blue-600 mr-1"></i> កំពុងទាញបញ្ជីគណនី...</td></tr>';
 
   try {
-    const { data: users, error } = await supabaseClient.from('users').select('*').order('id', { ascending: false });
+    const { data: users, error } = await supabaseClient.rpc('admin_list_users', { p_token: currentUser.sessionToken || '' });
     if (error) throw error;
     cachedUsersModuleList = users || [];
     filterUsersModuleTable();
@@ -2177,15 +2177,9 @@ function filterUsersModuleTable() {
     } else if (u.type === 'Monthly') {
       credsText = '<span class="text-gray-400 text-[10.5px] italic whitespace-nowrap">🔒 ម៉ូយប្រចាំខែ (គ្មាន Login)</span>';
     } else {
-      // 🛡️ បិទបាំង Password ដោយសញ្ញាចុចៗ •••••••• និងមានប៊ូតុងភ្នែកចុចមើល
-      var safePass = u.password || '-';
       credsText = '<div class="flex items-center gap-1.5 font-mono text-xs whitespace-nowrap">' +
-        '<span><b>' + (u.username || '-') + '</b> / </span>' +
-        '<span id="passMask_' + u.id + '" class="tracking-widest text-slate-500 font-black">••••••••</span>' +
-        '<span id="passReal_' + u.id + '" class="hidden text-blue-900 font-bold">' + safePass + '</span>' +
-        '<button type="button" onclick="togglePasswordRowVisibility(' + u.id + ')" class="text-slate-400 hover:text-blue-600 p-0.5 active:scale-90 transition" title="ចុចបង្ហាញ/លាក់ លេខសម្ងាត់">' +
-          '<i id="passEyeIcon_' + u.id + '" class="fas fa-eye text-[11px]"></i>' +
-        '</button>' +
+        '<span><b>' + (u.username || '-') + '</b></span>' +
+        '<span class="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-md font-sans font-bold">🔒 លាក់លេខសម្ងាត់</span>' +
       '</div>';
     }
 
@@ -2371,7 +2365,11 @@ async function delUserFromSupabase(id) {
   if (!ok) return;
 
   try {
-    await supabaseClient.from('users').delete().eq('id', id);
+    const { error } = await supabaseClient.rpc('admin_delete_user', {
+      p_token: currentUser.sessionToken || '',
+      p_id: Number(id)
+    });
+    if (error) throw error;
     showToast("បានលុបគណនីជោគជ័យ!", "success");
     await fetchInitialPOSData();
     renderCustomersModule();
@@ -3343,45 +3341,55 @@ function renderPromoRulesList() {
 // 📥 ទាញយកទិន្នន័យការកំណត់ពី Supabase
 async function loadSettingsForm() {
   try {
-    const { data } = await supabaseClient.from('settings').select('*');
-    if (!data) return;
+    const { data } = await supabaseClient
+      .from('settings')
+      .select('*')
+      .not('key', 'ilike', 'Telegram_%');
+
     var tgStatus = "ON";
 
-    data.forEach(function(r) {
-      if (r.key === 'Store_Open_Time') { var el = document.getElementById('set_open_time'); if (el) el.value = r.value; }
-      if (r.key === 'Store_Close_Time') { var el = document.getElementById('set_close_time'); if (el) el.value = r.value; }
-      if (r.key === 'Delivery_Fee_Standard') { var el = document.getElementById('set_del_fee'); if (el) el.value = r.value; }
-      if (r.key === 'Delivery_Free_Min_Qty') { var el = document.getElementById('set_del_min'); if (el) el.value = r.value; }
-      if (r.key === 'Delivery_Free_Min_Amount') { var el = document.getElementById('set_del_free_amount'); if (el) el.value = r.value; }
-      if (r.key === 'Store_Slides_Config' && r.value) {
-        try {
-          currentSlidesData = JSON.parse(r.value);
-        } catch(e) {}
-      }
-      
-      // Promo
-      if (r.key === 'Promo_Status') { var el = document.getElementById('set_promo_status'); if (el) el.value = r.value; }
-      if (r.key === 'Promo_Start_Time') { var el = document.getElementById('set_promo_start'); if (el) el.value = r.value; }
-      if (r.key === 'Promo_End_Time') { var el = document.getElementById('set_promo_end'); if (el) el.value = r.value; }
-      if (r.key === 'Promo_Banner_Text') { var el = document.getElementById('set_promo_banner'); if (el) el.value = r.value; }
-      if (r.key === 'Promo_Banner_Img') {
-        var pi = document.getElementById('promoBannerImgPreview');
-        var ph = document.getElementById('set_promo_img_base64');
-        if (pi && r.value) pi.src = r.value;
-        if (ph) ph.value = r.value || '';
-      }
-      if (r.key === 'Promo_Rules') {
-        try { currentPromoRules = JSON.parse(r.value || '[]'); } catch(e) { currentPromoRules = []; }
-      }
+    if (data) {
+      data.forEach(function(r) {
+        if (r.key === 'Store_Open_Time') { var el = document.getElementById('set_open_time'); if (el) el.value = r.value; }
+        if (r.key === 'Store_Close_Time') { var el = document.getElementById('set_close_time'); if (el) el.value = r.value; }
+        if (r.key === 'Delivery_Fee_Standard') { var el = document.getElementById('set_del_fee'); if (el) el.value = r.value; }
+        if (r.key === 'Delivery_Free_Min_Qty') { var el = document.getElementById('set_del_min'); if (el) el.value = r.value; }
+        if (r.key === 'Delivery_Free_Min_Amount') { var el = document.getElementById('set_del_free_amount'); if (el) el.value = r.value; }
+        if (r.key === 'Store_Slides_Config' && r.value) {
+          try { currentSlidesData = JSON.parse(r.value); } catch(e) {}
+        }
 
-      // Telegram & Exchange Rates (ពិនិត្យសុវត្ថិភាពមិនឱ្យ Error null)
-      if (r.key === 'Telegram_Token') { var el = document.getElementById('set_tg_token'); if (el) el.value = r.value; }
-      if (r.key === 'Telegram_ChatID') { var el = document.getElementById('set_tg_chatid'); if (el) el.value = r.value; }
-      if (r.key === 'Telegram_Driver_ChatID') { var el = document.getElementById('set_tg_driver_chatid'); if (el) el.value = r.value; }
-      if (r.key === 'Telegram_Alert_Status') tgStatus = r.value;
-      if (r.key === 'Exchange_Rate_USD') { var el = document.getElementById('set_rate_usd'); if (el) el.value = r.value; }
-      if (r.key === 'Exchange_Rate_THB') { var el = document.getElementById('set_rate_thb'); if (el) el.value = r.value; }
-    });
+        if (r.key === 'Promo_Status') { var el = document.getElementById('set_promo_status'); if (el) el.value = r.value; }
+        if (r.key === 'Promo_Start_Time') { var el = document.getElementById('set_promo_start'); if (el) el.value = r.value; }
+        if (r.key === 'Promo_End_Time') { var el = document.getElementById('set_promo_end'); if (el) el.value = r.value; }
+        if (r.key === 'Promo_Banner_Text') { var el = document.getElementById('set_promo_banner'); if (el) el.value = r.value; }
+        if (r.key === 'Promo_Banner_Img') {
+          var pi = document.getElementById('promoBannerImgPreview');
+          var ph = document.getElementById('set_promo_img_base64');
+          if (pi && r.value) pi.src = r.value;
+          if (ph) ph.value = r.value || '';
+        }
+        if (r.key === 'Promo_Rules') {
+          try { currentPromoRules = JSON.parse(r.value || '[]'); } catch(e) { currentPromoRules = []; }
+        }
+
+        if (r.key === 'Exchange_Rate_USD') { var el = document.getElementById('set_rate_usd'); if (el) el.value = r.value; }
+        if (r.key === 'Exchange_Rate_THB') { var el = document.getElementById('set_rate_thb'); if (el) el.value = r.value; }
+      });
+    }
+
+    var tgTokenEl = document.getElementById('set_tg_token');
+    if (tgTokenEl && currentUser && currentUser.sessionToken) {
+      const { data: tgData } = await supabaseClient.rpc('admin_get_telegram_settings', { p_token: currentUser.sessionToken });
+      var tgRow = Array.isArray(tgData) ? tgData[0] : tgData;
+      if (tgRow) {
+        tgTokenEl.value = '';
+        tgTokenEl.placeholder = tgRow.has_token ? '•••••••• (បានរក្សាទុក - វាយថ្មីបើចង់ប្តូរ)' : 'វាយ Bot Token នៅទីនេះ...';
+        var elChat = document.getElementById('set_tg_chatid'); if (elChat) elChat.value = tgRow.chat_id || '';
+        var elDrv = document.getElementById('set_tg_driver_chatid'); if (elDrv) elDrv.value = tgRow.driver_chat_id || '';
+        tgStatus = tgRow.alert_status || 'ON';
+      }
+    }
 
     renderPromoRulesList();
     updateTelegramButtonUI(tgStatus);
@@ -3422,17 +3430,10 @@ async function saveSettingsToSupabase() {
     rows.push({ key: 'Promo_Rules', value: JSON.stringify(currentPromoRules || []) });
   }
 
-  // ៣. ពិនិត្យ Telegram Bot Settings (បើមានលើអេក្រង់)
+// ៣. ពិនិត្យ Telegram Bot Settings (បើមានលើអេក្រង់)
   var elTgToken = document.getElementById('set_tg_token');
   var elTgChat = document.getElementById('set_tg_chatid');
   var elTgDriverChat = document.getElementById('set_tg_driver_chatid');
-
-  if (elTgToken) rows.push({ key: 'Telegram_Token', value: elTgToken.value.trim() });
-  if (elTgChat) rows.push({ key: 'Telegram_ChatID', value: elTgChat.value.trim() });
-  if (elTgDriverChat) rows.push({ key: 'Telegram_Driver_ChatID', value: elTgDriverChat.value.trim() });
-  if (elTgToken) {
-    rows.push({ key: 'Telegram_Alert_Status', value: currentTelegramAlertStatus });
-  }
 
   // ៤. ពិនិត្យអត្រាប្តូរប្រាក់ (បើមានលើអេក្រង់)
   var elRateUsd = document.getElementById('set_rate_usd');
@@ -3440,12 +3441,24 @@ async function saveSettingsToSupabase() {
   if (elRateUsd) rows.push({ key: 'Exchange_Rate_USD', value: elRateUsd.value });
   if (elRateThb) rows.push({ key: 'Exchange_Rate_THB', value: elRateThb.value });
 
-  // ប្រសិនបើគ្មានប្រអប់ Setting ណាមួយត្រូវបានបើកទេ មិនបាច់ Save ឡើយ
-  if (rows.length === 0) return;
+  if (rows.length === 0 && !elTgToken) return;
 
   try {
-    const { error } = await supabaseClient.from('settings').upsert(rows);
-    if (error) throw error;
+    if (elTgToken) {
+      const { error: tgErr } = await supabaseClient.rpc('admin_save_telegram_settings', {
+        p_token: currentUser.sessionToken || '',
+        p_tg_token: elTgToken.value.trim(),
+        p_chat_id: elTgChat ? elTgChat.value.trim() : '',
+        p_driver_chat_id: elTgDriverChat ? elTgDriverChat.value.trim() : '',
+        p_status: currentTelegramAlertStatus || 'ON'
+      });
+      if (tgErr) throw tgErr;
+    }
+
+    if (rows.length > 0) {
+      const { error } = await supabaseClient.from('settings').upsert(rows);
+      if (error) throw error;
+    }
 
     showToast("បានរក្សាទុកការកំណត់ជោគជ័យ!", "success");
     await loadSettingsAndTelegram();
@@ -3461,29 +3474,26 @@ async function testTelegramAlertNow() {
     return;
   }
 
-  var token = document.getElementById('set_tg_token') ? document.getElementById('set_tg_token').value.trim() : (telegramConfig.token || '');
-  var bossId = document.getElementById('set_tg_chatid') ? document.getElementById('set_tg_chatid').value.trim() : (telegramConfig.chatId || '');
-  var driverId = document.getElementById('set_tg_driver_chatid') ? document.getElementById('set_tg_driver_chatid').value.trim() : (telegramConfig.driverChatId || '');
+  var bossId = document.getElementById('set_tg_chatid') ? document.getElementById('set_tg_chatid').value.trim() : '';
+  var driverId = document.getElementById('set_tg_driver_chatid') ? document.getElementById('set_tg_driver_chatid').value.trim() : '';
 
-  if (!token) {
-    showToast("សូមបញ្ចូល Telegram Bot Token ជាមុនសិន!", "error");
+  if (!bossId && !driverId) {
+    showToast("សូមបញ្ចូល Chat ID ជាមុនសិន!", "error");
     return;
   }
 
-  var timeKhNow = new Date().toLocaleString('km-KH', { 
-    timeZone: 'Asia/Phnom_Penh', 
-    dateStyle: 'short', 
-    timeStyle: 'short' 
+  var timeKhNow = new Date().toLocaleString('km-KH', {
+    timeZone: 'Asia/Phnom_Penh',
+    dateStyle: 'short',
+    timeStyle: 'short'
   });
 
-  // ១. ផ្ញើសារតេស្តទៅ Group ទី ១ (Group ថៅកែ)
   if (bossId) {
-    sendTelegramAlert("🏢 <b>[KC WATER - តេស្ត Group ថៅកែ / រោងចក្រ]</b>\n\n✅ Group នេះត្រៀមទទួលដំណឹង៖\n• ភ្ញៀវដកទឹក / លក់នៅកន្លែង (POS)\n• ការទូទាត់លុយ, ចំណាយ និងស្តុក\n🕒 ម៉ោង៖ " + timeKhNow, bossId);
+    await sendTelegramAlert("🏢 <b>[KC WATER - តេស្ត Group ថៅកែ / រោងចក្រ]</b>\n\n✅ Group នេះត្រៀមទទួលដំណឹង៖\n• ភ្ញៀវដកទឹក / លក់នៅកន្លែង (POS)\n• ការទូទាត់លុយ, ចំណាយ និងស្តុក\n🕒 ម៉ោង៖ " + timeKhNow, 'BOSS');
   }
 
-  // ២. ផ្ញើសារតេស្តទៅ Group ទី ២ (Group អ្នកដឹក «Kc បេសកកម្មរបស់ខ្ញុំ»)
   if (driverId) {
-    sendTelegramAlert("🛵 <b>[KC WATER - តេស្ត Group អ្នកដឹកជញ្ជូន]</b>\n\n✅ Group នេះត្រៀមទទួលដំណឹង៖\n• បេសកកម្មដឹកទឹក Online ថ្មីៗ\n• ឈ្មោះភ្ញៀវ លេខទូរស័ព្ទ និងចំនួនទឹក\n• Link ផែនទី Google Maps នាំផ្លូវ\n🕒 ម៉ោង៖ " + timeKhNow, driverId);
+    await sendTelegramAlert("🛵 <b>[KC WATER - តេស្ត Group អ្នកដឹកជញ្ជូន]</b>\n\n✅ Group នេះត្រៀមទទួលដំណឹង៖\n• បេសកកម្មដឹកទឹក Online ថ្មីៗ\n• ឈ្មោះភ្ញៀវ លេខទូរស័ព្ទ និងចំនួនទឹក\n• Link ផែនទី Google Maps នាំផ្លូវ\n🕒 ម៉ោង៖ " + timeKhNow, 'DRIVER');
   }
 
   showToast("បានផ្ញើសារតេស្តទៅកាន់ Group ទាំង ២!", "success");
@@ -4189,13 +4199,17 @@ async function submitChangePassword() {
   if (!oldP || !newP) { showToast("សូមបំពេញលេខសម្ងាត់ចាស់ និងថ្មី!", "error"); return; }
 
   try {
-    const { data: user } = await supabaseClient.from('users').select('password').eq('id', currentUser.id).single();
-    if (!user || user.password !== oldP) {
+    const { data: ok, error } = await supabaseClient.rpc('user_change_password', {
+      p_token: currentUser.sessionToken || '',
+      p_old_pass: oldP,
+      p_new_pass: newP
+    });
+    if (error) throw error;
+    if (!ok) {
       showToast("លេខសម្ងាត់ចាស់មិនត្រឹមត្រូវឡើយ!", "error");
       return;
     }
 
-    await supabaseClient.from('users').update({ password: newP }).eq('id', currentUser.id);
     showToast("បានប្តូរលេខសម្ងាត់ថ្មីជោគជ័យ!", "success");
     document.getElementById('changePassModal').remove();
   } catch(err) {
@@ -4995,8 +5009,11 @@ async function openEditMyPhoneModal() {
   // ១. ទាញទិន្នន័យលេខទូរស័ព្ទចុងក្រោយពី Supabase ឱ្យជាក់លាក់
   var rawPhone = currentUser.phone || '';
   try {
-    const { data: u } = await supabaseClient.from('users').select('phone').eq('id', currentUser.id).maybeSingle();
-    if (u && u.phone) rawPhone = u.phone;
+    if (currentUser && currentUser.sessionToken) {
+      const { data: sess } = await supabaseClient.rpc('verify_pos_session', { p_token: currentUser.sessionToken });
+      var uRow = Array.isArray(sess) ? sess[0] : sess;
+      if (uRow && uRow.phone) rawPhone = uRow.phone;
+    }
   } catch(e) {}
 
   // ២. បំបែកលេខទូរស័ព្ទប្រសិនបើមានច្រើនខ្សែ (តាមសញ្ញាក្បៀស , ឬសញ្ញា /)
@@ -5076,10 +5093,10 @@ async function submitUpdateMyPhone() {
   }
 
   try {
-    const { error } = await supabaseClient
-      .from('users')
-      .update({ phone: combinedPhones })
-      .eq('id', currentUser.id);
+    const { error } = await supabaseClient.rpc('user_update_phone', {
+      p_token: currentUser.sessionToken || '',
+      p_phone: combinedPhones
+    });
 
     if (error) throw error;
 
