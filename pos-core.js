@@ -118,59 +118,6 @@ async function completePosLoginFlow() {
   }
 }
 
-      currentUser = {
-        id: userRow.id,
-        username: userRow.username,
-        fullName: userRow.full_name,
-        role: userRow.role,
-        type: userRow.type,
-        phone: userRow.phone,
-        linkedBoss: bossName
-      };
-
-      if (remEl && remEl.checked) {
-        localStorage.setItem('kc_pos_user', u);
-        localStorage.setItem('kc_pos_pass', p);
-      } else {
-        localStorage.removeItem('kc_pos_user');
-        localStorage.removeItem('kc_pos_pass');
-      }
-
-      document.getElementById('loginPage').style.display = 'none';
-      document.getElementById('mainApp').classList.remove('hidden');
-
-      var roleLabel = (currentUser.role === 'Admin') ? 'Admin៖ ' : 
-                      (currentUser.type === 'CompanyDriver' ? 'អ្នកដឹកជញ្ជូនរោងចក្រ៖ ' :
-                      (currentUser.role === 'Driver' ? ('អ្នកដឹក (កូនចៅ ' + (currentUser.linkedBoss || 'មេ') + ')៖ ') : 'ម៉ូយ៖ '));
-      document.getElementById('userInfo').innerText = roleLabel + currentUser.fullName;
-
-      renderSidebarMenu();
-      if (typeof renderEnvironmentBanner === 'function') {
-        renderEnvironmentBanner();
-      }
-
-      if (typeof checkPendingOnlineOrdersBadge === 'function') {
-        checkPendingOnlineOrdersBadge();
-      }
-
-      await loadSettingsAndTelegram();
-      await fetchInitialPOSData();
-      if (typeof updateNotificationCenterBadge === 'function') {
-        updateNotificationCenterBadge();
-      }
-
-      // 🎯 បែងចែកទំព័រដើមតាមតួនាទី (Role Routing)
-      if (currentUser.role === 'Admin') {
-        loadModule('Dashboard');
-      } else if (currentUser.type === 'CompanyDriver') {
-        loadModule('CompanyDeliveries');
-      } else if (currentUser.role === 'Seller' || currentUser.role === 'Driver') {
-        loadModule('POS');
-      } else {
-        loadModule('CustPortal');
-  }
-}
-
 function logout() {
   var tokenToClear = (currentUser && currentUser.sessionToken) ? currentUser.sessionToken : localStorage.getItem('kc_pos_session');
   if (tokenToClear) {
