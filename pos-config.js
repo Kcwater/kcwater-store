@@ -319,21 +319,6 @@ async function sendTelegramAlert(message, customChatId) {
   }
 }
 
-    var resData = await response.json();
-    if (!resData.ok) {
-      console.warn("Telegram API Error:", resData.description);
-      if (typeof kcAlert === 'function' && currentUser && currentUser.role === 'Admin') {
-        kcAlert({
-          title: "⚠️ ដំណឹង Telegram មិនដើរ",
-          message: "មិនអាចផ្ញើសារទៅ Chat ID [" + target + "] បានទេ៖\n👉 " + (resData.description || 'កំហុសបច្ចេកទេស'),
-          type: "warning"
-        });
-      }
-    }
-  } catch(e) {
-    console.warn("Telegram Network Alert error:", e);
-  }
-}
 
 // 📦 ៧. មុខងារទាញយកទិន្នន័យដំបូង (ទំនិញ, អតិថិជន និងតម្លៃពិសេស) ពី SUPABASE
 async function fetchInitialPOSData() {
