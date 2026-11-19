@@ -360,10 +360,11 @@ async function renderDashboardModule() {
               '<th class="p-2 sm:p-2.5 text-center">ចំនួន</th>' +
               '<th class="p-2 sm:p-2.5 text-right">សរុប</th>' +
               '<th class="p-2 sm:p-2.5 text-center">ស្ថានភាព</th>' +
+              '<th class="p-2 sm:p-2.5 text-center w-14">បោះបង់</th>' +
             '</tr>' +
           '</thead>' +
           '<tbody id="dashRecentTbody">' +
-            '<tr><td colspan="6" class="p-4 text-center text-gray-400 italic">កំពុងទាញទិន្នន័យ...</td></tr>' +
+            '<tr><td colspan="7" class="p-4 text-center text-gray-400 italic">កំពុងទាញទិន្នន័យ...</td></tr>' +
           '</tbody>' +
         '</table>' +
       '</div>' +
