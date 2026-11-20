@@ -1041,6 +1041,19 @@ var exchangeRateTHB = 115;
     var currentFloorSelected = 'G';
     var currentElevatorSelected = 'YES';
 
+    function toggleCheckoutOptionalExtras() {
+      var box = document.getElementById('checkoutOptionalExtrasBox');
+      var icon = document.getElementById('iconToggleCheckoutExtras');
+      if (!box) return;
+      if (box.classList.contains('hidden')) {
+        box.classList.remove('hidden');
+        if (icon) icon.style.transform = 'rotate(180deg)';
+      } else {
+        box.classList.add('hidden');
+        if (icon) icon.style.transform = 'rotate(0deg)';
+      }
+    }
+
     // ១. រើសវេនម៉ោងដឹក (Time Slot Chips)
     function selectTimeSlotChip(val, btn) {
       document.querySelectorAll('.time-chip').forEach(b => {
@@ -1778,14 +1791,19 @@ async function loadStoreOnlineProducts() {
       filterCat = filterCat || activeCatalogCategoryFilter || 'ALL';
       var grid = document.getElementById('catalogGrid');
       if (!grid) return;
-      var d = DICT[currentLang] || DICT.km;
       var favList = getCustomerFavoritesList();
       var html = '';
+
+      var badgeDict = {
+        'គុណភាពខ្ពស់': { en: 'Premium', zh: '特级品质' },
+        'ពេញនិយម': { en: 'Popular', zh: '热销人气' },
+        'លក់ដាច់': { en: 'Best Seller', zh: '畅销爆款' },
+        'ទំនិញថ្មី': { en: 'New Arrival', zh: '新品上市' }
+      };
 
       STORE_CATALOG.forEach(function(item) {
         var isFavorited = (favList.indexOf(String(item.id)) !== -1);
 
-        // ១. ចម្រាញ់តាមប្រភេទ Category
         if (filterCat === 'FAVORITES') {
           if (!isFavorited) return;
         } else if (filterCat !== 'ALL') {
@@ -1796,7 +1814,6 @@ async function loadStoreOnlineProducts() {
           if (!isMatch) return;
         }
 
-        // 🔍 ២. ចម្រាញ់តាមពាក្យស្វែងរក (ស្គាល់ទាំងឈ្មោះខ្មែរ អង់គ្លេស ចិន និងការពិពណ៌នា)
         if (activeCatalogSearchKeyword) {
           var nameKh = (item.raw_name || '').toLowerCase();
           var nameTrans = getLocalizedProductName({ name: item.raw_name }, currentLang).toLowerCase();
@@ -1811,7 +1828,6 @@ async function loadStoreOnlineProducts() {
         var inCart = (cartItems[item.id] && cartItems[item.id].qty > 0) ? cartItems[item.id].qty : 0;
         var isOutOfStock = (item.type === 'ទិញគេ' && item.stock <= 0);
 
-        // 🎁 ឆែកមើល Promotion
         var promoRule = null;
         if (activePromoConfig && activePromoConfig.rules && activePromoConfig.rules.length > 0) {
           promoRule = activePromoConfig.rules.find(function(r) {
@@ -1821,29 +1837,39 @@ async function loadStoreOnlineProducts() {
 
         var badgeLabel = '';
         if (isOutOfStock) {
-          badgeLabel = '<span class="bg-red-100 text-red-700 text-[9px] font-black px-2 py-0.5 rounded-full border border-red-200">❌ អស់ស្តុក</span>';
+          var oosBadgeTxt = (currentLang === 'en') ? '❌ Out of Stock' : ((currentLang === 'zh') ? '❌ 缺货' : '❌ អស់ស្តុក');
+          badgeLabel = '<span class="bg-red-100 text-red-700 text-[9px] font-black px-2 py-0.5 rounded-full border border-red-200">' + oosBadgeTxt + '</span>';
         } else if (promoRule) {
-          var buyPrefix = (promoRule.buyQty && promoRule.buyQty > 1) ? ('ទិញ ' + promoRule.buyQty + ' ថែម ') : 'ថែម ';
-          badgeLabel = '<span class="bg-gradient-to-r from-red-600 via-orange-600 to-amber-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-xs animate-pulse truncate max-w-[130px]" title="🎁 ' + buyPrefix + promoRule.freeProduct + ' x ' + promoRule.freeQty + '">' +
-            '🎁 ' + buyPrefix + promoRule.freeProduct + ' x ' + promoRule.freeQty +
+          var buyPrefix = (currentLang === 'en')
+            ? ((promoRule.buyQty && promoRule.buyQty > 1) ? ('Buy ' + promoRule.buyQty + ' Free ') : 'Free ')
+            : ((currentLang === 'zh')
+              ? ((promoRule.buyQty && promoRule.buyQty > 1) ? ('买' + promoRule.buyQty + '送 ') : '送 ')
+              : ((promoRule.buyQty && promoRule.buyQty > 1) ? ('ទិញ ' + promoRule.buyQty + ' ថែម ') : 'ថែម '));
+          var locFreeProd = getLocalizedProductName({ name: promoRule.freeProduct }, currentLang);
+          var safeFreeKey = String(promoRule.freeProduct || '').replace(/"/g, '&quot;');
+          badgeLabel = '<span data-trans-key="' + safeFreeKey + '" data-trans-prefix="🎁 ' + buyPrefix + '" data-trans-suffix=" x ' + promoRule.freeQty + '" class="bg-gradient-to-r from-red-600 via-orange-600 to-amber-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-xs animate-pulse truncate max-w-[130px]" title="🎁 ' + buyPrefix + locFreeProd + ' x ' + promoRule.freeQty + '">' +
+            '🎁 ' + buyPrefix + locFreeProd + ' x ' + promoRule.freeQty +
           '</span>';
         } else {
           var rawBadge = item.badge || (item.cat === 'BARREL' ? 'ពេញនិយម' : 'គុណភាពខ្ពស់');
           if (rawBadge !== 'NONE') {
-            badgeLabel = '<span class="bg-emerald-50 text-emerald-800 text-[9px] font-black px-2 py-0.5 rounded-full border border-emerald-200 truncate max-w-[85px]">' + rawBadge + '</span>';
+            var locBadge = (currentLang === 'km') ? rawBadge : ((badgeDict[rawBadge] && badgeDict[rawBadge][currentLang]) ? badgeDict[rawBadge][currentLang] : getLocalizedText(rawBadge, currentLang));
+            badgeLabel = '<span data-trans-key="' + String(rawBadge).replace(/"/g, '&quot;') + '" class="bg-emerald-50 text-emerald-800 text-[9px] font-black px-2 py-0.5 rounded-full border border-emerald-200 truncate max-w-[85px]">' + locBadge + '</span>';
           }
         }
 
+        var favTitle = (currentLang === 'en') ? 'Favorite' : ((currentLang === 'zh') ? '收藏' : 'ចូលចិត្ត');
         var favBtn = '<button type="button" onclick="toggleFavoriteProduct(\'' + item.id + '\', event)" class="w-7 h-7 rounded-full bg-white/90 hover:bg-rose-50 border border-slate-200 text-xs flex items-center justify-center shadow-2xs active:scale-90 transition shrink-0 ' + 
-          (isFavorited ? 'text-rose-500' : 'text-slate-300 hover:text-rose-400') + '" title="ចូលចិត្ត">' +
+          (isFavorited ? 'text-rose-500' : 'text-slate-300 hover:text-rose-400') + '" title="' + favTitle + '">' +
           '<i class="' + (isFavorited ? 'fas fa-heart' : 'far fa-heart') + '"></i>' +
         '</button>';
 
         var clickAction = isOutOfStock ? '' : 'onclick="openProductDetailModal(\'' + item.id + '\')"';
         var cardOpacity = isOutOfStock ? 'opacity-60 grayscale-[35%]' : '';
 
+        var oosBtnTxt = (currentLang === 'en') ? 'Sold Out' : ((currentLang === 'zh') ? '已售罄' : 'អស់ស្តុក');
         var actionBtn = isOutOfStock ? 
-          '<span class="text-[10px] font-bold text-red-500 bg-red-50 px-2 py-1 rounded-xl">អស់ស្តុក</span>' : 
+          '<span class="text-[10px] font-bold text-red-500 bg-red-50 px-2 py-1 rounded-xl">' + oosBtnTxt + '</span>' : 
           '<div class="relative shrink-0">' +
             '<button type="button" class="w-8 h-8 rounded-full bg-emerald-600 group-hover:bg-emerald-700 text-white flex items-center justify-center font-black shadow-md active:scale-90 transition">' +
               '<i class="fas fa-plus text-xs"></i>' +
@@ -1870,7 +1896,7 @@ async function loadStoreOnlineProducts() {
             item.svg + 
           '</div>' +
           '<div class="text-left px-0.5 mt-1.5 mb-1">' +
-            '<h4 data-trans-key="' + item.raw_name + '" class="text-[10px] sm:text-xs font-black text-slate-800 line-clamp-2 h-7 sm:h-8 leading-snug group-hover:text-emerald-700 transition">' + localizedName + '</h4>' +
+            '<h4 data-trans-key="' + String(item.raw_name || '').replace(/"/g, '&quot;') + '" class="text-[10px] sm:text-xs font-black text-slate-800 line-clamp-2 h-7 sm:h-8 leading-snug group-hover:text-emerald-700 transition">' + localizedName + '</h4>' +
           '</div>' +
           '<div class="flex items-center justify-between pt-1.5 border-t border-slate-100 mt-auto">' +
             '<div class="min-w-0 flex-1">' +
@@ -1881,12 +1907,17 @@ async function loadStoreOnlineProducts() {
         '</div>';
       });
 
-      // 🔍 បង្ហាញផ្ទាំងជូនដំណឹងបើស្វែងរកមិនឃើញទំនិញ
       if (!html) {
+        var emptyMsg = (currentLang === 'en')
+          ? ('No products matching "' + activeCatalogSearchKeyword + '" found')
+          : ((currentLang === 'zh')
+            ? ('未找到与“' + activeCatalogSearchKeyword + '”匹配的商品')
+            : ('រកមិនឃើញទំនិញត្រូវនឹងពាក្យ «' + activeCatalogSearchKeyword + '» ឡើយ'));
+        var clearLbl = (currentLang === 'en') ? 'Clear search' : ((currentLang === 'zh') ? '清除搜索' : 'សម្អាតការស្វែងរក');
         grid.innerHTML = '<div class="col-span-full py-8 text-center text-slate-400 font-bold text-xs bg-white rounded-2xl border border-dashed border-slate-200 p-4 space-y-1.5">' +
           '<i class="fas fa-magnifying-glass text-2xl text-slate-300 block mb-1"></i>' +
-          '<span>រកមិនឃើញទំនិញត្រូវនឹងពាក្យ «' + activeCatalogSearchKeyword + '» ឡើយ</span>' +
-          '<button type="button" onclick="clearCatalogSearch()" class="px-3 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-xl text-xs font-bold block mx-auto active:scale-95 transition">សម្អាតការស្វែងរក</button>' +
+          '<span>' + emptyMsg + '</span>' +
+          '<button type="button" onclick="clearCatalogSearch()" class="px-3 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-xl text-xs font-bold block mx-auto active:scale-95 transition">' + clearLbl + '</button>' +
         '</div>';
         return;
       }
@@ -2434,11 +2465,13 @@ function updateCheckoutCalculation() {
     if (total20LBarrels > 0) {
       swapSection.classList.remove('hidden');
       if (barrelBadge) {
-        barrelBadge.innerText = 'សរុប ' + total20LBarrels + ' ធុង';
+        barrelBadge.innerText = (currentLang === 'en') ? ('Total ' + total20LBarrels + ' barrels') :
+                                ((currentLang === 'zh') ? ('共 ' + total20LBarrels + ' 桶') : ('សរុប ' + total20LBarrels + ' ធុង'));
       }
       if (optNoSpan) {
         var representativePrice = (whiteBarrelsQty > 0) ? whiteBarrelPrice : blueBarrelPrice;
-        optNoSpan.innerText = '🛒 គ្មានសំបកធុងដូរទេ (ទិញសំបកថ្មី +' + representativePrice.toLocaleString() + '៛/ធុង)';
+        optNoSpan.innerText = (currentLang === 'en') ? ('🛒 No barrels to exchange (+' + representativePrice.toLocaleString() + ' KHR/barrel)') :
+                              ((currentLang === 'zh') ? ('🛒 无空桶可换 (+' + representativePrice.toLocaleString() + ' 瑞尔/桶)') : ('🛒 គ្មានសំបកធុងដូរទេ (ទិញសំបកថ្មី +' + representativePrice.toLocaleString() + '៛/ធុង)'));
       }
     } else {
       swapSection.classList.add('hidden');
