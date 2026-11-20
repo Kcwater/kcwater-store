@@ -1587,7 +1587,28 @@ function getLocalizedText(text, lang) {
         closedHint.innerText = d.closedHint.replace('{open}', storeOperatingConfig.openTime).replace('{close}', storeOperatingConfig.closeTime);
       }
 
-      // ៤. Refresh ប្រភេទទំនិញ កាតាឡុក កន្ត្រក និងការគណនាប្រាក់ភ្លាមៗ
+      setSafePlaceholder('catalogSearchInp',
+        lang === 'en' ? '🔍 Search products (e.g., rice, noodles, 20L water, 500ml)...' :
+        (lang === 'zh' ? '🔍 搜索商品 (例如：大米、方便面、桶装水、500ml)...' : '🔍 ស្វែងរកទំនិញ (ឧ៖ កាហ្វេ, មី, ទឹកធុង, 500ml)...')
+      );
+      setSafeHtml('lblToggleCheckoutExtras',
+        lang === 'en' ? '<i class="fas fa-sliders text-blue-600"></i> ➕ Delivery Time & Floor / Building (Optional)' :
+        (lang === 'zh' ? '<i class="fas fa-sliders text-blue-600"></i> ➕ 送达时间与楼层/公寓信息 (选填)' : '<i class="fas fa-sliders text-blue-600"></i> ➕ ម៉ោងដឹក & ជាន់ផ្ទះ/អគារ (ស្រេចចិត្ត)')
+      );
+      setSafeText('lblFloorTitle', lang === 'en' ? 'Floor:' : (lang === 'zh' ? '楼层：' : 'ជាន់ទី (Floor)៖'));
+      setSafeText('lblRoomNoTitle', lang === 'en' ? 'Room / Unit No. *' : (lang === 'zh' ? '房间号 / 门牌号 *' : 'លេខបន្ទប់ / ផ្ទះ (Room No.) *'));
+      setSafeText('lblElevatorTitle', lang === 'en' ? 'Access (Elevator):' : (lang === 'zh' ? '电梯情况：' : 'មធ្យោបាយឡើងទៅ (Elevator)៖'));
+      setSafeText('lblHandoverTitle', lang === 'en' ? 'Delivery Handover:' : (lang === 'zh' ? '交接方式：' : 'របៀបប្រគល់ទំនិញ (Handover)៖'));
+      setSafeHtml('btnDownloadAbaQr',
+        lang === 'en' ? '<i class="fas fa-download text-[11px]"></i> 📥 Save QR Image to Scan' :
+        (lang === 'zh' ? '<i class="fas fa-download text-[11px]"></i> 📥 保存二维码图片到手机' : '<i class="fas fa-download text-[11px]"></i> 📥 ទាញយករូប QR ទុកស្កេន')
+      );
+      setSafeText('lblKhqrDuePrefix', lang === 'en' ? 'Amount to Pay:' : (lang === 'zh' ? '应付金额：' : 'ទឹកប្រាក់ត្រូវបង់៖ '));
+
+      // ៤. Refresh ស្លាយ, ប្រភេទទំនិញ, កាតាឡុក, កន្ត្រក និងការគណនាប្រាក់ភ្លាមៗ
+      if (window.__kcCachedSettingsMap && typeof applyCustomSlidesFromSettings === 'function') {
+        applyCustomSlidesFromSettings(window.__kcCachedSettingsMap);
+      }
       if (typeof renderCategoryChips === 'function') renderCategoryChips();
       if (typeof renderCatalogGrid === 'function') renderCatalogGrid();
       if (typeof recalcCartDock === 'function') recalcCartDock();
