@@ -117,7 +117,7 @@ function renderMonthlyRepModule() {
             '<label class="text-[9.5px] font-bold text-gray-600 uppercase block mb-0.5">ជ្រើសរើសឈ្មោះអតិថិជន ឬ លក់នៅកន្លែង</label>' +
             '<select id="custSelectDropdown" onchange="document.getElementById(\'custSearchInp\').value=this.value" class="font-bold text-blue-900 text-xs sm:text-sm border-2 border-blue-200 rounded-xl p-2 w-full bg-white outline-none focus:border-blue-500"></select>' +
           '</div>' +
-          '<input type="text" id="custSearchInp" placeholder="🔍 ឬវាយឈ្មោះម៉ូយ ឬវាយ Walk-in..." class="font-bold border p-2 rounded-xl w-full text-xs outline-none focus:border-green-600">' +
+          '<input type="text" id="custSearchInp" oninput="filterStatementCustomerDropdown(this.value)" onkeydown="if(event.key===\'Enter\'){event.preventDefault();fetchFullStatementFromSupabase();}" placeholder="🔍 ឬវាយឈ្មោះម៉ូយ ឬវាយ Walk-in..." class="font-bold border p-2 rounded-xl w-full text-xs outline-none focus:border-green-600">' +
           '<div class="grid grid-cols-2 gap-2">' +
             '<div><label class="text-[9.5px] font-bold text-gray-500 uppercase block mb-0.5">ចាប់ពីថ្ងៃ</label><input type="date" id="custStartDate" value="' + firstDay + '" class="font-bold border p-2 rounded-xl w-full text-xs outline-none"></div>' +
             '<div><label class="text-[9.5px] font-bold text-gray-500 uppercase block mb-0.5">ដល់ថ្ងៃ</label><input type="date" id="custEndDate" value="' + today + '" class="font-bold border p-2 rounded-xl w-full text-xs outline-none"></div>' +
@@ -362,16 +362,41 @@ function renderRepDailyLogTable() {
 }
 
 // 👥 បង្ហាញបញ្ជីឈ្មោះម៉ូយ & បើកជម្រើសលក់នៅកន្លែង (Walk-in)
-function populateCustSelectDropdown() {
+function populateCustSelectDropdown(filterKeyword) {
   var sel = document.getElementById('custSelectDropdown');
   if (!sel) return;
-  sel.innerHTML = '<option value="">-- រើសឈ្មោះម៉ូយ --</option>' +
-    '<option value="Walk-in">🛒 -- លក់នៅកន្លែងទាំងអស់ (Walk-in) --</option>';
-  allCustomers.forEach(function(c) {
-    if (c.role !== 'Admin' && c.full_name !== 'Walk-in') {
-      sel.innerHTML += '<option value="' + c.full_name + '">' + c.full_name + '</option>';
-    }
+
+  var q = String(filterKeyword || '').toLowerCase().trim();
+  var prevVal = sel.value;
+
+  var html = '<option value="">-- រើសឈ្មោះម៉ូយ --</option>';
+  if (!q || 'walk-in'.indexOf(q) !== -1 || 'walk in'.indexOf(q) !== -1 || 'លក់នៅកន្លែង'.indexOf(q) !== -1) {
+    html += '<option value="Walk-in">🛒 -- លក់នៅកន្លែងទាំងអស់ (Walk-in) --</option>';
+  }
+
+  var matchedValues = [];
+  (allCustomers || []).forEach(function(c) {
+    var cName = String(c.full_name || '').trim();
+    if (!cName || c.role === 'Admin' || c.role === 'Seller' || c.role === 'Cashier' || c.type === 'CompanyDriver' || cName === 'Walk-in') return;
+    if (q && cName.toLowerCase().indexOf(q) === -1) return;
+
+    var safeVal = cName.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    var typeTag = (c.type === 'Monthly') ? ' (ប្រចាំខែ)' : ((c.role === 'Driver' || c.type === 'Driver') && c.linked_boss ? (' (កូនចៅ: ' + c.linked_boss + ')') : '');
+    html += '<option value="' + safeVal + '">' + safeVal + typeTag + '</option>';
+    matchedValues.push(cName);
   });
+
+  sel.innerHTML = html;
+
+  if (q && matchedValues.length === 1) {
+    sel.value = matchedValues[0];
+  } else if (prevVal) {
+    sel.value = prevVal;
+  }
+}
+
+function filterStatementCustomerDropdown(keyword) {
+  populateCustSelectDropdown(keyword);
 }
 
 // ==========================================
@@ -521,30 +546,114 @@ async function fetchCompanySummaryFromSupabase() {
   }
 }
 
-// 👤 មុខងារទាញកាតគ្រីអតិថិជន (គណនាតាមស្តង់ដារគណនេយ្យ ១០០% គ្មានការបូកស្ទួន)
+function selectMatchedStmtCustomer(custName) {
+  var nameInp = document.getElementById('custSearchInp');
+  var selEl = document.getElementById('custSelectDropdown');
+  if (nameInp) nameInp.value = custName;
+  if (selEl) selEl.value = custName;
+  fetchFullStatementFromSupabase();
+}
+
+// 👤 មុខងារទាញកាតគ្រីអតិថិជន (គណនាតាមស្តង់ដារគណនេយ្យ ១០០% គ្មានការបូកស្ទួន & ស្គាល់ឈ្មោះឆ្លាតវៃ)
 async function fetchFullStatementFromSupabase() {
   var nameInp = document.getElementById('custSearchInp');
-  var name = nameInp ? nameInp.value.trim() : '';
+  var selEl = document.getElementById('custSelectDropdown');
+  var rawQuery = (nameInp && nameInp.value.trim()) ? nameInp.value.trim() : (selEl ? selEl.value.trim() : '');
   var sd = document.getElementById('custStartDate') ? document.getElementById('custStartDate').value : '';
   var ed = document.getElementById('custEndDate') ? document.getElementById('custEndDate').value : '';
   var container = document.getElementById('statementReportContainer');
 
-  if (!name || !sd || !ed) { 
+  if (!rawQuery || !sd || !ed) {
     if (typeof kcAlert === 'function') {
       await kcAlert({
         title: "ខ្វះព័ត៌មាន",
-        message: "សូមជ្រើសរើសឈ្មោះអតិថិជន និងកំណត់ចន្លោះកាលបរិច្ឆេទឱ្យបានត្រឹមត្រូវ!",
+        message: "សូមជ្រើសរើសឈ្មោះអតិថិជន ឬ Walk-in និងកំណត់ចន្លោះកាលបរិច្ឆេទឱ្យបានត្រឹមត្រូវ!",
         type: "warning"
       });
     } else {
-      showToast("សូមរើសឈ្មោះ និងកាលបរិច្ឆេទ!", "error"); 
+      showToast("សូមរើសឈ្មោះ និងកាលបរិច្ឆេទ!", "error");
     }
-    return; 
+    return;
+  }
+
+  if (sd > ed) {
+    if (typeof kcAlert === 'function') {
+      await kcAlert({
+        title: "កាលបរិច្ឆេទមិនត្រឹមត្រូវ",
+        message: "ថ្ងៃចាប់ផ្តើម មិនអាចធំជាង ថ្ងៃបញ្ចប់ បានឡើយ!",
+        type: "warning"
+      });
+    } else {
+      showToast("ថ្ងៃចាប់ផ្តើម មិនអាចធំជាង ថ្ងៃបញ្ចប់ ទេ!", "error");
+    }
+    return;
   }
 
   container.innerHTML = '<div class="text-center py-8 text-gray-400 italic text-xs"><i class="fas fa-spinner fa-spin text-green-600 text-base"></i> កំពុងទាញទិន្នន័យកាតគ្រី...</div>';
 
   try {
+    // 🔎 ស្វែងរកឈ្មោះពិតប្រាកដ (ស្គាល់ទាំង Walk-in, អក្សរតូច/ធំ, និងឈ្មោះខ្លីៗ)
+    var name = rawQuery;
+    var normalized = rawQuery.toLowerCase().replace(/[\s\-_]/g, '');
+    if (normalized === 'walkin' || rawQuery.indexOf('លក់នៅកន្លែង') !== -1) {
+      name = 'Walk-in';
+    } else {
+      var exactCust = (allCustomers || []).find(function(c) {
+        return String(c.full_name || '').trim().toLowerCase() === rawQuery.toLowerCase();
+      });
+      if (exactCust) {
+        name = String(exactCust.full_name).trim();
+      } else {
+        var partialCusts = (allCustomers || []).filter(function(c) {
+          var cn = String(c.full_name || '').trim();
+          return cn && c.role !== 'Admin' && c.role !== 'Seller' && c.role !== 'Cashier' && c.type !== 'CompanyDriver' && cn.toLowerCase().indexOf(rawQuery.toLowerCase()) !== -1;
+        });
+        if (partialCusts.length === 1) {
+          name = String(partialCusts[0].full_name).trim();
+        } else {
+          // ឆែកក្នុងតារាង transactions ផ្ទាល់ (ក្រែងជាអតិថិជន Online ឬវាយឈ្មោះខ្លី)
+          const { data: matchRows } = await supabaseClient
+            .from('transactions')
+            .select('customer_name')
+            .ilike('customer_name', '%' + rawQuery + '%')
+            .limit(60);
+
+          var uniqMap = {};
+          (matchRows || []).forEach(function(r) {
+            var cn = String(r.customer_name || '').trim();
+            if (cn && !uniqMap[cn.toLowerCase()]) uniqMap[cn.toLowerCase()] = cn;
+          });
+          var uniqNames = Object.values(uniqMap);
+
+          if (uniqNames.length === 1) {
+            name = uniqNames[0];
+          } else if (uniqNames.length > 1) {
+            var exactTx = uniqNames.find(function(n) { return n.toLowerCase() === rawQuery.toLowerCase(); });
+            if (exactTx) {
+              name = exactTx;
+            } else {
+              var pickHtml = '<div class="card border-t-4 border-blue-600 p-4 bg-white space-y-2.5">' +
+                '<div class="text-xs font-black text-blue-950"><i class="fas fa-users text-blue-600 mr-1.5"></i> រកឃើញឈ្មោះស្រដៀងគ្នាចំនួន ' + uniqNames.length + ' នាក់ — សូមចុចរើសឈ្មោះណាមួយ៖</div>' +
+                '<div class="flex flex-wrap gap-2">';
+              uniqNames.forEach(function(mName) {
+                var safeTxt = mName.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                var safeArg = mName.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+                pickHtml += '<button type="button" onclick="selectMatchedStmtCustomer(\'' + safeArg + '\')" class="px-3 py-1.5 bg-blue-50 hover:bg-blue-600 text-blue-900 hover:text-white border border-blue-200 rounded-xl text-xs font-bold transition active:scale-95">' + safeTxt + '</button>';
+              });
+              pickHtml += '</div></div>';
+              container.innerHTML = pickHtml;
+              return;
+            }
+          }
+        }
+      }
+    }
+
+    if (nameInp) nameInp.value = name;
+    if (selEl) selEl.value = name;
+
+    var namePattern = String(name).replace(/[%_]/g, '\\$&');
+
     // 🇰🇭 កំណត់ម៉ោងកម្ពុជា UTC+7 ច្បាស់លាស់
     var startIso = sd + 'T00:00:00+07:00';
     var endIso = ed + 'T23:59:59.999+07:00';
@@ -553,7 +662,7 @@ async function fetchFullStatementFromSupabase() {
     const { data: items, error: itemErr } = await supabaseClient
       .from('transactions')
       .select('*')
-      .eq('customer_name', name)
+      .ilike('customer_name', namePattern)
       .gte('created_at', startIso)
       .lte('created_at', endIso)
       .order('created_at', { ascending: true });
@@ -564,7 +673,7 @@ async function fetchFullStatementFromSupabase() {
     const { data: payments, error: payErr } = await supabaseClient
       .from('settlements')
       .select('*')
-      .eq('customer_name', name)
+      .ilike('customer_name', namePattern)
       .gte('settled_at', startIso)
       .lte('settled_at', endIso)
       .order('settled_at', { ascending: true });
@@ -575,7 +684,7 @@ async function fetchFullStatementFromSupabase() {
     const { data: oldSet } = await supabaseClient
       .from('settlements')
       .select('balance_khr, settled_at')
-      .eq('customer_name', name)
+      .ilike('customer_name', namePattern)
       .lt('settled_at', startIso)
       .order('id', { ascending: false })
       .limit(1)
@@ -586,11 +695,10 @@ async function fetchFullStatementFromSupabase() {
       prevDebt = parseFloat(oldSet.balance_khr || 0);
       var lastSetTime = oldSet.settled_at;
 
-      // បូកបន្ថែមជើងទឹកជំពាក់ដែលដកចន្លោះពេល Settlement ចុងក្រោយ និងថ្ងៃ Start Date
       const { data: extraTrans } = await supabaseClient
         .from('transactions')
         .select('total, payment_method')
-        .eq('customer_name', name)
+        .ilike('customer_name', namePattern)
         .gt('created_at', lastSetTime)
         .lt('created_at', startIso);
 
@@ -600,17 +708,16 @@ async function fetchFullStatementFromSupabase() {
         }
       });
     } else {
-      // ករណីមិនដែលទូទាត់សោះ មុនថ្ងៃ Start Date
       const { data: allPastTrans } = await supabaseClient
         .from('transactions')
         .select('total, payment_method')
-        .eq('customer_name', name)
+        .ilike('customer_name', namePattern)
         .lt('created_at', startIso);
 
       const { data: allPastSets } = await supabaseClient
         .from('settlements')
         .select('paid_khr')
-        .eq('customer_name', name)
+        .ilike('customer_name', namePattern)
         .lt('settled_at', startIso);
 
       var pastPurchases = 0;
@@ -638,9 +745,10 @@ async function fetchFullStatementFromSupabase() {
 
       if (i.status === 'Unpaid') {
         unpaidCount++;
-        unpaidTotal += tot;
+        var paidPart = parseFloat(i.paid_khr || 0);
+        unpaidTotal += Math.max(0, tot - paidPart);
+        if (paidPart > 0) totalPaidInMonth += paidPart;
       } else if (i.status === 'Paid' && i.payment_method !== 'Debt') {
-        // 🛡️ រាប់តែជើងទឹកណាដែលបង់លុយសុទ្ធ/ABA ភ្លាមៗនៅកន្លែង POS (មិនរាប់ជើងទឹកជំពាក់ដែលសងតាម Settlement ឡើយ)
         totalPaidInMonth += parseFloat(i.paid_khr || tot);
       }
 
@@ -658,8 +766,8 @@ async function fetchFullStatementFromSupabase() {
     var finalBalance = Math.max(0, prevDebt + totalPurchased - totalPaidInMonth);
 
     stmtDataCache = {
-      custName: name, 
-      sd: sd, 
+      custName: name,
+      sd: sd,
       ed: ed,
       items: items || [],
       payments: payments || [],
