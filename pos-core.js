@@ -2145,9 +2145,6 @@ async function confirmSale() {
       });
     }
 
-    const { error: insErr } = await supabaseClient.from('transactions').insert(rowsToInsert);
-    if (insErr) throw insErr;
-
     // 🔍 ឆែកស្តុកពិតប្រាកដពី Database មុនកត់ត្រា (ការពារកុំឱ្យលក់ជ្រុលពេលមានអ្នកដកព្រមគ្នា)
     var boughtIds = [];
     cart.forEach(function(item) {
