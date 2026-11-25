@@ -600,6 +600,20 @@ async function loadDashboardData() {
 }
 
 function renderDashRecentTransactionsRows(rowsList, dateLabel) {
+  var dateInp = document.getElementById('dashRecentDateFilter');
+    var selectedDate = (dateInp && dateInp.value) ? dateInp.value : todayStr;
+
+    if (selectedDate !== todayStr) {
+      await loadDashRecentTransactionsByDate();
+    } else {
+      renderDashRecentTransactionsRows(todayRecentSales, todayStr);
+    }
+  } catch(e) {
+    console.error("Dashboard error:", e);
+  }
+}
+
+function renderDashRecentTransactionsRows(rowsList, dateLabel) {
   var tbodyRecent = document.getElementById('dashRecentTbody');
   var badgeCount = document.getElementById('dashRecentCountBadge');
   var rows = rowsList || [];
@@ -702,7 +716,6 @@ async function loadDashRecentTransactionsByDate() {
     tbodyRecent.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-red-500 font-bold">កំហុស៖ ' + err.message + '</td></tr>';
   }
 }
-
 var dashboardRealtimeChannel = null;
 var dashboardRefreshTimer = null;
 var stockUiRefreshTimer = null;
