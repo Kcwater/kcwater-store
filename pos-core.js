@@ -160,6 +160,7 @@ function renderSidebarMenu() {
     html += '<div class="text-[10px] font-bold text-green-300 uppercase px-3 pt-3 pb-1 opacity-80 tracking-wider">ការលក់ & ទូទាត់</div>';
     html += '<button onclick="loadModule(\'POS\')" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold"><i class="fas fa-shopping-cart mr-3 w-5 text-center"></i>ផ្ទាំងលក់ (POS)</button>';
     html += '<button onclick="loadModule(\'Settlement\')" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold"><i class="fas fa-calculator mr-3 w-5 text-center"></i>ទូទាត់លុយ</button>';
+    html += '<button onclick="loadModule(\'WalkinHistory\')" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold"><i class="fas fa-clock-rotate-left mr-3 w-5 text-center"></i>ប្រវត្តិលក់នៅកន្លែងថ្ងៃនេះ</button>';
     html += '<button onclick="loadModule(\'OnlineHub\')" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold text-amber-300"><i class="fas fa-globe mr-3 w-5 text-center"></i>គ្រប់គ្រង Online & ប្រវត្តិ</button>';
     html += '<div class="text-[10px] font-bold text-green-300 uppercase px-3 pt-3 pb-1 opacity-80 tracking-wider">ឃ្លាំង & ស្តុក</div>';
     html += '<button onclick="loadModule(\'Stock\')" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold"><i class="fas fa-box mr-3 w-5 text-center"></i>គ្រប់គ្រងស្តុក</button>';
@@ -201,6 +202,7 @@ function renderSidebarMenu() {
   } else {
     html += '<button onclick="loadModule(\'POS\')" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold"><i class="fas fa-shopping-cart mr-3 w-5 text-center"></i>ផ្ទាំងលក់ (POS)</button>';
   }
+  html += '<button onclick="loadModule(\'WalkinHistory\')" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold"><i class="fas fa-clock-rotate-left mr-3 w-5 text-center"></i>ប្រវត្តិលក់នៅកន្លែងថ្ងៃនេះ</button>';
 
   html += '<hr class="border-green-800 my-3">';
   html += '<button onclick="logout()" class="w-full text-left p-3 text-red-300 hover:bg-red-800 rounded-xl transition flex items-center font-bold"><i class="fas fa-sign-out-alt mr-3 w-5 text-center"></i>ចាកចេញ</button>';
@@ -708,6 +710,14 @@ function initDashboardRealtimeListener() {
     if (document.getElementById('posWalkinTodayTbody') && typeof loadPosTodayWalkinSales === 'function') {
       if (posWalkinRefreshTimer) clearTimeout(posWalkinRefreshTimer);
       posWalkinRefreshTimer = setTimeout(function() {
+        loadPosTodayWalkinSales();
+      }, 600);
+    }
+    var walkinRefreshTimer = null;
+  function handleTransOrSettleChange() {
+    if (document.getElementById('posWalkinTodayTbody') && typeof loadPosTodayWalkinSales === 'function') {
+      if (walkinRefreshTimer) clearTimeout(walkinRefreshTimer);
+      walkinRefreshTimer = setTimeout(function() {
         loadPosTodayWalkinSales();
       }, 600);
     }
@@ -1398,42 +1408,53 @@ function renderPOSModule() {
       paymentSectionHTML +
       submitBtnHTML +
     '</div>' +
-    ((isAdmin || isSeller) ? (
-      '<div class="card border-t-4 border-slate-700 shadow-lg p-3.5 sm:p-5 bg-white">' +
-        '<div class="flex flex-wrap justify-between items-center gap-2 mb-2.5">' +
-          '<div>' +
-            '<h3 class="font-extrabold text-slate-900 text-xs sm:text-sm flex items-center gap-1.5">' +
-              '<i class="fas fa-clock-rotate-left text-blue-600"></i>ប្រវត្តិលក់នៅកន្លែងថ្ងៃនេះ (Walk-in)' +
-            '</h3>' +
-            (!isAdmin ? '<p class="text-[10px] text-amber-700 font-bold mt-0.5">🔒 ប្រសិនបើវាយខុស សូមទាក់ទង Admin ដើម្បីកែប្រែ ឬបោះបង់</p>' : '') +
-          '</div>' +
-          '<div class="flex items-center gap-1.5">' +
-            '<span id="posWalkinTodayCountBadge" class="bg-blue-100 text-blue-800 text-[10px] px-2.5 py-0.5 rounded-full font-bold">0 លើក</span>' +
-            '<button type="button" onclick="loadPosTodayWalkinSales()" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[10px] font-bold active:scale-95 transition"><i class="fas fa-sync-alt"></i></button>' +
-          '</div>' +
-        '</div>' +
-        '<div class="overflow-x-auto max-h-64 overflow-y-auto rounded-xl border border-gray-200 shadow-inner">' +
-          '<table class="w-full text-left text-xs border-collapse">' +
-            '<thead class="sticky top-0 bg-gray-100 text-gray-700 font-bold border-b z-10 shadow-2xs">' +
-              '<tr>' +
-                '<th class="p-2 text-center w-14">ម៉ោង</th>' +
-                '<th class="p-2">ទំនិញ</th>' +
-                '<th class="p-2 text-center">ចំនួន</th>' +
-                '<th class="p-2 text-right">សរុប</th>' +
-                '<th class="p-2 text-center">បង់តាម</th>' +
-                (isAdmin ? '<th class="p-2 text-center w-20">កែ/លុប</th>' : '') +
-              '</tr>' +
-            '</thead>' +
-            '<tbody id="posWalkinTodayTbody"><tr><td colspan="' + (isAdmin ? 6 : 5) + '" class="p-4 text-center text-gray-400 italic">កំពុងទាញទិន្នន័យ...</td></tr></tbody>' +
-          '</table>' +
-        '</div>' +
-      '</div>'
-    ) : '') +
   '</div>';
 
   rPG();
   rC();
-  if ((isAdmin || isSeller) && typeof loadPosTodayWalkinSales === 'function') {
+}
+
+function renderWalkinHistoryModule() {
+  var area = document.getElementById('contentArea');
+  if (!area) return;
+
+  var isAdmin = (currentUser && currentUser.role === 'Admin');
+  var isSeller = (currentUser && (currentUser.role === 'Seller' || currentUser.role === 'Cashier'));
+  if (!isAdmin && !isSeller) return;
+
+  area.innerHTML = '<div class="w-full max-w-[1600px] mx-auto space-y-3.5 px-1 sm:px-2">' +
+    '<div class="card border-t-4 border-slate-700 shadow-lg p-4 sm:p-5 bg-white">' +
+      '<div class="flex flex-wrap justify-between items-center gap-2 mb-3">' +
+        '<div>' +
+          '<h2 class="font-extrabold text-slate-900 text-sm sm:text-base flex items-center gap-2">' +
+            '<i class="fas fa-clock-rotate-left text-blue-600"></i>ប្រវត្តិលក់នៅកន្លែងថ្ងៃនេះ (Walk-in)' +
+          '</h2>' +
+          (!isAdmin ? '<p class="text-[11px] text-amber-700 font-bold mt-0.5">🔒 ប្រសិនបើវាយខុស សូមទាក់ទង Admin ដើម្បីកែប្រែ ឬបោះបង់</p>' : '<p class="text-[11px] text-slate-500 mt-0.5">Admin អាចចុច ✏️ កែប្រែ ឬ 🗑️ បោះបង់ ការលក់ខុសនៅទីនេះបាន</p>') +
+        '</div>' +
+        '<div class="flex items-center gap-1.5">' +
+          '<span id="posWalkinTodayCountBadge" class="bg-blue-100 text-blue-800 text-[10px] sm:text-xs px-2.5 py-0.5 rounded-full font-bold">0 លើក</span>' +
+          '<button type="button" onclick="loadPosTodayWalkinSales()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold active:scale-95 transition flex items-center gap-1"><i class="fas fa-sync-alt"></i> Refresh</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="overflow-x-auto max-h-[70vh] overflow-y-auto rounded-xl border border-gray-200 shadow-inner">' +
+        '<table class="w-full text-left text-xs border-collapse">' +
+          '<thead class="sticky top-0 bg-gray-100 text-gray-700 font-bold border-b z-10 shadow-2xs">' +
+            '<tr>' +
+              '<th class="p-2.5 text-center w-14">ម៉ោង</th>' +
+              '<th class="p-2.5">ទំនិញ</th>' +
+              '<th class="p-2.5 text-center">ចំនួន</th>' +
+              '<th class="p-2.5 text-right">សរុប</th>' +
+              '<th class="p-2.5 text-center">បង់តាម</th>' +
+              (isAdmin ? '<th class="p-2.5 text-center w-20">កែ/លុប</th>' : '') +
+            '</tr>' +
+          '</thead>' +
+          '<tbody id="posWalkinTodayTbody"><tr><td colspan="' + (isAdmin ? 6 : 5) + '" class="p-4 text-center text-gray-400 italic">កំពុងទាញទិន្នន័យ...</td></tr></tbody>' +
+        '</table>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+
+  if (typeof loadPosTodayWalkinSales === 'function') {
     loadPosTodayWalkinSales();
   }
 }
