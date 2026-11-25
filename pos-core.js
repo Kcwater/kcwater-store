@@ -705,14 +705,6 @@ function initDashboardRealtimeListener() {
     }, 800);
   }
 
-  var posWalkinRefreshTimer = null;
-  function handleTransOrSettleChange() {
-    if (document.getElementById('posWalkinTodayTbody') && typeof loadPosTodayWalkinSales === 'function') {
-      if (posWalkinRefreshTimer) clearTimeout(posWalkinRefreshTimer);
-      posWalkinRefreshTimer = setTimeout(function() {
-        loadPosTodayWalkinSales();
-      }, 600);
-    }
     var walkinRefreshTimer = null;
   function handleTransOrSettleChange() {
     if (document.getElementById('posWalkinTodayTbody') && typeof loadPosTodayWalkinSales === 'function') {
