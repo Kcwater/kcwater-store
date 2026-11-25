@@ -363,7 +363,7 @@ async function renderDashboardModule() {
               '<th class="p-2 sm:p-2.5 text-center">ចំនួន</th>' +
               '<th class="p-2 sm:p-2.5 text-right">សរុប</th>' +
               '<th class="p-2 sm:p-2.5 text-center">ស្ថានភាព</th>' +
-              '<th class="p-2 sm:p-2.5 text-center w-14">បោះបង់</th>' +
+              '<th class="p-2 sm:p-2.5 text-center w-20">កែ/លុប</th>' +
             '</tr>' +
           '</thead>' +
           '<tbody id="dashRecentTbody">' +
@@ -614,7 +614,10 @@ async function loadDashboardData() {
           var voidCellHtml = isAdmin ? (
             isSettledDebt
               ? '<span class="text-[9px] text-slate-400 italic" title="បានទូទាត់ក្នុង Settlement រួច">ទូទាត់រួច</span>'
-              : '<button type="button" onclick="voidTransaction(' + Number(r.id) + ')" class="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg text-xs active:scale-90 transition" title="បោះបង់ការលក់នេះ"><i class="fas fa-trash-can"></i></button>'
+              : '<div class="flex items-center justify-center gap-1">' +
+                  '<button type="button" onclick="openEditDashboardTxModal(' + Number(r.id) + ')" class="p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200 rounded-lg text-xs active:scale-90 transition" title="កែប្រែប្រតិបត្តិការនេះ"><i class="fas fa-pen-to-square"></i></button>' +
+                  '<button type="button" onclick="voidTransaction(' + Number(r.id) + ')" class="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg text-xs active:scale-90 transition" title="បោះបង់ការលក់នេះ"><i class="fas fa-trash-can"></i></button>' +
+                '</div>'
           ) : '-';
 
           rHtml += '<tr class="border-b hover:bg-gray-50">' +
@@ -700,7 +703,14 @@ function initDashboardRealtimeListener() {
     }, 800);
   }
 
+  var posWalkinRefreshTimer = null;
   function handleTransOrSettleChange() {
+    if (document.getElementById('posWalkinTodayTbody') && typeof loadPosTodayWalkinSales === 'function') {
+      if (posWalkinRefreshTimer) clearTimeout(posWalkinRefreshTimer);
+      posWalkinRefreshTimer = setTimeout(function() {
+        loadPosTodayWalkinSales();
+      }, 600);
+    }
     if (currentUser && currentUser.role === 'Admin') {
       scheduleDashboardAutoRefresh();
     } else if (currentUser && (currentUser.role === 'Customer' || currentUser.type === 'Regular')) {
@@ -852,10 +862,214 @@ async function voidTransaction(rowId, tid, prodName, qty, total) {
     } catch(tgE) {}
 
     await fetchInitialPOSData();
-    loadDashboardData();
+    if (document.getElementById('dashTodaySales')) loadDashboardData();
+    if (document.getElementById('posWalkinTodayTbody') && typeof loadPosTodayWalkinSales === 'function') loadPosTodayWalkinSales();
+    if (document.getElementById('pGrid') && typeof rPG === 'function') rPG();
 
   } catch(err) {
     showToast("កំហុសបោះបង់ការលក់៖ " + err.message, "error");
+  }
+}
+
+// ✏️ មុខងារកែប្រែប្រតិបត្តិការលក់ (ចំនួន / តម្លៃ / វិធីបង់ប្រាក់) សម្រាប់តែ Admin ម្នាក់គត់
+var activeEditingDashTx = null;
+
+async function openEditDashboardTxModal(rowId) {
+  if (!rowId || !currentUser || currentUser.role !== 'Admin') return;
+  var rowObj = (window.__dashRecentRowsMap && window.__dashRecentRowsMap[rowId]) ? window.__dashRecentRowsMap[rowId] : null;
+  if (!rowObj) {
+    showToast("រកមិនឃើញទិន្នន័យប្រតិបត្តិការនេះឡើយ!", "error");
+    return;
+  }
+
+  if (rowObj.status === 'Paid' && rowObj.payment_method === 'Debt') {
+    await kcAlert({
+      title: "មិនអាចកែដោយផ្ទាល់បានទេ",
+      message: "ជើងទឹករបស់ [" + (rowObj.customer_name || '') + "] នេះត្រូវបានទូទាត់ក្នុង Settlement រួចហើយ! សូមចូលទៅបោះបង់ការទូទាត់ (Undo) ក្នុងផ្ទាំង «ទូទាត់លុយ» ជាមុនសិន។",
+      type: "warning"
+    });
+    return;
+  }
+
+  activeEditingDashTx = rowObj;
+  var existing = document.getElementById('editDashboardTxModal');
+  if (existing) existing.remove();
+
+  var defaultPayVal = 'PAID_CASH';
+  if (rowObj.status === 'Unpaid') defaultPayVal = 'UNPAID_DEBT';
+  else if (rowObj.payment_method === 'ABA') defaultPayVal = 'PAID_ABA';
+
+  var safeCust = (typeof escapeHtml === 'function') ? escapeHtml(rowObj.customer_name || 'Walk-in') : (rowObj.customer_name || 'Walk-in');
+  var safeProd = (typeof escapeHtml === 'function') ? escapeHtml(rowObj.product_name || '') : (rowObj.product_name || '');
+
+  var modalHtml = '<div id="editDashboardTxModal" class="fixed inset-0 z-[7600] flex items-center justify-center p-3 sm:p-4 overflow-y-auto">' +
+    '<div class="fixed inset-0 bg-slate-950/65 backdrop-blur-xs" onclick="closeEditDashboardTxModal()"></div>' +
+    '<div class="bg-white rounded-3xl shadow-2xl z-10 w-full max-w-sm p-5 space-y-3.5 text-center relative border border-slate-100 animate-in zoom-in-95 duration-200 my-auto">' +
+      '<div class="flex justify-between items-center border-b pb-2">' +
+        '<div class="text-left">' +
+          '<h3 class="font-black text-slate-900 text-sm sm:text-base flex items-center gap-1.5">' +
+            '<i class="fas fa-pen-to-square text-blue-600"></i> កែប្រែប្រតិបត្តិការលក់ (Admin)' +
+          '</h3>' +
+          '<p class="text-[10px] text-slate-500 font-bold mt-0.5">អតិថិជន៖ ' + safeCust + '</p>' +
+        '</div>' +
+        '<button type="button" onclick="closeEditDashboardTxModal()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-400 hover:text-slate-700 text-lg font-bold flex items-center justify-center">&times;</button>' +
+      '</div>' +
+      '<div class="p-2.5 bg-blue-50/70 rounded-2xl border border-blue-200 text-left space-y-0.5">' +
+        '<span class="text-[10px] font-bold text-slate-500 block">មុខទំនិញ</span>' +
+        '<b class="text-xs sm:text-sm font-black text-blue-950 block">' + safeProd + '</b>' +
+      '</div>' +
+      '<div class="grid grid-cols-2 gap-2 text-left text-xs">' +
+        '<div>' +
+          '<label class="text-[9.5px] font-black text-slate-700 uppercase block mb-1">ចំនួន (Qty) *</label>' +
+          '<input type="number" id="inpEditDashQty" value="' + Number(rowObj.qty || 1) + '" min="1" oninput="updateEditDashboardTxSubtotal()" class="w-full text-center font-black text-base p-2.5 bg-slate-50 border-2 border-blue-300 focus:border-blue-600 rounded-xl outline-none">' +
+        '</div>' +
+        '<div>' +
+          '<label class="text-[9.5px] font-black text-slate-700 uppercase block mb-1">តម្លៃរាយ (Price ៛) *</label>' +
+          '<input type="number" id="inpEditDashPrice" value="' + Number(rowObj.price || 0) + '" oninput="updateEditDashboardTxSubtotal()" class="w-full text-center font-black text-base p-2.5 bg-slate-50 border-2 border-blue-300 focus:border-blue-600 rounded-xl outline-none text-emerald-800">' +
+        '</div>' +
+      '</div>' +
+      '<div class="text-left text-xs">' +
+        '<label class="text-[9.5px] font-black text-slate-700 uppercase block mb-1">ស្ថានភាព & វិធីទូទាត់</label>' +
+        '<select id="selEditDashPayMode" class="w-full font-bold border-2 border-slate-200 focus:border-blue-600 rounded-xl p-2.5 bg-white outline-none">' +
+          '<option value="PAID_CASH"' + (defaultPayVal === 'PAID_CASH' ? ' selected' : '') + '>💵 បង់រួច — លុយសុទ្ធ (Cash)</option>' +
+          '<option value="PAID_ABA"' + (defaultPayVal === 'PAID_ABA' ? ' selected' : '') + '>📱 បង់រួច — ស្កេន ABA</option>' +
+          '<option value="UNPAID_DEBT"' + (defaultPayVal === 'UNPAID_DEBT' ? ' selected' : '') + '>⚠️ កត់ជំពាក់ (Unpaid)</option>' +
+        '</select>' +
+      '</div>' +
+      '<div class="p-2.5 bg-emerald-50 rounded-2xl border border-emerald-200 flex justify-between items-center text-xs font-bold text-emerald-950">' +
+        '<span>សរុបទឹកប្រាក់ថ្មី៖</span>' +
+        '<b id="editDashTxNewTotalText" class="text-sm font-black text-emerald-800">៛ ' + Number(rowObj.total || 0).toLocaleString() + '</b>' +
+      '</div>' +
+      '<div class="grid grid-cols-2 gap-2 pt-1">' +
+        '<button type="button" onclick="closeEditDashboardTxModal()" class="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs active:scale-95 transition">បោះបង់</button>' +
+        '<button type="button" id="btnSaveEditDashTx" onclick="saveEditedDashboardTx()" class="py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-xl text-xs shadow-md active:scale-95 transition flex items-center justify-center gap-1">' +
+          '<i class="fas fa-check"></i> រក្សាទុកការកែ' +
+        '</button>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+function closeEditDashboardTxModal() {
+  var modal = document.getElementById('editDashboardTxModal');
+  if (modal) modal.remove();
+  activeEditingDashTx = null;
+}
+
+function updateEditDashboardTxSubtotal() {
+  var q = parseFloat(document.getElementById('inpEditDashQty') ? document.getElementById('inpEditDashQty').value || 0 : 0);
+  var pr = parseFloat(document.getElementById('inpEditDashPrice') ? document.getElementById('inpEditDashPrice').value || 0 : 0);
+  var totEl = document.getElementById('editDashTxNewTotalText');
+  if (totEl) {
+    totEl.innerText = '៛ ' + Math.round(q * pr).toLocaleString();
+  }
+}
+
+async function saveEditedDashboardTx() {
+  if (!activeEditingDashTx || !currentUser || currentUser.role !== 'Admin') return;
+
+  var rowObj = activeEditingDashTx;
+  var newQty = parseFloat(document.getElementById('inpEditDashQty') ? document.getElementById('inpEditDashQty').value || 0 : 0);
+  var newPrice = parseFloat(document.getElementById('inpEditDashPrice') ? document.getElementById('inpEditDashPrice').value || 0 : 0);
+  var payMode = document.getElementById('selEditDashPayMode') ? document.getElementById('selEditDashPayMode').value : 'PAID_CASH';
+
+  if (isNaN(newQty) || newQty <= 0) {
+    showToast("សូមបញ្ចូលចំនួនទំនិញធំជាង ០!", "error");
+    return;
+  }
+  if (isNaN(newPrice)) {
+    showToast("សូមបញ្ចូលតម្លៃឱ្យត្រឹមត្រូវ!", "error");
+    return;
+  }
+
+  var oldQty = parseFloat(rowObj.qty || 0);
+  var oldPrice = parseFloat(rowObj.price || 0);
+  var oldTotal = parseFloat(rowObj.total || 0);
+  var newTotal = Math.round(newQty * newPrice);
+  var qtyDiff = newQty - oldQty;
+
+  var newStatus = (payMode === 'UNPAID_DEBT') ? 'Unpaid' : 'Paid';
+  var newPayMethod = (payMode === 'PAID_ABA') ? 'ABA' : ((payMode === 'UNPAID_DEBT') ? 'Debt' : 'Cash');
+  var newPaidKhr = (newStatus === 'Paid') ? newTotal : 0;
+
+  var btn = document.getElementById('btnSaveEditDashTx');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> កំពុងរក្សាទុក...';
+  }
+
+  try {
+    var cleanProdName = String(rowObj.product_name || '')
+      .replace(/🎁\s*\[Free\]/gi, '')
+      .replace(/\[Free\]/gi, '')
+      .replace(/🛢️/gi, '')
+      .trim()
+      .toLowerCase();
+
+    var prodObj = (allProducts || []).find(function(p) { return p.name.trim().toLowerCase() === cleanProdName; });
+    if (prodObj && prodObj.type === 'ទិញគេ' && qtyDiff !== 0) {
+      const { data: newStockVal, error: stkErr } = await supabaseClient.rpc('adjust_product_stock', {
+        p_token: (currentUser && currentUser.sessionToken) ? currentUser.sessionToken : '',
+        p_product_id: prodObj.id,
+        p_delta: -qtyDiff
+      });
+      if (!stkErr && newStockVal !== null && newStockVal !== undefined) {
+        prodObj.stock = parseFloat(newStockVal);
+      } else {
+        var fallbackStock = Math.max(0, parseFloat(prodObj.stock || 0) - qtyDiff);
+        await supabaseClient.from('products').update({ stock: fallbackStock }).eq('id', prodObj.id);
+        prodObj.stock = fallbackStock;
+      }
+    }
+
+    const { error: updErr } = await supabaseClient
+      .from('transactions')
+      .update({
+        qty: newQty,
+        price: newPrice,
+        total: newTotal,
+        paid_khr: newPaidKhr,
+        status: newStatus,
+        payment_method: newPayMethod
+      })
+      .eq('id', rowObj.id);
+
+    if (updErr) throw updErr;
+
+    closeEditDashboardTxModal();
+
+    try {
+      var timeKhNow = new Date().toLocaleString('km-KH', { timeZone: 'Asia/Phnom_Penh', dateStyle: 'short', timeStyle: 'short' });
+      var tgMsg = "✏️ <b>[KC WATER - Admin កែប្រែប្រតិបត្តិការលក់]</b>\n\n" +
+                  "👤 <b>អតិថិជន៖</b> " + (rowObj.customer_name || 'Walk-in') + "\n" +
+                  "📦 <b>ទំនិញ៖</b> " + (rowObj.product_name || '') + "\n" +
+                  "📝 <b>ចាស់៖</b> " + oldQty + " x ៛ " + oldPrice.toLocaleString() + " = ៛ " + oldTotal.toLocaleString() + " (" + (rowObj.payment_method || 'Cash') + ")\n" +
+                  "👉 <b>ថ្មី៖</b> <b>" + newQty + " x ៛ " + newPrice.toLocaleString() + " = ៛ " + newTotal.toLocaleString() + "</b> (" + newPayMethod + " / " + (newStatus === 'Paid' ? 'បង់រួច' : 'ជំពាក់') + ")\n" +
+                  "✍️ <b>អ្នកកែ៖</b> " + (currentUser.fullName || "Admin") + "\n" +
+                  "🕒 <b>ម៉ោង៖</b> " + timeKhNow;
+      if (typeof sendTelegramAlert === 'function') sendTelegramAlert(tgMsg);
+    } catch(tgE) {}
+
+    await kcAlert({
+      title: "កែប្រែជោគជ័យ! 🎉",
+      message: "ប្រតិបត្តិការ [" + (rowObj.product_name || '') + "] ត្រូវបានកែប្រែរួចរាល់ (សរុប ៛ " + newTotal.toLocaleString() + ")។",
+      type: "success"
+    });
+
+    await fetchInitialPOSData();
+    if (document.getElementById('dashTodaySales')) loadDashboardData();
+    if (document.getElementById('posWalkinTodayTbody') && typeof loadPosTodayWalkinSales === 'function') loadPosTodayWalkinSales();
+    if (document.getElementById('pGrid') && typeof rPG === 'function') rPG();
+
+  } catch(err) {
+    await kcAlert({ title: "កំហុសកែប្រែ", message: err.message, type: "danger" });
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-check"></i> រក្សាទុកការកែ';
+    }
   }
 }
 
@@ -1184,10 +1398,122 @@ function renderPOSModule() {
       paymentSectionHTML +
       submitBtnHTML +
     '</div>' +
+    ((isAdmin || isSeller) ? (
+      '<div class="card border-t-4 border-slate-700 shadow-lg p-3.5 sm:p-5 bg-white">' +
+        '<div class="flex flex-wrap justify-between items-center gap-2 mb-2.5">' +
+          '<div>' +
+            '<h3 class="font-extrabold text-slate-900 text-xs sm:text-sm flex items-center gap-1.5">' +
+              '<i class="fas fa-clock-rotate-left text-blue-600"></i>ប្រវត្តិលក់នៅកន្លែងថ្ងៃនេះ (Walk-in)' +
+            '</h3>' +
+            (!isAdmin ? '<p class="text-[10px] text-amber-700 font-bold mt-0.5">🔒 ប្រសិនបើវាយខុស សូមទាក់ទង Admin ដើម្បីកែប្រែ ឬបោះបង់</p>' : '') +
+          '</div>' +
+          '<div class="flex items-center gap-1.5">' +
+            '<span id="posWalkinTodayCountBadge" class="bg-blue-100 text-blue-800 text-[10px] px-2.5 py-0.5 rounded-full font-bold">0 លើក</span>' +
+            '<button type="button" onclick="loadPosTodayWalkinSales()" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[10px] font-bold active:scale-95 transition"><i class="fas fa-sync-alt"></i></button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="overflow-x-auto max-h-64 overflow-y-auto rounded-xl border border-gray-200 shadow-inner">' +
+          '<table class="w-full text-left text-xs border-collapse">' +
+            '<thead class="sticky top-0 bg-gray-100 text-gray-700 font-bold border-b z-10 shadow-2xs">' +
+              '<tr>' +
+                '<th class="p-2 text-center w-14">ម៉ោង</th>' +
+                '<th class="p-2">ទំនិញ</th>' +
+                '<th class="p-2 text-center">ចំនួន</th>' +
+                '<th class="p-2 text-right">សរុប</th>' +
+                '<th class="p-2 text-center">បង់តាម</th>' +
+                (isAdmin ? '<th class="p-2 text-center w-20">កែ/លុប</th>' : '') +
+              '</tr>' +
+            '</thead>' +
+            '<tbody id="posWalkinTodayTbody"><tr><td colspan="' + (isAdmin ? 6 : 5) + '" class="p-4 text-center text-gray-400 italic">កំពុងទាញទិន្នន័យ...</td></tr></tbody>' +
+          '</table>' +
+        '</div>' +
+      '</div>'
+    ) : '') +
   '</div>';
 
   rPG();
   rC();
+  if ((isAdmin || isSeller) && typeof loadPosTodayWalkinSales === 'function') {
+    loadPosTodayWalkinSales();
+  }
+}
+
+async function loadPosTodayWalkinSales() {
+  var tbody = document.getElementById('posWalkinTodayTbody');
+  var badge = document.getElementById('posWalkinTodayCountBadge');
+  if (!tbody) return;
+
+  var isAdmin = (currentUser && currentUser.role === 'Admin');
+  var colSpan = isAdmin ? 6 : 5;
+
+  try {
+    var todayStr = getCambodiaToday();
+    var todayQueryStart = todayStr + 'T00:00:00+07:00';
+
+    const { data: rows, error } = await supabaseClient
+      .from('transactions')
+      .select('*')
+      .eq('customer_name', 'Walk-in')
+      .gte('created_at', todayQueryStart)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    var todayRows = (rows || []).filter(function(r) {
+      return isTodayInCambodia(r.created_at);
+    });
+
+    if (badge) badge.innerText = todayRows.length + ' លើក';
+
+    if (!window.__dashRecentRowsMap) window.__dashRecentRowsMap = {};
+
+    if (todayRows.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="' + colSpan + '" class="p-4 text-center text-gray-400 italic">មិនទាន់មានការលក់នៅកន្លែងថ្ងៃនេះទេ</td></tr>';
+      return;
+    }
+
+    var html = '';
+    todayRows.forEach(function(r) {
+      window.__dashRecentRowsMap[r.id] = r;
+      var timeStr = new Date(r.created_at).toLocaleTimeString('km-KH', {
+        timeZone: 'Asia/Phnom_Penh',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+      var payLabel = (r.payment_method === 'ABA')
+        ? '<span class="px-2 py-0.5 rounded-full text-[9.5px] font-bold bg-blue-100 text-blue-800">📱 ABA</span>'
+        : (r.status === 'Unpaid'
+          ? '<span class="px-2 py-0.5 rounded-full text-[9.5px] font-bold bg-orange-100 text-orange-800">⚠️ ជំពាក់</span>'
+          : '<span class="px-2 py-0.5 rounded-full text-[9.5px] font-bold bg-green-100 text-green-800">💵 សុទ្ធ</span>');
+
+      var safeProd = (typeof escapeHtml === 'function') ? escapeHtml(r.product_name || '') : (r.product_name || '');
+      var safeRec = (typeof escapeHtml === 'function') ? escapeHtml(r.recorded_by || '') : (r.recorded_by || '');
+      var sellerNote = safeRec ? '<br><span class="text-[9px] text-slate-400 font-normal">អ្នកលក់៖ ' + safeRec + '</span>' : '';
+
+      var adminCol = isAdmin ? (
+        '<td class="p-2 text-center whitespace-nowrap">' +
+          '<div class="flex items-center justify-center gap-1">' +
+            '<button type="button" onclick="openEditDashboardTxModal(' + Number(r.id) + ')" class="p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200 rounded-lg text-xs active:scale-90 transition" title="កែប្រែការលក់នេះ"><i class="fas fa-pen-to-square"></i></button>' +
+            '<button type="button" onclick="voidTransaction(' + Number(r.id) + ')" class="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg text-xs active:scale-90 transition" title="បោះបង់ការលក់នេះ"><i class="fas fa-trash-can"></i></button>' +
+          '</div>' +
+        '</td>'
+      ) : '';
+
+      html += '<tr class="border-b hover:bg-gray-50">' +
+        '<td class="p-2 text-center text-gray-500 whitespace-nowrap text-[10px]">' + timeStr + '</td>' +
+        '<td class="p-2 font-bold text-gray-800">' + safeProd + sellerNote + '</td>' +
+        '<td class="p-2 text-center font-bold text-blue-700">' + r.qty + '</td>' +
+        '<td class="p-2 text-right font-black text-green-700 whitespace-nowrap">៛ ' + Number(r.total).toLocaleString() + '</td>' +
+        '<td class="p-2 text-center whitespace-nowrap">' + payLabel + '</td>' +
+        adminCol +
+      '</tr>';
+    });
+
+    tbody.innerHTML = html;
+  } catch(e) {
+    tbody.innerHTML = '<tr><td colspan="' + colSpan + '" class="p-4 text-center text-red-500 font-bold">កំហុស៖ ' + e.message + '</td></tr>';
+  }
 }
 
 // 🔍 មុខងារ Search រកទំនិញលើ POS ភ្លាមៗ
@@ -2257,6 +2583,7 @@ async function confirmSale() {
     }
 
     cart = [];
+    if (typeof loadPosTodayWalkinSales === 'function') loadPosTodayWalkinSales();
     currentPosDiscount = { type: 'NONE', value: 0 };
     rC();
     if (document.getElementById('pK')) document.getElementById('pK').value = "";
