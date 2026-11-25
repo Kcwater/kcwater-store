@@ -349,11 +349,16 @@ async function renderDashboardModule() {
 
     // 📋 ជួរក្រោម៖ តារាងប្រតិបត្តិការដកទំនិញថ្ងៃនេះ
     '<div class="card p-4 sm:p-5 border-t-4 border-gray-700 shadow-md mb-0 bg-white">' +
-      '<div class="flex justify-between items-center mb-2.5">' +
+      '<div class="flex flex-wrap justify-between items-center gap-2 mb-2.5">' +
         '<h3 class="font-extrabold text-gray-800 text-xs sm:text-sm flex items-center gap-2">' +
-          '<i class="fas fa-clock-rotate-left text-blue-600"></i> ប្រតិបត្តិការដកទំនិញថ្ងៃនេះ (ពេញមួយថ្ងៃ)' +
+          '<i class="fas fa-clock-rotate-left text-blue-600"></i> ប្រតិបត្តិការដកទំនិញតាមថ្ងៃ' +
         '</h3>' +
-        '<span id="dashRecentCountBadge" class="bg-blue-100 text-blue-800 text-[10px] sm:text-[11px] px-2.5 py-0.5 rounded-full font-bold">0 លើក</span>' +
+        '<div class="flex flex-wrap items-center gap-1.5">' +
+          '<input type="date" id="dashRecentDateFilter" value="' + getCambodiaToday() + '" onchange="loadDashRecentTransactionsByDate()" class="border-2 border-blue-200 focus:border-blue-600 rounded-xl px-2 py-1 text-[11px] font-bold text-slate-800 bg-blue-50/40 outline-none">' +
+          '<button type="button" onclick="setDashRecentDateQuick(\'YESTERDAY\')" class="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-xl text-[10px] font-bold active:scale-95 transition">ម្សិលមិញ</button>' +
+          '<button type="button" onclick="setDashRecentDateQuick(\'TODAY\')" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-xl text-[10px] font-bold active:scale-95 transition">ថ្ងៃនេះ</button>' +
+          '<span id="dashRecentCountBadge" class="bg-blue-100 text-blue-800 text-[10px] sm:text-[11px] px-2.5 py-0.5 rounded-full font-bold">0 លើក</span>' +
+        '</div>' +
       '</div>' +
       '<div class="overflow-x-auto max-h-[300px] overflow-y-auto rounded-xl border border-gray-200 shadow-inner">' +
         '<table class="w-full text-left text-xs border-collapse">' +
@@ -581,64 +586,120 @@ async function loadDashboardData() {
       alertArea.innerHTML = saHtml || '<p class="text-gray-400 italic text-center py-4">គ្មានទំនិញទិញគេក្នុងឃ្លាំង</p>';
     }
 
-    var tbodyRecent = document.getElementById('dashRecentTbody');
-    var badgeCount = document.getElementById('dashRecentCountBadge');
-    if (badgeCount) badgeCount.innerText = todayRecentSales.length + " លើក";
+    var dateInp = document.getElementById('dashRecentDateFilter');
+    var selectedDate = (dateInp && dateInp.value) ? dateInp.value : todayStr;
 
-    if (tbodyRecent) {
-      window.__dashRecentRowsMap = {};
-      if (todayRecentSales.length === 0) {
-        tbodyRecent.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-gray-400 italic">មិនទាន់មានប្រតិបត្តិការដកទំនិញថ្ងៃនេះនៅឡើយ</td></tr>';
-      } else {
-        var rHtml = '';
-        var isAdmin = (currentUser && currentUser.role === 'Admin');
-
-        todayRecentSales.forEach(function(r) {
-          window.__dashRecentRowsMap[r.id] = r;
-          var timeStr = new Date(r.created_at).toLocaleTimeString('km-KH', { 
-            timeZone: 'Asia/Phnom_Penh', 
-            hour: '2-digit', 
-            minute: '2-digit' 
-          });
-
-          var recByClean = String(r.recorded_by || '').replace(/\s*\(.*?\)/g, '').trim();
-          var isWithdrawnByOther = (recByClean && recByClean !== r.customer_name && recByClean !== 'Admin');
-          var isAdminProxy = (r.recorded_by && r.recorded_by.includes('Admin') && r.customer_name !== 'Walk-in');
-
-          var withdrawTag = '';
-          if (isWithdrawnByOther) {
-            withdrawTag = '<br><span class="text-[9px] text-amber-950 font-bold bg-amber-100 border border-amber-300 px-1 py-0.2 rounded inline-flex items-center gap-1 mt-0.5"><i class="fas fa-truck text-[8px] text-amber-600"></i>ជំនួស: ' + recByClean + '</span>';
-          } else if (isAdminProxy) {
-            withdrawTag = '<br><span class="text-[9px] text-blue-900 font-bold bg-blue-50 border border-blue-200 px-1 py-0.2 rounded inline-flex items-center gap-1 mt-0.5"><i class="fas fa-user-pen text-[8px] text-blue-500"></i>Admin កត់ជំនួស</span>';
-          }
-
-          var isSettledDebt = (r.status === 'Paid' && r.payment_method === 'Debt');
-          var voidCellHtml = isAdmin ? (
-            isSettledDebt
-              ? '<span class="text-[9px] text-slate-400 italic" title="បានទូទាត់ក្នុង Settlement រួច">ទូទាត់រួច</span>'
-              : '<div class="flex items-center justify-center gap-1">' +
-                  '<button type="button" onclick="openEditDashboardTxModal(' + Number(r.id) + ')" class="p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200 rounded-lg text-xs active:scale-90 transition" title="កែប្រែប្រតិបត្តិការនេះ"><i class="fas fa-pen-to-square"></i></button>' +
-                  '<button type="button" onclick="voidTransaction(' + Number(r.id) + ')" class="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg text-xs active:scale-90 transition" title="បោះបង់ការលក់នេះ"><i class="fas fa-trash-can"></i></button>' +
-                '</div>'
-          ) : '-';
-
-          rHtml += '<tr class="border-b hover:bg-gray-50">' +
-            '<td class="p-2 text-center text-gray-500 whitespace-nowrap text-[10px]">' + timeStr + '</td>' +
-            '<td class="p-2 font-bold text-gray-800">' + r.customer_name + withdrawTag + '</td>' +
-            '<td class="p-2">' + r.product_name + '</td>' +
-            '<td class="p-2 text-center font-bold text-blue-700">' + r.qty + '</td>' +
-            '<td class="p-2 text-right font-black text-green-700 whitespace-nowrap">៛ ' + Number(r.total).toLocaleString() + '</td>' +
-            '<td class="p-2 text-center whitespace-nowrap">' +
-              '<span class="px-2.5 py-0.5 rounded-full text-[9.5px] font-bold ' + (r.status === 'Paid' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800 border border-orange-200') + '">' + (r.status === 'Paid' ? 'បង់រួច' : 'ជំពាក់') + '</span>' +
-            '</td>' +
-            '<td class="p-2 text-center whitespace-nowrap">' + voidCellHtml + '</td>' +
-          '</tr>';
-        });
-        tbodyRecent.innerHTML = rHtml;
-      }
+    if (selectedDate !== todayStr) {
+      await loadDashRecentTransactionsByDate();
+    } else {
+      renderDashRecentTransactionsRows(todayRecentSales, todayStr);
     }
   } catch(e) {
     console.error("Dashboard error:", e);
+  }
+}
+
+function renderDashRecentTransactionsRows(rowsList, dateLabel) {
+  var tbodyRecent = document.getElementById('dashRecentTbody');
+  var badgeCount = document.getElementById('dashRecentCountBadge');
+  var rows = rowsList || [];
+  if (badgeCount) badgeCount.innerText = rows.length + " លើក";
+  if (!tbodyRecent) return;
+
+  if (!window.__dashRecentRowsMap) window.__dashRecentRowsMap = {};
+
+  if (rows.length === 0) {
+    tbodyRecent.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-gray-400 italic">គ្មានប្រតិបត្តិការដកទំនិញសម្រាប់ថ្ងៃ ' + (dateLabel || '') + ' ឡើយ</td></tr>';
+    return;
+  }
+
+  var rHtml = '';
+  var isAdmin = (currentUser && currentUser.role === 'Admin');
+
+  rows.forEach(function(r) {
+    window.__dashRecentRowsMap[r.id] = r;
+    var timeStr = new Date(r.created_at).toLocaleTimeString('km-KH', {
+      timeZone: 'Asia/Phnom_Penh',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    var recByClean = String(r.recorded_by || '').replace(/\s*\(.*?\)/g, '').trim();
+    var isWithdrawnByOther = (recByClean && recByClean !== r.customer_name && recByClean !== 'Admin');
+    var isAdminProxy = (r.recorded_by && r.recorded_by.includes('Admin') && r.customer_name !== 'Walk-in');
+
+    var withdrawTag = '';
+    if (isWithdrawnByOther) {
+      withdrawTag = '<br><span class="text-[9px] text-amber-950 font-bold bg-amber-100 border border-amber-300 px-1 py-0.2 rounded inline-flex items-center gap-1 mt-0.5"><i class="fas fa-truck text-[8px] text-amber-600"></i>ជំនួស: ' + recByClean + '</span>';
+    } else if (isAdminProxy) {
+      withdrawTag = '<br><span class="text-[9px] text-blue-900 font-bold bg-blue-50 border border-blue-200 px-1 py-0.2 rounded inline-flex items-center gap-1 mt-0.5"><i class="fas fa-user-pen text-[8px] text-blue-500"></i>Admin កត់ជំនួស</span>';
+    }
+
+    var isSettledDebt = (r.status === 'Paid' && r.payment_method === 'Debt');
+    var voidCellHtml = isAdmin ? (
+      isSettledDebt
+        ? '<span class="text-[9px] text-slate-400 italic" title="បានទូទាត់ក្នុង Settlement រួច">ទូទាត់រួច</span>'
+        : '<div class="flex items-center justify-center gap-1">' +
+            '<button type="button" onclick="openEditDashboardTxModal(' + Number(r.id) + ')" class="p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200 rounded-lg text-xs active:scale-90 transition" title="កែប្រែប្រតិបត្តិការនេះ"><i class="fas fa-pen-to-square"></i></button>' +
+            '<button type="button" onclick="voidTransaction(' + Number(r.id) + ')" class="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg text-xs active:scale-90 transition" title="បោះបង់ការលក់នេះ"><i class="fas fa-trash-can"></i></button>' +
+          '</div>'
+    ) : '-';
+
+    var payBadgeNote = (r.status === 'Paid' && r.payment_method === 'ABA') ? ' (ABA)' : '';
+
+    rHtml += '<tr class="border-b hover:bg-gray-50">' +
+      '<td class="p-2 text-center text-gray-500 whitespace-nowrap text-[10px]">' + timeStr + '</td>' +
+      '<td class="p-2 font-bold text-gray-800">' + r.customer_name + withdrawTag + '</td>' +
+      '<td class="p-2">' + r.product_name + '</td>' +
+      '<td class="p-2 text-center font-bold text-blue-700">' + r.qty + '</td>' +
+      '<td class="p-2 text-right font-black text-green-700 whitespace-nowrap">៛ ' + Number(r.total).toLocaleString() + '</td>' +
+      '<td class="p-2 text-center whitespace-nowrap">' +
+        '<span class="px-2.5 py-0.5 rounded-full text-[9.5px] font-bold ' + (r.status === 'Paid' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800 border border-orange-200') + '">' + (r.status === 'Paid' ? ('បង់រួច' + payBadgeNote) : 'ជំពាក់') + '</span>' +
+      '</td>' +
+      '<td class="p-2 text-center whitespace-nowrap">' + voidCellHtml + '</td>' +
+    '</tr>';
+  });
+  tbodyRecent.innerHTML = rHtml;
+}
+
+function setDashRecentDateQuick(mode) {
+  var inp = document.getElementById('dashRecentDateFilter');
+  if (!inp) return;
+  var todayStr = getCambodiaToday();
+  if (mode === 'YESTERDAY') {
+    var d = new Date(todayStr + 'T12:00:00+07:00');
+    d.setDate(d.getDate() - 1);
+    inp.value = (typeof toCambodiaDateStr === 'function')
+      ? toCambodiaDateStr(d)
+      : d.toLocaleDateString('en-CA', { timeZone: 'Asia/Phnom_Penh' });
+  } else {
+    inp.value = todayStr;
+  }
+  loadDashRecentTransactionsByDate();
+}
+
+async function loadDashRecentTransactionsByDate() {
+  var tbodyRecent = document.getElementById('dashRecentTbody');
+  var dateInp = document.getElementById('dashRecentDateFilter');
+  if (!tbodyRecent || !dateInp) return;
+
+  var selectedDate = dateInp.value || getCambodiaToday();
+  tbodyRecent.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-gray-400 italic"><i class="fas fa-spinner fa-spin mr-1 text-blue-600"></i> កំពុងទាញទិន្នន័យថ្ងៃ ' + selectedDate + '...</td></tr>';
+
+  try {
+    var startIso = selectedDate + 'T00:00:00+07:00';
+    var endIso = selectedDate + 'T23:59:59.999+07:00';
+    const { data, error } = await supabaseClient
+      .from('transactions')
+      .select('*')
+      .gte('created_at', startIso)
+      .lte('created_at', endIso)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    renderDashRecentTransactionsRows(data || [], selectedDate);
+  } catch(err) {
+    tbodyRecent.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-red-500 font-bold">កំហុស៖ ' + err.message + '</td></tr>';
   }
 }
 
