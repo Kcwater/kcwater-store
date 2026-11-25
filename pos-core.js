@@ -810,9 +810,16 @@ async function voidTransaction(rowId, tid, prodName, qty, total) {
 
     var prodObj = allProducts.find(function(p) { return p.name.trim().toLowerCase() === cleanProdName; });
     if (prodObj && prodObj.type === 'ទិញគេ' && qty > 0) {
-      var restoredStock = parseFloat(prodObj.stock || 0) + parseFloat(qty);
-      await supabaseClient.from('products').update({ stock: restoredStock }).eq('id', prodObj.id);
-      prodObj.stock = restoredStock;
+     const { data: newStockVal, error: stkErr } = await supabaseClient.rpc('adjust_product_stock', {
+        p_token: (currentUser && currentUser.sessionToken) ? currentUser.sessionToken : '',
+        p_product_id: prodObj.id,
+        p_delta: Math.abs(parseFloat(qty))
+      });
+      if (!stkErr && newStockVal !== null && newStockVal !== undefined) {
+        prodObj.stock = parseFloat(newStockVal);
+      } else {
+        prodObj.stock = parseFloat(prodObj.stock || 0) + parseFloat(qty);
+      }
     }
 
     const { error: delErr } = await supabaseClient
@@ -957,10 +964,24 @@ async function confirmQuickRestockSubmit() {
     var curStock = prod ? parseFloat(prod.stock || 0) : 0;
     var finalStock = curStock + q;
 
-    var updateObj = { stock: finalStock };
-    if (newCost > 0) updateObj.cost = newCost;
+    const { data: newStockVal, error: stkErr } = await supabaseClient.rpc('adjust_product_stock', {
+      p_token: (currentUser && currentUser.sessionToken) ? currentUser.sessionToken : '',
+      p_product_id: targetProdId,
+      p_delta: Math.abs(q)
+    });
+    if (!stkErr && newStockVal !== null && newStockVal !== undefined) {
+      finalStock = parseFloat(newStockVal);
+    } else {
+      await supabaseClient.from('products').update({ stock: finalStock }).eq('id', targetProdId);
+    }
 
-    await supabaseClient.from('products').update(updateObj).eq('id', targetProdId);
+    if (newCost > 0) {
+      await supabaseClient.from('products').update({ cost: newCost }).eq('id', targetProdId);
+    }
+    if (prod) {
+      prod.stock = finalStock;
+      if (newCost > 0) prod.cost = newCost;
+    }
     await supabaseClient.from('stock_in').insert([{
       product_id: targetProdId,
       product_name: prodName,
@@ -2127,16 +2148,66 @@ async function confirmSale() {
     const { error: insErr } = await supabaseClient.from('transactions').insert(rowsToInsert);
     if (insErr) throw insErr;
 
-    // 📦 ៥. កាត់ស្តុកទំនិញទិញគេចេញពីឃ្លាំងដោយស្វ័យប្រវត្តិ
-    for (var sIdx = 0; sIdx < cart.length; sIdx++) {
-      var cartItm = cart[sIdx];
-      var prodObj = allProducts.find(p => p.id === cartItm.id);
-      if (prodObj && prodObj.type === 'ទិញគេ' && cartItm.qty > 0) {
-        var updatedStock = Math.max(0, parseFloat(prodObj.stock || 0) - cartItm.qty);
-        await supabaseClient.from('products').update({ stock: updatedStock }).eq('id', prodObj.id);
-        prodObj.stock = updatedStock;
+    // 🔍 ឆែកស្តុកពិតប្រាកដពី Database មុនកត់ត្រា (ការពារកុំឱ្យលក់ជ្រុលពេលមានអ្នកដកព្រមគ្នា)
+    var boughtIds = [];
+    cart.forEach(function(item) {
+      var pCheck = allProducts.find(function(p) { return p.id === item.id; });
+      if (pCheck && pCheck.type === 'ទិញគេ' && item.qty > 0 && boughtIds.indexOf(pCheck.id) === -1) {
+        boughtIds.push(pCheck.id);
+      }
+    });
+
+    if (boughtIds.length > 0) {
+      const { data: freshProds, error: freshErr } = await supabaseClient
+        .from('products')
+        .select('id, name, stock, type')
+        .in('id', boughtIds);
+      if (!freshErr && freshProds) {
+        for (var fIdx = 0; fIdx < freshProds.length; fIdx++) {
+          var fp = freshProds[fIdx];
+          var memProd = allProducts.find(function(p) { return p.id === fp.id; });
+          if (memProd) memProd.stock = fp.stock;
+          if (fp.type === 'ទិញគេ') {
+            var reqQty = cart.filter(function(c) { return c.id === fp.id; }).reduce(function(sum, c) { return sum + parseFloat(c.qty || 0); }, 0);
+            if (reqQty > parseFloat(fp.stock || 0)) {
+              rPG();
+              if (typeof kcAlert === 'function') {
+                await kcAlert({
+                  title: "ស្តុកមិនគ្រប់គ្រាន់!",
+                  message: "ទំនិញ [" + fp.name + "] ទើបតែត្រូវបានដកអស់ខ្លះហើយ! បច្ចុប្បន្នក្នុងឃ្លាំងសល់ត្រឹម " + Math.max(0, parseFloat(fp.stock || 0)) + " ប៉ុណ្ណោះ។",
+                  type: "warning"
+                });
+              } else {
+                showToast("ស្តុក [" + fp.name + "] សល់ត្រឹម " + Math.max(0, parseFloat(fp.stock || 0)) + " ប៉ុណ្ណោះ!", "error");
+              }
+              return;
+            }
+          }
+        }
       }
     }
+
+    const { error: insErr } = await supabaseClient.from('transactions').insert(rowsToInsert);
+    if (insErr) throw insErr;
+
+    // 📦 ៥. កាត់ស្តុកទំនិញទិញគេចេញពីឃ្លាំងដោយស្វ័យប្រវត្តិ (ប្រើ RPC សុវត្ថិភាព មិនជាន់ស្តុកគ្នា)
+    for (var sIdx = 0; sIdx < cart.length; sIdx++) {
+      var cartItm = cart[sIdx];
+      var prodObj = allProducts.find(function(p) { return p.id === cartItm.id; });
+      if (prodObj && prodObj.type === 'ទិញគេ' && cartItm.qty > 0) {
+        const { data: newStockVal, error: stkErr } = await supabaseClient.rpc('adjust_product_stock', {
+          p_token: (currentUser && currentUser.sessionToken) ? currentUser.sessionToken : '',
+          p_product_id: prodObj.id,
+          p_delta: -Math.abs(parseFloat(cartItm.qty))
+        });
+        if (!stkErr && newStockVal !== null && newStockVal !== undefined) {
+          prodObj.stock = parseFloat(newStockVal);
+        } else {
+          prodObj.stock = Math.max(0, parseFloat(prodObj.stock || 0) - cartItm.qty);
+        }
+      }
+    }
+    if (typeof rPG === 'function') rPG();
 
     // 🔔 ៦. ផ្ញើ Telegram Alert
     try {
