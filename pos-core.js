@@ -344,39 +344,6 @@ async function renderDashboardModule() {
         '<div id="dashStockAlertArea" class="space-y-1.5 text-xs max-h-72 overflow-y-auto pr-1">កំពុងឆែកមើលស្តុក...</div>' +
       '</div>' +
     '</div>' +
-
-    // 📋 ជួរក្រោម៖ តារាងប្រតិបត្តិការដកទំនិញថ្ងៃនេះ
-    '<div class="card p-4 sm:p-5 border-t-4 border-gray-700 shadow-md mb-0 bg-white">' +
-      '<div class="flex flex-wrap justify-between items-center gap-2 mb-2.5">' +
-        '<h3 class="font-extrabold text-gray-800 text-xs sm:text-sm flex items-center gap-2">' +
-          '<i class="fas fa-clock-rotate-left text-blue-600"></i> ប្រតិបត្តិការដកទំនិញតាមថ្ងៃ' +
-        '</h3>' +
-        '<div class="flex flex-wrap items-center gap-1.5">' +
-          '<input type="date" id="dashRecentDateFilter" value="' + getCambodiaToday() + '" onchange="loadDashRecentTransactionsByDate()" class="border-2 border-blue-200 focus:border-blue-600 rounded-xl px-2 py-1 text-[11px] font-bold text-slate-800 bg-blue-50/40 outline-none">' +
-          '<button type="button" onclick="setDashRecentDateQuick(\'YESTERDAY\')" class="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-xl text-[10px] font-bold active:scale-95 transition">ម្សិលមិញ</button>' +
-          '<button type="button" onclick="setDashRecentDateQuick(\'TODAY\')" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-xl text-[10px] font-bold active:scale-95 transition">ថ្ងៃនេះ</button>' +
-          '<span id="dashRecentCountBadge" class="bg-blue-100 text-blue-800 text-[10px] sm:text-[11px] px-2.5 py-0.5 rounded-full font-bold">0 លើក</span>' +
-        '</div>' +
-      '</div>' +
-      '<div class="overflow-x-auto max-h-[300px] overflow-y-auto rounded-xl border border-gray-200 shadow-inner">' +
-        '<table class="w-full text-left text-xs border-collapse">' +
-          '<thead class="sticky top-0 bg-gray-100 text-gray-700 font-bold border-b z-10 shadow-2xs">' +
-            '<tr>' +
-              '<th class="p-2 sm:p-2.5 text-center w-14">ម៉ោង</th>' +
-              '<th class="p-2 sm:p-2.5">អតិថិជន</th>' +
-              '<th class="p-2 sm:p-2.5">ទំនិញ</th>' +
-              '<th class="p-2 sm:p-2.5 text-center">ចំនួន</th>' +
-              '<th class="p-2 sm:p-2.5 text-right">សរុប</th>' +
-              '<th class="p-2 sm:p-2.5 text-center">ស្ថានភាព</th>' +
-              '<th class="p-2 sm:p-2.5 text-center w-20">កែ/លុប</th>' +
-            '</tr>' +
-          '</thead>' +
-          '<tbody id="dashRecentTbody">' +
-            '<tr><td colspan="7" class="p-4 text-center text-gray-400 italic">កំពុងទាញទិន្នន័យ...</td></tr>' +
-          '</tbody>' +
-        '</table>' +
-      '</div>' +
-    '</div>' +
   '</div>';
 
   await loadDashboardData();
