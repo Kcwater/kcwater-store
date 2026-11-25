@@ -102,6 +102,9 @@ async function completePosLoginFlow() {
 
   await loadSettingsAndTelegram();
   await fetchInitialPOSData();
+  if (typeof initDashboardRealtimeListener === 'function') {
+    initDashboardRealtimeListener();
+  }
 
   if (typeof updateNotificationCenterBadge === 'function') {
     updateNotificationCenterBadge();
@@ -636,9 +639,52 @@ async function loadDashboardData() {
 
 var dashboardRealtimeChannel = null;
 var dashboardRefreshTimer = null;
+var stockUiRefreshTimer = null;
+var custPortalRefreshTimer = null;
+
+function scheduleStockUiRefresh() {
+  if (stockUiRefreshTimer) clearTimeout(stockUiRefreshTimer);
+  stockUiRefreshTimer = setTimeout(function() {
+    if (document.getElementById('pGrid') && typeof rPG === 'function') {
+      rPG();
+    }
+    if (document.getElementById('stockModuleTableBody') && typeof renderStockTableRows === 'function') {
+      renderStockTableRows();
+    }
+    var hubProdTab = document.getElementById('hubTabContent_PRODUCTS');
+    if (hubProdTab && !hubProdTab.classList.contains('hidden') && typeof loadOnlineHubProductsTab === 'function') {
+      loadOnlineHubProductsTab();
+    }
+  }, 250);
+}
+
+function scheduleCustomerPortalAutoRefresh() {
+  if (!currentUser || (currentUser.role !== 'Customer' && currentUser.type !== 'Regular') || currentUser.type === 'Monthly') return;
+  if (custPortalRefreshTimer) clearTimeout(custPortalRefreshTimer);
+  custPortalRefreshTimer = setTimeout(function() {
+    if (document.getElementById('cpGrandTotalDue') && typeof fetchCustomerPortalData === 'function') {
+      fetchCustomerPortalData();
+    }
+    if (document.getElementById('chAllUnpaidTbody')) {
+      var secUnpaid = document.getElementById('chSecUnpaid');
+      var secItems = document.getElementById('chSecItems');
+      var secPay = document.getElementById('chSecPayments');
+      if (secUnpaid && !secUnpaid.classList.contains('hidden') && typeof loadAllUnpaidHistory === 'function') {
+        loadAllUnpaidHistory();
+      } else if (secItems && !secItems.classList.contains('hidden') && typeof fetchCustomHistoryByDate === 'function') {
+        fetchCustomHistoryByDate();
+      } else if (secPay && !secPay.classList.contains('hidden') && typeof loadPaymentsHistory === 'function') {
+        loadPaymentsHistory();
+      }
+    }
+    if (document.getElementById('cbBottlesTbody') && typeof renderCustomerBottlesModule === 'function') {
+      renderCustomerBottlesModule();
+    }
+  }, 700);
+}
 
 function initDashboardRealtimeListener() {
-  if (!supabaseClient || !currentUser || currentUser.role !== 'Admin') return;
+  if (!supabaseClient || !currentUser || !currentUser.id) return;
   if (dashboardRealtimeChannel && dashboardRealtimeChannel.state === 'joined') return;
 
   function scheduleDashboardAutoRefresh() {
@@ -654,6 +700,14 @@ function initDashboardRealtimeListener() {
     }, 800);
   }
 
+  function handleTransOrSettleChange() {
+    if (currentUser && currentUser.role === 'Admin') {
+      scheduleDashboardAutoRefresh();
+    } else if (currentUser && (currentUser.role === 'Customer' || currentUser.type === 'Regular')) {
+      scheduleCustomerPortalAutoRefresh();
+    }
+  }
+
   try {
     if (dashboardRealtimeChannel) {
       supabaseClient.removeChannel(dashboardRealtimeChannel);
@@ -662,25 +716,52 @@ function initDashboardRealtimeListener() {
 
     dashboardRealtimeChannel = supabaseClient
       .channel('public:admin_dashboard_realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, scheduleDashboardAutoRefresh)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'settlements' }, scheduleDashboardAutoRefresh)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, scheduleDashboardAutoRefresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, handleTransOrSettleChange)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'settlements' }, handleTransOrSettleChange)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bottle_loans' }, handleTransOrSettleChange)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, function() {
+        if (currentUser && currentUser.role === 'Admin') scheduleDashboardAutoRefresh();
+      })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, function(payload) {
-        if (payload && payload.new && payload.new.id && Array.isArray(allProducts)) {
-          var idx = allProducts.findIndex(function(p) { return String(p.id) === String(payload.new.id); });
-          if (idx !== -1) {
-            allProducts[idx] = Object.assign({}, allProducts[idx], payload.new);
+        if (Array.isArray(allProducts)) {
+          if (payload && payload.eventType === 'DELETE' && payload.old && payload.old.id) {
+            allProducts = allProducts.filter(function(p) { return String(p.id) !== String(payload.old.id); });
+          } else if (payload && payload.new && payload.new.id) {
+            var idx = allProducts.findIndex(function(p) { return String(p.id) === String(payload.new.id); });
+            if (idx !== -1) {
+              allProducts[idx] = Object.assign({}, allProducts[idx], payload.new);
+            } else {
+              allProducts.push(payload.new);
+            }
+            if (typeof selectedModalProduct !== 'undefined' && selectedModalProduct && String(selectedModalProduct.id) === String(payload.new.id)) {
+              selectedModalProduct = Object.assign({}, selectedModalProduct, payload.new);
+            }
           }
         }
-        scheduleDashboardAutoRefresh();
+        scheduleStockUiRefresh();
+        if (currentUser && currentUser.role === 'Admin') {
+          scheduleDashboardAutoRefresh();
+        }
       })
       .subscribe();
 
     if (!window.__kcDashVisibilityBound) {
       window.__kcDashVisibilityBound = true;
-      document.addEventListener('visibilitychange', function() {
-        if (!document.hidden && currentUser && currentUser.role === 'Admin' && document.getElementById('dashTodaySales')) {
+      var lastVisSyncAt = 0;
+      document.addEventListener('visibilitychange', async function() {
+        if (document.hidden || !currentUser || !currentUser.id) return;
+        var nowMs = Date.now();
+        if (nowMs - lastVisSyncAt < 4000) return;
+        lastVisSyncAt = nowMs;
+
+        if (typeof fetchInitialPOSData === 'function') {
+          try { await fetchInitialPOSData(); } catch(e) {}
+        }
+        scheduleStockUiRefresh();
+        if (currentUser.role === 'Admin' && document.getElementById('dashTodaySales')) {
           loadDashboardData();
+        } else if (currentUser.role === 'Customer' || currentUser.type === 'Regular') {
+          scheduleCustomerPortalAutoRefresh();
         }
       });
     }
