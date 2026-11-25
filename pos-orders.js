@@ -2026,9 +2026,18 @@ async function refundAndVoidOnlineOrder(orderId, custName, total, itemsText) {
           }
 
           if (prodObj && prodObj.type === 'ទិញគេ' && pQty > 0) {
-            var restoredStock = parseFloat(prodObj.stock || 0) + pQty;
-            await supabaseClient.from('products').update({ stock: restoredStock }).eq('id', prodObj.id);
-            prodObj.stock = restoredStock; // ធ្វើបច្ចុប្បន្នភាពក្នុង Memory ភ្លាមៗ
+            const { data: newStockVal, error: stkErr } = await supabaseClient.rpc('adjust_product_stock', {
+              p_token: (currentUser && currentUser.sessionToken) ? currentUser.sessionToken : '',
+              p_product_id: prodObj.id,
+              p_delta: Math.abs(parseFloat(pQty))
+            });
+            if (!stkErr && newStockVal !== null && newStockVal !== undefined) {
+              prodObj.stock = parseFloat(newStockVal);
+            } else {
+              var restoredStock = parseFloat(prodObj.stock || 0) + pQty;
+              await supabaseClient.from('products').update({ stock: restoredStock }).eq('id', prodObj.id);
+              prodObj.stock = restoredStock;
+            }
           }
         }
       }
