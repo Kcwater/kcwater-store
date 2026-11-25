@@ -1213,21 +1213,25 @@ async function executeFinalCompleteDelivery() {
       if (insErr) throw insErr;
     }
 
-    // 📦 ៥. កាត់ស្តុកទំនិញទិញគេ និងសំបកធុងផ្ទាល់តាម ID ធានាត្រឹមត្រូវ ១០០%
+    // 📦 ៥. កាត់ស្តុកទំនិញទិញគេ និងសំបកធុងផ្ទាល់តាម RPC ធានាត្រឹមត្រូវ ១០០% (មិនជាន់ស្តុកគ្នា)
     for (var k = 0; k < stockDeductionQueue.length; k++) {
       var itemToDeduct = stockDeductionQueue[k];
       var prod = itemToDeduct.product;
-      var deductQty = itemToDeduct.qty;
+      var deductQty = parseFloat(itemToDeduct.qty || 0);
+      if (deductQty <= 0) continue;
 
-      var currentStock = parseFloat(prod.stock || 0);
-      var updatedStock = Math.max(0, currentStock - deductQty);
-
-      await supabaseClient
-        .from('products')
-        .update({ stock: updatedStock })
-        .eq('id', prod.id);
-
-      prod.stock = updatedStock; // អាប់ដេត Memory ភ្លាមៗ
+      const { data: newStockVal, error: stkErr } = await supabaseClient.rpc('adjust_product_stock', {
+        p_token: (currentUser && currentUser.sessionToken) ? currentUser.sessionToken : '',
+        p_product_id: prod.id,
+        p_delta: -Math.abs(deductQty)
+      });
+      if (!stkErr && newStockVal !== null && newStockVal !== undefined) {
+        prod.stock = parseFloat(newStockVal);
+      } else {
+        var updatedStock = Math.max(0, parseFloat(prod.stock || 0) - deductQty);
+        await supabaseClient.from('products').update({ stock: updatedStock }).eq('id', prod.id);
+        prod.stock = updatedStock;
+      }
     }
 
     // ៦. បិទផ្ទាំងបញ្ជាក់ការដឹក
