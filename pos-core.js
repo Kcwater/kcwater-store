@@ -597,19 +597,6 @@ async function loadDashboardData() {
   }
 }
 
-function renderDashRecentTransactionsRows(rowsList, dateLabel) {
-  var dateInp = document.getElementById('dashRecentDateFilter');
-    var selectedDate = (dateInp && dateInp.value) ? dateInp.value : todayStr;
-
-    if (selectedDate !== todayStr) {
-      await loadDashRecentTransactionsByDate();
-    } else {
-      renderDashRecentTransactionsRows(todayRecentSales, todayStr);
-    }
-  } catch(e) {
-    console.error("Dashboard error:", e);
-  }
-}
 
 function renderDashRecentTransactionsRows(rowsList, dateLabel) {
   var tbodyRecent = document.getElementById('dashRecentTbody');
