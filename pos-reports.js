@@ -19,16 +19,19 @@ function renderMonthlyRepModule() {
   
   // 🖥️ ប្រើ w-full max-w-[1600px] ដើម្បីឱ្យពេញអេក្រង់កុំព្យូទ័រស្មើស្អាត
   area.innerHTML = '<div class="w-full max-w-[1600px] mx-auto space-y-3.5 px-1 sm:px-2">' +
-    // របារប្តូរផ្ទាំង ២ (របាយការណ៍សរុប vs កាតគ្រីម៉ូយ)
-    '<div class="flex bg-white p-1 rounded-2xl border shadow-xs gap-1.5 text-xs font-bold">' +
-      '<button id="tabBtnCompany" onclick="switchRepTab(\'company\')" class="flex-1 py-2 sm:py-2.5 rounded-xl transition-all bg-green-700 text-white shadow-md flex items-center justify-center gap-1.5">' +
+    // របារប្តូរផ្ទាំង ៣ (របាយការណ៍សរុប vs កាតគ្រីម៉ូយ vs ប្រវត្តិលក់តាមថ្ងៃ)
+    '<div class="flex flex-wrap bg-white p-1 rounded-2xl border shadow-xs gap-1.5 text-xs font-bold">' +
+      '<button id="tabBtnCompany" onclick="switchRepTab(\'company\')" class="flex-1 py-2 sm:py-2.5 px-2 rounded-xl transition-all bg-green-700 text-white shadow-md flex items-center justify-center gap-1.5 whitespace-nowrap">' +
         '<i class="fas fa-chart-line"></i> របាយការណ៍អាជីវកម្មសរុប' +
       '</button>' +
-      '<button id="tabBtnCustomer" onclick="switchRepTab(\'customer\')" class="flex-1 py-2 sm:py-2.5 rounded-xl transition-all bg-slate-100 text-slate-600 hover:bg-slate-200 flex items-center justify-center gap-1.5">' +
+      '<button id="tabBtnCustomer" onclick="switchRepTab(\'customer\')" class="flex-1 py-2 sm:py-2.5 px-2 rounded-xl transition-all bg-slate-100 text-slate-600 hover:bg-slate-200 flex items-center justify-center gap-1.5 whitespace-nowrap">' +
         '<i class="fas fa-user-tag"></i> កាតគ្រីអតិថិជន & Walk-in' +
       '</button>' +
+      '<button id="tabBtnDailyLog" onclick="switchRepTab(\'daily_log\')" class="flex-1 py-2 sm:py-2.5 px-2 rounded-xl transition-all bg-slate-100 text-slate-600 hover:bg-slate-200 flex items-center justify-center gap-1.5 whitespace-nowrap">' +
+        '<i class="fas fa-clock-rotate-left"></i> ប្រវត្តិលក់តាមថ្ងៃ (កែ/លុប)' +
+      '</button>' +
     '</div>' +
-    
+
     // 🏢 កាតរបាយការណ៍រោងចក្រសរុប
     '<div id="secCompanyRep" class="space-y-3.5">' +
       '<div class="card border-t-4 border-green-700 shadow-xl p-4 sm:p-5 mb-0 bg-white">' +
@@ -44,7 +47,6 @@ function renderMonthlyRepModule() {
         '</button>' +
       '</div>' +
 
-      // កាតសង្ខេប ៤ (មានបន្ថែមដើមទុនទំនិញ/ទឹកយួរ)
       '<div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3" id="compCardsArea">' +
         '<div class="dash-card border-l-4 border-blue-600 p-3.5 bg-white rounded-2xl">' +
           '<div class="text-gray-500 text-[10px] sm:text-xs font-bold uppercase truncate">ចំណូលលក់សរុប</div>' +
@@ -64,7 +66,6 @@ function renderMonthlyRepModule() {
         '</div>' +
       '</div>' +
 
-      // តារាងបរិមាណលក់ & ដើមទុនតាមមុខទំនិញ (Full Width Table)
       '<div class="card border-t-4 border-blue-600 shadow-lg p-4 sm:p-5 mb-0 bg-white">' +
         '<h4 class="font-bold text-gray-800 text-xs sm:text-sm mb-2.5 flex items-center gap-1.5">' +
           '<i class="fas fa-boxes-stacked text-blue-600"></i>បរិមាណលក់, ដើមទុនទឹកយួរ/ទំនិញ & ចំណូល' +
@@ -84,7 +85,6 @@ function renderMonthlyRepModule() {
         '</div>' +
       '</div>' +
 
-      // 🛒 តារាងការលក់តាមអ្នកលក់នៅកន្លែង & បុគ្គលិក (Sales by Cashier / Seller)
       '<div class="card border-t-4 border-emerald-600 shadow-lg p-4 sm:p-5 mb-0 bg-white">' +
         '<h4 class="font-bold text-gray-800 text-xs sm:text-sm mb-2.5 flex items-center gap-1.5">' +
           '<i class="fas fa-user-check text-emerald-600"></i>ការលក់សរុបតាមអ្នកលក់នៅកន្លែង / បុគ្គលិក (Sales by Cashier / Seller)' +
@@ -129,6 +129,65 @@ function renderMonthlyRepModule() {
       '</div>' +
       '<div id="statementReportContainer"></div>' +
     '</div>' +
+
+    // 📋 កាតទី ៣៖ ប្រវត្តិលក់តាមថ្ងៃ (ស្វែងរក & កែ/លុប ថ្ងៃនេះ / ម្សិលមិញ / ថ្ងៃមុនៗ)
+    '<div id="secDailyLogRep" class="space-y-3.5 hidden">' +
+      '<div class="card border-t-4 border-blue-700 shadow-xl p-4 sm:p-5 mb-0 bg-white space-y-3">' +
+        '<div class="flex flex-wrap justify-between items-center gap-2">' +
+          '<div>' +
+            '<h3 class="font-extrabold text-blue-950 text-xs sm:text-base flex items-center gap-1.5">' +
+              '<i class="fas fa-clock-rotate-left text-blue-600"></i>ប្រវត្តិលក់ និងដកទំនិញតាមថ្ងៃ (ស្វែងរក & កែ/លុប)' +
+            '</h3>' +
+            '<p class="text-[10.5px] text-gray-500 font-bold mt-0.5">រើសថ្ងៃម្សិលមិញ ឬថ្ងៃណាមួយដើម្បីពិនិត្យ កែប្រែ ឬបោះបង់ការលក់ខុស</p>' +
+          '</div>' +
+          '<span id="repDailyCountBadge" class="bg-blue-100 text-blue-800 text-[10px] sm:text-xs px-2.5 py-0.5 rounded-full font-black">0 លើក</span>' +
+        '</div>' +
+
+        '<div class="grid grid-cols-1 sm:grid-cols-12 gap-2">' +
+          '<div class="sm:col-span-5 flex items-center gap-1.5">' +
+            '<input type="date" id="repDailyDate" value="' + today + '" onchange="loadRepDailyLogFromSupabase()" class="flex-1 font-bold border-2 border-blue-200 focus:border-blue-600 p-2 rounded-xl text-xs bg-blue-50/30 outline-none">' +
+            '<button type="button" onclick="setRepDailyDateQuick(\'YESTERDAY\')" class="px-2.5 py-2 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-xl text-xs font-bold active:scale-95 transition whitespace-nowrap">ម្សិលមិញ</button>' +
+            '<button type="button" onclick="setRepDailyDateQuick(\'TODAY\')" class="px-2.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold active:scale-95 transition whitespace-nowrap">ថ្ងៃនេះ</button>' +
+          '</div>' +
+          '<div class="sm:col-span-3">' +
+            '<select id="repDailyTypeFilter" onchange="renderRepDailyLogTable()" class="w-full font-bold border p-2 rounded-xl text-xs bg-white outline-none focus:border-blue-600">' +
+              '<option value="ALL">ទាំងអស់ (All)</option>' +
+              '<option value="WALKIN">🛒 លក់នៅកន្លែង (Walk-in)</option>' +
+              '<option value="CUSTOMERS">🚚 ម៉ូយប្រចាំ (Customers)</option>' +
+              '<option value="PAID">✅ តែបង់រួច (Paid)</option>' +
+              '<option value="UNPAID">⚠️ តែជំពាក់ (Unpaid)</option>' +
+            '</select>' +
+          '</div>' +
+          '<div class="sm:col-span-4 relative">' +
+            '<input type="text" id="repDailySearchInp" oninput="renderRepDailyLogTable()" placeholder="🔍 ស្វែងរកឈ្មោះ ទំនិញ ឬអ្នកលក់..." class="w-full border p-2 pl-8 rounded-xl font-bold text-xs outline-none focus:border-blue-600 bg-slate-50 focus:bg-white">' +
+            '<i class="fas fa-search absolute left-2.5 top-2.5 text-gray-400 text-xs pointer-events-none"></i>' +
+          '</div>' +
+        '</div>' +
+
+        '<div id="repDailySummaryBar" class="grid grid-cols-3 gap-2 text-center text-xs bg-slate-50 p-2.5 rounded-2xl border border-slate-200">' +
+          '<div><span class="text-[10px] text-slate-500 font-bold block">សរុបលក់ថ្ងៃនេះ</span><b id="repDailySumTotal" class="text-blue-900 font-black">0 ៛</b></div>' +
+          '<div><span class="text-[10px] text-emerald-700 font-bold block">បង់រួច (Cash/ABA)</span><b id="repDailySumPaid" class="text-emerald-700 font-black">0 ៛</b></div>' +
+          '<div><span class="text-[10px] text-orange-700 font-bold block">ជំពាក់ (Unpaid)</span><b id="repDailySumUnpaid" class="text-orange-700 font-black">0 ៛</b></div>' +
+        '</div>' +
+
+        '<div class="overflow-x-auto max-h-[450px] overflow-y-auto rounded-xl border border-gray-200 shadow-inner">' +
+          '<table class="w-full text-left text-xs border-collapse">' +
+            '<thead class="sticky top-0 bg-gray-100 text-gray-700 font-bold border-b z-10 shadow-xs">' +
+              '<tr>' +
+                '<th class="p-2 text-center w-14">ម៉ោង</th>' +
+                '<th class="p-2">អតិថិជន / អ្នកលក់</th>' +
+                '<th class="p-2">មុខទំនិញ</th>' +
+                '<th class="p-2 text-center">ចំនួន</th>' +
+                '<th class="p-2 text-right">សរុប</th>' +
+                '<th class="p-2 text-center">ស្ថានភាព</th>' +
+                '<th class="p-2 text-center w-20">កែ/លុប</th>' +
+              '</tr>' +
+            '</thead>' +
+            '<tbody id="repDailyLogTbody"><tr><td colspan="7" class="p-4 text-center text-gray-400 italic">កំពុងទាញទិន្នន័យ...</td></tr></tbody>' +
+          '</table>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
   '</div>';
 
   populateCustSelectDropdown();
@@ -138,18 +197,168 @@ function renderMonthlyRepModule() {
 function switchRepTab(tab) {
   var secComp = document.getElementById('secCompanyRep');
   var secCust = document.getElementById('secCustomerRep');
+  var secDaily = document.getElementById('secDailyLogRep');
   var btnComp = document.getElementById('tabBtnCompany');
   var btnCust = document.getElementById('tabBtnCustomer');
+  var btnDaily = document.getElementById('tabBtnDailyLog');
+
+  var inactiveCls = 'flex-1 py-2 sm:py-2.5 px-2 rounded-xl font-bold text-xs transition-all bg-slate-100 text-slate-600 hover:bg-slate-200 flex items-center justify-center gap-1.5 whitespace-nowrap';
+  var activeGreenCls = 'flex-1 py-2 sm:py-2.5 px-2 rounded-xl font-bold text-xs transition-all bg-green-700 text-white shadow-md flex items-center justify-center gap-1.5 whitespace-nowrap';
+  var activeBlueCls = 'flex-1 py-2 sm:py-2.5 px-2 rounded-xl font-bold text-xs transition-all bg-blue-700 text-white shadow-md flex items-center justify-center gap-1.5 whitespace-nowrap';
+
+  if (secComp) secComp.classList.add('hidden');
+  if (secCust) secCust.classList.add('hidden');
+  if (secDaily) secDaily.classList.add('hidden');
+  if (btnComp) btnComp.className = inactiveCls;
+  if (btnCust) btnCust.className = inactiveCls;
+  if (btnDaily) btnDaily.className = inactiveCls;
 
   if (tab === 'company') {
-    secComp.classList.remove('hidden'); secCust.classList.add('hidden');
-    btnComp.className = 'flex-1 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all bg-green-700 text-white shadow-md flex items-center justify-center gap-2';
-    btnCust.className = 'flex-1 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all bg-gray-100 text-gray-600 hover:bg-gray-200 flex items-center justify-center gap-2';
-  } else {
-    secComp.classList.add('hidden'); secCust.classList.remove('hidden');
-    btnCust.className = 'flex-1 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all bg-green-700 text-white shadow-md flex items-center justify-center gap-2';
-    btnComp.className = 'flex-1 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all bg-gray-100 text-gray-600 hover:bg-gray-200 flex items-center justify-center gap-2';
+    if (secComp) secComp.classList.remove('hidden');
+    if (btnComp) btnComp.className = activeGreenCls;
+  } else if (tab === 'customer') {
+    if (secCust) secCust.classList.remove('hidden');
+    if (btnCust) btnCust.className = activeGreenCls;
+  } else if (tab === 'daily_log') {
+    if (secDaily) secDaily.classList.remove('hidden');
+    if (btnDaily) btnDaily.className = activeBlueCls;
+    loadRepDailyLogFromSupabase();
   }
+}
+
+var repDailyLogCache = [];
+
+function setRepDailyDateQuick(mode) {
+  var inp = document.getElementById('repDailyDate');
+  if (!inp) return;
+  var todayStr = (typeof getCambodiaToday === 'function') ? getCambodiaToday() : new Date().toISOString().split('T')[0];
+  if (mode === 'YESTERDAY') {
+    var d = new Date(todayStr + 'T12:00:00+07:00');
+    d.setDate(d.getDate() - 1);
+    inp.value = (typeof toCambodiaDateStr === 'function')
+      ? toCambodiaDateStr(d)
+      : d.toLocaleDateString('en-CA', { timeZone: 'Asia/Phnom_Penh' });
+  } else {
+    inp.value = todayStr;
+  }
+  loadRepDailyLogFromSupabase();
+}
+
+async function loadRepDailyLogFromSupabase() {
+  var tbody = document.getElementById('repDailyLogTbody');
+  var dateInp = document.getElementById('repDailyDate');
+  if (!tbody || !dateInp) return;
+
+  var selectedDate = dateInp.value || ((typeof getCambodiaToday === 'function') ? getCambodiaToday() : new Date().toISOString().split('T')[0]);
+  tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-gray-400 italic"><i class="fas fa-spinner fa-spin mr-1 text-blue-600"></i> កំពុងទាញទិន្នន័យថ្ងៃ ' + selectedDate + '...</td></tr>';
+
+  try {
+    var startIso = selectedDate + 'T00:00:00+07:00';
+    var endIso = selectedDate + 'T23:59:59.999+07:00';
+
+    const { data, error } = await supabaseClient
+      .from('transactions')
+      .select('*')
+      .gte('created_at', startIso)
+      .lte('created_at', endIso)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    repDailyLogCache = data || [];
+    renderRepDailyLogTable();
+  } catch(err) {
+    tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-red-500 font-bold">កំហុស៖ ' + err.message + '</td></tr>';
+  }
+}
+
+function renderRepDailyLogTable() {
+  var tbody = document.getElementById('repDailyLogTbody');
+  var badge = document.getElementById('repDailyCountBadge');
+  var typeSel = document.getElementById('repDailyTypeFilter');
+  var searchInp = document.getElementById('repDailySearchInp');
+  if (!tbody) return;
+
+  var fType = typeSel ? typeSel.value : 'ALL';
+  var q = searchInp ? searchInp.value.toLowerCase().trim() : '';
+
+  var filtered = (repDailyLogCache || []).filter(function(r) {
+    if (fType === 'WALKIN' && r.customer_name !== 'Walk-in') return false;
+    if (fType === 'CUSTOMERS' && r.customer_name === 'Walk-in') return false;
+    if (fType === 'PAID' && r.status !== 'Paid') return false;
+    if (fType === 'UNPAID' && r.status !== 'Unpaid') return false;
+
+    if (q) {
+      var matchCust = String(r.customer_name || '').toLowerCase().indexOf(q) !== -1;
+      var matchProd = String(r.product_name || '').toLowerCase().indexOf(q) !== -1;
+      var matchRec = String(r.recorded_by || '').toLowerCase().indexOf(q) !== -1;
+      if (!matchCust && !matchProd && !matchRec) return false;
+    }
+    return true;
+  });
+
+  if (badge) badge.innerText = filtered.length + ' លើក';
+
+  var sumTotal = 0, sumPaid = 0, sumUnpaid = 0;
+  filtered.forEach(function(r) {
+    var tot = parseFloat(r.total || 0);
+    sumTotal += tot;
+    if (r.status === 'Paid') sumPaid += parseFloat(r.paid_khr || tot);
+    else sumUnpaid += tot;
+  });
+
+  if (document.getElementById('repDailySumTotal')) document.getElementById('repDailySumTotal').innerText = '៛ ' + sumTotal.toLocaleString();
+  if (document.getElementById('repDailySumPaid')) document.getElementById('repDailySumPaid').innerText = '៛ ' + sumPaid.toLocaleString();
+  if (document.getElementById('repDailySumUnpaid')) document.getElementById('repDailySumUnpaid').innerText = '៛ ' + sumUnpaid.toLocaleString();
+
+  if (!window.__dashRecentRowsMap) window.__dashRecentRowsMap = {};
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" class="p-6 text-center text-gray-400 italic">គ្មានទិន្នន័យត្រូវតាមការស្វែងរកឡើយ</td></tr>';
+    return;
+  }
+
+  var isAdmin = (currentUser && currentUser.role === 'Admin');
+  var html = '';
+
+  filtered.forEach(function(r) {
+    window.__dashRecentRowsMap[r.id] = r;
+    var timeStr = new Date(r.created_at).toLocaleTimeString('km-KH', {
+      timeZone: 'Asia/Phnom_Penh',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    var safeCust = (typeof escapeHtml === 'function') ? escapeHtml(r.customer_name || '') : (r.customer_name || '');
+    var safeProd = (typeof escapeHtml === 'function') ? escapeHtml(r.product_name || '') : (r.product_name || '');
+    var safeRec = (typeof escapeHtml === 'function') ? escapeHtml(r.recorded_by || '') : (r.recorded_by || '');
+    var recNote = safeRec ? '<br><span class="text-[9px] text-slate-400 font-normal">កត់ដោយ៖ ' + safeRec + '</span>' : '';
+
+    var isSettledDebt = (r.status === 'Paid' && r.payment_method === 'Debt');
+    var actionHtml = isAdmin ? (
+      isSettledDebt
+        ? '<span class="text-[9px] text-slate-400 italic" title="បានទូទាត់ក្នុង Settlement រួច">ទូទាត់រួច</span>'
+        : '<div class="flex items-center justify-center gap-1">' +
+            '<button type="button" onclick="openEditDashboardTxModal(' + Number(r.id) + ')" class="p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200 rounded-lg text-xs active:scale-90 transition" title="កែប្រែការលក់នេះ"><i class="fas fa-pen-to-square"></i></button>' +
+            '<button type="button" onclick="voidTransaction(' + Number(r.id) + ')" class="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg text-xs active:scale-90 transition" title="បោះបង់ការលក់នេះ"><i class="fas fa-trash-can"></i></button>' +
+          '</div>'
+    ) : '-';
+
+    var payBadgeNote = (r.status === 'Paid' && r.payment_method === 'ABA') ? ' (ABA)' : '';
+
+    html += '<tr class="border-b hover:bg-gray-50">' +
+      '<td class="p-2 text-center text-gray-500 whitespace-nowrap text-[10px]">' + timeStr + '</td>' +
+      '<td class="p-2 font-bold text-gray-800">' + safeCust + recNote + '</td>' +
+      '<td class="p-2">' + safeProd + '</td>' +
+      '<td class="p-2 text-center font-bold text-blue-700">' + r.qty + '</td>' +
+      '<td class="p-2 text-right font-black text-green-700 whitespace-nowrap">៛ ' + Number(r.total).toLocaleString() + '</td>' +
+      '<td class="p-2 text-center whitespace-nowrap">' +
+        '<span class="px-2.5 py-0.5 rounded-full text-[9.5px] font-bold ' + (r.status === 'Paid' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800 border border-orange-200') + '">' + (r.status === 'Paid' ? ('បង់រួច' + payBadgeNote) : 'ជំពាក់') + '</span>' +
+      '</td>' +
+      '<td class="p-2 text-center whitespace-nowrap">' + actionHtml + '</td>' +
+    '</tr>';
+  });
+
+  tbody.innerHTML = html;
 }
 
 // 👥 បង្ហាញបញ្ជីឈ្មោះម៉ូយ & បើកជម្រើសលក់នៅកន្លែង (Walk-in)
